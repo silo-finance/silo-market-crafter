@@ -61,10 +61,17 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               <button
                 onClick={() => setIsSummaryOpen(!isSummaryOpen)}
                 className="text-gray-400 hover:text-white transition-colors"
+                title={isSummaryOpen ? "Hide Summary" : "Show Summary"}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                {isSummaryOpen ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                )}
               </button>
             </div>
 
@@ -219,14 +226,41 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
             <div className="lg:hidden mt-6">
               <button
                 onClick={() => setIsSummaryOpen(!isSummaryOpen)}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors"
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
-                {isSummaryOpen ? 'Hide Summary' : 'Show Summary'}
+                {isSummaryOpen ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Hide Summary</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Show Summary</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Floating Toggle Button - Only visible when summary is hidden */}
+      {!isSummaryOpen && (
+        <button
+          onClick={() => setIsSummaryOpen(true)}
+          className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+          title="Show Summary"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }
