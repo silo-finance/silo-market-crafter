@@ -37,6 +37,28 @@ export default function Step1Assets() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const switchAddresses = () => {
+    // Swap addresses
+    const tempAddress = token0Address
+    setToken0Address(token1Address)
+    setToken1Address(tempAddress)
+
+    // Swap metadata
+    const tempMetadata = token0Metadata
+    setToken0Metadata(token1Metadata)
+    setToken1Metadata(tempMetadata)
+
+    // Swap errors
+    const tempError = token0Error
+    setToken0Error(token1Error)
+    setToken1Error(tempError)
+
+    // Swap loading states
+    const tempLoading = token0Loading
+    setToken0Loading(token1Loading)
+    setToken1Loading(tempLoading)
+  }
+
   // Load existing data if available
   useEffect(() => {
     if (wizardData.token0) {
@@ -426,6 +448,20 @@ export default function Step1Assets() {
                   ✓ {token0Metadata.name} ({token0Metadata.symbol}) - {token0Metadata.decimals} decimals
                 </div>
               )}
+            </div>
+
+            {/* Switch Button */}
+            <div className="flex justify-center py-4">
+              <button
+                type="button"
+                onClick={switchAddresses}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-3 rounded-full transition-all duration-200 flex items-center justify-center group"
+                title="Switch Token 0 and Token 1"
+              >
+                <svg className="w-6 h-6 transform group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </button>
             </div>
 
             <div>
