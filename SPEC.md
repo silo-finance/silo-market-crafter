@@ -7,3 +7,4 @@ Create NodeJs boilerplate for web3 app:
 - app must be easily launch locally
 - choose libraries that are current standard for UI web3 but also that are less problematic durring development process, must be well supported
 - there should be CI setup with: linter, check if code is compilable
+- add basic rus steps to readme
