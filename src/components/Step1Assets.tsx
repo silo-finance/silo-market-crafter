@@ -26,10 +26,41 @@ function debounce<T extends (...args: any[]) => any>(
 export default function Step1Assets() {
   const { wizardData, updateToken0, updateToken1, updateNetworkInfo, markStepCompleted, updateStep } = useWizard()
   
-  const [token0Address, setToken0Address] = useState('')
-  const [token1Address, setToken1Address] = useState('')
-  const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(null)
-  const [token1Metadata, setToken1Metadata] = useState<TokenMetadata | null>(null)
+  // Cache keys for localStorage
+  const CACHE_KEYS = {
+    TOKEN0_ADDRESS: 'silo-wizard-token0-address',
+    TOKEN1_ADDRESS: 'silo-wizard-token1-address',
+    TOKEN0_METADATA: 'silo-wizard-token0-metadata',
+    TOKEN1_METADATA: 'silo-wizard-token1-metadata'
+  }
+
+  // Initialize state with cached values
+  const [token0Address, setToken0Address] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS) || ''
+    }
+    return ''
+  })
+  const [token1Address, setToken1Address] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS) || ''
+    }
+    return ''
+  })
+  const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
+      return cached ? JSON.parse(cached) : null
+    }
+    return null
+  })
+  const [token1Metadata, setToken1Metadata] = useState<TokenMetadata | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
+      return cached ? JSON.parse(cached) : null
+    }
+    return null
+  })
   const [token0Loading, setToken0Loading] = useState(false)
   const [token1Loading, setToken1Loading] = useState(false)
   const [token0Error, setToken0Error] = useState('')
@@ -37,16 +68,50 @@ export default function Step1Assets() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Cache utility functions
+  const saveToCache = (key: string, value: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, value)
+    }
+  }
+
+  const saveMetadataToCache = (key: string, metadata: TokenMetadata | null) => {
+    if (typeof window !== 'undefined') {
+      if (metadata) {
+        localStorage.setItem(key, JSON.stringify(metadata))
+      } else {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+
+  const clearCache = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(CACHE_KEYS.TOKEN0_ADDRESS)
+      localStorage.removeItem(CACHE_KEYS.TOKEN1_ADDRESS)
+      localStorage.removeItem(CACHE_KEYS.TOKEN0_METADATA)
+      localStorage.removeItem(CACHE_KEYS.TOKEN1_METADATA)
+    }
+  }
+
   const switchAddresses = () => {
     // Swap addresses
     const tempAddress = token0Address
     setToken0Address(token1Address)
     setToken1Address(tempAddress)
 
+    // Save swapped addresses to cache
+    saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, token1Address)
+    saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, tempAddress)
+
     // Swap metadata
     const tempMetadata = token0Metadata
     setToken0Metadata(token1Metadata)
     setToken1Metadata(tempMetadata)
+
+    // Save swapped metadata to cache
+    saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, token1Metadata)
+    saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, tempMetadata)
 
     // Swap errors
     const tempError = token0Error
@@ -248,18 +313,26 @@ export default function Step1Assets() {
       if (tokenType === 'token0') {
         setToken0Metadata(metadata)
         setToken0Error('')
+        // Save metadata to cache
+        saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, metadata)
       } else {
         setToken1Metadata(metadata)
         setToken1Error('')
+        // Save metadata to cache
+        saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, metadata)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch token metadata'
       if (tokenType === 'token0') {
         setToken0Metadata(null)
         setToken0Error(errorMessage)
+        // Clear metadata from cache on error
+        saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, null)
       } else {
         setToken1Metadata(null)
         setToken1Error(errorMessage)
+        // Clear metadata from cache on error
+        saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, null)
       }
     } finally {
       if (tokenType === 'token0') {
@@ -416,6 +489,9 @@ export default function Step1Assets() {
                     const value = e.target.value
                     setToken0Address(value)
                     
+                    // Save to cache
+                    saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, value)
+                    
                     // Clear any existing errors when user starts typing
                     if (token0Error) {
                       setToken0Error('')
@@ -477,6 +553,9 @@ export default function Step1Assets() {
                     const value = e.target.value
                     setToken1Address(value)
                     
+                    // Save to cache
+                    saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, value)
+                    
                     // Clear any existing errors when user starts typing
                     if (token1Error) {
                       setToken1Error('')
@@ -521,17 +600,30 @@ export default function Step1Assets() {
           </div>
         )}
 
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back to Landing</span>
-          </button>
+        <div className="flex justify-between items-center">
+          <div className="flex space-x-4">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Back to Landing</span>
+            </button>
+            <button
+              type="button"
+              onClick={clearCache}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              title="Clear cached addresses and start fresh"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Clear Cache</span>
+            </button>
+          </div>
           <button
             type="submit"
             disabled={loading || !token0Metadata || !token1Metadata || !!token0Error || !!token1Error}
