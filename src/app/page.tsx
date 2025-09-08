@@ -71,7 +71,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">Select Assets</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  Choose the two tokens for your market. We'll automatically fetch metadata and validate addresses.
+                  Choose the two tokens for your market. We&apos;ll automatically fetch metadata and validate addresses.
                 </p>
               </div>
               {/* Connecting Line */}

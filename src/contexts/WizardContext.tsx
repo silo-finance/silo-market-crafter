@@ -31,7 +31,7 @@ export enum StepStatus {
 interface WizardContextType {
   wizardData: WizardData
   updateStep: (step: number) => void
-  markStepCompleted: (step: number, details?: string) => void
+  markStepCompleted: (step: number) => void
   updateToken0: (token: TokenData) => void
   updateToken1: (token: TokenData) => void
   updateNetworkInfo: (networkInfo: NetworkInfo) => void
@@ -55,7 +55,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, currentStep: step }))
   }
 
-  const markStepCompleted = (step: number, details?: string) => {
+  const markStepCompleted = (step: number) => {
     setWizardData(prev => ({
       ...prev,
       completedSteps: [...prev.completedSteps.filter(s => s !== step), step]

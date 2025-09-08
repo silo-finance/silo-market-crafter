@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { useWizard, TokenData } from '@/contexts/WizardContext'
+import { useWizard } from '@/contexts/WizardContext'
 
 interface TokenMetadata {
   symbol: string
@@ -11,6 +11,7 @@ interface TokenMetadata {
 }
 
 // Debounce utility function
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -62,7 +63,7 @@ export default function Step1Assets() {
       if (!window.ethereum) return
 
       try {
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
         const networkId = parseInt(chainId, 16).toString()
         
         // Network name mapping (same as in Header component)
@@ -122,10 +123,6 @@ export default function Step1Assets() {
     getNetworkInfo()
   }, [updateNetworkInfo])
 
-  const isValidAddress = (address: string) => {
-    // Check if it looks like an address (40 hex chars after 0x)
-    return /^0x[a-fA-F0-9]{40}$/.test(address)
-  }
 
   const normalizeAddress = (address: string) => {
     try {
@@ -178,7 +175,7 @@ export default function Step1Assets() {
     }
   }
 
-  const validateAndFetchToken = async (address: string, tokenType: 'token0' | 'token1') => {
+  const validateAndFetchToken = useCallback(async (address: string, tokenType: 'token0' | 'token1') => {
     if (!address.trim()) {
       if (tokenType === 'token0') {
         setToken0Metadata(null)
@@ -249,19 +246,17 @@ export default function Step1Assets() {
         setToken1Loading(false)
       }
     }
-  }
+  }, [])
 
   // Debounced validation for token0
-  const debouncedValidateToken0 = useCallback(
-    debounce((address: string) => validateAndFetchToken(address, 'token0'), 500),
-    []
-  )
+  const debouncedValidateToken0 = debounce((address: string) => {
+    validateAndFetchToken(address, 'token0')
+  }, 500)
 
   // Debounced validation for token1
-  const debouncedValidateToken1 = useCallback(
-    debounce((address: string) => validateAndFetchToken(address, 'token1'), 500),
-    []
-  )
+  const debouncedValidateToken1 = debounce((address: string) => {
+    validateAndFetchToken(address, 'token1')
+  }, 500)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -290,7 +285,7 @@ export default function Step1Assets() {
       }
 
       // Get network info
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+      const chainId = await window.ethereum!.request({ method: 'eth_chainId' }) as string
       const networkId = parseInt(chainId, 16).toString()
       
       // Network name mapping (same as in Header component)
@@ -360,7 +355,7 @@ export default function Step1Assets() {
       })
 
       // Mark step as completed
-      markStepCompleted(1, `${token0Metadata.symbol}/${token1Metadata.symbol}`)
+      markStepCompleted(1)
 
       // Move to next step
       updateStep(2)
