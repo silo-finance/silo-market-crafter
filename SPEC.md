@@ -14,7 +14,7 @@ Create NodeJs boilerplate for web3 app:
 Add button to connect wallet for MetaMask plugin.
 
 add header with:
-- silo logo that will open landing page.
+- use silo logo from https://silo.finance/, on click it should open landing page.
 - 2 menu itemw that will lead to silo finanse page and silo app
 - connect button should be on top right
 - app style should match https://silo.finance/
