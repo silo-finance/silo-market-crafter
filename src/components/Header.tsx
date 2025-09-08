@@ -2,10 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 declare global {
   interface Window {
-    ethereum?: any
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+      on: (event: string, callback: (...args: unknown[]) => void) => void
+      removeListener: (event: string, callback: (...args: unknown[]) => void) => void
+    }
   }
 }
 
@@ -131,13 +136,13 @@ export default function Header() {
     if (window.ethereum) {
       const checkConnection = async () => {
         try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+          const accounts = await window.ethereum!.request({ method: 'eth_accounts' }) as string[]
           if (accounts.length > 0) {
             setIsConnected(true)
             setAccount(accounts[0])
             
             // Get network info
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+            const chainId = await window.ethereum!.request({ method: 'eth_chainId' }) as string
             getNetworkInfo(chainId)
           } else {
             setIsConnected(false)
@@ -153,7 +158,8 @@ export default function Header() {
       checkConnection()
 
       // Listen for account changes
-      const handleAccountsChanged = (accounts: string[]) => {
+      const handleAccountsChanged = (...args: unknown[]) => {
+        const accounts = args[0] as string[]
         if (accounts.length > 0) {
           setIsConnected(true)
           setAccount(accounts[0])
@@ -166,7 +172,8 @@ export default function Header() {
       }
 
       // Listen for network changes
-      const handleChainChanged = (chainId: string) => {
+      const handleChainChanged = (...args: unknown[]) => {
+        const chainId = args[0] as string
         getNetworkInfo(chainId)
       }
 
@@ -176,7 +183,7 @@ export default function Header() {
 
       // Cleanup function
       return () => {
-        if (window.ethereum.removeListener) {
+        if (window.ethereum?.removeListener) {
           window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
           window.ethereum.removeListener('chainChanged', handleChainChanged)
         }
@@ -193,14 +200,14 @@ export default function Header() {
     try {
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
-      })
+      }) as string[]
       
       if (accounts.length > 0) {
         setIsConnected(true)
         setAccount(accounts[0])
         
         // Get network info
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
         getNetworkInfo(chainId)
       }
     } catch (error) {
@@ -219,9 +226,11 @@ export default function Header() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <img 
+              <Image 
                 src="https://cdn.prod.website-files.com/684669826f2b6c83c65f3f7c/684669826f2b6c83c65f3f86_Frame%2010169.svg" 
-                alt="Silo" 
+                alt="Silo"
+                width={32}
+                height={32}
                 className="h-8 w-auto"
               />
             </Link>

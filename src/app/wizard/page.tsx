@@ -1,0 +1,170 @@
+'use client'
+
+import React, { useEffect } from 'react'
+import { useWizard } from '@/contexts/WizardContext'
+import WizardLayout from '@/components/WizardLayout'
+import Step1Assets from '@/components/Step1Assets'
+
+export default function WizardPage() {
+  const { wizardData, updateStep } = useWizard()
+
+  // Auto-start wizard if currentStep is 0
+  useEffect(() => {
+    if (wizardData.currentStep === 0) {
+      updateStep(1)
+    }
+  }, [wizardData.currentStep, updateStep])
+
+  const goToPreviousStep = () => {
+    if (wizardData.currentStep > 1) {
+      updateStep(wizardData.currentStep - 1)
+    }
+  }
+
+  const goToNextStep = () => {
+    if (wizardData.currentStep < 4) {
+      updateStep(wizardData.currentStep + 1)
+    }
+  }
+
+  const renderCurrentStep = () => {
+    switch (wizardData.currentStep) {
+      case 1:
+        return <Step1Assets />
+      case 2:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-white mb-4">
+                Step 2: Silo Configuration
+              </h1>
+              <p className="text-gray-300 text-lg">
+                Configure the first silo for your market
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
+              <p className="text-gray-400">Step 2 implementation coming soon...</p>
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={goToPreviousStep}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Step 1</span>
+              </button>
+              <button
+                onClick={goToNextStep}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <span>Continue to Step 3</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )
+      case 3:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-white mb-4">
+                Step 3: Second Silo
+              </h1>
+              <p className="text-gray-300 text-lg">
+                Configure the second silo for your market
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
+              <p className="text-gray-400">Step 3 implementation coming soon...</p>
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={goToPreviousStep}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Step 2</span>
+              </button>
+              <button
+                onClick={goToNextStep}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <span>Continue to Step 4</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )
+      case 4:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-white mb-4">
+                Step 4: Deploy Market
+              </h1>
+              <p className="text-gray-300 text-lg">
+                Deploy your complete market
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
+              <p className="text-gray-400">Step 4 implementation coming soon...</p>
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={goToPreviousStep}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Step 3</span>
+              </button>
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                disabled
+              >
+                <span>Deploy Market</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )
+      default:
+        return (
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Market Creation Wizard
+            </h1>
+            <p className="text-gray-300 text-lg mb-8">
+              Create a new Silo market step by step
+            </p>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
+              <p className="text-gray-400 mb-6">Ready to start the wizard?</p>
+              <button
+                onClick={() => updateStep(1)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+              >
+                Start Wizard
+              </button>
+            </div>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <WizardLayout>
+      {renderCurrentStep()}
+    </WizardLayout>
+  )
+}
