@@ -16,113 +16,113 @@ export default function Header() {
   const [networkName, setNetworkName] = useState<string>('')
 
   const getNetworkInfo = async (chainId: string) => {
-    const networkMap: { [key: string]: string } = {
+    const networkMap: { [key: number]: string } = {
       // Ethereum
-      '0x1': 'Ethereum Mainnet',
-      '0x3': 'Ropsten',
-      '0x4': 'Rinkeby',
-      '0x5': 'Goerli',
-      '0x2a': 'Kovan',
-      '0xaa36a7': 'Sepolia',
+      1: 'Ethereum Mainnet',
+      3: 'Ropsten',
+      4: 'Rinkeby',
+      5: 'Goerli',
+      42: 'Kovan',
+      11155111: 'Sepolia',
       
       // Polygon
-      '0x89': 'Polygon',
-      '0x13881': 'Polygon Mumbai',
-      '0x44d': 'Polygon zkEVM',
-      '0x5a2': 'Polygon zkEVM Testnet',
+      137: 'Polygon',
+      80001: 'Polygon Mumbai',
+      1101: 'Polygon zkEVM',
+      1442: 'Polygon zkEVM Testnet',
       
       // Optimism
-      '0xa': 'Optimism',
-      '0x420': 'Optimism Goerli',
-      '0x1a4': 'Optimism Sepolia',
+      10: 'Optimism',
+      420: 'Optimism Goerli',
+      11155420: 'Optimism Sepolia',
       
       // Arbitrum
-      '0xa4b1': 'Arbitrum One',
-      '0x66eed': 'Arbitrum Goerli',
-      '0x66eee': 'Arbitrum Sepolia',
-      '0x66eeb': 'Arbitrum Nova',
+      42161: 'Arbitrum One',
+      421613: 'Arbitrum Goerli',
+      421614: 'Arbitrum Sepolia',
+      42170: 'Arbitrum Nova',
       
       // BSC (Binance Smart Chain)
-      '0x38': 'BSC',
-      '0x61': 'BSC Testnet',
+      56: 'BSC',
+      97: 'BSC Testnet',
       
       // Avalanche
-      '0xa86a': 'Avalanche C-Chain',
-      '0xa869': 'Avalanche Fuji',
+      43114: 'Avalanche C-Chain',
+      43113: 'Avalanche Fuji',
       
       // Fantom
-      '0xfa': 'Fantom Opera',
-      '0xfa2': 'Fantom Testnet',
+      250: 'Fantom Opera',
+      4002: 'Fantom Testnet',
       
       // Base
-      '0x2105': 'Base',
-      '0x14a33': 'Base Sepolia',
-      '0x14a34': 'Base Goerli',
+      8453: 'Base',
+      84532: 'Base Sepolia',
+      84531: 'Base Goerli',
       
       // Linea
-      '0xe708': 'Linea',
-      '0xe704': 'Linea Goerli',
-      '0xe705': 'Linea Sepolia',
+      59144: 'Linea',
+      59140: 'Linea Goerli',
+      59141: 'Linea Sepolia',
       
       // Scroll
-      '0x82750': 'Scroll',
-      '0x8274f': 'Scroll Sepolia',
+      534352: 'Scroll',
+      534351: 'Scroll Sepolia',
       
       // Mantle
-      '0x1388': 'Mantle',
-      '0x1389': 'Mantle Sepolia',
+      5000: 'Mantle',
+      5001: 'Mantle Sepolia',
       
       // Celo
-      '0xa4ec': 'Celo',
-      '0x44787': 'Celo Alfajores',
+      42220: 'Celo',
+      44787: 'Celo Alfajores',
       
       // Gnosis
-      '0x64': 'Gnosis',
-      '0x27d8': 'Gnosis Chiado',
+      100: 'Gnosis',
+      10200: 'Gnosis Chiado',
       
       // Moonbeam
-      '0x504': 'Moonbeam',
-      '0x507': 'Moonbase Alpha',
+      1284: 'Moonbeam',
+      1287: 'Moonbase Alpha',
       
       // Harmony
-      '0x63564c40': 'Harmony One',
-      '0x6357d2e0': 'Harmony Testnet',
+      1666600000: 'Harmony One',
+      1666700000: 'Harmony Testnet',
       
       // Cronos
-      '0x19': 'Cronos',
-      '0x152': 'Cronos Testnet',
+      25: 'Cronos',
+      338: 'Cronos Testnet',
       
       // Klaytn
-      '0x2019': 'Klaytn',
-      '0x3e9': 'Klaytn Baobab',
+      8217: 'Klaytn',
+      1001: 'Klaytn Baobab',
       
       // Aurora
-      '0x4e454152': 'Aurora',
-      '0x4e454153': 'Aurora Testnet',
+      1313161554: 'Aurora',
+      1313161555: 'Aurora Testnet',
       
       // Metis
-      '0x440': 'Metis Andromeda',
-      '0x28a': 'Metis Goerli',
+      1088: 'Metis Andromeda',
+      599: 'Metis Goerli',
       
       // Boba
-      '0x120': 'Boba Network',
-      '0x28a': 'Boba Goerli',
+      288: 'Boba Network',
+      28882: 'Boba Goerli',
       
       // ZkSync Era
-      '0x144': 'zkSync Era',
-      '0x12c': 'zkSync Era Testnet',
+      324: 'zkSync Era',
+      300: 'zkSync Era Testnet',
       
       // Immutable X
-      '0x1a4': 'Immutable X',
+      13371: 'Immutable X',
       
       // Sonic
-      '0x92': 'Sonic',
-      '0x28d': 'Sonic Testnet',
+      146: 'Sonic',
+      653: 'Sonic Testnet',
     }
     
-    const id = parseInt(chainId, 16).toString()
-    const name = networkMap[chainId] || `Unknown Network (${id})`
-    setNetworkId(id)
+    const id = parseInt(chainId, 16)
+    const name = networkMap[id] || `Unknown Network (${id})`
+    setNetworkId(id.toString())
     setNetworkName(name)
   }
 
