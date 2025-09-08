@@ -12,18 +12,175 @@ declare global {
 export default function Header() {
   const [isConnected, setIsConnected] = useState(false)
   const [account, setAccount] = useState<string>('')
+  const [networkId, setNetworkId] = useState<string>('')
+  const [networkName, setNetworkName] = useState<string>('')
+
+  const getNetworkInfo = async (chainId: string) => {
+    const networkMap: { [key: string]: string } = {
+      // Ethereum
+      '0x1': 'Ethereum Mainnet',
+      '0x3': 'Ropsten',
+      '0x4': 'Rinkeby',
+      '0x5': 'Goerli',
+      '0x2a': 'Kovan',
+      '0xaa36a7': 'Sepolia',
+      
+      // Polygon
+      '0x89': 'Polygon',
+      '0x13881': 'Polygon Mumbai',
+      '0x44d': 'Polygon zkEVM',
+      '0x5a2': 'Polygon zkEVM Testnet',
+      
+      // Optimism
+      '0xa': 'Optimism',
+      '0x420': 'Optimism Goerli',
+      '0x1a4': 'Optimism Sepolia',
+      
+      // Arbitrum
+      '0xa4b1': 'Arbitrum One',
+      '0x66eed': 'Arbitrum Goerli',
+      '0x66eee': 'Arbitrum Sepolia',
+      '0x66eeb': 'Arbitrum Nova',
+      
+      // BSC (Binance Smart Chain)
+      '0x38': 'BSC',
+      '0x61': 'BSC Testnet',
+      
+      // Avalanche
+      '0xa86a': 'Avalanche C-Chain',
+      '0xa869': 'Avalanche Fuji',
+      
+      // Fantom
+      '0xfa': 'Fantom Opera',
+      '0xfa2': 'Fantom Testnet',
+      
+      // Base
+      '0x2105': 'Base',
+      '0x14a33': 'Base Sepolia',
+      '0x14a34': 'Base Goerli',
+      
+      // Linea
+      '0xe708': 'Linea',
+      '0xe704': 'Linea Goerli',
+      '0xe705': 'Linea Sepolia',
+      
+      // Scroll
+      '0x82750': 'Scroll',
+      '0x8274f': 'Scroll Sepolia',
+      
+      // Mantle
+      '0x1388': 'Mantle',
+      '0x1389': 'Mantle Sepolia',
+      
+      // Celo
+      '0xa4ec': 'Celo',
+      '0x44787': 'Celo Alfajores',
+      
+      // Gnosis
+      '0x64': 'Gnosis',
+      '0x27d8': 'Gnosis Chiado',
+      
+      // Moonbeam
+      '0x504': 'Moonbeam',
+      '0x507': 'Moonbase Alpha',
+      
+      // Harmony
+      '0x63564c40': 'Harmony One',
+      '0x6357d2e0': 'Harmony Testnet',
+      
+      // Cronos
+      '0x19': 'Cronos',
+      '0x152': 'Cronos Testnet',
+      
+      // Klaytn
+      '0x2019': 'Klaytn',
+      '0x3e9': 'Klaytn Baobab',
+      
+      // Aurora
+      '0x4e454152': 'Aurora',
+      '0x4e454153': 'Aurora Testnet',
+      
+      // Metis
+      '0x440': 'Metis Andromeda',
+      '0x28a': 'Metis Goerli',
+      
+      // Boba
+      '0x120': 'Boba Network',
+      '0x28a': 'Boba Goerli',
+      
+      // ZkSync Era
+      '0x144': 'zkSync Era',
+      '0x12c': 'zkSync Era Testnet',
+      
+      // Immutable X
+      '0x1a4': 'Immutable X',
+      
+      // Sonic
+      '0x92': 'Sonic',
+      '0x28d': 'Sonic Testnet',
+    }
+    
+    const id = parseInt(chainId, 16).toString()
+    const name = networkMap[chainId] || `Unknown Network (${id})`
+    setNetworkId(id)
+    setNetworkName(name)
+  }
 
   useEffect(() => {
     // Check if already connected
     if (window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' })
-        .then((accounts: string[]) => {
+      const checkConnection = async () => {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
           if (accounts.length > 0) {
             setIsConnected(true)
             setAccount(accounts[0])
+            
+            // Get network info
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+            getNetworkInfo(chainId)
+          } else {
+            setIsConnected(false)
+            setAccount('')
+            setNetworkId('')
+            setNetworkName('')
           }
-        })
-        .catch(console.error)
+        } catch (error) {
+          console.error('Error checking connection:', error)
+        }
+      }
+
+      checkConnection()
+
+      // Listen for account changes
+      const handleAccountsChanged = (accounts: string[]) => {
+        if (accounts.length > 0) {
+          setIsConnected(true)
+          setAccount(accounts[0])
+        } else {
+          setIsConnected(false)
+          setAccount('')
+          setNetworkId('')
+          setNetworkName('')
+        }
+      }
+
+      // Listen for network changes
+      const handleChainChanged = (chainId: string) => {
+        getNetworkInfo(chainId)
+      }
+
+      // Add event listeners
+      window.ethereum.on('accountsChanged', handleAccountsChanged)
+      window.ethereum.on('chainChanged', handleChainChanged)
+
+      // Cleanup function
+      return () => {
+        if (window.ethereum.removeListener) {
+          window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+          window.ethereum.removeListener('chainChanged', handleChainChanged)
+        }
+      }
     }
   }, [])
 
@@ -41,6 +198,10 @@ export default function Header() {
       if (accounts.length > 0) {
         setIsConnected(true)
         setAccount(accounts[0])
+        
+        // Get network info
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+        getNetworkInfo(chainId)
       }
     } catch (error) {
       console.error('Error connecting to MetaMask:', error)
@@ -89,9 +250,14 @@ export default function Header() {
           {/* MetaMask Connect Button */}
           <div className="flex items-center">
             {isConnected ? (
-              <div className="flex items-center space-x-3">
-                <div className="text-sm text-gray-300">
-                  {formatAddress(account)}
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <div className="text-sm text-gray-300">
+                    {formatAddress(account)}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {networkName} ({networkId})
+                  </div>
                 </div>
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               </div>

@@ -18,4 +18,5 @@ add header with:
 - 2 menu itemw that will lead to silo finanse page and silo app
 - connect button should be on top right
 - app style should match https://silo.finance/
+- when wallet is connected, diplay also network name and ID
 - do not explain how it works
