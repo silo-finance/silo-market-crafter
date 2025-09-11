@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useWizard } from '@/contexts/WizardContext'
+import ResetButton from '@/components/ResetButton'
 
 interface WizardLayoutProps {
   children: React.ReactNode
@@ -63,6 +64,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {/* Main Content */}
         <div className={`transition-all duration-300 ${isSummaryOpen ? 'w-2/3' : 'w-full'}`}>
           <div className="p-8">
+            {/* Header with Reset Button */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Silo Market Creator</h1>
+                <p className="text-gray-400">Create a new Silo market step by step</p>
+              </div>
+              <ResetButton />
+            </div>
             {children}
           </div>
         </div>

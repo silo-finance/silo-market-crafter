@@ -125,7 +125,13 @@ export default function Step1Assets() {
         decimals: wizardData.token0.decimals,
         name: wizardData.token0.name
       })
+    } else {
+      // Clear local state when wizard data is reset
+      setToken0Address('')
+      setToken0Metadata(null)
+      setToken0Error('')
     }
+    
     if (wizardData.token1) {
       setToken1Address(wizardData.token1.address)
       setToken1Metadata({
@@ -133,6 +139,11 @@ export default function Step1Assets() {
         decimals: wizardData.token1.decimals,
         name: wizardData.token1.name
       })
+    } else {
+      // Clear local state when wizard data is reset
+      setToken1Address('')
+      setToken1Metadata(null)
+      setToken1Error('')
     }
   }, [wizardData.token0, wizardData.token1])
 

@@ -65,6 +65,7 @@ interface WizardContextType {
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
   resetWizard: () => void
+  resetWizardWithCache: () => void
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined)
@@ -122,6 +123,25 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(initialWizardData)
   }
 
+  const resetWizardWithCache = () => {
+    // Clear all localStorage cache
+    if (typeof window !== 'undefined') {
+      const cacheKeys = [
+        'silo-wizard-token0-address',
+        'silo-wizard-token1-address', 
+        'silo-wizard-token0-metadata',
+        'silo-wizard-token1-metadata'
+      ]
+      
+      cacheKeys.forEach(key => {
+        localStorage.removeItem(key)
+      })
+    }
+    
+    // Reset wizard data
+    setWizardData(initialWizardData)
+  }
+
   return (
     <WizardContext.Provider
       value={{
@@ -134,7 +154,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
-        resetWizard
+        resetWizard,
+        resetWizardWithCache
       }}
     >
       {children}
