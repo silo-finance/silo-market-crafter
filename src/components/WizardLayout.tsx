@@ -398,7 +398,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <div className="space-y-3 text-sm">
                   {/* Token 0 Configuration */}
                   <div>
-                    <div className="text-gray-400 mb-2">Token 0 ({wizardData.token0?.symbol}):</div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-gray-400">Token 0 ({wizardData.token0?.symbol}):</div>
+                      {wizardData.borrowConfiguration.token0.nonBorrowable && (
+                        <span className="text-red-400 text-xs font-medium bg-red-900/20 px-2 py-1 rounded">
+                          Non-borrowable
+                        </span>
+                      )}
+                    </div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div className="bg-gray-700 rounded p-2">
                         <div className="text-blue-400">LT</div>
@@ -417,7 +424,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
                   {/* Token 1 Configuration */}
                   <div>
-                    <div className="text-gray-400 mb-2">Token 1 ({wizardData.token1?.symbol}):</div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-gray-400">Token 1 ({wizardData.token1?.symbol}):</div>
+                      {wizardData.borrowConfiguration.token1.nonBorrowable && (
+                        <span className="text-red-400 text-xs font-medium bg-red-900/20 px-2 py-1 rounded">
+                          Non-borrowable
+                        </span>
+                      )}
+                    </div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div className="bg-gray-700 rounded p-2">
                         <div className="text-blue-400">LT</div>

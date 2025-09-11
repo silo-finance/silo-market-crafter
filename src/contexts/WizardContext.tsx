@@ -48,11 +48,13 @@ export interface IRMConfig {
 
 export interface BorrowConfiguration {
   token0: {
+    nonBorrowable: boolean
     liquidationThreshold: number // 0-100%
     maxLTV: number // 0-100%, must be <= liquidationThreshold
     liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
   }
   token1: {
+    nonBorrowable: boolean
     liquidationThreshold: number // 0-100%
     maxLTV: number // 0-100%, must be <= liquidationThreshold
     liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold

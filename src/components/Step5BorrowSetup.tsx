@@ -9,6 +9,8 @@ interface InputComponentProps {
   label: string
   value: number
   max?: number
+  disabled?: boolean
+  error?: string
   onChange: (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => void
 }
 
@@ -18,11 +20,13 @@ const InputComponent = React.memo(({
   label, 
   value, 
   max = 100,
+  disabled = false,
+  error,
   onChange
 }: InputComponentProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-white">
+      <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
         {label}
       </label>
       <div className="relative w-24">
@@ -31,35 +35,67 @@ const InputComponent = React.memo(({
           min="0"
           max={max}
           step="1"
-          value={value}
+          value={value === 0 ? '' : value}
+          disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+          className={`w-full border rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent text-center ${
+            disabled 
+              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed' 
+              : error
+              ? 'bg-gray-700 border-red-500 text-white focus:ring-red-500'
+              : 'bg-gray-700 border-gray-600 text-white focus:ring-blue-500'
+          }`}
           placeholder="0"
         />
-        <div className="absolute right-3 top-2 text-gray-400 text-sm">
+        <div className={`absolute right-3 top-2 text-sm ${disabled ? 'text-gray-600' : 'text-gray-400'}`}>
           %
         </div>
       </div>
+      {error && !disabled && (
+        <div className="text-red-400 text-xs mt-1 max-w-48">
+          {error}
+        </div>
+      )}
     </div>
   )
 })
 
 InputComponent.displayName = 'InputComponent'
 
+interface ValidationErrors {
+  token0: {
+    liquidationThreshold?: string
+    maxLTV?: string
+    liquidationTargetLTV?: string
+  }
+  token1: {
+    liquidationThreshold?: string
+    maxLTV?: string
+    liquidationTargetLTV?: string
+  }
+}
+
 export default function Step5BorrowSetup() {
   const { wizardData, updateBorrowConfiguration, updateStep, markStepCompleted } = useWizard()
   
   const [borrowConfig, setBorrowConfig] = useState<BorrowConfiguration>({
     token0: {
-      liquidationThreshold: 80,
-      maxLTV: 75,
-      liquidationTargetLTV: 70
+      nonBorrowable: false,
+      liquidationThreshold: 0,
+      maxLTV: 0,
+      liquidationTargetLTV: 0
     },
     token1: {
-      liquidationThreshold: 80,
-      maxLTV: 75,
-      liquidationTargetLTV: 70
+      nonBorrowable: false,
+      liquidationThreshold: 0,
+      maxLTV: 0,
+      liquidationTargetLTV: 0
     }
+  })
+
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    token0: {},
+    token1: {}
   })
 
   // Load existing configuration if available
@@ -69,35 +105,91 @@ export default function Step5BorrowSetup() {
     }
   }, [wizardData.borrowConfiguration])
 
+
+  const validateValue = (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: number, config: BorrowConfiguration) => {
+    const tokenConfig = config[`token${tokenIndex}`]
+    const errors: string[] = []
+
+    // Basic range validation
+    if (value < 0 || value > 100) {
+      errors.push('Value must be between 0 and 100')
+    }
+
+    // Validation rules
+    if (field === 'maxLTV' && value > tokenConfig.liquidationThreshold) {
+      errors.push('Max LTV must be less than or equal to Liquidation Threshold')
+    }
+
+    if (field === 'liquidationTargetLTV' && value >= tokenConfig.liquidationThreshold) {
+      errors.push('Liquidation Target LTV must be less than Liquidation Threshold')
+    }
+
+    if (field === 'liquidationThreshold') {
+      if (tokenConfig.maxLTV > value) {
+        errors.push('Liquidation Threshold must be greater than or equal to Max LTV')
+      }
+      if (tokenConfig.liquidationTargetLTV >= value) {
+        errors.push('Liquidation Threshold must be greater than Liquidation Target LTV')
+      }
+    }
+
+    return errors.length > 0 ? errors.join(', ') : undefined
+  }
+
   const handleInputChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => {
     const numValue = parseInt(value) || 0
-    const clampedValue = Math.max(0, Math.min(100, numValue))
     
     setBorrowConfig(prevConfig => {
       const newConfig = { ...prevConfig }
-      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: clampedValue }
+      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: numValue }
       
-      // Apply validation rules
+      // Validate all fields for this token since they might be interdependent
       const tokenConfig = newConfig[`token${tokenIndex}`]
-      
-      // maxLTV must be <= liquidationThreshold
-      if (field === 'liquidationThreshold' && tokenConfig.maxLTV > clampedValue) {
-        tokenConfig.maxLTV = clampedValue
-      }
-      if (field === 'maxLTV' && clampedValue > tokenConfig.liquidationThreshold) {
-        tokenConfig.maxLTV = tokenConfig.liquidationThreshold
+      const newErrors = {
+        liquidationThreshold: validateValue(tokenIndex, 'liquidationThreshold', tokenConfig.liquidationThreshold, newConfig),
+        maxLTV: validateValue(tokenIndex, 'maxLTV', tokenConfig.maxLTV, newConfig),
+        liquidationTargetLTV: validateValue(tokenIndex, 'liquidationTargetLTV', tokenConfig.liquidationTargetLTV, newConfig)
       }
       
-      // liquidationTargetLTV must be < liquidationThreshold
-      if (field === 'liquidationThreshold' && tokenConfig.liquidationTargetLTV >= clampedValue) {
-        tokenConfig.liquidationTargetLTV = Math.max(0, clampedValue - 1)
-      }
-      if (field === 'liquidationTargetLTV' && clampedValue >= tokenConfig.liquidationThreshold) {
-        tokenConfig.liquidationTargetLTV = Math.max(0, tokenConfig.liquidationThreshold - 1)
-      }
+      // Update validation errors
+      setValidationErrors(prevErrors => ({
+        ...prevErrors,
+        [`token${tokenIndex}`]: newErrors
+      }))
       
       return newConfig
     })
+  }, [])
+
+  const handleNonBorrowableChange = useCallback((tokenIndex: 0 | 1, checked: boolean) => {
+    setBorrowConfig(prevConfig => {
+      const newConfig = { ...prevConfig }
+      
+      if (checked) {
+        // If this token is being marked as non-borrowable, unmark the other token
+        const otherTokenIndex = tokenIndex === 0 ? 1 : 0
+        newConfig[`token${otherTokenIndex}`] = {
+          ...newConfig[`token${otherTokenIndex}`],
+          nonBorrowable: false
+        }
+      }
+      
+      newConfig[`token${tokenIndex}`] = { 
+        ...newConfig[`token${tokenIndex}`], 
+        nonBorrowable: checked,
+        // Set all values to 0 when non-borrowable is checked, leave empty when unchecked
+        liquidationThreshold: checked ? 0 : 0,
+        maxLTV: checked ? 0 : 0,
+        liquidationTargetLTV: checked ? 0 : 0
+      }
+      return newConfig
+    })
+
+    // Clear validation errors when toggling non-borrowable
+    setValidationErrors(prevErrors => ({
+      ...prevErrors,
+      [`token${tokenIndex}`]: {}
+    }))
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -131,12 +223,27 @@ export default function Step5BorrowSetup() {
               Borrow Configuration for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
+            {/* Non-borrowable checkbox */}
+            <div className="mb-6">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={borrowConfig.token0.nonBorrowable}
+                  onChange={(e) => handleNonBorrowableChange(0, e.target.checked)}
+                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-white font-medium">Non-borrowable</span>
+              </label>
+            </div>
+            
             <div className="space-y-6">
               <InputComponent
                 tokenIndex={0}
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token0.liquidationThreshold}
+                disabled={borrowConfig.token0.nonBorrowable}
+                error={validationErrors.token0.liquidationThreshold}
                 onChange={handleInputChange}
               />
               
@@ -145,7 +252,9 @@ export default function Step5BorrowSetup() {
                 field="maxLTV"
                 label="Max LTV"
                 value={borrowConfig.token0.maxLTV}
-                max={borrowConfig.token0.liquidationThreshold}
+                max={borrowConfig.token0.liquidationThreshold || 100}
+                disabled={borrowConfig.token0.nonBorrowable}
+                error={validationErrors.token0.maxLTV}
                 onChange={handleInputChange}
               />
               
@@ -154,7 +263,9 @@ export default function Step5BorrowSetup() {
                 field="liquidationTargetLTV"
                 label="Liquidation Target LTV"
                 value={borrowConfig.token0.liquidationTargetLTV}
-                max={borrowConfig.token0.liquidationThreshold - 1}
+                max={Math.max(0, (borrowConfig.token0.liquidationThreshold || 100) - 1)}
+                disabled={borrowConfig.token0.nonBorrowable}
+                error={validationErrors.token0.liquidationTargetLTV}
                 onChange={handleInputChange}
               />
             </div>
@@ -166,12 +277,27 @@ export default function Step5BorrowSetup() {
               Borrow Configuration for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
+            {/* Non-borrowable checkbox */}
+            <div className="mb-6">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={borrowConfig.token1.nonBorrowable}
+                  onChange={(e) => handleNonBorrowableChange(1, e.target.checked)}
+                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-white font-medium">Non-borrowable</span>
+              </label>
+            </div>
+            
             <div className="space-y-6">
               <InputComponent
                 tokenIndex={1}
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token1.liquidationThreshold}
+                disabled={borrowConfig.token1.nonBorrowable}
+                error={validationErrors.token1.liquidationThreshold}
                 onChange={handleInputChange}
               />
               
@@ -180,7 +306,9 @@ export default function Step5BorrowSetup() {
                 field="maxLTV"
                 label="Max LTV"
                 value={borrowConfig.token1.maxLTV}
-                max={borrowConfig.token1.liquidationThreshold}
+                max={borrowConfig.token1.liquidationThreshold || 100}
+                disabled={borrowConfig.token1.nonBorrowable}
+                error={validationErrors.token1.maxLTV}
                 onChange={handleInputChange}
               />
               
@@ -189,7 +317,9 @@ export default function Step5BorrowSetup() {
                 field="liquidationTargetLTV"
                 label="Liquidation Target LTV"
                 value={borrowConfig.token1.liquidationTargetLTV}
-                max={borrowConfig.token1.liquidationThreshold - 1}
+                max={Math.max(0, (borrowConfig.token1.liquidationThreshold || 100) - 1)}
+                disabled={borrowConfig.token1.nonBorrowable}
+                error={validationErrors.token1.liquidationTargetLTV}
                 onChange={handleInputChange}
               />
             </div>
