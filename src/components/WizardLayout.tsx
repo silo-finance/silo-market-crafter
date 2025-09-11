@@ -191,7 +191,23 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(6) ? '✓' : '6'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 6: Deploy Market</div>
+                  <div className="text-sm font-medium text-white">Step 6: Fees</div>
+                  <div className="text-xs text-gray-400">Configure token fees</div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  wizardData.completedSteps.includes(7) 
+                    ? 'bg-green-600 text-white' 
+                    : wizardData.currentStep === 7 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-400'
+                }`}>
+                  {wizardData.completedSteps.includes(7) ? '✓' : '7'}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Step 7: Deploy Market</div>
                   <div className="text-xs text-gray-400">Deploy the complete market</div>
                 </div>
               </div>
@@ -444,6 +460,60 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       <div className="bg-gray-700 rounded p-2">
                         <div className="text-blue-400">Target LTV</div>
                         <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.liquidationTargetLTV}%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Fees Configuration Details */}
+            {wizardData.feesConfiguration && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Fees Configuration</h3>
+                <div className="space-y-3 text-sm">
+                  {/* Token 0 Fees */}
+                  <div>
+                    <div className="text-gray-400 mb-2">Token 0 ({wizardData.token0?.symbol}):</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">DAO Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.daoFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Deployer Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.deployerFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Liquidation Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.liquidationFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Flashloan Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.flashloanFee}%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Token 1 Fees */}
+                  <div>
+                    <div className="text-gray-400 mb-2">Token 1 ({wizardData.token1?.symbol}):</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">DAO Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.daoFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Deployer Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.deployerFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Liquidation Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.liquidationFee}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Flashloan Fee</div>
+                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.flashloanFee}%</div>
                       </div>
                     </div>
                   </div>

@@ -61,6 +61,21 @@ export interface BorrowConfiguration {
   }
 }
 
+export interface FeesConfiguration {
+  token0: {
+    daoFee: number // 0-20%, step 0.01
+    deployerFee: number // 0-20%, step 0.01
+    liquidationFee: number // 0-20%, step 0.01
+    flashloanFee: number // 0-20%, step 0.01
+  }
+  token1: {
+    daoFee: number // 0-20%, step 0.01
+    deployerFee: number // 0-20%, step 0.01
+    liquidationFee: number // 0-20%, step 0.01
+    flashloanFee: number // 0-20%, step 0.01
+  }
+}
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -73,6 +88,7 @@ export interface WizardData {
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
   borrowConfiguration: BorrowConfiguration | null
+  feesConfiguration: FeesConfiguration | null
 }
 
 export enum StepStatus {
@@ -94,6 +110,7 @@ interface WizardContextType {
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
+  updateFeesConfiguration: (config: FeesConfiguration) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -111,7 +128,8 @@ const initialWizardData: WizardData = {
   oracleConfiguration: null,
   selectedIRM0: null,
   selectedIRM1: null,
-  borrowConfiguration: null
+  borrowConfiguration: null,
+  feesConfiguration: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -188,6 +206,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, borrowConfiguration: config }))
   }
 
+  const updateFeesConfiguration = (config: FeesConfiguration) => {
+    setWizardData(prev => ({ ...prev, feesConfiguration: config }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -227,6 +249,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateSelectedIRM0,
         updateSelectedIRM1,
         updateBorrowConfiguration,
+        updateFeesConfiguration,
         resetWizard,
         resetWizardWithCache
       }}
