@@ -104,8 +104,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(2) ? '✓' : '2'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 2: Silo Configuration</div>
-                  <div className="text-xs text-gray-400">Configure first silo</div>
+                  <div className="text-sm font-medium text-white">Step 2: Oracle Types</div>
+                  <div className="text-xs text-gray-400">Choose oracle types</div>
                 </div>
               </div>
 
@@ -218,6 +218,45 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       {wizardData.token1.address.slice(0, 6)}...{wizardData.token1.address.slice(-4)}
                     </a>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Oracle Type Details */}
+            {wizardData.oracleType0 && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Token 0 Oracle</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Type:</span>
+                    <span className="text-white capitalize">
+                      {wizardData.oracleType0.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+                    </span>
+                  </div>
+                  {wizardData.oracleType0.reason && (
+                    <div className="text-xs text-gray-400">
+                      {wizardData.oracleType0.reason}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {wizardData.oracleType1 && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Token 1 Oracle</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Type:</span>
+                    <span className="text-white capitalize">
+                      {wizardData.oracleType1.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+                    </span>
+                  </div>
+                  {wizardData.oracleType1.reason && (
+                    <div className="text-xs text-gray-400">
+                      {wizardData.oracleType1.reason}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
