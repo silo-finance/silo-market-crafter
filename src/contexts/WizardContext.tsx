@@ -46,6 +46,36 @@ export interface IRMConfig {
   }
 }
 
+export interface BorrowConfiguration {
+  token0: {
+    nonBorrowable: boolean
+    liquidationThreshold: number // 0-100%
+    maxLTV: number // 0-100%, must be <= liquidationThreshold
+    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+  }
+  token1: {
+    nonBorrowable: boolean
+    liquidationThreshold: number // 0-100%
+    maxLTV: number // 0-100%, must be <= liquidationThreshold
+    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+  }
+}
+
+export interface FeesConfiguration {
+  token0: {
+    daoFee: number // 0-20%, step 0.01
+    deployerFee: number // 0-20%, step 0.01
+    liquidationFee: number // 0-20%, step 0.01
+    flashloanFee: number // 0-20%, step 0.01
+  }
+  token1: {
+    daoFee: number // 0-20%, step 0.01
+    deployerFee: number // 0-20%, step 0.01
+    liquidationFee: number // 0-20%, step 0.01
+    flashloanFee: number // 0-20%, step 0.01
+  }
+}
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -57,6 +87,8 @@ export interface WizardData {
   oracleConfiguration: OracleConfiguration | null
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
+  borrowConfiguration: BorrowConfiguration | null
+  feesConfiguration: FeesConfiguration | null
 }
 
 export enum StepStatus {
@@ -77,6 +109,8 @@ interface WizardContextType {
   updateOracleConfiguration: (config: OracleConfiguration) => void
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
+  updateBorrowConfiguration: (config: BorrowConfiguration) => void
+  updateFeesConfiguration: (config: FeesConfiguration) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -93,7 +127,9 @@ const initialWizardData: WizardData = {
   oracleType1: null,
   oracleConfiguration: null,
   selectedIRM0: null,
-  selectedIRM1: null
+  selectedIRM1: null,
+  borrowConfiguration: null,
+  feesConfiguration: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -166,6 +202,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, selectedIRM1: irm }))
   }
 
+  const updateBorrowConfiguration = (config: BorrowConfiguration) => {
+    setWizardData(prev => ({ ...prev, borrowConfiguration: config }))
+  }
+
+  const updateFeesConfiguration = (config: FeesConfiguration) => {
+    setWizardData(prev => ({ ...prev, feesConfiguration: config }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -204,6 +248,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleConfiguration,
         updateSelectedIRM0,
         updateSelectedIRM1,
+        updateBorrowConfiguration,
+        updateFeesConfiguration,
         resetWizard,
         resetWizardWithCache
       }}

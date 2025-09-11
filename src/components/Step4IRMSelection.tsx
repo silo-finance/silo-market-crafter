@@ -218,9 +218,6 @@ export default function Step4IRMSelection() {
                           <div className="flex items-center justify-between">
                             <h4 className="text-sm font-semibold text-white">
                               {irm.name}
-                              {!isSearchMatch && (
-                                <span className="text-yellow-400 text-xs ml-2">(selected)</span>
-                              )}
                             </h4>
                             {isSelected && (
                               <span className="text-green-400 text-xs font-medium">
@@ -294,9 +291,6 @@ export default function Step4IRMSelection() {
                           <div className="flex items-center justify-between">
                             <h4 className="text-sm font-semibold text-white">
                               {irm.name}
-                              {!isSearchMatch && (
-                                <span className="text-yellow-400 text-xs ml-2">(selected)</span>
-                              )}
                             </h4>
                             {isSelected && (
                               <span className="text-green-400 text-xs font-medium">
@@ -349,7 +343,7 @@ export default function Step4IRMSelection() {
             disabled={!selectedIRM0 || !selectedIRM1}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
-            <span>Deploy Market</span>
+            <span>Borrow Setup</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
