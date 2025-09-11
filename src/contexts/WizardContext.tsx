@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 export interface TokenData {
   address: string
@@ -83,6 +83,30 @@ const initialWizardData: WizardData = {
 
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardData] = useState<WizardData>(initialWizardData)
+  const [isClient, setIsClient] = useState(false)
+
+  // Load saved data after component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true)
+    
+    // Load from localStorage if available
+    const saved = localStorage.getItem('silo-wizard-data')
+    if (saved) {
+      try {
+        const parsedData = JSON.parse(saved)
+        setWizardData(parsedData)
+      } catch (err) {
+        console.warn('Failed to parse saved wizard data:', err)
+      }
+    }
+  }, [])
+
+  // Save wizard data to localStorage whenever it changes (client-side only)
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('silo-wizard-data', JSON.stringify(wizardData))
+    }
+  }, [wizardData, isClient])
 
   const updateStep = (step: number) => {
     setWizardData(prev => ({ ...prev, currentStep: step }))
@@ -130,7 +154,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         'silo-wizard-token0-address',
         'silo-wizard-token1-address', 
         'silo-wizard-token0-metadata',
-        'silo-wizard-token1-metadata'
+        'silo-wizard-token1-metadata',
+        'silo-wizard-data'
       ]
       
       cacheKeys.forEach(key => {

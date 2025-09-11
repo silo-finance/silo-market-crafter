@@ -298,7 +298,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       <div>
                         <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token0.scalerOracle?.name}</div>
                         <div className="text-gray-400 text-xs">
-                          Factor: {wizardData.oracleConfiguration.token0.scalerOracle?.scaleFactor}e
+                          Factor: {wizardData.oracleConfiguration.token0.scalerOracle?.scaleFactor}
                         </div>
                         <a 
                           href={getBlockExplorerUrl(wizardData.oracleConfiguration.token0.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}
@@ -321,7 +321,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       <div>
                         <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token1.scalerOracle?.name}</div>
                         <div className="text-gray-400 text-xs">
-                          Factor: {wizardData.oracleConfiguration.token1.scalerOracle?.scaleFactor}e
+                          Factor: {wizardData.oracleConfiguration.token1.scalerOracle?.scaleFactor}
                         </div>
                         <a 
                           href={getBlockExplorerUrl(wizardData.oracleConfiguration.token1.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}

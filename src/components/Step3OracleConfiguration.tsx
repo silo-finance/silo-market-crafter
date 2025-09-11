@@ -15,6 +15,22 @@ interface OracleDeployments {
   }
 }
 
+// Helper function to format scale factor in scientific notation
+const formatScaleFactor = (scaleFactor: bigint): string => {
+  const factor = Number(scaleFactor)
+  if (factor === 0) return '0'
+  if (factor === 1) return '1'
+  
+  // Convert to scientific notation
+  const scientific = factor.toExponential()
+  
+  // Remove unnecessary decimal places and trailing zeros
+  const [mantissa, exponent] = scientific.split('e')
+  const cleanMantissa = parseFloat(mantissa).toString()
+  
+  return `${cleanMantissa}e${exponent}`
+}
+
 export default function Step3OracleConfiguration() {
   const { wizardData, updateOracleConfiguration, markStepCompleted, updateStep } = useWizard()
   
@@ -113,7 +129,7 @@ export default function Step3OracleConfiguration() {
             if (quoteToken.toLowerCase() === tokenAddress.toLowerCase()) {
               // Get scale factor
               const scaleFactor = await contract.SCALE_FACTOR()
-              const scaleFactorFormatted = ethers.formatEther(scaleFactor)
+              const scaleFactorFormatted = formatScaleFactor(scaleFactor)
               
               validOracles.push({
                 name: oracle.name,
@@ -326,7 +342,7 @@ export default function Step3OracleConfiguration() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
-                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}e</span>
+                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
                         </div>
                         <a 
                           href={getBlockExplorerUrl(oracle.address)}
@@ -413,7 +429,7 @@ export default function Step3OracleConfiguration() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
-                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}e</span>
+                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
                         </div>
                         <a 
                           href={getBlockExplorerUrl(oracle.address)}

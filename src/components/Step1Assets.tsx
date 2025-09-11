@@ -34,49 +34,60 @@ export default function Step1Assets() {
     TOKEN1_METADATA: 'silo-wizard-token1-metadata'
   }
 
-  // Initialize state with cached values
-  const [token0Address, setToken0Address] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS) || ''
-    }
-    return ''
-  })
-  const [token1Address, setToken1Address] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS) || ''
-    }
-    return ''
-  })
-  const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
-      return cached ? JSON.parse(cached) : null
-    }
-    return null
-  })
-  const [token1Metadata, setToken1Metadata] = useState<TokenMetadata | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
-      return cached ? JSON.parse(cached) : null
-    }
-    return null
-  })
+  // Initialize state with empty values to avoid hydration mismatch
+  const [token0Address, setToken0Address] = useState('')
+  const [token1Address, setToken1Address] = useState('')
+  const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(null)
+  const [token1Metadata, setToken1Metadata] = useState<TokenMetadata | null>(null)
   const [token0Loading, setToken0Loading] = useState(false)
   const [token1Loading, setToken1Loading] = useState(false)
   const [token0Error, setToken0Error] = useState('')
   const [token1Error, setToken1Error] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isClient, setIsClient] = useState(false)
+
+  // Load cached values after component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true)
+    
+    // Load cached values from localStorage
+    const cachedToken0Address = localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS) || ''
+    const cachedToken1Address = localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS) || ''
+    const cachedToken0Metadata = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
+    const cachedToken1Metadata = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
+    
+    if (cachedToken0Address) {
+      setToken0Address(cachedToken0Address)
+    }
+    if (cachedToken1Address) {
+      setToken1Address(cachedToken1Address)
+    }
+    if (cachedToken0Metadata) {
+      try {
+        setToken0Metadata(JSON.parse(cachedToken0Metadata))
+      } catch (err) {
+        console.warn('Failed to parse cached token0 metadata:', err)
+      }
+    }
+    if (cachedToken1Metadata) {
+      try {
+        setToken1Metadata(JSON.parse(cachedToken1Metadata))
+      } catch (err) {
+        console.warn('Failed to parse cached token1 metadata:', err)
+      }
+    }
+  }, [])
 
   // Cache utility functions
   const saveToCache = (key: string, value: string) => {
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       localStorage.setItem(key, value)
     }
   }
 
   const saveMetadataToCache = (key: string, metadata: TokenMetadata | null) => {
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       if (metadata) {
         localStorage.setItem(key, JSON.stringify(metadata))
       } else {
@@ -116,7 +127,7 @@ export default function Step1Assets() {
     setToken1Loading(tempLoading)
   }
 
-  // Load existing data if available
+  // Load existing data if available (from wizard context or cache)
   useEffect(() => {
     if (wizardData.token0) {
       setToken0Address(wizardData.token0.address)
@@ -125,6 +136,21 @@ export default function Step1Assets() {
         decimals: wizardData.token0.decimals,
         name: wizardData.token0.name
       })
+    } else if (isClient) {
+      // If no wizard data but we're on client, try to load from cache
+      const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS)
+      const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
+      
+      if (cachedAddress) {
+        setToken0Address(cachedAddress)
+      }
+      if (cachedMetadata) {
+        try {
+          setToken0Metadata(JSON.parse(cachedMetadata))
+        } catch (err) {
+          console.warn('Failed to parse cached token0 metadata:', err)
+        }
+      }
     } else {
       // Clear local state when wizard data is reset
       setToken0Address('')
@@ -139,13 +165,28 @@ export default function Step1Assets() {
         decimals: wizardData.token1.decimals,
         name: wizardData.token1.name
       })
+    } else if (isClient) {
+      // If no wizard data but we're on client, try to load from cache
+      const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS)
+      const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
+      
+      if (cachedAddress) {
+        setToken1Address(cachedAddress)
+      }
+      if (cachedMetadata) {
+        try {
+          setToken1Metadata(JSON.parse(cachedMetadata))
+        } catch (err) {
+          console.warn('Failed to parse cached token1 metadata:', err)
+        }
+      }
     } else {
       // Clear local state when wizard data is reset
       setToken1Address('')
       setToken1Metadata(null)
       setToken1Error('')
     }
-  }, [wizardData.token0, wizardData.token1])
+  }, [wizardData.token0, wizardData.token1, isClient])
 
   // Get network info on component mount
   useEffect(() => {
