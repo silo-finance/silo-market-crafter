@@ -26,6 +26,15 @@ function debounce<T extends (...args: any[]) => any>(
 export default function Step1Assets() {
   const { wizardData, updateToken0, updateToken1, updateNetworkInfo, markStepCompleted, updateStep } = useWizard()
   
+  // Cache keys for localStorage
+  const CACHE_KEYS = {
+    TOKEN0_ADDRESS: 'silo-wizard-token0-address',
+    TOKEN1_ADDRESS: 'silo-wizard-token1-address',
+    TOKEN0_METADATA: 'silo-wizard-token0-metadata',
+    TOKEN1_METADATA: 'silo-wizard-token1-metadata'
+  }
+
+  // Initialize state with empty values to avoid hydration mismatch
   const [token0Address, setToken0Address] = useState('')
   const [token1Address, setToken1Address] = useState('')
   const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(null)
@@ -36,6 +45,57 @@ export default function Step1Assets() {
   const [token1Error, setToken1Error] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isClient, setIsClient] = useState(false)
+
+  // Load cached values after component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true)
+    
+    // Load cached values from localStorage
+    const cachedToken0Address = localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS) || ''
+    const cachedToken1Address = localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS) || ''
+    const cachedToken0Metadata = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
+    const cachedToken1Metadata = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
+    
+    if (cachedToken0Address) {
+      setToken0Address(cachedToken0Address)
+    }
+    if (cachedToken1Address) {
+      setToken1Address(cachedToken1Address)
+    }
+    if (cachedToken0Metadata) {
+      try {
+        setToken0Metadata(JSON.parse(cachedToken0Metadata))
+      } catch (err) {
+        console.warn('Failed to parse cached token0 metadata:', err)
+      }
+    }
+    if (cachedToken1Metadata) {
+      try {
+        setToken1Metadata(JSON.parse(cachedToken1Metadata))
+      } catch (err) {
+        console.warn('Failed to parse cached token1 metadata:', err)
+      }
+    }
+  }, [CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
+
+  // Cache utility functions
+  const saveToCache = (key: string, value: string) => {
+    if (isClient) {
+      localStorage.setItem(key, value)
+    }
+  }
+
+  const saveMetadataToCache = useCallback((key: string, metadata: TokenMetadata | null) => {
+    if (isClient) {
+      if (metadata) {
+        localStorage.setItem(key, JSON.stringify(metadata))
+      } else {
+        localStorage.removeItem(key)
+      }
+    }
+  }, [isClient])
+
 
   const switchAddresses = () => {
     // Swap addresses
@@ -43,10 +103,18 @@ export default function Step1Assets() {
     setToken0Address(token1Address)
     setToken1Address(tempAddress)
 
+    // Save swapped addresses to cache
+    saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, token1Address)
+    saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, tempAddress)
+
     // Swap metadata
     const tempMetadata = token0Metadata
     setToken0Metadata(token1Metadata)
     setToken1Metadata(tempMetadata)
+
+    // Save swapped metadata to cache
+    saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, token1Metadata)
+    saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, tempMetadata)
 
     // Swap errors
     const tempError = token0Error
@@ -59,7 +127,7 @@ export default function Step1Assets() {
     setToken1Loading(tempLoading)
   }
 
-  // Load existing data if available
+  // Load existing data if available (from wizard context or cache)
   useEffect(() => {
     if (wizardData.token0) {
       setToken0Address(wizardData.token0.address)
@@ -68,7 +136,28 @@ export default function Step1Assets() {
         decimals: wizardData.token0.decimals,
         name: wizardData.token0.name
       })
+    } else if (isClient) {
+      // If no wizard data but we're on client, try to load from cache
+      const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS)
+      const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
+      
+      if (cachedAddress) {
+        setToken0Address(cachedAddress)
+      }
+      if (cachedMetadata) {
+        try {
+          setToken0Metadata(JSON.parse(cachedMetadata))
+        } catch (err) {
+          console.warn('Failed to parse cached token0 metadata:', err)
+        }
+      }
+    } else {
+      // Clear local state when wizard data is reset
+      setToken0Address('')
+      setToken0Metadata(null)
+      setToken0Error('')
     }
+    
     if (wizardData.token1) {
       setToken1Address(wizardData.token1.address)
       setToken1Metadata({
@@ -76,8 +165,28 @@ export default function Step1Assets() {
         decimals: wizardData.token1.decimals,
         name: wizardData.token1.name
       })
+    } else if (isClient) {
+      // If no wizard data but we're on client, try to load from cache
+      const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS)
+      const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
+      
+      if (cachedAddress) {
+        setToken1Address(cachedAddress)
+      }
+      if (cachedMetadata) {
+        try {
+          setToken1Metadata(JSON.parse(cachedMetadata))
+        } catch (err) {
+          console.warn('Failed to parse cached token1 metadata:', err)
+        }
+      }
+    } else {
+      // Clear local state when wizard data is reset
+      setToken1Address('')
+      setToken1Metadata(null)
+      setToken1Error('')
     }
-  }, [wizardData.token0, wizardData.token1])
+  }, [wizardData.token0, wizardData.token1, isClient, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
 
   // Get network info on component mount
   useEffect(() => {
@@ -248,18 +357,26 @@ export default function Step1Assets() {
       if (tokenType === 'token0') {
         setToken0Metadata(metadata)
         setToken0Error('')
+        // Save metadata to cache
+        saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, metadata)
       } else {
         setToken1Metadata(metadata)
         setToken1Error('')
+        // Save metadata to cache
+        saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, metadata)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch token metadata'
       if (tokenType === 'token0') {
         setToken0Metadata(null)
         setToken0Error(errorMessage)
+        // Clear metadata from cache on error
+        saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, null)
       } else {
         setToken1Metadata(null)
         setToken1Error(errorMessage)
+        // Clear metadata from cache on error
+        saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, null)
       }
     } finally {
       if (tokenType === 'token0') {
@@ -268,7 +385,7 @@ export default function Step1Assets() {
         setToken1Loading(false)
       }
     }
-  }, [])
+  }, [CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, saveMetadataToCache])
 
   // Debounced validation for token0
   const debouncedValidateToken0 = debounce((address: string) => {
@@ -416,6 +533,9 @@ export default function Step1Assets() {
                     const value = e.target.value
                     setToken0Address(value)
                     
+                    // Save to cache
+                    saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, value)
+                    
                     // Clear any existing errors when user starts typing
                     if (token0Error) {
                       setToken0Error('')
@@ -477,6 +597,9 @@ export default function Step1Assets() {
                     const value = e.target.value
                     setToken1Address(value)
                     
+                    // Save to cache
+                    saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, value)
+                    
                     // Clear any existing errors when user starts typing
                     if (token1Error) {
                       setToken1Error('')
@@ -521,17 +644,17 @@ export default function Step1Assets() {
           </div>
         )}
 
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back to Landing</span>
-          </button>
+         <div className="flex justify-between">
+           <button
+             type="button"
+             onClick={() => window.history.back()}
+             className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+           >
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+             </svg>
+             <span>Back to Landing</span>
+           </button>
           <button
             type="submit"
             disabled={loading || !token0Metadata || !token1Metadata || !!token0Error || !!token1Error}
