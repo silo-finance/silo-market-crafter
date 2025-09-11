@@ -353,7 +353,7 @@ export default function Step4IRMSelection() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Back to Step 3</span>
+            <span>Oracle Configuration</span>
           </button>
           
           <button
@@ -361,7 +361,7 @@ export default function Step4IRMSelection() {
             disabled={!selectedIRM0 || !selectedIRM1}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
-            <span>Continue to Step 5</span>
+            <span>Deploy Market</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
