@@ -111,6 +111,7 @@ interface WizardContextType {
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
   updateFeesConfiguration: (config: FeesConfiguration) => void
+  generateJSONConfig: () => string
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -210,6 +211,39 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, feesConfiguration: config }))
   }
 
+  const generateJSONConfig = () => {
+    const config = {
+      deployer: "",
+      hookReceiver: "CLONE_IMPLEMENTATION",
+      hookReceiverImplementation: "SiloHookV1.sol",
+      daoFee: wizardData.feesConfiguration?.token0.daoFee ? Math.round(wizardData.feesConfiguration.token0.daoFee * 100) : 0,
+      deployerFee: wizardData.feesConfiguration?.token0.deployerFee ? Math.round(wizardData.feesConfiguration.token0.deployerFee * 100) : 0,
+      token0: wizardData.token0?.symbol || "",
+      solvencyOracle0: wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE",
+      maxLtvOracle0: "NO_ORACLE",
+      interestRateModel0: "InterestRateModelV2Factory.sol",
+      interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
+      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.round(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
+      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
+      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token0.liquidationTargetLTV * 100) : 0,
+      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.round(wizardData.feesConfiguration.token0.liquidationFee * 100) : 0,
+      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.round(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
+      callBeforeQuote0: false,
+      token1: wizardData.token1?.symbol || "",
+      solvencyOracle1: wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE",
+      maxLtvOracle1: "NO_ORACLE",
+      interestRateModel1: "InterestRateModelV2Factory.sol",
+      interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
+      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.round(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
+      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
+      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token1.liquidationTargetLTV * 100) : 0,
+      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.round(wizardData.feesConfiguration.token1.liquidationFee * 100) : 0,
+      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.round(wizardData.feesConfiguration.token1.flashloanFee * 100) : 0,
+      callBeforeQuote1: false
+    }
+    return JSON.stringify(config, null, 4)
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -250,6 +284,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateSelectedIRM1,
         updateBorrowConfiguration,
         updateFeesConfiguration,
+        generateJSONConfig,
         resetWizard,
         resetWizardWithCache
       }}

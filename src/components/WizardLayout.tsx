@@ -207,8 +207,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(7) ? '✓' : '7'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 7: Deploy Market</div>
-                  <div className="text-xs text-gray-400">Deploy the complete market</div>
+                  <div className="text-sm font-medium text-white">Step 7: JSON Config</div>
+                  <div className="text-xs text-gray-400">Generate and download configuration</div>
                 </div>
               </div>
             </div>
