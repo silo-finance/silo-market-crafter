@@ -23,11 +23,6 @@ export default function WizardPage() {
     }
   }
 
-  const goToNextStep = () => {
-    if (wizardData.currentStep < 4) {
-      updateStep(wizardData.currentStep + 1)
-    }
-  }
 
   const renderCurrentStep = () => {
     switch (wizardData.currentStep) {

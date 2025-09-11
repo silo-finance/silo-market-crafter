@@ -77,7 +77,7 @@ export default function Step1Assets() {
         console.warn('Failed to parse cached token1 metadata:', err)
       }
     }
-  }, [])
+  }, [CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
 
   // Cache utility functions
   const saveToCache = (key: string, value: string) => {
@@ -86,7 +86,7 @@ export default function Step1Assets() {
     }
   }
 
-  const saveMetadataToCache = (key: string, metadata: TokenMetadata | null) => {
+  const saveMetadataToCache = useCallback((key: string, metadata: TokenMetadata | null) => {
     if (isClient) {
       if (metadata) {
         localStorage.setItem(key, JSON.stringify(metadata))
@@ -94,7 +94,7 @@ export default function Step1Assets() {
         localStorage.removeItem(key)
       }
     }
-  }
+  }, [isClient])
 
 
   const switchAddresses = () => {
@@ -186,7 +186,7 @@ export default function Step1Assets() {
       setToken1Metadata(null)
       setToken1Error('')
     }
-  }, [wizardData.token0, wizardData.token1, isClient])
+  }, [wizardData.token0, wizardData.token1, isClient, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
 
   // Get network info on component mount
   useEffect(() => {
@@ -385,7 +385,7 @@ export default function Step1Assets() {
         setToken1Loading(false)
       }
     }
-  }, [])
+  }, [CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, saveMetadataToCache])
 
   // Debounced validation for token0
   const debouncedValidateToken0 = debounce((address: string) => {

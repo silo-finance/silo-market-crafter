@@ -4,10 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
 
-interface OracleDeployment {
-  name: string
-  address: string
-}
 
 interface OracleDeployments {
   [chainName: string]: {
@@ -107,7 +103,7 @@ export default function Step3OracleConfiguration() {
       }
 
       // Validate oracles for each token
-      const validateOraclesForToken = async (tokenAddress: string, tokenSymbol: string) => {
+      const validateOraclesForToken = async (tokenAddress: string) => {
         const validOracles: ScalerOracle[] = []
 
         for (const oracle of scalerOracles) {
@@ -147,8 +143,8 @@ export default function Step3OracleConfiguration() {
 
       // Validate for both tokens
       const [token0Oracles, token1Oracles] = await Promise.all([
-        validateOraclesForToken(wizardData.token0.address, wizardData.token0.symbol),
-        validateOraclesForToken(wizardData.token1.address, wizardData.token1.symbol)
+        validateOraclesForToken(wizardData.token0.address),
+        validateOraclesForToken(wizardData.token1.address)
       ])
 
       setAvailableScalers({
@@ -314,12 +310,14 @@ export default function Step3OracleConfiguration() {
                     <span className="text-yellow-400 font-medium">No Compatible Scaler Oracles Found</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    No scaler oracles found that match this token's address.
+                    {/* eslint-disable-next-line react/no-unescaped-entities */}
+                    No scaler oracles found that match this token&apos;s address.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
                   {availableScalers.token0.map((oracle) => (
@@ -401,12 +399,14 @@ export default function Step3OracleConfiguration() {
                     <span className="text-yellow-400 font-medium">No Compatible Scaler Oracles Found</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    No scaler oracles found that match this token's address.
+                    {/* eslint-disable-next-line react/no-unescaped-entities */}
+                    No scaler oracles found that match this token&apos;s address.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
                   {availableScalers.token1.map((oracle) => (
