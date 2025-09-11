@@ -191,17 +191,6 @@ export default function Step6Fees() {
           </div>
         </div>
 
-        {/* Fee Information */}
-        <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4 mb-6">
-          <h4 className="text-blue-400 font-semibold mb-2">Fee Information:</h4>
-          <ul className="text-sm text-gray-300 space-y-1">
-            <li>• All fees range from 0% to 20% with 0.01% precision</li>
-            <li>• DAO Fee: Fee paid to the DAO for protocol maintenance</li>
-            <li>• Deployer Fee: Fee paid to the market deployer</li>
-            <li>• Liquidation Fee: Fee charged during liquidations</li>
-            <li>• Flashloan Fee: Fee charged for flashloan operations</li>
-          </ul>
-        </div>
 
         {/* Navigation */}
         <div className="flex justify-between">
