@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useWizard } from '@/contexts/WizardContext'
 
 interface WizardLayoutProps {
@@ -10,6 +10,20 @@ interface WizardLayoutProps {
 export default function WizardLayout({ children }: WizardLayoutProps) {
   const { wizardData } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
+  const summaryRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when wizard data changes
+  useEffect(() => {
+    if (summaryRef.current && isSummaryOpen) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        summaryRef.current?.scrollTo({
+          top: summaryRef.current.scrollHeight,
+          behavior: 'smooth'
+        })
+      }, 100)
+    }
+  }, [wizardData, isSummaryOpen])
 
   const getBlockExplorerUrl = (address: string, chainId: string) => {
     const networkMap: { [key: string]: string } = {
@@ -55,7 +69,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar */}
         <div className={`${isSummaryOpen ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="bg-gray-900 border-l border-gray-800 h-screen p-6">
+          <div ref={summaryRef} className="bg-gray-900 border-l border-gray-800 h-screen p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Market Setup Summary</h2>
               <button
@@ -120,8 +134,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(3) ? '✓' : '3'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 3: Second Silo</div>
-                  <div className="text-xs text-gray-400">Configure second silo</div>
+                  <div className="text-sm font-medium text-white">Step 3: Oracle Configuration</div>
+                  <div className="text-xs text-gray-400">Configure oracle settings</div>
                 </div>
               </div>
 
@@ -257,6 +271,60 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       {wizardData.oracleType1.reason}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Oracle Configuration Details */}
+            {wizardData.oracleConfiguration && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Oracle Configuration</h3>
+                <div className="space-y-3 text-sm">
+                  {/* Token 0 Configuration */}
+                  <div>
+                    <div className="text-gray-400 mb-1">Token 0 ({wizardData.token0?.symbol}):</div>
+                    {wizardData.oracleConfiguration.token0.type === 'none' ? (
+                      <div className="text-green-400">No oracle - value equals amount</div>
+                    ) : (
+                      <div>
+                        <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token0.scalerOracle?.name}</div>
+                        <div className="text-gray-400 text-xs">
+                          Factor: {wizardData.oracleConfiguration.token0.scalerOracle?.scaleFactor}e
+                        </div>
+                        <a 
+                          href={getBlockExplorerUrl(wizardData.oracleConfiguration.token0.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 text-xs"
+                        >
+                          {wizardData.oracleConfiguration.token0.scalerOracle?.address.slice(0, 6)}...{wizardData.oracleConfiguration.token0.scalerOracle?.address.slice(-4)}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Token 1 Configuration */}
+                  <div>
+                    <div className="text-gray-400 mb-1">Token 1 ({wizardData.token1?.symbol}):</div>
+                    {wizardData.oracleConfiguration.token1.type === 'none' ? (
+                      <div className="text-green-400">No oracle - value equals amount</div>
+                    ) : (
+                      <div>
+                        <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token1.scalerOracle?.name}</div>
+                        <div className="text-gray-400 text-xs">
+                          Factor: {wizardData.oracleConfiguration.token1.scalerOracle?.scaleFactor}e
+                        </div>
+                        <a 
+                          href={getBlockExplorerUrl(wizardData.oracleConfiguration.token1.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 text-xs"
+                        >
+                          {wizardData.oracleConfiguration.token1.scalerOracle?.address.slice(0, 6)}...{wizardData.oracleConfiguration.token1.scalerOracle?.address.slice(-4)}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

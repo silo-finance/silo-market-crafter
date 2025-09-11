@@ -20,6 +20,23 @@ export interface OracleType {
   reason?: string
 }
 
+export interface ScalerOracle {
+  name: string
+  address: string
+  scaleFactor: string
+}
+
+export interface OracleConfiguration {
+  token0: {
+    type: 'none' | 'scaler'
+    scalerOracle?: ScalerOracle
+  }
+  token1: {
+    type: 'none' | 'scaler'
+    scalerOracle?: ScalerOracle
+  }
+}
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -28,6 +45,7 @@ export interface WizardData {
   networkInfo: NetworkInfo | null
   oracleType0: OracleType | null
   oracleType1: OracleType | null
+  oracleConfiguration: OracleConfiguration | null
 }
 
 export enum StepStatus {
@@ -45,6 +63,7 @@ interface WizardContextType {
   updateNetworkInfo: (networkInfo: NetworkInfo) => void
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
+  updateOracleConfiguration: (config: OracleConfiguration) => void
   resetWizard: () => void
 }
 
@@ -57,7 +76,8 @@ const initialWizardData: WizardData = {
   token1: null,
   networkInfo: null,
   oracleType0: null,
-  oracleType1: null
+  oracleType1: null,
+  oracleConfiguration: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -94,6 +114,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, oracleType1: oracleType }))
   }
 
+  const updateOracleConfiguration = (config: OracleConfiguration) => {
+    setWizardData(prev => ({ ...prev, oracleConfiguration: config }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -109,6 +133,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateNetworkInfo,
         updateOracleType0,
         updateOracleType1,
+        updateOracleConfiguration,
         resetWizard
       }}
     >
