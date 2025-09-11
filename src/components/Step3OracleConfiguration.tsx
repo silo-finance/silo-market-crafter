@@ -27,6 +27,26 @@ const formatScaleFactor = (scaleFactor: bigint): string => {
   return `${cleanMantissa}e${exponent}`
 }
 
+// Helper function to validate if scaler can be used with token decimals
+const validateScalerForToken = (scaleFactor: bigint, tokenDecimals: number): { valid: boolean; resultDecimals: number } => {
+  // Calculate: 10^token_decimals * Factor
+  const tokenMultiplier = Math.pow(10, tokenDecimals)
+  const factor = Number(scaleFactor)
+  const result = tokenMultiplier * factor
+  
+  // Check if result equals 1e18 (10^18)
+  const targetValue = Math.pow(10, 18)
+  const tolerance = 1e-10 // Small tolerance for floating point comparison
+  
+  const valid = Math.abs(result - targetValue) < tolerance
+  
+  // Calculate what decimals the result would have
+  const resultDecimals = Math.log10(result)
+  
+  
+  return { valid, resultDecimals }
+}
+
 export default function Step3OracleConfiguration() {
   const { wizardData, updateOracleConfiguration, markStepCompleted, updateStep } = useWizard()
   
@@ -103,7 +123,7 @@ export default function Step3OracleConfiguration() {
       }
 
       // Validate oracles for each token
-      const validateOraclesForToken = async (tokenAddress: string) => {
+      const validateOraclesForToken = async (tokenAddress: string, tokenDecimals: number) => {
         const validOracles: ScalerOracle[] = []
 
         for (const oracle of scalerOracles) {
@@ -127,10 +147,15 @@ export default function Step3OracleConfiguration() {
               const scaleFactor = await contract.SCALE_FACTOR()
               const scaleFactorFormatted = formatScaleFactor(scaleFactor)
               
+              // Validate if this scaler can be used with the token
+              const validation = validateScalerForToken(scaleFactor, tokenDecimals)
+              
               validOracles.push({
                 name: oracle.name,
                 address: oracle.address,
-                scaleFactor: scaleFactorFormatted
+                scaleFactor: scaleFactorFormatted,
+                valid: validation.valid,
+                resultDecimals: validation.resultDecimals
               })
             }
           } catch (err) {
@@ -143,13 +168,36 @@ export default function Step3OracleConfiguration() {
 
       // Validate for both tokens
       const [token0Oracles, token1Oracles] = await Promise.all([
-        validateOraclesForToken(wizardData.token0.address),
-        validateOraclesForToken(wizardData.token1.address)
+        validateOraclesForToken(wizardData.token0.address, wizardData.token0.decimals),
+        validateOraclesForToken(wizardData.token1.address, wizardData.token1.decimals)
       ])
 
       setAvailableScalers({
         token0: token0Oracles,
         token1: token1Oracles
+      })
+
+      // Update selected scalers with new validation results
+      setSelectedScalers(prev => {
+        const updated = { ...prev }
+        
+        // Update token0 if it's selected and we have a matching oracle with new validation
+        if (prev.token0) {
+          const updatedOracle = token0Oracles.find(o => o.address === prev.token0?.address)
+          if (updatedOracle) {
+            updated.token0 = updatedOracle
+          }
+        }
+        
+        // Update token1 if it's selected and we have a matching oracle with new validation
+        if (prev.token1) {
+          const updatedOracle = token1Oracles.find(o => o.address === prev.token1?.address)
+          if (updatedOracle) {
+            updated.token1 = updatedOracle
+          }
+        }
+        
+        return updated
       })
     }
 
@@ -180,8 +228,14 @@ export default function Step3OracleConfiguration() {
       if (wizardData.oracleType0.type === 'scaler' && !selectedScalers.token0) {
         throw new Error('Please select a scaler oracle for Token 0')
       }
+      if (wizardData.oracleType0.type === 'scaler' && selectedScalers.token0 && !selectedScalers.token0.valid) {
+        throw new Error('Selected scaler oracle for Token 0 is not valid for this token')
+      }
       if (wizardData.oracleType1.type === 'scaler' && !selectedScalers.token1) {
         throw new Error('Please select a scaler oracle for Token 1')
+      }
+      if (wizardData.oracleType1.type === 'scaler' && selectedScalers.token1 && !selectedScalers.token1.valid) {
+        throw new Error('Selected scaler oracle for Token 1 is not valid for this token')
       }
 
       // Create oracle configuration
@@ -275,8 +329,11 @@ export default function Step3OracleConfiguration() {
           <h3 className="text-lg font-semibold text-white mb-4">
             {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-gray-400 mb-2">
             Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+          </p>
+          <p className="text-sm text-gray-400 mb-4">
+            Token Decimals: {wizardData.token0.decimals}
           </p>
           
           {wizardData.oracleType0.type === 'none' ? (
@@ -323,10 +380,12 @@ export default function Step3OracleConfiguration() {
                   {availableScalers.token0.map((oracle) => (
                     <label
                       key={oracle.address}
-                      className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                        selectedScalers.token0?.address === oracle.address
-                          ? 'border-blue-500 bg-blue-900/20'
-                          : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                      className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
+                        !oracle.valid
+                          ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                          : selectedScalers.token0?.address === oracle.address
+                          ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                          : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                       }`}
                     >
                       <input
@@ -335,12 +394,20 @@ export default function Step3OracleConfiguration() {
                         value={oracle.address}
                         checked={selectedScalers.token0?.address === oracle.address}
                         onChange={() => setSelectedScalers(prev => ({ ...prev, token0: oracle }))}
+                        disabled={!oracle.valid}
                         className="mt-1"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
-                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                            {oracle.valid ? (
+                              <span className="text-green-400 text-xs">✓ Valid</span>
+                            ) : (
+                              <span className="text-red-400 text-xs">✗ Invalid</span>
+                            )}
+                          </div>
                         </div>
                         <a 
                           href={getBlockExplorerUrl(oracle.address)}
@@ -350,6 +417,16 @@ export default function Step3OracleConfiguration() {
                         >
                           {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
                         </a>
+                        {!oracle.valid && oracle.resultDecimals && (
+                          <div className="mt-2 text-xs text-red-400">
+                            This scaler will provide price in {Math.round(oracle.resultDecimals)} decimals, but price must be in 18 decimals.
+                          </div>
+                        )}
+                        {oracle.valid && (
+                          <div className="mt-2 text-xs text-green-400">
+                            This scaler correctly scales the token price to 18 decimals for proper market calculations.
+                          </div>
+                        )}
                       </div>
                     </label>
                   ))}
@@ -364,8 +441,11 @@ export default function Step3OracleConfiguration() {
           <h3 className="text-lg font-semibold text-white mb-4">
             {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-gray-400 mb-2">
             Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+          </p>
+          <p className="text-sm text-gray-400 mb-4">
+            Token Decimals: {wizardData.token1.decimals}
           </p>
           
           {wizardData.oracleType1.type === 'none' ? (
@@ -412,10 +492,12 @@ export default function Step3OracleConfiguration() {
                   {availableScalers.token1.map((oracle) => (
                     <label
                       key={oracle.address}
-                      className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                        selectedScalers.token1?.address === oracle.address
-                          ? 'border-blue-500 bg-blue-900/20'
-                          : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                      className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
+                        !oracle.valid
+                          ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                          : selectedScalers.token1?.address === oracle.address
+                          ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                          : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                       }`}
                     >
                       <input
@@ -424,12 +506,20 @@ export default function Step3OracleConfiguration() {
                         value={oracle.address}
                         checked={selectedScalers.token1?.address === oracle.address}
                         onChange={() => setSelectedScalers(prev => ({ ...prev, token1: oracle }))}
+                        disabled={!oracle.valid}
                         className="mt-1"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
-                          <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                            {oracle.valid ? (
+                              <span className="text-green-400 text-xs">✓ Valid</span>
+                            ) : (
+                              <span className="text-red-400 text-xs">✗ Invalid</span>
+                            )}
+                          </div>
                         </div>
                         <a 
                           href={getBlockExplorerUrl(oracle.address)}
@@ -439,6 +529,16 @@ export default function Step3OracleConfiguration() {
                         >
                           {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
                         </a>
+                        {!oracle.valid && oracle.resultDecimals && (
+                          <div className="mt-2 text-xs text-red-400">
+                            This scaler will provide price in {Math.round(oracle.resultDecimals)} decimals, but price must be in 18 decimals.
+                          </div>
+                        )}
+                        {oracle.valid && (
+                          <div className="mt-2 text-xs text-green-400">
+                            This scaler correctly scales the token price to 18 decimals for proper market calculations.
+                          </div>
+                        )}
                       </div>
                     </label>
                   ))}
@@ -456,6 +556,7 @@ export default function Step3OracleConfiguration() {
           </div>
         )}
 
+
         <div className="flex justify-between">
           <button
             type="button"
@@ -469,7 +570,9 @@ export default function Step3OracleConfiguration() {
           </button>
           <button
             type="submit"
-            disabled={loading || (wizardData.oracleType0.type === 'scaler' && !selectedScalers.token0) || (wizardData.oracleType1.type === 'scaler' && !selectedScalers.token1)}
+            disabled={loading || 
+              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || !selectedScalers.token0.valid)) || 
+              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || !selectedScalers.token1.valid))}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

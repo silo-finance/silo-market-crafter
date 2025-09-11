@@ -24,6 +24,8 @@ export interface ScalerOracle {
   name: string
   address: string
   scaleFactor: string
+  valid: boolean
+  resultDecimals?: number
 }
 
 export interface OracleConfiguration {
