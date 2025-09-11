@@ -6,7 +6,7 @@ import { useWizard, IRMConfig } from '@/contexts/WizardContext'
 interface IRMConfigItem {
   name: string
   config: {
-    [key: string]: any
+    [key: string]: string | number | boolean
   }
 }
 
@@ -15,7 +15,7 @@ type IRMDeployments = IRMConfigItem[]
 export default function Step4IRMSelection() {
   const { wizardData, updateSelectedIRM0, updateSelectedIRM1, updateStep, markStepCompleted } = useWizard()
   
-  const [irmDeployments, setIrmDeployments] = useState<IRMDeployments | null>(null)
+  const [, setIrmDeployments] = useState<IRMDeployments | null>(null)
   const [availableIRMs, setAvailableIRMs] = useState<IRMConfig[]>([])
   const [filteredIRMs, setFilteredIRMs] = useState<IRMConfig[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,18 +24,6 @@ export default function Step4IRMSelection() {
   const [selectedIRM0, setSelectedIRM0] = useState<IRMConfig | null>(wizardData.selectedIRM0)
   const [selectedIRM1, setSelectedIRM1] = useState<IRMConfig | null>(wizardData.selectedIRM1)
 
-  // Chain ID to chain name mapping
-  const getChainName = (chainId: string): string => {
-    const chainMap: { [key: string]: string } = {
-      '1': 'mainnet',
-      '137': 'polygon',
-      '10': 'optimism',
-      '42161': 'arbitrum_one',
-      '43114': 'avalanche',
-      '146': 'sonic'
-    }
-    return chainMap[chainId] || 'mainnet'
-  }
 
   // Fetch IRM configurations from GitHub
   useEffect(() => {
@@ -123,7 +111,7 @@ export default function Step4IRMSelection() {
     updateStep(3)
   }
 
-  const formatParameterValue = (value: any): string => {
+  const formatParameterValue = (value: string | number | boolean): string => {
     if (typeof value === 'object') {
       return JSON.stringify(value, null, 2)
     }

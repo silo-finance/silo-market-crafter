@@ -42,7 +42,7 @@ export interface OracleConfiguration {
 export interface IRMConfig {
   name: string
   config: {
-    [key: string]: any
+    [key: string]: string | number | boolean
   }
 }
 
