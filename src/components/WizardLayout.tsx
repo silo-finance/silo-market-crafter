@@ -175,7 +175,23 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(5) ? '✓' : '5'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 5: Deploy Market</div>
+                  <div className="text-sm font-medium text-white">Step 5: Borrow Setup</div>
+                  <div className="text-xs text-gray-400">Configure borrowing parameters</div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  wizardData.completedSteps.includes(6) 
+                    ? 'bg-green-600 text-white' 
+                    : wizardData.currentStep === 6 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-400'
+                }`}>
+                  {wizardData.completedSteps.includes(6) ? '✓' : '6'}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Step 6: Deploy Market</div>
                   <div className="text-xs text-gray-400">Deploy the complete market</div>
                 </div>
               </div>
@@ -371,6 +387,52 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       <span className="text-white font-medium">{wizardData.selectedIRM1.name}</span>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Borrow Configuration Details */}
+            {wizardData.borrowConfiguration && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Borrow Configuration</h3>
+                <div className="space-y-3 text-sm">
+                  {/* Token 0 Configuration */}
+                  <div>
+                    <div className="text-gray-400 mb-2">Token 0 ({wizardData.token0?.symbol}):</div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">LT</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.liquidationThreshold}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Max LTV</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.maxLTV}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Target LTV</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.liquidationTargetLTV}%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Token 1 Configuration */}
+                  <div>
+                    <div className="text-gray-400 mb-2">Token 1 ({wizardData.token1?.symbol}):</div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">LT</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.liquidationThreshold}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Max LTV</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.maxLTV}%</div>
+                      </div>
+                      <div className="bg-gray-700 rounded p-2">
+                        <div className="text-blue-400">Target LTV</div>
+                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.liquidationTargetLTV}%</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

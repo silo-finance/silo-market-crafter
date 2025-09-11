@@ -5,6 +5,7 @@ import { useWizard } from '@/contexts/WizardContext'
 import WizardLayout from '@/components/WizardLayout'
 import Step1Assets from '@/components/Step1Assets'
 import Step4IRMSelection from '@/components/Step4IRMSelection'
+import Step5BorrowSetup from '@/components/Step5BorrowSetup'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
@@ -36,18 +37,20 @@ export default function WizardPage() {
       case 4:
         return <Step4IRMSelection />
       case 5:
+        return <Step5BorrowSetup />
+      case 6:
         return (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-white mb-4">
-                Step 5: Deploy Market
+                Step 6: Deploy Market
               </h1>
               <p className="text-gray-300 text-lg">
                 Deploy your complete market
               </p>
             </div>
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
-              <p className="text-gray-400">Step 5 implementation coming soon...</p>
+              <p className="text-gray-400">Step 6 implementation coming soon...</p>
             </div>
             <div className="flex justify-between">
               <button
@@ -57,7 +60,7 @@ export default function WizardPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>IRM Selection</span>
+                <span>Borrow Setup</span>
               </button>
               <button
                 className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"

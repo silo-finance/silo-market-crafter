@@ -46,6 +46,19 @@ export interface IRMConfig {
   }
 }
 
+export interface BorrowConfiguration {
+  token0: {
+    liquidationThreshold: number // 0-100%
+    maxLTV: number // 0-100%, must be <= liquidationThreshold
+    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+  }
+  token1: {
+    liquidationThreshold: number // 0-100%
+    maxLTV: number // 0-100%, must be <= liquidationThreshold
+    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+  }
+}
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -57,6 +70,7 @@ export interface WizardData {
   oracleConfiguration: OracleConfiguration | null
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
+  borrowConfiguration: BorrowConfiguration | null
 }
 
 export enum StepStatus {
@@ -77,6 +91,7 @@ interface WizardContextType {
   updateOracleConfiguration: (config: OracleConfiguration) => void
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
+  updateBorrowConfiguration: (config: BorrowConfiguration) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -93,7 +108,8 @@ const initialWizardData: WizardData = {
   oracleType1: null,
   oracleConfiguration: null,
   selectedIRM0: null,
-  selectedIRM1: null
+  selectedIRM1: null,
+  borrowConfiguration: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -166,6 +182,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, selectedIRM1: irm }))
   }
 
+  const updateBorrowConfiguration = (config: BorrowConfiguration) => {
+    setWizardData(prev => ({ ...prev, borrowConfiguration: config }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -204,6 +224,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleConfiguration,
         updateSelectedIRM0,
         updateSelectedIRM1,
+        updateBorrowConfiguration,
         resetWizard,
         resetWizardWithCache
       }}
