@@ -566,7 +566,7 @@ export default function Step3OracleConfiguration() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Back to Step 2</span>
+            <span>Oracle Types</span>
           </button>
           <button
             type="submit"
@@ -585,7 +585,7 @@ export default function Step3OracleConfiguration() {
               </>
             ) : (
               <>
-                <span>Continue to Step 4</span>
+                <span>IRM Selection</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

@@ -245,7 +245,7 @@ export default function Step2OracleTypes() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Back to Step 1</span>
+            <span>Asset Selection</span>
           </button>
           <button
             type="submit"
@@ -262,7 +262,7 @@ export default function Step2OracleTypes() {
               </>
             ) : (
               <>
-                <span>Continue to Step 3</span>
+                <span>Oracle Configuration</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

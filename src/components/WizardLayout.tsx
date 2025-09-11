@@ -159,7 +159,23 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   {wizardData.completedSteps.includes(4) ? '✓' : '4'}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">Step 4: Deploy Market</div>
+                  <div className="text-sm font-medium text-white">Step 4: IRM Selection</div>
+                  <div className="text-xs text-gray-400">Choose Interest Rate Model</div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  wizardData.completedSteps.includes(5) 
+                    ? 'bg-green-600 text-white' 
+                    : wizardData.currentStep === 5 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-400'
+                }`}>
+                  {wizardData.completedSteps.includes(5) ? '✓' : '5'}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Step 5: Deploy Market</div>
                   <div className="text-xs text-gray-400">Deploy the complete market</div>
                 </div>
               </div>
@@ -334,6 +350,27 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* IRM Selection Details */}
+            {(wizardData.selectedIRM0 || wizardData.selectedIRM1) && (
+              <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Interest Rate Models</h3>
+                <div className="space-y-2 text-sm">
+                  {wizardData.selectedIRM0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Token 0 ({wizardData.token0?.symbol}):</span>
+                      <span className="text-white font-medium">{wizardData.selectedIRM0.name}</span>
+                    </div>
+                  )}
+                  {wizardData.selectedIRM1 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Token 1 ({wizardData.token1?.symbol}):</span>
+                      <span className="text-white font-medium">{wizardData.selectedIRM1.name}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
