@@ -39,6 +39,13 @@ export interface OracleConfiguration {
   }
 }
 
+export interface IRMConfig {
+  name: string
+  config: {
+    [key: string]: any
+  }
+}
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -48,6 +55,8 @@ export interface WizardData {
   oracleType0: OracleType | null
   oracleType1: OracleType | null
   oracleConfiguration: OracleConfiguration | null
+  selectedIRM0: IRMConfig | null
+  selectedIRM1: IRMConfig | null
 }
 
 export enum StepStatus {
@@ -66,6 +75,8 @@ interface WizardContextType {
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
+  updateSelectedIRM0: (irm: IRMConfig) => void
+  updateSelectedIRM1: (irm: IRMConfig) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -80,7 +91,9 @@ const initialWizardData: WizardData = {
   networkInfo: null,
   oracleType0: null,
   oracleType1: null,
-  oracleConfiguration: null
+  oracleConfiguration: null,
+  selectedIRM0: null,
+  selectedIRM1: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -145,6 +158,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, oracleConfiguration: config }))
   }
 
+  const updateSelectedIRM0 = (irm: IRMConfig) => {
+    setWizardData(prev => ({ ...prev, selectedIRM0: irm }))
+  }
+
+  const updateSelectedIRM1 = (irm: IRMConfig) => {
+    setWizardData(prev => ({ ...prev, selectedIRM1: irm }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -181,6 +202,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
+        updateSelectedIRM0,
+        updateSelectedIRM1,
         resetWizard,
         resetWizardWithCache
       }}
