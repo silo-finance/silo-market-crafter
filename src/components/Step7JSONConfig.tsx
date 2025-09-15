@@ -1,10 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 
 export default function Step7JSONConfig() {
-  const { wizardData, generateJSONConfig, updateStep, markStepCompleted } = useWizard()
+  const router = useRouter()
+  const { wizardData, generateJSONConfig, markStepCompleted } = useWizard()
   const [jsonConfig, setJsonConfig] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
 
@@ -40,7 +42,7 @@ export default function Step7JSONConfig() {
   }
 
   const goToPreviousStep = () => {
-    updateStep(6)
+    router.push('/wizard?step=6')
   }
 
   const handleDeploy = () => {

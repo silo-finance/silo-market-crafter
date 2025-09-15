@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
 
 interface FeeInputProps {
@@ -45,7 +46,8 @@ const FeeInput = React.memo(({
 FeeInput.displayName = 'FeeInput'
 
 export default function Step6Fees() {
-  const { wizardData, updateFeesConfiguration, updateStep, markStepCompleted } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateFeesConfiguration, markStepCompleted } = useWizard()
   
   const [feesConfig, setFeesConfig] = useState<FeesConfiguration>({
     token0: {
@@ -87,11 +89,11 @@ export default function Step6Fees() {
     e.preventDefault()
     updateFeesConfiguration(feesConfig)
     markStepCompleted(6)
-    updateStep(7)
+    router.push('/wizard?step=7')
   }
 
   const goToPreviousStep = () => {
-    updateStep(5)
+    router.push('/wizard?step=5')
   }
 
   return (

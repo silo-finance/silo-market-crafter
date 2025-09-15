@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard, IRMConfig } from '@/contexts/WizardContext'
 
 interface IRMConfigItem {
@@ -13,7 +14,8 @@ interface IRMConfigItem {
 type IRMDeployments = IRMConfigItem[]
 
 export default function Step4IRMSelection() {
-  const { wizardData, updateSelectedIRM0, updateSelectedIRM1, updateStep, markStepCompleted } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateSelectedIRM0, updateSelectedIRM1, markStepCompleted } = useWizard()
   
   const [, setIrmDeployments] = useState<IRMDeployments | null>(null)
   const [availableIRMs, setAvailableIRMs] = useState<IRMConfig[]>([])
@@ -104,11 +106,11 @@ export default function Step4IRMSelection() {
     }
     
     markStepCompleted(4)
-    updateStep(5)
+    router.push('/wizard?step=5')
   }
 
   const goToPreviousStep = () => {
-    updateStep(3)
+    router.push('/wizard?step=3')
   }
 
   const formatParameterValue = (value: string | number | boolean): string => {
