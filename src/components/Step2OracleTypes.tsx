@@ -1,10 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard, OracleType } from '@/contexts/WizardContext'
 
 export default function Step2OracleTypes() {
-  const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted, updateStep } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
   const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | null>(null)
   const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | null>(null)
@@ -74,7 +76,7 @@ export default function Step2OracleTypes() {
       markStepCompleted(2)
 
       // Move to next step
-      updateStep(3)
+      router.push('/wizard?step=3')
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -84,7 +86,7 @@ export default function Step2OracleTypes() {
   }
 
   const goToPreviousStep = () => {
-    updateStep(1)
+    router.push('/wizard?step=1')
   }
 
   if (!wizardData.token0 || !wizardData.token1) {

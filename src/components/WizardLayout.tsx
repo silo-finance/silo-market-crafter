@@ -9,7 +9,7 @@ interface WizardLayoutProps {
 }
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
-  const { wizardData } = useWizard()
+  const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
   const summaryRef = useRef<HTMLDivElement>(null)
 
@@ -26,36 +26,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     }
   }, [wizardData, isSummaryOpen])
 
-  const getBlockExplorerUrl = (address: string, chainId: string) => {
-    const networkMap: { [key: string]: string } = {
-      '1': 'https://etherscan.io/address/',
-      '3': 'https://ropsten.etherscan.io/address/',
-      '4': 'https://rinkeby.etherscan.io/address/',
-      '5': 'https://goerli.etherscan.io/address/',
-      '42': 'https://kovan.etherscan.io/address/',
-      '11155111': 'https://sepolia.etherscan.io/address/',
-      '137': 'https://polygonscan.com/address/',
-      '80001': 'https://mumbai.polygonscan.com/address/',
-      '1101': 'https://zkevm.polygonscan.com/address/',
-      '1442': 'https://testnet-zkevm.polygonscan.com/address/',
-      '10': 'https://optimistic.etherscan.io/address/',
-      '420': 'https://goerli-optimism.etherscan.io/address/',
-      '8453': 'https://basescan.org/address/',
-      '84531': 'https://goerli.basescan.org/address/',
-      '42161': 'https://arbiscan.io/address/',
-      '421613': 'https://goerli.arbiscan.io/address/',
-      '56': 'https://bscscan.com/address/',
-      '97': 'https://testnet.bscscan.com/address/',
-      '250': 'https://ftmscan.com/address/',
-      '4002': 'https://testnet.ftmscan.com/address/',
-      '43114': 'https://snowtrace.io/address/',
-      '43113': 'https://testnet.snowtrace.io/address/',
-      '146': 'https://sonicscan.org/address/',
-      '653': 'https://testnet.sonicscan.org/address/'
-    }
-    
-    const baseUrl = networkMap[chainId] || 'https://etherscan.io/address/'
-    return `${baseUrl}${address}`
+
+  if (wizardData.currentStep === 0) {
+    // Landing page - no sidebar
+    return (
+      <div className="min-h-screen bg-black text-white">
+        {children}
+      </div>
+    )
   }
 
   return (
@@ -64,13 +42,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {/* Main Content */}
         <div className={`transition-all duration-300 ${isSummaryOpen ? 'w-2/3' : 'w-full'}`}>
           <div className="p-8">
-            {/* Header with Reset Button */}
+            {/* Header with Navigation and Reset Button */}
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-white">Silo Market Creator</h1>
                 <p className="text-gray-400">Create a new Silo market step by step</p>
               </div>
-              <ResetButton />
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => updateStep(0)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                  title="Back to Landing Page"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Landing</span>
+                </button>
+                <ResetButton />
+              </div>
             </div>
             {children}
           </div>
@@ -80,486 +70,233 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         <div className={`${isSummaryOpen ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div ref={summaryRef} className="bg-gray-900 border-l border-gray-800 h-screen p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Market Setup Summary</h2>
+              <h2 className="text-xl font-semibold text-white">Configuration Summary</h2>
               <button
-                onClick={() => setIsSummaryOpen(!isSummaryOpen)}
+                onClick={() => setIsSummaryOpen(false)}
                 className="text-gray-400 hover:text-white transition-colors"
-                title={isSummaryOpen ? "Hide Summary" : "Show Summary"}
+                title="Hide Summary"
               >
-                {isSummaryOpen ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                )}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            {/* Progress Steps */}
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(1) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 1 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(1) ? '✓' : '1'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 1: Asset Selection</div>
-                  <div className="text-xs text-gray-400">Choose tokens for your market</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(2) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 2 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(2) ? '✓' : '2'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 2: Oracle Types</div>
-                  <div className="text-xs text-gray-400">Choose oracle types</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(3) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 3 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(3) ? '✓' : '3'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 3: Oracle Configuration</div>
-                  <div className="text-xs text-gray-400">Configure oracle settings</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(4) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 4 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(4) ? '✓' : '4'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 4: IRM Selection</div>
-                  <div className="text-xs text-gray-400">Choose Interest Rate Model</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(5) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 5 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(5) ? '✓' : '5'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 5: Borrow Setup</div>
-                  <div className="text-xs text-gray-400">Configure borrowing parameters</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(6) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 6 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(6) ? '✓' : '6'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 6: Fees</div>
-                  <div className="text-xs text-gray-400">Configure token fees</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  wizardData.completedSteps.includes(7) 
-                    ? 'bg-green-600 text-white' 
-                    : wizardData.currentStep === 7 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {wizardData.completedSteps.includes(7) ? '✓' : '7'}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Step 7: Deploy Market</div>
-                  <div className="text-xs text-gray-400">Deploy the complete market</div>
-                </div>
+            {/* Progress Indicator */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Progress</h3>
+              <div className="space-y-2">
+                {[
+                  { step: 1, title: 'Assets', description: 'Select tokens' },
+                  { step: 2, title: 'Oracle Types', description: 'Choose oracle types' },
+                  { step: 3, title: 'Oracle Config', description: 'Configure oracles' },
+                  { step: 4, title: 'IRM Selection', description: 'Select interest rate models' },
+                  { step: 5, title: 'Borrow Setup', description: 'Configure borrowing parameters' },
+                  { step: 6, title: 'Fees', description: 'Set fee parameters' },
+                  { step: 7, title: 'JSON Config', description: 'Generate and download configuration' }
+                ].map((item) => (
+                  <div
+                    key={item.step}
+                    className={`flex items-center space-x-3 p-2 rounded-lg ${
+                      wizardData.currentStep >= item.step
+                        ? 'bg-blue-900/30 border border-blue-700'
+                        : 'bg-gray-800 border border-gray-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        wizardData.currentStep > item.step
+                          ? 'bg-green-600 text-white'
+                          : wizardData.currentStep === item.step
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-600 text-gray-400'
+                      }`}
+                    >
+                      {wizardData.currentStep > item.step ? '✓' : item.step}
+                    </div>
+                    <div>
+                      <div className={`text-sm font-medium ${
+                        wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
+                      }`}>
+                        {item.title}
+                      </div>
+                      <div className="text-xs text-gray-500">{item.description}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Step 1 Details */}
-            {wizardData.networkInfo && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Network Information</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Network:</span>
-                    <span className="text-white">{wizardData.networkInfo.networkName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Chain ID:</span>
-                    <span className="text-white">{wizardData.networkInfo.chainId}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Token Details */}
-            {wizardData.token0 && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Token 0</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Symbol:</span>
-                    <span className="text-white">{wizardData.token0.symbol}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Name:</span>
-                    <span className="text-white">{wizardData.token0.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Decimals:</span>
-                    <span className="text-white">{wizardData.token0.decimals}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Address:</span>
-                    <a 
-                      href={getBlockExplorerUrl(wizardData.token0.address, wizardData.networkInfo?.chainId || '1')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 truncate max-w-32"
-                    >
-                      {wizardData.token0.address.slice(0, 6)}...{wizardData.token0.address.slice(-4)}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {wizardData.token1 && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Token 1</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Symbol:</span>
-                    <span className="text-white">{wizardData.token1.symbol}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Name:</span>
-                    <span className="text-white">{wizardData.token1.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Decimals:</span>
-                    <span className="text-white">{wizardData.token1.decimals}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Address:</span>
-                    <a 
-                      href={getBlockExplorerUrl(wizardData.token1.address, wizardData.networkInfo?.chainId || '1')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 truncate max-w-32"
-                    >
-                      {wizardData.token1.address.slice(0, 6)}...{wizardData.token1.address.slice(-4)}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Oracle Type Details */}
-            {wizardData.oracleType0 && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Token 0 Oracle</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Type:</span>
-                    <span className="text-white capitalize">
-                      {wizardData.oracleType0.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
-                    </span>
-                  </div>
-                  {wizardData.oracleType0.reason && (
-                    <div className="text-xs text-gray-400">
-                      {wizardData.oracleType0.reason}
+            {/* Configuration Details */}
+            <div className="space-y-6">
+              {/* Step 1: Assets */}
+              {wizardData.token0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Selected Assets</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 0</div>
+                      <div className="text-xs text-gray-400">{wizardData.token0.symbol}</div>
+                      <div className="text-xs text-gray-500">{wizardData.token0.address}</div>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {wizardData.oracleType1 && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Token 1 Oracle</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Type:</span>
-                    <span className="text-white capitalize">
-                      {wizardData.oracleType1.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
-                    </span>
-                  </div>
-                  {wizardData.oracleType1.reason && (
-                    <div className="text-xs text-gray-400">
-                      {wizardData.oracleType1.reason}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Oracle Configuration Details */}
-            {wizardData.oracleConfiguration && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Oracle Configuration</h3>
-                <div className="space-y-3 text-sm">
-                  {/* Token 0 Configuration */}
-                  <div>
-                    <div className="text-gray-400 mb-1">Token 0 ({wizardData.token0?.symbol}):</div>
-                    {wizardData.oracleConfiguration.token0.type === 'none' ? (
-                      <div className="text-green-400">No oracle - value equals amount</div>
-                    ) : (
-                      <div>
-                        <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token0.scalerOracle?.name}</div>
-                        <div className="text-gray-400 text-xs">
-                          Factor: {wizardData.oracleConfiguration.token0.scalerOracle?.scaleFactor}
-                        </div>
-                        <a 
-                          href={getBlockExplorerUrl(wizardData.oracleConfiguration.token0.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-xs"
-                        >
-                          {wizardData.oracleConfiguration.token0.scalerOracle?.address.slice(0, 6)}...{wizardData.oracleConfiguration.token0.scalerOracle?.address.slice(-4)}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Token 1 Configuration */}
-                  <div>
-                    <div className="text-gray-400 mb-1">Token 1 ({wizardData.token1?.symbol}):</div>
-                    {wizardData.oracleConfiguration.token1.type === 'none' ? (
-                      <div className="text-green-400">No oracle - value equals amount</div>
-                    ) : (
-                      <div>
-                        <div className="text-white">Scaler Oracle: {wizardData.oracleConfiguration.token1.scalerOracle?.name}</div>
-                        <div className="text-gray-400 text-xs">
-                          Factor: {wizardData.oracleConfiguration.token1.scalerOracle?.scaleFactor}
-                        </div>
-                        <a 
-                          href={getBlockExplorerUrl(wizardData.oracleConfiguration.token1.scalerOracle?.address || '', wizardData.networkInfo?.chainId || '1')}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-xs"
-                        >
-                          {wizardData.oracleConfiguration.token1.scalerOracle?.address.slice(0, 6)}...{wizardData.oracleConfiguration.token1.scalerOracle?.address.slice(-4)}
-                        </a>
+                    {wizardData.token1 && (
+                      <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-white">Token 1</div>
+                        <div className="text-xs text-gray-400">{wizardData.token1.symbol}</div>
+                        <div className="text-xs text-gray-500">{wizardData.token1.address}</div>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* IRM Selection Details */}
-            {(wizardData.selectedIRM0 || wizardData.selectedIRM1) && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Interest Rate Models</h3>
-                <div className="space-y-2 text-sm">
-                  {wizardData.selectedIRM0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Token 0 ({wizardData.token0?.symbol}):</span>
-                      <span className="text-white font-medium">{wizardData.selectedIRM0.name}</span>
+              {/* Step 2: Oracle Types */}
+              {wizardData.oracleType0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Types</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 0 Oracle</div>
+                      <div className="text-xs text-gray-400 capitalize">{String(wizardData.oracleType0)}</div>
                     </div>
-                  )}
-                  {wizardData.selectedIRM1 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Token 1 ({wizardData.token1?.symbol}):</span>
-                      <span className="text-white font-medium">{wizardData.selectedIRM1.name}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Borrow Configuration Details */}
-            {wizardData.borrowConfiguration && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Borrow Configuration</h3>
-                <div className="space-y-3 text-sm">
-                  {/* Token 0 Configuration */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-gray-400">Token 0 ({wizardData.token0?.symbol}):</div>
-                      {wizardData.borrowConfiguration.token0.nonBorrowable && (
-                        <span className="text-red-400 text-xs font-medium bg-red-900/20 px-2 py-1 rounded">
-                          Non-borrowable
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">LT</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.liquidationThreshold}%</div>
+                    {wizardData.oracleType1 && (
+                      <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-white">Token 1 Oracle</div>
+                        <div className="text-xs text-gray-400 capitalize">{String(wizardData.oracleType1)}</div>
                       </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Max LTV</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.maxLTV}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Target LTV</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token0.liquidationTargetLTV}%</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Token 1 Configuration */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-gray-400">Token 1 ({wizardData.token1?.symbol}):</div>
-                      {wizardData.borrowConfiguration.token1.nonBorrowable && (
-                        <span className="text-red-400 text-xs font-medium bg-red-900/20 px-2 py-1 rounded">
-                          Non-borrowable
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">LT</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.liquidationThreshold}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Max LTV</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.maxLTV}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Target LTV</div>
-                        <div className="text-white font-medium">{wizardData.borrowConfiguration.token1.liquidationTargetLTV}%</div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Fees Configuration Details */}
-            {wizardData.feesConfiguration && (
-              <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Fees Configuration</h3>
-                <div className="space-y-3 text-sm">
-                  {/* Token 0 Fees */}
-                  <div>
-                    <div className="text-gray-400 mb-2">Token 0 ({wizardData.token0?.symbol}):</div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">DAO Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.daoFee}%</div>
+              {/* Step 3: Oracle Configuration */}
+              {wizardData.oracleConfiguration && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
+                  <div className="space-y-2">
+                    {wizardData.oracleConfiguration.token0.scalerOracle && (
+                      <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-white">Token 0 Scaler</div>
+                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token0.scalerOracle.name}</div>
+                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token0.scalerOracle.address}</div>
+                        <div className={`text-xs ${wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
+                          {wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        </div>
                       </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Deployer Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.deployerFee}%</div>
+                    )}
+                    {wizardData.oracleConfiguration.token1.scalerOracle && (
+                      <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-white">Token 1 Scaler</div>
+                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token1.scalerOracle.name}</div>
+                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token1.scalerOracle.address}</div>
+                        <div className={`text-xs ${wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
+                          {wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        </div>
                       </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Liquidation Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.liquidationFee}%</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: IRM Selection */}
+              {wizardData.selectedIRM0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Interest Rate Models</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 0 IRM</div>
+                      <div className="text-xs text-gray-400">{wizardData.selectedIRM0.name}</div>
+                    </div>
+                    {wizardData.selectedIRM1 && (
+                      <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-white">Token 1 IRM</div>
+                        <div className="text-xs text-gray-400">{wizardData.selectedIRM1.name}</div>
                       </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Flashloan Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token0.flashloanFee}%</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 5: Borrow Configuration */}
+              {wizardData.borrowConfiguration && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Borrow Configuration</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 0</div>
+                      <div className="text-xs text-gray-400">
+                        {wizardData.borrowConfiguration.token0.nonBorrowable ? (
+                          <span className="text-red-400">Non-borrowable</span>
+                        ) : (
+                          <>
+                            LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
+                            Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
+                            Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
+                          </>
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Token 1 Fees */}
-                  <div>
-                    <div className="text-gray-400 mb-2">Token 1 ({wizardData.token1?.symbol}):</div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">DAO Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.daoFee}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Deployer Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.deployerFee}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Liquidation Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.liquidationFee}%</div>
-                      </div>
-                      <div className="bg-gray-700 rounded p-2">
-                        <div className="text-blue-400">Flashloan Fee</div>
-                        <div className="text-white font-medium">{wizardData.feesConfiguration.token1.flashloanFee}%</div>
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 1</div>
+                      <div className="text-xs text-gray-400">
+                        {wizardData.borrowConfiguration.token1.nonBorrowable ? (
+                          <span className="text-red-400">Non-borrowable</span>
+                        ) : (
+                          <>
+                            LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
+                            Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
+                            Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Toggle Button for Mobile */}
-            <div className="lg:hidden mt-6">
-              <button
-                onClick={() => setIsSummaryOpen(!isSummaryOpen)}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-              >
-                {isSummaryOpen ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span>Hide Summary</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span>Show Summary</span>
-                  </>
-                )}
-              </button>
+              {/* Step 6: Fees Configuration */}
+              {wizardData.feesConfiguration && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Fees Configuration</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 0 Fees</div>
+                      <div className="text-xs text-gray-400">
+                        DAO: {wizardData.feesConfiguration.token0.daoFee}% | 
+                        Deployer: {wizardData.feesConfiguration.token0.deployerFee}% | 
+                        Liquidation: {wizardData.feesConfiguration.token0.liquidationFee}% | 
+                        Flashloan: {wizardData.feesConfiguration.token0.flashloanFee}%
+                      </div>
+                    </div>
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">Token 1 Fees</div>
+                      <div className="text-xs text-gray-400">
+                        DAO: {wizardData.feesConfiguration.token1.daoFee}% | 
+                        Deployer: {wizardData.feesConfiguration.token1.deployerFee}% | 
+                        Liquidation: {wizardData.feesConfiguration.token1.liquidationFee}% | 
+                        Flashloan: {wizardData.feesConfiguration.token1.flashloanFee}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Floating Toggle Button - Only visible when summary is hidden */}
-      {!isSummaryOpen && (
-        <button
-          onClick={() => setIsSummaryOpen(true)}
-          className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
-          title="Show Summary"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-      )}
+        {/* Floating Toggle Button - Only visible when summary is hidden */}
+        {!isSummaryOpen && (
+          <button
+            onClick={() => setIsSummaryOpen(true)}
+            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+            title="Show Summary"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   )
 }

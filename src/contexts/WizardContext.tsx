@@ -111,6 +111,8 @@ interface WizardContextType {
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
   updateFeesConfiguration: (config: FeesConfiguration) => void
+  generateJSONConfig: () => string
+  parseJSONConfig: (jsonString: string) => Promise<boolean>
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -210,6 +212,146 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, feesConfiguration: config }))
   }
 
+  const generateJSONConfig = () => {
+    const config = {
+      deployer: "",
+      hookReceiver: "CLONE_IMPLEMENTATION",
+      hookReceiverImplementation: "SiloHookV1.sol",
+      daoFee: wizardData.feesConfiguration?.token0.daoFee ? Math.round(wizardData.feesConfiguration.token0.daoFee * 100) : 0,
+      deployerFee: wizardData.feesConfiguration?.token0.deployerFee ? Math.round(wizardData.feesConfiguration.token0.deployerFee * 100) : 0,
+      token0: wizardData.token0?.symbol || "",
+      solvencyOracle0: wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE",
+      maxLtvOracle0: "NO_ORACLE",
+      interestRateModel0: "InterestRateModelV2Factory.sol",
+      interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
+      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.round(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
+      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
+      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token0.liquidationTargetLTV * 100) : 0,
+      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.round(wizardData.feesConfiguration.token0.liquidationFee * 100) : 0,
+      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.round(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
+      callBeforeQuote0: false,
+      token1: wizardData.token1?.symbol || "",
+      solvencyOracle1: wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE",
+      maxLtvOracle1: "NO_ORACLE",
+      interestRateModel1: "InterestRateModelV2Factory.sol",
+      interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
+      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.round(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
+      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
+      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token1.liquidationTargetLTV * 100) : 0,
+      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.round(wizardData.feesConfiguration.token1.liquidationFee * 100) : 0,
+      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.round(wizardData.feesConfiguration.token1.flashloanFee * 100) : 0,
+      callBeforeQuote1: false
+    }
+    return JSON.stringify(config, null, 4)
+  }
+
+  const parseJSONConfig = async (jsonString: string): Promise<boolean> => {
+    try {
+      const config = JSON.parse(jsonString)
+      
+      // Parse and prepare all data first
+      const token0Data: TokenData = {
+        address: '', // Will be resolved from symbol
+        symbol: config.token0 || '',
+        decimals: 18, // Default, should be resolved from token data
+        name: config.token0 || ''
+      }
+      
+      const token1Data: TokenData = {
+        address: '', // Will be resolved from symbol
+        symbol: config.token1 || '',
+        decimals: 18, // Default, should be resolved from token data
+        name: config.token1 || ''
+      }
+      
+      // Parse oracle configuration
+      const oracleConfig: OracleConfiguration = {
+        token0: {
+          type: config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : 'scaler',
+          scalerOracle: config.solvencyOracle0 !== 'NO_ORACLE' ? {
+            name: config.solvencyOracle0,
+            address: '', // Will be resolved
+            valid: true,
+            resultDecimals: 18,
+            scaleFactor: '1' // Default scale factor
+          } : undefined
+        },
+        token1: {
+          type: config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : 'scaler',
+          scalerOracle: config.solvencyOracle1 !== 'NO_ORACLE' ? {
+            name: config.solvencyOracle1,
+            address: '', // Will be resolved
+            valid: true,
+            resultDecimals: 18,
+            scaleFactor: '1' // Default scale factor
+          } : undefined
+        }
+      }
+      
+      // Parse IRM configuration
+      const irm0: IRMConfig = {
+        name: config.interestRateModelConfig0 || '',
+        config: {} // Will be fetched from the IRM configs
+      }
+      
+      const irm1: IRMConfig = {
+        name: config.interestRateModelConfig1 || '',
+        config: {} // Will be fetched from the IRM configs
+      }
+      
+      // Parse borrow configuration
+      const borrowConfig: BorrowConfiguration = {
+        token0: {
+          nonBorrowable: config.maxLtv0 === 0 && config.lt0 === 0,
+          liquidationThreshold: config.lt0 ? config.lt0 / 100 : 0,
+          maxLTV: config.maxLtv0 ? config.maxLtv0 / 100 : 0,
+          liquidationTargetLTV: config.liquidationTargetLtv0 ? config.liquidationTargetLtv0 / 100 : 0
+        },
+        token1: {
+          nonBorrowable: config.maxLtv1 === 0 && config.lt1 === 0,
+          liquidationThreshold: config.lt1 ? config.lt1 / 100 : 0,
+          maxLTV: config.maxLtv1 ? config.maxLtv1 / 100 : 0,
+          liquidationTargetLTV: config.liquidationTargetLtv1 ? config.liquidationTargetLtv1 / 100 : 0
+        }
+      }
+      
+      // Parse fees configuration
+      const feesConfig: FeesConfiguration = {
+        token0: {
+          daoFee: config.daoFee ? config.daoFee / 100 : 0,
+          deployerFee: config.deployerFee ? config.deployerFee / 100 : 0,
+          liquidationFee: config.liquidationFee0 ? config.liquidationFee0 / 100 : 0,
+          flashloanFee: config.flashloanFee0 ? config.flashloanFee0 / 100 : 0
+        },
+        token1: {
+          daoFee: 0, // Not in config, using token0 values
+          deployerFee: 0, // Not in config, using token0 values
+          liquidationFee: config.liquidationFee1 ? config.liquidationFee1 / 100 : 0,
+          flashloanFee: config.flashloanFee1 ? config.flashloanFee1 / 100 : 0
+        }
+      }
+      
+      // Set all data in a single update to avoid race conditions
+      const newWizardData = {
+        ...initialWizardData,
+        token0: token0Data,
+        token1: token1Data,
+        oracleConfiguration: oracleConfig,
+        selectedIRM0: irm0,
+        selectedIRM1: irm1,
+        borrowConfiguration: borrowConfig,
+        feesConfiguration: feesConfig
+      }
+      
+      setWizardData(newWizardData)
+      
+      return true
+    } catch (error) {
+      console.error('Error parsing JSON config:', error)
+      return false
+    }
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -250,6 +392,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateSelectedIRM1,
         updateBorrowConfiguration,
         updateFeesConfiguration,
+        generateJSONConfig,
+        parseJSONConfig,
         resetWizard,
         resetWizardWithCache
       }}

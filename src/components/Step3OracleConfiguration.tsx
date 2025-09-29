@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
 
@@ -48,7 +49,8 @@ const validateScalerForToken = (scaleFactor: bigint, tokenDecimals: number): { v
 }
 
 export default function Step3OracleConfiguration() {
-  const { wizardData, updateOracleConfiguration, markStepCompleted, updateStep } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateOracleConfiguration, markStepCompleted } = useWizard()
   
   const [oracleDeployments, setOracleDeployments] = useState<OracleDeployments | null>(null)
   const [availableScalers, setAvailableScalers] = useState<{
@@ -256,7 +258,7 @@ export default function Step3OracleConfiguration() {
       markStepCompleted(3)
 
       // Move to next step
-      updateStep(4)
+      router.push('/wizard?step=4')
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -266,7 +268,7 @@ export default function Step3OracleConfiguration() {
   }
 
   const goToPreviousStep = () => {
-    updateStep(2)
+    router.push('/wizard?step=2')
   }
 
   const getBlockExplorerUrl = (address: string) => {

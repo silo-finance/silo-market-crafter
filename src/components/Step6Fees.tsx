@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
 
 interface FeeInputProps {
@@ -45,7 +46,8 @@ const FeeInput = React.memo(({
 FeeInput.displayName = 'FeeInput'
 
 export default function Step6Fees() {
-  const { wizardData, updateFeesConfiguration, updateStep, markStepCompleted } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateFeesConfiguration, markStepCompleted } = useWizard()
   
   const [feesConfig, setFeesConfig] = useState<FeesConfiguration>({
     token0: {
@@ -87,11 +89,11 @@ export default function Step6Fees() {
     e.preventDefault()
     updateFeesConfiguration(feesConfig)
     markStepCompleted(6)
-    updateStep(7)
+    router.push('/wizard?step=7')
   }
 
   const goToPreviousStep = () => {
-    updateStep(5)
+    router.push('/wizard?step=5')
   }
 
   return (
@@ -209,7 +211,7 @@ export default function Step6Fees() {
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
-            <span>Deploy Market</span>
+            <span>JSON Config</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

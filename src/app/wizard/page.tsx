@@ -1,34 +1,41 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import WizardLayout from '@/components/WizardLayout'
+import LandingPage from '@/components/LandingPage'
 import Step1Assets from '@/components/Step1Assets'
 import Step4IRMSelection from '@/components/Step4IRMSelection'
 import Step5BorrowSetup from '@/components/Step5BorrowSetup'
 import Step6Fees from '@/components/Step6Fees'
+import Step7JSONConfig from '@/components/Step7JSONConfig'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
-export default function WizardPage() {
+function WizardPageContent() {
+  const searchParams = useSearchParams()
   const { wizardData, updateStep } = useWizard()
 
-  // Auto-start wizard if currentStep is 0
+  // Get current step from URL or default to 0
+  const urlStep = searchParams.get('step')
+  const currentStep = urlStep ? parseInt(urlStep, 10) : 0
+  
+  // Update wizard state when URL changes
   useEffect(() => {
-    if (wizardData.currentStep === 0) {
-      updateStep(1)
+    if (currentStep >= 0 && currentStep <= 7 && currentStep !== wizardData.currentStep) {
+      console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
+      updateStep(currentStep)
     }
-  }, [wizardData.currentStep, updateStep])
+  }, [currentStep, wizardData.currentStep, updateStep])
 
-  const goToPreviousStep = () => {
-    if (wizardData.currentStep > 1) {
-      updateStep(wizardData.currentStep - 1)
-    }
-  }
+
 
 
   const renderCurrentStep = () => {
-    switch (wizardData.currentStep) {
+    switch (currentStep) {
+      case 0:
+        return <LandingPage />
       case 1:
         return <Step1Assets />
       case 2:
@@ -42,43 +49,9 @@ export default function WizardPage() {
       case 6:
         return <Step6Fees />
       case 7:
-        return (
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Step 7: Deploy Market
-              </h1>
-              <p className="text-gray-300 text-lg">
-                Deploy your complete market
-              </p>
-            </div>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
-              <p className="text-gray-400">Step 7 implementation coming soon...</p>
-            </div>
-            <div className="flex justify-between">
-              <button
-                onClick={goToPreviousStep}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Fees</span>
-              </button>
-              <button
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-                disabled
-              >
-                <span>Deploy Market</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )
+        return <Step7JSONConfig />
       default:
-        return <Step1Assets />
+        return <LandingPage />
     }
   }
 
@@ -86,5 +59,15 @@ export default function WizardPage() {
     <WizardLayout>
       {renderCurrentStep()}
     </WizardLayout>
+  )
+}
+
+export default function WizardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="text-white">Loading...</div>
+    </div>}>
+      <WizardPageContent />
+    </Suspense>
   )
 }

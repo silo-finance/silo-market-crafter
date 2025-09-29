@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard, BorrowConfiguration } from '@/contexts/WizardContext'
 
 interface InputComponentProps {
@@ -76,7 +77,8 @@ interface ValidationErrors {
 }
 
 export default function Step5BorrowSetup() {
-  const { wizardData, updateBorrowConfiguration, updateStep, markStepCompleted } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateBorrowConfiguration, markStepCompleted } = useWizard()
   
   const [borrowConfig, setBorrowConfig] = useState<BorrowConfiguration>({
     token0: {
@@ -196,11 +198,11 @@ export default function Step5BorrowSetup() {
     e.preventDefault()
     updateBorrowConfiguration(borrowConfig)
     markStepCompleted(5)
-    updateStep(6)
+    router.push('/wizard?step=6')
   }
 
   const goToPreviousStep = () => {
-    updateStep(4)
+    router.push('/wizard?step=4')
   }
 
   return (

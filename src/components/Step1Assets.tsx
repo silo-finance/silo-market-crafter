@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 
@@ -24,7 +25,8 @@ function debounce<T extends (...args: any[]) => any>(
 }
 
 export default function Step1Assets() {
-  const { wizardData, updateToken0, updateToken1, updateNetworkInfo, markStepCompleted, updateStep } = useWizard()
+  const router = useRouter()
+  const { wizardData, updateToken0, updateToken1, updateNetworkInfo, markStepCompleted } = useWizard()
   
   // Cache keys for localStorage
   const CACHE_KEYS = {
@@ -497,7 +499,7 @@ export default function Step1Assets() {
       markStepCompleted(1)
 
       // Move to next step
-      updateStep(2)
+      router.push('/wizard?step=2')
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -647,7 +649,7 @@ export default function Step1Assets() {
          <div className="flex justify-between">
            <button
              type="button"
-             onClick={() => window.history.back()}
+             onClick={() => router.push('/wizard')}
              className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
            >
              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
