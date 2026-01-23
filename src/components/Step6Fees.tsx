@@ -4,21 +4,60 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
 
-interface FeeInputProps {
-  tokenIndex: 0 | 1
-  field: 'daoFee' | 'deployerFee' | 'liquidationFee' | 'flashloanFee'
+interface GeneralFeeInputProps {
+  field: 'daoFee' | 'deployerFee'
   label: string
   value: number
-  onChange: (tokenIndex: 0 | 1, field: 'daoFee' | 'deployerFee' | 'liquidationFee' | 'flashloanFee', value: string) => void
+  onChange: (field: 'daoFee' | 'deployerFee', value: string) => void
 }
 
-const FeeInput = React.memo(({ 
+interface TokenFeeInputProps {
+  tokenIndex: 0 | 1
+  field: 'liquidationFee' | 'flashloanFee'
+  label: string
+  value: number
+  onChange: (tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => void
+}
+
+const GeneralFeeInput = React.memo(({ 
+  field, 
+  label, 
+  value, 
+  onChange
+}: GeneralFeeInputProps) => {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-white">
+        {label}
+      </label>
+      <div className="relative w-20">
+        <input
+          type="number"
+          min="0"
+          max="20"
+          step="0.01"
+          value={value === 0 ? '' : value}
+          onChange={(e) => onChange(field, e.target.value)}
+          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+          placeholder="0"
+        />
+        <div className="absolute right-2 top-2 text-gray-400 text-sm">
+          %
+        </div>
+      </div>
+    </div>
+  )
+})
+
+GeneralFeeInput.displayName = 'GeneralFeeInput'
+
+const TokenFeeInput = React.memo(({ 
   tokenIndex, 
   field, 
   label, 
   value, 
   onChange
-}: FeeInputProps) => {
+}: TokenFeeInputProps) => {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-white">
@@ -43,22 +82,20 @@ const FeeInput = React.memo(({
   )
 })
 
-FeeInput.displayName = 'FeeInput'
+TokenFeeInput.displayName = 'TokenFeeInput'
 
 export default function Step6Fees() {
   const router = useRouter()
   const { wizardData, updateFeesConfiguration, markStepCompleted } = useWizard()
   
   const [feesConfig, setFeesConfig] = useState<FeesConfiguration>({
+    daoFee: 0,
+    deployerFee: 0,
     token0: {
-      daoFee: 0,
-      deployerFee: 0,
       liquidationFee: 0,
       flashloanFee: 0
     },
     token1: {
-      daoFee: 0,
-      deployerFee: 0,
       liquidationFee: 0,
       flashloanFee: 0
     }
@@ -71,7 +108,17 @@ export default function Step6Fees() {
     }
   }, [wizardData.feesConfiguration])
 
-  const handleFeeChange = useCallback((tokenIndex: 0 | 1, field: 'daoFee' | 'deployerFee' | 'liquidationFee' | 'flashloanFee', value: string) => {
+  const handleGeneralFeeChange = useCallback((field: 'daoFee' | 'deployerFee', value: string) => {
+    const numValue = parseFloat(value) || 0
+    const clampedValue = Math.max(0, Math.min(20, numValue))
+    
+    setFeesConfig(prevConfig => ({
+      ...prevConfig,
+      [field]: clampedValue
+    }))
+  }, [])
+
+  const handleTokenFeeChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => {
     const numValue = parseFloat(value) || 0
     const clampedValue = Math.max(0, Math.min(20, numValue))
     
@@ -103,12 +150,38 @@ export default function Step6Fees() {
           Step 6: Fees
         </h1>
         <p className="text-gray-300 text-lg">
-          Configure fees for each token (0-20%, step 0.01)
+          Configure general fees and per-token fees (0-20%, step 0.01)
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Fees Configuration - Side by Side */}
+        {/* General Fees Configuration */}
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-white mb-6">
+            General Fees
+          </h3>
+          <p className="text-sm text-gray-400 mb-4">
+            These fees apply to the entire market
+          </p>
+          
+          <div className="grid grid-cols-2 gap-4 max-w-md">
+            <GeneralFeeInput
+              field="daoFee"
+              label="DAO Fee"
+              value={feesConfig.daoFee}
+              onChange={handleGeneralFeeChange}
+            />
+            
+            <GeneralFeeInput
+              field="deployerFee"
+              label="Deployer Fee"
+              value={feesConfig.deployerFee}
+              onChange={handleGeneralFeeChange}
+            />
+          </div>
+        </div>
+
+        {/* Per-Token Fees Configuration - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Token 0 Fees */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
@@ -117,36 +190,20 @@ export default function Step6Fees() {
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <FeeInput
-                tokenIndex={0}
-                field="daoFee"
-                label="DAO Fee"
-                value={feesConfig.token0.daoFee}
-                onChange={handleFeeChange}
-              />
-              
-              <FeeInput
-                tokenIndex={0}
-                field="deployerFee"
-                label="Deployer Fee"
-                value={feesConfig.token0.deployerFee}
-                onChange={handleFeeChange}
-              />
-              
-              <FeeInput
+              <TokenFeeInput
                 tokenIndex={0}
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token0.liquidationFee}
-                onChange={handleFeeChange}
+                onChange={handleTokenFeeChange}
               />
               
-              <FeeInput
+              <TokenFeeInput
                 tokenIndex={0}
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token0.flashloanFee}
-                onChange={handleFeeChange}
+                onChange={handleTokenFeeChange}
               />
             </div>
           </div>
@@ -158,36 +215,20 @@ export default function Step6Fees() {
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <FeeInput
-                tokenIndex={1}
-                field="daoFee"
-                label="DAO Fee"
-                value={feesConfig.token1.daoFee}
-                onChange={handleFeeChange}
-              />
-              
-              <FeeInput
-                tokenIndex={1}
-                field="deployerFee"
-                label="Deployer Fee"
-                value={feesConfig.token1.deployerFee}
-                onChange={handleFeeChange}
-              />
-              
-              <FeeInput
+              <TokenFeeInput
                 tokenIndex={1}
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token1.liquidationFee}
-                onChange={handleFeeChange}
+                onChange={handleTokenFeeChange}
               />
               
-              <FeeInput
+              <TokenFeeInput
                 tokenIndex={1}
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token1.flashloanFee}
-                onChange={handleFeeChange}
+                onChange={handleTokenFeeChange}
               />
             </div>
           </div>

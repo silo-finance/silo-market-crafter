@@ -260,10 +260,15 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Fees Configuration</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-white">General Fees</div>
+                      <div className="text-xs text-gray-400">
+                        DAO: {wizardData.feesConfiguration.daoFee}% | 
+                        Deployer: {wizardData.feesConfiguration.deployerFee}%
+                      </div>
+                    </div>
+                    <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0 Fees</div>
                       <div className="text-xs text-gray-400">
-                        DAO: {wizardData.feesConfiguration.token0.daoFee}% | 
-                        Deployer: {wizardData.feesConfiguration.token0.deployerFee}% | 
                         Liquidation: {wizardData.feesConfiguration.token0.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token0.flashloanFee}%
                       </div>
@@ -271,8 +276,6 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 1 Fees</div>
                       <div className="text-xs text-gray-400">
-                        DAO: {wizardData.feesConfiguration.token1.daoFee}% | 
-                        Deployer: {wizardData.feesConfiguration.token1.deployerFee}% | 
                         Liquidation: {wizardData.feesConfiguration.token1.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token1.flashloanFee}%
                       </div>

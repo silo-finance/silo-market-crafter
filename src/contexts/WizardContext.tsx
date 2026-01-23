@@ -62,15 +62,13 @@ export interface BorrowConfiguration {
 }
 
 export interface FeesConfiguration {
+  daoFee: number // 0-20%, step 0.01 - general setting
+  deployerFee: number // 0-20%, step 0.01 - general setting
   token0: {
-    daoFee: number // 0-20%, step 0.01
-    deployerFee: number // 0-20%, step 0.01
     liquidationFee: number // 0-20%, step 0.01
     flashloanFee: number // 0-20%, step 0.01
   }
   token1: {
-    daoFee: number // 0-20%, step 0.01
-    deployerFee: number // 0-20%, step 0.01
     liquidationFee: number // 0-20%, step 0.01
     flashloanFee: number // 0-20%, step 0.01
   }
@@ -217,8 +215,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       deployer: "",
       hookReceiver: "CLONE_IMPLEMENTATION",
       hookReceiverImplementation: "SiloHookV1.sol",
-      daoFee: wizardData.feesConfiguration?.token0.daoFee ? Math.round(wizardData.feesConfiguration.token0.daoFee * 100) : 0,
-      deployerFee: wizardData.feesConfiguration?.token0.deployerFee ? Math.round(wizardData.feesConfiguration.token0.deployerFee * 100) : 0,
+      daoFee: wizardData.feesConfiguration?.daoFee ? Math.round(wizardData.feesConfiguration.daoFee * 100) : 0,
+      deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.round(wizardData.feesConfiguration.deployerFee * 100) : 0,
       token0: wizardData.token0?.symbol || "",
       solvencyOracle0: wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE",
       maxLtvOracle0: "NO_ORACLE",
@@ -317,15 +315,13 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       
       // Parse fees configuration
       const feesConfig: FeesConfiguration = {
+        daoFee: config.daoFee ? config.daoFee / 100 : 0,
+        deployerFee: config.deployerFee ? config.deployerFee / 100 : 0,
         token0: {
-          daoFee: config.daoFee ? config.daoFee / 100 : 0,
-          deployerFee: config.deployerFee ? config.deployerFee / 100 : 0,
           liquidationFee: config.liquidationFee0 ? config.liquidationFee0 / 100 : 0,
           flashloanFee: config.flashloanFee0 ? config.flashloanFee0 / 100 : 0
         },
         token1: {
-          daoFee: 0, // Not in config, using token0 values
-          deployerFee: 0, // Not in config, using token0 values
           liquidationFee: config.liquidationFee1 ? config.liquidationFee1 / 100 : 0,
           flashloanFee: config.flashloanFee1 ? config.flashloanFee1 / 100 : 0
         }
