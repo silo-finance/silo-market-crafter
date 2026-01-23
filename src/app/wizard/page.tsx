@@ -9,7 +9,8 @@ import Step1Assets from '@/components/Step1Assets'
 import Step4IRMSelection from '@/components/Step4IRMSelection'
 import Step5BorrowSetup from '@/components/Step5BorrowSetup'
 import Step6Fees from '@/components/Step6Fees'
-import Step7JSONConfig from '@/components/Step7JSONConfig'
+import Step7Hook from '@/components/Step7Hook'
+import Step8JSONConfig from '@/components/Step8JSONConfig'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
@@ -23,7 +24,7 @@ function WizardPageContent() {
   
   // Update wizard state when URL changes
   useEffect(() => {
-    if (currentStep >= 0 && currentStep <= 7 && currentStep !== wizardData.currentStep) {
+    if (currentStep >= 0 && currentStep <= 8 && currentStep !== wizardData.currentStep) {
       console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
       updateStep(currentStep)
     }
@@ -49,7 +50,9 @@ function WizardPageContent() {
       case 6:
         return <Step6Fees />
       case 7:
-        return <Step7JSONConfig />
+        return <Step7Hook />
+      case 8:
+        return <Step8JSONConfig />
       default:
         return <LandingPage />
     }

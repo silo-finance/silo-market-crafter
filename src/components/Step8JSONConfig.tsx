@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 
-export default function Step7JSONConfig() {
+export default function Step8JSONConfig() {
   const router = useRouter()
   const { wizardData, generateJSONConfig, markStepCompleted } = useWizard()
   const [jsonConfig, setJsonConfig] = useState('')
@@ -42,11 +42,11 @@ export default function Step7JSONConfig() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=6')
+    router.push('/wizard?step=7')
   }
 
   const handleDeploy = () => {
-    markStepCompleted(7)
+    markStepCompleted(8)
     // Here you would typically trigger the actual deployment
     console.log('Deploying market with config:', jsonConfig)
   }
@@ -55,7 +55,7 @@ export default function Step7JSONConfig() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 7: JSON Configuration
+          Step 8: JSON Configuration
         </h1>
         <p className="text-gray-300 text-lg">
           Review and download your market configuration
@@ -104,7 +104,7 @@ export default function Step7JSONConfig() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Fees</span>
+          <span>Hook Selection</span>
         </button>
         
         <button

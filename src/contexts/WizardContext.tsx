@@ -74,6 +74,8 @@ export interface FeesConfiguration {
   }
 }
 
+export type HookType = 'SiloHookV1' | 'SiloHookV2' | 'SiloHookV3'
+
 export interface WizardData {
   currentStep: number
   completedSteps: number[]
@@ -87,6 +89,7 @@ export interface WizardData {
   selectedIRM1: IRMConfig | null
   borrowConfiguration: BorrowConfiguration | null
   feesConfiguration: FeesConfiguration | null
+  selectedHook: HookType | null
 }
 
 export enum StepStatus {
@@ -109,6 +112,7 @@ interface WizardContextType {
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
   updateFeesConfiguration: (config: FeesConfiguration) => void
+  updateSelectedHook: (hook: HookType) => void
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
   resetWizard: () => void
@@ -129,7 +133,8 @@ const initialWizardData: WizardData = {
   selectedIRM0: null,
   selectedIRM1: null,
   borrowConfiguration: null,
-  feesConfiguration: null
+  feesConfiguration: null,
+  selectedHook: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -210,11 +215,19 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, feesConfiguration: config }))
   }
 
+  const updateSelectedHook = (hook: HookType) => {
+    setWizardData(prev => ({ ...prev, selectedHook: hook }))
+  }
+
   const generateJSONConfig = () => {
+    const hookImplementation = wizardData.selectedHook 
+      ? `${wizardData.selectedHook}.sol` 
+      : 'SiloHookV1.sol'
+    
     const config = {
       deployer: "",
       hookReceiver: "CLONE_IMPLEMENTATION",
-      hookReceiverImplementation: "SiloHookV1.sol",
+      hookReceiverImplementation: hookImplementation,
       daoFee: wizardData.feesConfiguration?.daoFee ? Math.round(wizardData.feesConfiguration.daoFee * 100) : 0,
       deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.round(wizardData.feesConfiguration.deployerFee * 100) : 0,
       token0: wizardData.token0?.symbol || "",
@@ -327,6 +340,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         }
       }
       
+      // Parse hook configuration
+      const hookImplementation = config.hookReceiverImplementation || 'SiloHookV1.sol'
+      // Extract hook type from "SiloHookV1.sol" format
+      const hookMatch = hookImplementation.match(/^(SiloHookV[123])\.sol$/)
+      const selectedHook: HookType = hookMatch ? (hookMatch[1] as HookType) : 'SiloHookV1'
+      
       // Set all data in a single update to avoid race conditions
       const newWizardData = {
         ...initialWizardData,
@@ -336,7 +355,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         selectedIRM0: irm0,
         selectedIRM1: irm1,
         borrowConfiguration: borrowConfig,
-        feesConfiguration: feesConfig
+        feesConfiguration: feesConfig,
+        selectedHook: selectedHook
       }
       
       setWizardData(newWizardData)
@@ -388,6 +408,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateSelectedIRM1,
         updateBorrowConfiguration,
         updateFeesConfiguration,
+        updateSelectedHook,
         generateJSONConfig,
         parseJSONConfig,
         resetWizard,
