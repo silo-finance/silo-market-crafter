@@ -13,15 +13,30 @@ export default function Step2OracleTypes() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Check if both tokens have the same decimals
+  const tokensHaveSameDecimals = wizardData.token0 && wizardData.token1 
+    ? wizardData.token0.decimals === wizardData.token1.decimals 
+    : false
+
   // Calculate oracle type availability based on token decimals
   const getOracleTypes = (tokenDecimals: number): { type: 'none' | 'scaler', enabled: boolean, reason: string }[] => {
+    const noneEnabled = tokenDecimals === 18 || tokensHaveSameDecimals
+    let noneReason = ''
+    if (tokenDecimals === 18 && tokensHaveSameDecimals) {
+      noneReason = 'Available for 18-decimal tokens and when both tokens have the same decimals'
+    } else if (tokenDecimals === 18) {
+      noneReason = 'Available for 18-decimal tokens'
+    } else if (tokensHaveSameDecimals) {
+      noneReason = 'Available when both tokens have the same decimals'
+    } else {
+      noneReason = 'Only available for 18-decimal tokens or when both tokens have the same decimals'
+    }
+    
     return [
       {
         type: 'none',
-        enabled: tokenDecimals === 18,
-        reason: tokenDecimals === 18 
-          ? 'Available for 18-decimal tokens' 
-          : 'Only available for 18-decimal tokens'
+        enabled: noneEnabled,
+        reason: noneReason
       },
       {
         type: 'scaler',
@@ -36,24 +51,85 @@ export default function Step2OracleTypes() {
   const oracleTypes0 = wizardData.token0 ? getOracleTypes(wizardData.token0.decimals) : []
   const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals) : []
 
-  // Load existing selections if available
+  // Track token addresses to detect changes and reset selections
+  const token0AddressRef = React.useRef<string | undefined>()
+  const token1AddressRef = React.useRef<string | undefined>()
+  const hasLoadedFromCache = React.useRef(false)
+
+  // Reset selections when tokens change
   useEffect(() => {
-    if (wizardData.oracleType0) {
-      setSelectedOracle0(wizardData.oracleType0.type)
+    const currentToken0Address = wizardData.token0?.address
+    const currentToken1Address = wizardData.token1?.address
+    
+    // Check if tokens have changed
+    const tokensChanged = 
+      token0AddressRef.current !== currentToken0Address || 
+      token1AddressRef.current !== currentToken1Address
+    
+    if (tokensChanged) {
+      // Tokens changed - reset selections
+      setSelectedOracle0(null)
+      setSelectedOracle1(null)
+      setError('') // Clear any errors
+      token0AddressRef.current = currentToken0Address
+      token1AddressRef.current = currentToken1Address
+      hasLoadedFromCache.current = false
     }
-    if (wizardData.oracleType1) {
-      setSelectedOracle1(wizardData.oracleType1.type)
+  }, [wizardData.token0?.address, wizardData.token1?.address])
+
+  // Load cached selections only once when tokens are stable
+  useEffect(() => {
+    if (!hasLoadedFromCache.current && wizardData.token0 && wizardData.token1) {
+      if (wizardData.oracleType0) {
+        setSelectedOracle0(wizardData.oracleType0.type)
+      }
+      if (wizardData.oracleType1) {
+        setSelectedOracle1(wizardData.oracleType1.type)
+      }
+      hasLoadedFromCache.current = true
     }
-  }, [wizardData.oracleType0, wizardData.oracleType1])
+  }, [wizardData.token0, wizardData.token1, wizardData.oracleType0, wizardData.oracleType1])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    // Early return if button should be disabled
+    if (!selectedOracle0 || !selectedOracle1) {
+      setError('Please select oracle types for both tokens')
+      return
+    }
+    
     setError('')
     setLoading(true)
 
     try {
-      if (!selectedOracle0 || !selectedOracle1) {
-        throw new Error('Please select oracle types for both tokens')
+      // Validate selections exist (double check)
+      if (selectedOracle0 === null || selectedOracle0 === undefined || selectedOracle0 === '') {
+        throw new Error('Please select an oracle type for Token 0')
+      }
+      if (selectedOracle1 === null || selectedOracle1 === undefined || selectedOracle1 === '') {
+        throw new Error('Please select an oracle type for Token 1')
+      }
+      
+      // Validate selections are valid strings
+      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler') {
+        throw new Error('Invalid oracle type selected for Token 0')
+      }
+      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler') {
+        throw new Error('Invalid oracle type selected for Token 1')
+      }
+
+      // Validate: For non-18 decimal tokens, if one token has "none", the other must also have "none"
+      const token0IsNon18 = wizardData.token0 && wizardData.token0.decimals !== 18
+      const token1IsNon18 = wizardData.token1 && wizardData.token1.decimals !== 18
+      const bothAreNon18 = token0IsNon18 && token1IsNon18
+      
+      if (bothAreNon18) {
+        if ((selectedOracle0 === 'none' && selectedOracle1 !== 'none') || 
+            (selectedOracle1 === 'none' && selectedOracle0 !== 'none')) {
+          throw new Error('For non-18 decimal tokens, if you select "No Oracle" for one token, you must also select "No Oracle" for the other token')
+        }
       }
 
       // Update oracle types in context
@@ -67,6 +143,11 @@ export default function Step2OracleTypes() {
         type: selectedOracle1,
         enabled: true,
         reason: oracleTypes1.find(ot => ot.type === selectedOracle1)?.reason
+      }
+
+      // Double-check validation before proceeding
+      if (!selectedOracle0 || !selectedOracle1) {
+        throw new Error('Please select oracle types for both tokens')
       }
 
       updateOracleType0(oracleType0)
@@ -251,7 +332,14 @@ export default function Step2OracleTypes() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedOracle0 || !selectedOracle1}
+            disabled={loading || selectedOracle0 === null || selectedOracle0 === undefined || selectedOracle1 === null || selectedOracle1 === undefined}
+            onClick={(e) => {
+              // Additional safety check on click
+              if (!selectedOracle0 || !selectedOracle1) {
+                e.preventDefault()
+                setError('Please select oracle types for both tokens')
+              }
+            }}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
