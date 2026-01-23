@@ -35,7 +35,7 @@ export default function Step4IRMSelection() {
         setError('')
         
         const response = await fetch(
-          'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/silo-core/deploy/input/InterestRateModelConfigs.json'
+          'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/InterestRateModelConfigs.json'
         )
         
         if (!response.ok) {
