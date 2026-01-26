@@ -47,8 +47,8 @@ export default function Step8JSONConfig() {
 
   const handleDeploy = () => {
     markStepCompleted(9)
-    // Here you would typically trigger the actual deployment
-    console.log('Deploying market with config:', jsonConfig)
+    // Navigate to Step 10 (Deployment)
+    router.push('/wizard?step=10')
   }
 
   return (
