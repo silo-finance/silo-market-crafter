@@ -90,6 +90,7 @@ export interface WizardData {
   borrowConfiguration: BorrowConfiguration | null
   feesConfiguration: FeesConfiguration | null
   selectedHook: HookType | null
+  hookOwnerAddress: string | null
 }
 
 export enum StepStatus {
@@ -113,6 +114,7 @@ interface WizardContextType {
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
   updateFeesConfiguration: (config: FeesConfiguration) => void
   updateSelectedHook: (hook: HookType) => void
+  updateHookOwnerAddress: (address: string | null) => void
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
   resetWizard: () => void
@@ -134,7 +136,8 @@ const initialWizardData: WizardData = {
   selectedIRM1: null,
   borrowConfiguration: null,
   feesConfiguration: null,
-  selectedHook: null
+  selectedHook: null,
+  hookOwnerAddress: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -217,6 +220,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const updateSelectedHook = (hook: HookType) => {
     setWizardData(prev => ({ ...prev, selectedHook: hook }))
+  }
+
+  const updateHookOwnerAddress = (address: string | null) => {
+    setWizardData(prev => ({ ...prev, hookOwnerAddress: address }))
   }
 
   const generateJSONConfig = () => {
@@ -409,6 +416,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateBorrowConfiguration,
         updateFeesConfiguration,
         updateSelectedHook,
+        updateHookOwnerAddress,
         generateJSONConfig,
         parseJSONConfig,
         resetWizard,

@@ -42,11 +42,11 @@ export default function Step8JSONConfig() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=7')
+    router.push('/wizard?step=8')
   }
 
   const handleDeploy = () => {
-    markStepCompleted(8)
+    markStepCompleted(9)
     // Here you would typically trigger the actual deployment
     console.log('Deploying market with config:', jsonConfig)
   }
@@ -55,7 +55,7 @@ export default function Step8JSONConfig() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 8: JSON Configuration
+          Step 9: JSON Configuration
         </h1>
         <p className="text-gray-300 text-lg">
           Review and download your market configuration
@@ -118,7 +118,7 @@ export default function Step8JSONConfig() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Hook Selection</span>
+            <span>Hook Owner</span>
         </button>
         
         <button
