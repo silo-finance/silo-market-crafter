@@ -33,11 +33,11 @@ interface DeployArgs {
     }
   }
   _irmConfigData0: {
-    config: any
+    config: { [key: string]: string | number | boolean }
     encoded: string
   }
   _irmConfigData1: {
-    config: any
+    config: { [key: string]: string | number | boolean }
     encoded: string
   }
   _clonableHookReceiver: {
@@ -80,7 +80,6 @@ export default function Step10Deployment() {
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [deployerVersion, setDeployerVersion] = useState<string>('')
   const [siloCoreDeployments, setSiloCoreDeployments] = useState<SiloCoreDeployments>({})
-  const [signerAddress, setSignerAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState('')
@@ -101,26 +100,6 @@ export default function Step10Deployment() {
     return chainMap[chainId] || 'mainnet'
   }
 
-  // Get signer address from MetaMask (will be used as owner for hook initialization)
-  useEffect(() => {
-    const getSignerAddress = async () => {
-      if (!window.ethereum) {
-        return
-      }
-
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const signer = await provider.getSigner()
-        const address = await signer.getAddress()
-        setSignerAddress(address)
-      } catch (err) {
-        console.warn('Failed to get signer address:', err)
-        // Don't set error here, just log - user might not be connected yet
-      }
-    }
-
-    getSignerAddress()
-  }, [])
 
   // Fetch SiloDeployer address and SiloCore deployments
   useEffect(() => {
@@ -469,7 +448,7 @@ export default function Step10Deployment() {
     // Prepare IRM config data as bytes
     // IRM config needs to be ABI encoded as IInterestRateModelV2.Config
     // Matching: abi.encode(irmModelData.getConfigData(_config.interestRateModelConfig0))
-    const encodeIRMConfig = (irmConfig: any): string => {
+    const encodeIRMConfig = (irmConfig: { config?: { [key: string]: string | number | boolean } } | null): string => {
         if (!irmConfig || !irmConfig.config) {
           return '0x'
         }
@@ -483,7 +462,7 @@ export default function Step10Deployment() {
         
         try {
           // Convert all values to BigInt, handling string or number inputs
-          const toBigInt = (value: any): bigint => {
+          const toBigInt = (value: string | number | boolean | null | undefined): bigint => {
             if (value === null || value === undefined) return BigInt(0)
             if (typeof value === 'string') {
               // Handle string numbers
@@ -746,9 +725,10 @@ export default function Step10Deployment() {
       
       markStepCompleted(10)
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Deployment error:', err)
-      setError(err?.message || 'Transaction failed. Please check your wallet and try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Transaction failed. Please check your wallet and try again.'
+      setError(errorMessage)
       setTxHash('')
     } finally {
       setDeploying(false)

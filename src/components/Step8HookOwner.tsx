@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
@@ -23,7 +23,6 @@ export default function Step8HookOwner() {
   const [connectedWalletAddress, setConnectedWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const hasLoadedInitialData = useRef(false)
 
   // Get connected wallet address
   useEffect(() => {
