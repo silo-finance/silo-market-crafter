@@ -589,7 +589,7 @@ export default function Step10Deployment() {
     }
 
     setDeployArgs(args)
-  }, [wizardData, siloCoreDeployments, signerAddress]) // Include signerAddress for initialization data
+  }, [wizardData, siloCoreDeployments])
 
   const handleDeploy = async () => {
     if (!window.ethereum) {
