@@ -45,8 +45,8 @@ export default function LandingPage() {
       const success = await parseJSONConfig(jsonInput)
       console.log('JSON parsing result:', success)
       if (success) {
-        console.log('JSON loaded successfully - navigating to step 8')
-        router.push('/wizard?step=8') // Go directly to Step 8 (JSON Config)
+        console.log('JSON loaded successfully - navigating to step 9')
+        router.push('/wizard?step=9') // Go directly to Step 9 (JSON Config)
       } else {
         setError('Failed to parse JSON configuration. Please check the format and ensure all required fields are present.')
       }

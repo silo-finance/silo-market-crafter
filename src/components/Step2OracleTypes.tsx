@@ -105,10 +105,10 @@ export default function Step2OracleTypes() {
 
     try {
       // Validate selections exist (double check)
-      if (selectedOracle0 === null || selectedOracle0 === undefined || selectedOracle0 === '') {
+      if (selectedOracle0 === null || selectedOracle0 === undefined) {
         throw new Error('Please select an oracle type for Token 0')
       }
-      if (selectedOracle1 === null || selectedOracle1 === undefined || selectedOracle1 === '') {
+      if (selectedOracle1 === null || selectedOracle1 === undefined) {
         throw new Error('Please select an oracle type for Token 1')
       }
       

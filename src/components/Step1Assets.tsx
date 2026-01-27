@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
+import { normalizeAddress } from '@/utils/addressValidation'
 
 interface TokenMetadata {
   symbol: string
@@ -257,23 +258,6 @@ export default function Step1Assets() {
   }, [updateNetworkInfo])
 
 
-  const normalizeAddress = (address: string) => {
-    try {
-      // First try to get the address as-is
-      return ethers.getAddress(address)
-    } catch {
-      try {
-        // If that fails, try with lowercase (which should always work for valid hex)
-        const lowerAddress = address.toLowerCase()
-        if (/^0x[a-f0-9]{40}$/.test(lowerAddress)) {
-          return ethers.getAddress(lowerAddress)
-        }
-        return null
-      } catch {
-        return null
-      }
-    }
-  }
 
   const fetchTokenMetadata = async (address: string): Promise<TokenMetadata> => {
     if (!window.ethereum) {
