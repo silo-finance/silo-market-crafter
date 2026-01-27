@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
@@ -23,7 +23,6 @@ export default function Step8HookOwner() {
   const [connectedWalletAddress, setConnectedWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const hasLoadedInitialData = useRef(false)
 
   // Get connected wallet address
   useEffect(() => {
@@ -63,10 +62,16 @@ export default function Step8HookOwner() {
         setOwnerSource('manual')
         setManualAddress(wizardData.hookOwnerAddress)
       }
-    } else if (connectedWalletAddress && !wizardData.hookOwnerAddress) {
-      // No saved address, but wallet is connected - default to wallet
-      setOwnerSource('wallet')
+    } else {
+      // Reset to default when hookOwnerAddress is cleared (e.g., after form reset)
+      if (connectedWalletAddress) {
+        setOwnerSource('wallet')
+      } else {
+        setOwnerSource('wallet') // Default to wallet even if not connected yet
+      }
       setManualAddress('')
+      setAddressValidation({ isValid: false, isContract: null, error: null })
+      setError('')
     }
   }, [wizardData.hookOwnerAddress, connectedWalletAddress])
 
