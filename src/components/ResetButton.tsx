@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 
 export default function ResetButton() {
+  const router = useRouter()
   const { resetWizardWithCache } = useWizard()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -14,6 +16,8 @@ export default function ResetButton() {
   const handleConfirmReset = () => {
     resetWizardWithCache()
     setShowConfirmDialog(false)
+    // Navigate to landing page (step 0)
+    router.push('/wizard?step=0')
   }
 
   const handleCancelReset = () => {

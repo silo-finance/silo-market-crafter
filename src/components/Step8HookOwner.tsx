@@ -63,10 +63,16 @@ export default function Step8HookOwner() {
         setOwnerSource('manual')
         setManualAddress(wizardData.hookOwnerAddress)
       }
-    } else if (connectedWalletAddress && !wizardData.hookOwnerAddress) {
-      // No saved address, but wallet is connected - default to wallet
-      setOwnerSource('wallet')
+    } else {
+      // Reset to default when hookOwnerAddress is cleared (e.g., after form reset)
+      if (connectedWalletAddress) {
+        setOwnerSource('wallet')
+      } else {
+        setOwnerSource('wallet') // Default to wallet even if not connected yet
+      }
       setManualAddress('')
+      setAddressValidation({ isValid: false, isContract: null, error: null })
+      setError('')
     }
   }, [wizardData.hookOwnerAddress, connectedWalletAddress])
 
