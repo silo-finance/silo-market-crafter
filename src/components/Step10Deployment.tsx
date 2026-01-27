@@ -33,12 +33,10 @@ interface DeployArgs {
     }
   }
   _irmConfigData0: {
-    note: string
     config: any
     encoded: string
   }
   _irmConfigData1: {
-    note: string
     config: any
     encoded: string
   }
@@ -74,16 +72,19 @@ interface DeployArgs {
   }
 }
 
-export default function Step9Deployment() {
+export default function Step10Deployment() {
   const router = useRouter()
   const { wizardData, markStepCompleted } = useWizard()
   
   const [deployerAddress, setDeployerAddress] = useState<string>('')
+  const [siloLensAddress, setSiloLensAddress] = useState<string>('')
+  const [deployerVersion, setDeployerVersion] = useState<string>('')
   const [siloCoreDeployments, setSiloCoreDeployments] = useState<SiloCoreDeployments>({})
   const [signerAddress, setSignerAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState('')
+  const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
 
@@ -127,6 +128,7 @@ export default function Step9Deployment() {
       try {
         setLoading(true)
         setError('')
+        // Don't clear warnings here - they should persist
         
         if (!wizardData.networkInfo?.chainId) {
           throw new Error('Network information not available')
@@ -135,41 +137,124 @@ export default function Step9Deployment() {
         const chainName = getChainName(wizardData.networkInfo.chainId)
         
         // Fetch SiloDeployer address
-        const deployerPaths = [
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloDeployer.json`,
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}.json`
-        ]
-
+        // Contract names match SiloCoreContracts constants (the actual .sol file names)
+        // Same pattern as other contracts: SiloDeployer.sol.json
+        const deployerContractName = 'SiloDeployer.sol'
         let address = ''
-        for (const path of deployerPaths) {
+        
+        try {
+          const response = await fetch(
+            `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${deployerContractName}.json`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            address = data.address || ''
+            if (address && ethers.isAddress(address)) {
+              console.log(`Loaded SiloDeployer from ${deployerContractName}.json:`, address)
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch ${deployerContractName}.json:`, err)
+        }
+        
+        // Fallback: try to get from _deployments.json if available
+        if (!address) {
           try {
-            const response = await fetch(path)
+            const response = await fetch(
+              `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
+            )
             if (response.ok) {
               const data = await response.json()
-              address = data.address || data.SiloDeployer || ''
-              if (address) break
+              // Try different possible keys in _deployments.json
+              if (typeof data === 'object' && data !== null) {
+                address = data[deployerContractName] || data['SiloDeployer'] || data.SiloDeployer || ''
+                // If nested structure, try to extract
+                if (!address || !ethers.isAddress(address)) {
+                  for (const key in data) {
+                    if (key.includes('SiloDeployer') && typeof data[key] === 'string' && ethers.isAddress(data[key])) {
+                      address = data[key]
+                      break
+                    } else if (typeof data[key] === 'object' && data[key]?.address && ethers.isAddress(data[key].address)) {
+                      address = data[key].address
+                      break
+                    }
+                  }
+                }
+                if (address && ethers.isAddress(address)) {
+                  console.log(`Loaded SiloDeployer from _deployments.json:`, address)
+                }
+              }
             }
           } catch (err) {
-            continue
+            console.warn('Failed to fetch from _deployments.json:', err)
           }
         }
 
         if (!address) {
           // Don't throw - just set warning and continue
-          setError(prevError => {
-            const warning = `Warning: Failed to fetch SiloDeployer address for ${chainName}. Arguments will still be displayed.`
-            return prevError ? `${prevError}\n${warning}` : warning
-          })
+          setWarnings(prev => [...prev.filter(w => !w.includes('SiloDeployer address')), `Failed to fetch SiloDeployer address for ${chainName}. Arguments will still be displayed.`])
         } else {
           setDeployerAddress(address)
           // Don't clear error here - there might be other warnings
+        }
+
+        // Fetch Silo Lens address
+        const lensContractName = 'SiloLens.sol'
+        let lensAddress = ''
+        
+        try {
+          const response = await fetch(
+            `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${lensContractName}.json`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            lensAddress = data.address || ''
+            if (lensAddress && ethers.isAddress(lensAddress)) {
+              console.log(`Loaded SiloLens from ${lensContractName}.json:`, lensAddress)
+              setSiloLensAddress(lensAddress)
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch ${lensContractName}.json:`, err)
+        }
+        
+        // Fallback: try to get from _deployments.json if available
+        if (!lensAddress) {
+          try {
+            const response = await fetch(
+              `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
+            )
+            if (response.ok) {
+              const data = await response.json()
+              if (typeof data === 'object' && data !== null) {
+                lensAddress = data[lensContractName] || data['SiloLens'] || data.SiloLens || ''
+                if (!lensAddress || !ethers.isAddress(lensAddress)) {
+                  for (const key in data) {
+                    if (key.includes('SiloLens') && typeof data[key] === 'string' && ethers.isAddress(data[key])) {
+                      lensAddress = data[key]
+                      break
+                    } else if (typeof data[key] === 'object' && data[key]?.address && ethers.isAddress(data[key].address)) {
+                      lensAddress = data[key].address
+                      break
+                    }
+                  }
+                }
+                if (lensAddress && ethers.isAddress(lensAddress)) {
+                  console.log(`Loaded SiloLens from _deployments.json:`, lensAddress)
+                  setSiloLensAddress(lensAddress)
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to fetch SiloLens from _deployments.json:', err)
+          }
         }
 
 
       } catch (err) {
         console.error('Error fetching deployment data:', err)
         // Set warning but don't prevent argument preparation
-        setError(`Warning: ${err instanceof Error ? err.message : 'Failed to load some deployment data'}. Arguments will still be displayed.`)
+        setWarnings(prev => [...prev.filter(w => !w.includes('deployment data')), `${err instanceof Error ? err.message : 'Failed to load some deployment data'}. Arguments will still be displayed.`])
       } finally {
         setLoading(false)
       }
@@ -259,6 +344,40 @@ export default function Step9Deployment() {
     }
   }, [wizardData.networkInfo?.chainId])
 
+  // Fetch SiloDeployer version using Silo Lens
+  useEffect(() => {
+    const fetchDeployerVersion = async () => {
+      if (!deployerAddress || !siloLensAddress || !window.ethereum) {
+        return
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        
+        // Silo Lens ABI - getVersion function
+        const siloLensAbi = [
+          {
+            inputs: [{ name: 'silo', type: 'address' }],
+            name: 'getVersion',
+            outputs: [{ name: 'version', type: 'string' }],
+            stateMutability: 'view',
+            type: 'function'
+          }
+        ]
+
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = await lensContract.getVersion(deployerAddress)
+        setDeployerVersion(version)
+        console.log(`SiloDeployer version: ${version}`)
+      } catch (err) {
+        console.warn('Failed to fetch SiloDeployer version:', err)
+        // Don't set error, just log - version is optional info
+      }
+    }
+
+    fetchDeployerVersion()
+  }, [deployerAddress, siloLensAddress])
+
   // Prepare deploy arguments from JSON config (matching Solidity script logic)
   // Always prepare arguments even if deployer address is not available
   useEffect(() => {
@@ -302,14 +421,26 @@ export default function Step9Deployment() {
       validationWarnings.push('InterestRateModelV2Factory address not found. Deployment may fail.')
     }
 
-    // Update error with warnings, but keep existing errors if any
-    if (validationWarnings.length > 0) {
-      const warningText = 'Warning: ' + validationWarnings.join(' | ')
-      setError(prevError => {
-        // Append to existing error if any, otherwise just set the warning
-        return prevError ? `${prevError}\n${warningText}` : warningText
-      })
+    // Validate hook owner address is set
+    if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
+      validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
     }
+
+    // Update warnings list - replace validation warnings but keep others
+    setWarnings(prevWarnings => {
+      // Keep warnings from other sources (like fetchDeploymentData) that are not validation warnings
+      const otherWarnings = prevWarnings.filter(w => 
+        !w.includes('Hook implementation address') &&
+        !w.includes('InterestRateModelV2Factory address') &&
+        !w.includes('Hook owner address') &&
+        !w.includes('SiloDeployer address') &&
+        !w.includes('deployment data')
+      )
+      // Combine with new validation warnings
+      const newWarnings = [...otherWarnings, ...validationWarnings]
+      // Only update if there are actually warnings to show
+      return newWarnings
+    })
 
     // Prepare Oracles struct
     // For already deployed oracles, we only need the deployed address
@@ -390,14 +521,15 @@ export default function Step9Deployment() {
 
     // Prepare ClonableHookReceiver
     // Matching: _getClonableHookReceiverConfig(hookReceiverImplementation)
-    // Initialization data is abi.encode(owner) where owner is the signer address
+    // Initialization data is abi.encode(owner) where owner is from Step 8 (hook owner selection)
     // This matches: abi.encode(_getClonableHookReceiverOwner())
     let initializationData = '0x'
-    if (signerAddress && signerAddress !== ethers.ZeroAddress) {
+    if (wizardData.hookOwnerAddress && wizardData.hookOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.hookOwnerAddress)) {
       try {
         const abiCoder = ethers.AbiCoder.defaultAbiCoder()
         // Encode the owner address: abi.encode(address owner)
-        initializationData = abiCoder.encode(['address'], [signerAddress])
+        const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
+        initializationData = abiCoder.encode(['address'], [normalizedAddress])
       } catch (err) {
         console.error('Error encoding initialization data:', err)
         initializationData = '0x'
@@ -445,12 +577,10 @@ export default function Step9Deployment() {
     const args: DeployArgs = {
       _oracles,
       _irmConfigData0: {
-        note: 'ABI encoded IInterestRateModelV2.Config',
         config: wizardData.selectedIRM0?.config || {},
         encoded: irmConfigData0Encoded
       },
       _irmConfigData1: {
-        note: 'ABI encoded IInterestRateModelV2.Config',
         config: wizardData.selectedIRM1?.config || {},
         encoded: irmConfigData1Encoded
       },
@@ -485,12 +615,17 @@ export default function Step9Deployment() {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       
-      // Use initialization data from deployArgs (already encoded with signer address)
-      // If for some reason it's empty, encode it now
+      // Use initialization data from deployArgs (already encoded with hook owner address from Step 8)
+      // Validate that hook owner address is set
+      if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
+        throw new Error('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+      }
+      
       let hookReceiverInitializationData = deployArgs._clonableHookReceiver.initializationData
       if (!hookReceiverInitializationData || hookReceiverInitializationData === '0x') {
-        const signerAddress = await signer.getAddress()
-        hookReceiverInitializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [signerAddress])
+        // Re-encode if needed
+        const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
+        hookReceiverInitializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [normalizedAddress])
       }
       
       // Use clonableHookReceiver from deployArgs with the initialization data
@@ -624,7 +759,7 @@ export default function Step9Deployment() {
     router.push('/wizard?step=9')
   }
 
-  const getBlockExplorerUrl = (hash: string) => {
+  const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
     if (!wizardData.networkInfo?.chainId) return '#'
     const chainId = parseInt(wizardData.networkInfo.chainId)
     const explorerMap: { [key: number]: string } = {
@@ -636,7 +771,8 @@ export default function Step9Deployment() {
       146: 'https://sonicscan.org'
     }
     const baseUrl = explorerMap[chainId] || 'https://etherscan.io'
-    return `${baseUrl}/tx/${hash}`
+    const path = isAddress ? 'address' : 'tx'
+    return `${baseUrl}/${path}/${hash}`
   }
 
   // Don't block rendering - show arguments even while loading
@@ -670,63 +806,37 @@ export default function Step9Deployment() {
             <p className="text-white font-medium">{wizardData.networkInfo?.networkName || 'Unknown'}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">SiloDeployer Contract Address</p>
-            <p className="text-white font-mono text-sm break-all">
-              {loading ? 'Loading...' : (deployerAddress || 'Not available')}
-            </p>
+            <p className="text-sm text-gray-400 mb-2">SiloDeployer Contract Address</p>
+            {loading ? (
+              <p className="text-white font-mono text-sm">Loading...</p>
+            ) : deployerAddress ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  href={getBlockExplorerUrl(deployerAddress, true)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 font-mono text-sm underline flex items-center gap-1"
+                >
+                  {`${deployerAddress.slice(0, 6)}...${deployerAddress.slice(-4)}`}
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                {deployerVersion && (
+                  <span className="text-gray-400 text-sm">
+                    version: {deployerVersion}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p className="text-white font-mono text-sm">Not available</p>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Deploy Arguments as JSON */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Arguments for deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)
-        </p>
-        {deployArgs ? (
-          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
-            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-              <code>{JSON.stringify(deployArgs, null, 2)}</code>
-            </pre>
-          </div>
-        ) : (
-          <div className="bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-gray-400 text-sm">
-              {!wizardData.token0 || !wizardData.token1 
-                ? 'Please complete previous steps to generate deployment arguments.'
-                : 'Preparing deployment arguments...'}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-          <div className="text-red-400 text-sm">
-            ✗ {error}
-          </div>
-        </div>
-      )}
-
-      {txHash && (
-        <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
-          <div className="text-green-400 text-sm mb-2">
-            ✓ Transaction submitted successfully!
-          </div>
-          <a
-            href={getBlockExplorerUrl(txHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 text-sm underline"
-          >
-            View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
-          </a>
-        </div>
-      )}
 
       {/* Navigation */}
-      <div className="flex justify-between">
+      <div className="flex justify-between mb-6">
         <button
           type="button"
           onClick={goToPreviousStep}
@@ -744,6 +854,8 @@ export default function Step9Deployment() {
             deploying || 
             !deployerAddress || 
             !deployArgs ||
+            !wizardData.hookOwnerAddress ||
+            !ethers.isAddress(wizardData.hookOwnerAddress) ||
             (deployArgs && (
               deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
               deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
@@ -770,6 +882,66 @@ export default function Step9Deployment() {
           )}
         </button>
       </div>
+
+      {/* Deploy Arguments as JSON */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
+        <p className="text-sm text-gray-400 mb-4">
+          Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>
+        </p>
+        {deployArgs ? (
+          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
+            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+              <code>{JSON.stringify(deployArgs, null, 2)}</code>
+            </pre>
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-gray-400 text-sm">
+              {!wizardData.token0 || !wizardData.token1 
+                ? 'Please complete previous steps to generate deployment arguments.'
+                : 'Preparing deployment arguments...'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {warnings.length > 0 && (
+        <div className="bg-yellow-900/50 border border-yellow-500 rounded-lg p-4 mb-6">
+          <div className="text-yellow-400 text-sm font-semibold mb-2">
+            ⚠ Warnings:
+          </div>
+          <ol className="list-decimal list-inside space-y-1 text-yellow-300 text-sm ml-4">
+            {warnings.map((warning, index) => (
+              <li key={index} className="mb-1">{warning}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+          <div className="text-red-400 text-sm">
+            ✗ {error}
+          </div>
+        </div>
+      )}
+
+      {txHash && (
+        <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
+          <div className="text-green-400 text-sm mb-2">
+            ✓ Transaction submitted successfully!
+          </div>
+          <a
+            href={getBlockExplorerUrl(txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 text-sm underline"
+          >
+            View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          </a>
+        </div>
+      )}
     </div>
   )
 }

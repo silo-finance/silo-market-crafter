@@ -12,7 +12,7 @@ import Step6Fees from '@/components/Step6Fees'
 import Step7Hook from '@/components/Step7Hook'
 import Step8HookOwner from '@/components/Step8HookOwner'
 import Step8JSONConfig from '@/components/Step8JSONConfig'
-import Step9Deployment from '@/components/Step9Deployment'
+import Step10Deployment from '@/components/Step10Deployment'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
@@ -58,7 +58,7 @@ function WizardPageContent() {
       case 9:
         return <Step8JSONConfig />
       case 10:
-        return <Step9Deployment />
+        return <Step10Deployment />
       default:
         return <LandingPage />
     }
