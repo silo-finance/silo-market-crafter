@@ -1,0 +1,1521 @@
+[
+  {
+    "signature": "AboveMaxLtv()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "AddressZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol",
+      "../silo-contracts-v2/silo-core/contracts/utils/Tower.sol",
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/DexSwap.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "AggregatorAlreadyExists()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPythAggregatorFactory.sol"
+    ]
+  },
+  {
+    "signature": "AggregatorsAreTheSame()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol"
+    ]
+  },
+  {
+    "signature": "AlphaDividerZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "AlreadyConfigured()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "AlreadyInitialized()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "AmountExceedsAllowance()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "AssetNotSupported()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/sAVAX/sAVAXOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/erc4626/ERC4626Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/scaler/OracleScaler.sol"
+    ]
+  },
+  {
+    "signature": "AssetZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol"
+    ]
+  },
+  {
+    "signature": "BaseAmountOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracle.sol"
+    ]
+  },
+  {
+    "signature": "BorrowNotPossible()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "CantRemoveActiveGauge()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "ClaimerUnauthorized()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "CollateralDepositNotAllowed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPendleRewardsClaimer.sol"
+    ]
+  },
+  {
+    "signature": "CollateralNotSupportedForDefaulting()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "CollateralSiloAlreadySet()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "ConfigMismatchShareCollateralToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "ConfigMismatchShareDebtToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "ConfigMismatchShareProtectedToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "ConfigMismatchSilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "CrossReentrancyNotActive()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ICrossReentrancyGuard.sol"
+    ]
+  },
+  {
+    "signature": "CrossReentrantCall()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ICrossReentrancyGuard.sol"
+    ]
+  },
+  {
+    "signature": "DaoFeeReceiverZeroAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "DaoMaxRangeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "DaoMinRangeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "DebtExistInOtherSilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "DeductDefaultedDebtFromCollateralFailed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "DeployConfigFirst()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "DeployerCannotBeZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModelFactory.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "Deprecated()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloRouterV2Implementation.sol"
+    ]
+  },
+  {
+    "signature": "DifferentRewardsTokens()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "EarnedZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "EmissionForTimeDeltaOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "EmissionPerSecondTooHigh()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "EmptyBalance(address)",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/leverage/modules/RescueModule.sol"
+    ]
+  },
+  {
+    "signature": "EmptyCollateralShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "EmptyConfigAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracle.sol"
+    ]
+  },
+  {
+    "signature": "EmptyCoordinates()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/Tower.sol"
+    ]
+  },
+  {
+    "signature": "EmptyGaugeAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "EmptyNativeToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "EmptyPrimaryKey()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "EmptyRecipient()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/TokenRescuer.sol"
+    ]
+  },
+  {
+    "signature": "EmptyShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "EmptySilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "EmptySiloConfig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "EmptyToken0()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "EmptyToken1()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "ExchangeAddressZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGeneralSwapModule.sol"
+    ]
+  },
+  {
+    "signature": "ExistingAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/_common/MadeByFactory.sol"
+    ]
+  },
+  {
+    "signature": "FailedToCreateAnOracle(address)",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloDeployer.sol"
+    ]
+  },
+  {
+    "signature": "FailedToParseBoolean()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/Hook.sol"
+    ]
+  },
+  {
+    "signature": "FeedHasZeroPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/wrappedMetaVaultOracle/WrappedMetaVaultOracleAdapter.sol"
+    ]
+  },
+  {
+    "signature": "FeeDidNotChanged()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageRouter.sol"
+    ]
+  },
+  {
+    "signature": "FeeOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/Actions.sol"
+    ]
+  },
+  {
+    "signature": "FeeTooHigh()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "FlashloanAmountTooBig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "FlashloanFailed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "FlashLoanNotPossible()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/Actions.sol"
+    ]
+  },
+  {
+    "signature": "FullLiquidationRequired()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "GaugeAlreadyConfigured()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "GaugeIsNotConfigured()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "HookIsZeroAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "HookReceiverMisconfigured()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloDeployer.sol"
+    ]
+  },
+  {
+    "signature": "HugeDivider()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "HugeMultiplier()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "IncentivesControllerRequired()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPendleRewardsClaimer.sol"
+    ]
+  },
+  {
+    "signature": "IncentivesProgramAlreadyExists()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "IncentivesProgramNotFound()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "IncorrectNativeTokenAmount()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "IncreaseCardinalityRequired()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol"
+    ]
+  },
+  {
+    "signature": "IndexOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "IndexOverflowAtEmissionsPerSecond()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "InputCanBeAssetsOrShares()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "InputZeroShares()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "InvalidAddressString()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/AddressUtilsLib.sol"
+    ]
+  },
+  {
+    "signature": "InvalidAlpha()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidAsset()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloLens.sol"
+    ]
+  },
+  {
+    "signature": "InvalidBeta()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidC1()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidC2()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidCallBeforeQuote()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidCminus()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidConfiguration()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "InvalidCplus()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidDefaultConfig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidDeployer()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidDistributionEnd()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "InvalidDmax()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidEggsAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/EggsToSonicAdapter.sol"
+    ]
+  },
+  {
+    "signature": "InvalidEthAggregatorDecimals()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol"
+    ]
+  },
+  {
+    "signature": "InvalidFee()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageRouter.sol"
+    ]
+  },
+  {
+    "signature": "InvalidFeeRange()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidFlashloanLender()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "InvalidIncentivesProgramName()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "InvalidInitiator()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "InvalidIrm()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKcrit()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKey()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKi()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKlin()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKlow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKmax()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKmin()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidKRange()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidLt()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidLTConfig0()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "InvalidLTConfig1()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "InvalidMaxLtv()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidMaxYield()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol"
+    ]
+  },
+  {
+    "signature": "InvalidQuoteToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRcompCap()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRcritMax()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRcritMin()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRewardToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRi()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidRmin()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidSecondPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol"
+    ]
+  },
+  {
+    "signature": "InvalidShadowUsdFeed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/X33ToUsdAdapter.sol"
+    ]
+  },
+  {
+    "signature": "InvalidShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "InvalidSilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "InvalidT1()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidT2()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTcrit()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTCrit()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTimelock()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTimestamp()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTimestamps()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTLow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTMin()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidToAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "InvalidTokenType()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/Hook.sol"
+    ]
+  },
+  {
+    "signature": "InvalidU1()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidU2()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "InvalidUcrit()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidUlow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidUnderlyingOracle()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol"
+    ]
+  },
+  {
+    "signature": "InvalidUopt()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IInterestRateModelV2.sol"
+    ]
+  },
+  {
+    "signature": "InvalidUserAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/ISiloIncentivesController.sol"
+    ]
+  },
+  {
+    "signature": "KeyIsTaken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/Tower.sol"
+    ]
+  },
+  {
+    "signature": "LinearOracleCannotBeZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "LiquidationTargetLtvTooHigh()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaturityDateInvalid()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaturityDateIsInThePast()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaxDebtToCoverZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/ManualLiquidationHelper.sol"
+    ]
+  },
+  {
+    "signature": "MaxDeployerFeeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaxFeeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaxFlashloanFeeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MaxLiquidationFeeExceeded()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MissingHookReceiver()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "MultiplierAndDividerZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "NativeTokenTransferFailed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/leverage/modules/RescueModule.sol"
+    ]
+  },
+  {
+    "signature": "NegativeRcomp()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "NegativeRcur()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "NewIndexOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "NewOracleZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/_common/MadeByFactory.sol"
+    ]
+  },
+  {
+    "signature": "NoCollateralToLiquidate()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "NoControllerForCollateral()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "NoDebtToCover()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol",
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/LiquidationHelper.sol"
+    ]
+  },
+  {
+    "signature": "NoLiquidity()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "NoPendingConfig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "NoPendingUpdateToCancel()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "NoRepayAssets()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "NormalizationDividerTooLarge()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "NotEnoughLiquidity()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "NothingToWithdraw()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "NotImplemented()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/EggsToSonicAdapter.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/custom/WstEthToStEthAdapterMainnet.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/custom/X33ToUsdAdapter.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/custom/wrappedMetaVaultOracle/WrappedMetaVaultOracleAdapter.sol"
+    ]
+  },
+  {
+    "signature": "NotInitialized()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracle.sol"
+    ]
+  },
+  {
+    "signature": "NotSolvent()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "NotSupported()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/hooks/SiloHookV3.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "NotYourSilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "OldestObservationSatisfied()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol"
+    ]
+  },
+  {
+    "signature": "OldPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "OldSecondaryPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "OnlyAdminCanSetPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/oracleForQA/OracleForQA.sol"
+    ]
+  },
+  {
+    "signature": "OnlyAllowedRole()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/hooks/_common/Whitelist.sol"
+    ]
+  },
+  {
+    "signature": "OnlyDebtShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "OnlyHookReceiver()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "OnlyLeverageUser()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/leverage/modules/RescueModule.sol"
+    ]
+  },
+  {
+    "signature": "OnlyNotifier()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "OnlyNotifierOrOwner()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "OnlyRouter()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/leverage/modules/RescueModule.sol"
+    ]
+  },
+  {
+    "signature": "OnlySilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IHookReceiver.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "OnlySiloConfig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "OnlySiloOrShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "OnlySiloOrTokenOrHookReceiver()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "OracleMisconfiguration()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "Overflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/lib/OracleNormalization.sol"
+    ]
+  },
+  {
+    "signature": "OwnerIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "OwnerIsZeroAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "PendingUpdate()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "PendleOracleIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracleFactory.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracleFactory.sol"
+    ]
+  },
+  {
+    "signature": "PendleOracleNotReady()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracle.sol"
+    ]
+  },
+  {
+    "signature": "PendlePtToAssetRateIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracle.sol"
+    ]
+  },
+  {
+    "signature": "PendlePtToSyRateIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracle.sol"
+    ]
+  },
+  {
+    "signature": "PendleRateIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol"
+    ]
+  },
+  {
+    "signature": "ProtectedProtection()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "QuoteTokenMustBeTheSame()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IOracleForwarder.sol"
+    ]
+  },
+  {
+    "signature": "QuoteTokenNotMatchEth()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol"
+    ]
+  },
+  {
+    "signature": "QuoteTokenZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol"
+    ]
+  },
+  {
+    "signature": "ReceiverDidNotChanged()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageRouter.sol"
+    ]
+  },
+  {
+    "signature": "ReceiverZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageRouter.sol"
+    ]
+  },
+  {
+    "signature": "RecipientIsZero()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "RecipientNotSolventAfterTransfer()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "ReentrancyGuardReentrantCall()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/hooks/_common/TransientReentrancy.sol"
+    ]
+  },
+  {
+    "signature": "RepayDebtByDefaultingFailed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "RepayTooHigh()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "RequestNotSupported()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "ReturnZeroAssets()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "ReturnZeroShares()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "SameAsset()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "SameDaoFeeReceiver()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "SameRange()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol"
+    ]
+  },
+  {
+    "signature": "SenderNotSolventAfterTransfer()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  },
+  {
+    "signature": "SiloInitialized()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "STokenNotSupported()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/LiquidationHelper.sol"
+    ]
+  },
+  {
+    "signature": "Swap()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGeneralSwapModule.sol"
+    ]
+  },
+  {
+    "signature": "SwapCallFailed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGeneralSwapModule.sol"
+    ]
+  },
+  {
+    "signature": "SwapDidNotCoverObligations()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "TokenDecimalsTooLarge()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/scaler/OracleScaler.sol"
+    ]
+  },
+  {
+    "signature": "TokenIsNotAContract()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/lib/TokenHelper.sol"
+    ]
+  },
+  {
+    "signature": "TokensAreTheSame()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol"
+    ]
+  },
+  {
+    "signature": "TooLongProgramName()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol"
+    ]
+  },
+  {
+    "signature": "TransitionProtectedCollateralNotAllowed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPendleRewardsClaimer.sol"
+    ]
+  },
+  {
+    "signature": "TwoWayMarketNotAllowed()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidationByDefaulting.sol"
+    ]
+  },
+  {
+    "signature": "UnableToRepayFlashloan()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILiquidationHelper.sol"
+    ]
+  },
+  {
+    "signature": "UnexpectedCollateralToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "UnexpectedDebtToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "UnknownAction()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ILeverageUsingSiloFlashloan.sol"
+    ]
+  },
+  {
+    "signature": "UnknownRatio()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "UnsupportedFlashloanToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "UserIsSolvent()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPartialLiquidation.sol"
+    ]
+  },
+  {
+    "signature": "UserSolvent()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/ManualLiquidationHelper.sol"
+    ]
+  },
+  {
+    "signature": "WrongGaugeShareToken()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGaugeHookReceiver.sol"
+    ]
+  },
+  {
+    "signature": "WrongSilo()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloConfig.sol"
+    ]
+  },
+  {
+    "signature": "WrongSiloConfig()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IPendleRewardsClaimer.sol"
+    ]
+  },
+  {
+    "signature": "XOverflow()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IDynamicKinkModel.sol"
+    ]
+  },
+  {
+    "signature": "ZeroAddress()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/incentives/interfaces/IDistributionManager.sol",
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISiloFactory.sol",
+      "../silo-contracts-v2/silo-core/contracts/utils/liquidationHelper/LiquidationHelper.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol"
+    ]
+  },
+  {
+    "signature": "ZeroAmount()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/ISilo.sol"
+    ]
+  },
+  {
+    "signature": "ZeroAmountOut()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IGeneralSwapModule.sol"
+    ]
+  },
+  {
+    "signature": "ZeroPrice()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/custom/sAVAX/sAVAXOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/erc4626/ERC4626Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/oracleForQA/OracleForQA.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/PendlePTToAssetOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/pendle/lp-tokens/PendleLPTOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/scaler/OracleScaler.sol"
+    ]
+  },
+  {
+    "signature": "ZeroQuote()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IDIAOracle.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IERC4626OracleWithUnderlying.sol",
+      "../silo-contracts-v2/silo-oracles/contracts/interfaces/IPTLinearOracle.sol"
+    ]
+  },
+  {
+    "signature": "ZeroTransfer()",
+    "sourceFiles": [
+      "../silo-contracts-v2/silo-core/contracts/interfaces/IShareToken.sol"
+    ]
+  }
+]

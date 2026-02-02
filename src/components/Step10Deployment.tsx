@@ -4,72 +4,61 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
+import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments } from '@/utils/deployArgs'
+import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
+import customErrorsSelectors from '@/data/customErrorsSelectors.json'
 
-interface SiloCoreDeployments {
-  [contractName: string]: string
-}
+/** Foundry artifact: ABI under "abi" key – use as-is, never modify */
+type FoundryArtifact = { abi: ethers.InterfaceAbi }
+const siloLensAbi = (siloLensArtifact as FoundryArtifact).abi
+const deployerAbi = (deployerArtifact as FoundryArtifact).abi
+const deployerInterface = new ethers.Interface(deployerAbi as ethers.InterfaceAbi)
 
-interface DeployArgs {
-  _oracles: {
-    solvencyOracle0: {
-      deployed: string
-      factory: string
-      txInput: string
+/**
+ * Format contract/RPC errors for display. Uses ethers v6 isError, CallExceptionError.revert/data,
+ * and Interface.parseError() so custom Solidity errors show name or selector only.
+ */
+function formatContractError(err: unknown, contractInterface: ethers.Interface): string {
+  if (ethers.isError(err, 'ACTION_REJECTED')) {
+    return 'Transaction rejected in wallet.'
+  }
+  if (ethers.isError(err, 'CALL_EXCEPTION')) {
+    const ex = err as ethers.CallExceptionError
+    const action =
+      ex.action === 'estimateGas'
+        ? ' (estimateGas validation)'
+        : ex.action === 'sendTransaction'
+          ? ' (sendTransaction)'
+          : ''
+    if (ex.revert) {
+      const argsStr =
+        ex.revert.args && ex.revert.args.length > 0
+          ? '\nArguments: ' + JSON.stringify(ex.revert.args, (_, v) => (typeof v === 'bigint' ? v.toString() : v))
+          : ''
+      return `Revert${action}: ${ex.revert.signature}${argsStr}`
     }
-    maxLtvOracle0: {
-      deployed: string
-      factory: string
-      txInput: string
+    if (ex.data && typeof ex.data === 'string' && ex.data.startsWith('0x') && ex.data.length >= 10) {
+      try {
+        const parsed = contractInterface.parseError(ex.data)
+        if (parsed) {
+          return parsed.signature
+        }
+      } catch {
+        // parseError can throw on malformed data
+      }
+      const selectorHex = ex.data.slice(0, 10)
+      const knownSignature = (customErrorsSelectors as { bySelector: Record<string, string> }).bySelector[selectorHex]
+      if (knownSignature) {
+        return knownSignature
+      }
+      return selectorHex
     }
-    solvencyOracle1: {
-      deployed: string
-      factory: string
-      txInput: string
-    }
-    maxLtvOracle1: {
-      deployed: string
-      factory: string
-      txInput: string
-    }
+    if (ex.reason) return `Revert${action}: ${ex.reason}`
+    if (ex.shortMessage) return ex.shortMessage
   }
-  _irmConfigData0: {
-    config: { [key: string]: string | number | boolean }
-    encoded: string
-  }
-  _irmConfigData1: {
-    config: { [key: string]: string | number | boolean }
-    encoded: string
-  }
-  _clonableHookReceiver: {
-    implementation: string
-    initializationData: string
-  }
-  _siloInitData: {
-    deployer: string
-    hookReceiver: string
-    daoFee: string
-    deployerFee: string
-    token0: string
-    solvencyOracle0: string
-    maxLtvOracle0: string
-    interestRateModel0: string
-    maxLtv0: string
-    lt0: string
-    liquidationTargetLtv0: string
-    liquidationFee0: string
-    flashloanFee0: string
-    callBeforeQuote0: boolean
-    token1: string
-    solvencyOracle1: string
-    maxLtvOracle1: string
-    interestRateModel1: string
-    maxLtv1: string
-    lt1: string
-    liquidationTargetLtv1: string
-    liquidationFee1: string
-    flashloanFee1: string
-    callBeforeQuote1: boolean
-  }
+  if (err instanceof Error) return err.message
+  return String(err)
 }
 
 export default function Step10Deployment() {
@@ -332,18 +321,6 @@ export default function Step10Deployment() {
 
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
-        
-        // Silo Lens ABI - getVersion function
-        const siloLensAbi = [
-          {
-            inputs: [{ name: 'silo', type: 'address' }],
-            name: 'getVersion',
-            outputs: [{ name: 'version', type: 'string' }],
-            stateMutability: 'view',
-            type: 'function'
-          }
-        ]
-
         const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
         const version = await lensContract.getVersion(deployerAddress)
         setDeployerVersion(version)
@@ -362,212 +339,62 @@ export default function Step10Deployment() {
   useEffect(() => {
     if (!wizardData.token0 || !wizardData.token1) return
 
-    // Constants from Solidity
-    const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+    try {
+      // Use the extracted utility function
+      const args = prepareDeployArgs(wizardData, siloCoreDeployments)
+      setDeployArgs(args)
 
-    // Resolve hook implementation address
-    // The hookReceiverImplementation from config is used directly to look up in deployments
-    // Matching: _resolveHookReceiverImpl(config.hookReceiverImplementation)
-    const hookImplementationName = wizardData.selectedHook 
-      ? `${wizardData.selectedHook}.sol` 
-      : 'SiloHookV1.sol'
-    
-    // Look up the contract address using the exact contract name (e.g., "SiloHookV1.sol")
-    // This matches how SiloCoreDeployments.get() works in Solidity
-    const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
-    
-    console.log(`Looking up hook implementation: ${hookImplementationName}`, {
-      found: hookReceiverImplementation !== ethers.ZeroAddress,
-      address: hookReceiverImplementation,
-      availableDeployments: Object.keys(siloCoreDeployments)
-    })
+      // Validate critical addresses and set warnings (but don't prevent argument preparation)
+      const hookImplementationName = wizardData.selectedHook 
+        ? `${wizardData.selectedHook}.sol` 
+        : 'SiloHookV1.sol'
+      const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
+      const irmFactoryAddress = siloCoreDeployments['InterestRateModelV2Factory.sol'] || ethers.ZeroAddress
 
-    // Resolve IRM factory address using the exact contract name
-    const irmFactoryAddress = siloCoreDeployments['InterestRateModelV2Factory.sol'] || ethers.ZeroAddress
-    
-    console.log(`Looking up IRM factory: InterestRateModelV2Factory.sol`, {
-      found: irmFactoryAddress !== ethers.ZeroAddress,
-      address: irmFactoryAddress
-    })
+      console.log(`Looking up hook implementation: ${hookImplementationName}`, {
+        found: hookReceiverImplementation !== ethers.ZeroAddress,
+        address: hookReceiverImplementation,
+        availableDeployments: Object.keys(siloCoreDeployments)
+      })
 
-    // Validate critical addresses and set warnings (but don't prevent argument preparation)
-    let validationWarnings: string[] = []
-    if (hookReceiverImplementation === ethers.ZeroAddress) {
-      validationWarnings.push(`Hook implementation address not found for ${hookImplementationName}. Deployment may fail.`)
-    }
+      console.log(`Looking up IRM factory: InterestRateModelV2Factory.sol`, {
+        found: irmFactoryAddress !== ethers.ZeroAddress,
+        address: irmFactoryAddress
+      })
 
-    if (irmFactoryAddress === ethers.ZeroAddress) {
-      validationWarnings.push('InterestRateModelV2Factory address not found. Deployment may fail.')
-    }
-
-    // Validate hook owner address is set
-    if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
-      validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
-    }
-
-    // Update warnings list - replace validation warnings but keep others
-    setWarnings(prevWarnings => {
-      // Keep warnings from other sources (like fetchDeploymentData) that are not validation warnings
-      const otherWarnings = prevWarnings.filter(w => 
-        !w.includes('Hook implementation address') &&
-        !w.includes('InterestRateModelV2Factory address') &&
-        !w.includes('Hook owner address') &&
-        !w.includes('SiloDeployer address') &&
-        !w.includes('deployment data')
-      )
-      // Combine with new validation warnings
-      const newWarnings = [...otherWarnings, ...validationWarnings]
-      // Only update if there are actually warnings to show
-      return newWarnings
-    })
-
-    // Prepare Oracles struct
-    // For already deployed oracles, we only need the deployed address
-    const getOracleTxData = (oracleAddress: string | undefined) => {
-        if (!oracleAddress || oracleAddress === ethers.ZeroAddress) {
-          return {
-            deployed: ethers.ZeroAddress,
-            factory: ethers.ZeroAddress,
-            txInput: '0x'
-          }
-        }
-        return {
-          deployed: oracleAddress,
-          factory: ethers.ZeroAddress, // Already deployed, no factory needed
-          txInput: '0x' // Already deployed, no tx input needed
-        }
+      let validationWarnings: string[] = []
+      if (hookReceiverImplementation === ethers.ZeroAddress) {
+        validationWarnings.push(`Hook implementation address not found for ${hookImplementationName}. Deployment may fail.`)
       }
 
-    const _oracles = {
-      solvencyOracle0: getOracleTxData(wizardData.oracleConfiguration?.token0?.scalerOracle?.address),
-      maxLtvOracle0: getOracleTxData(ethers.ZeroAddress), // Always NO_ORACLE in our case
-      solvencyOracle1: getOracleTxData(wizardData.oracleConfiguration?.token1?.scalerOracle?.address),
-      maxLtvOracle1: getOracleTxData(ethers.ZeroAddress) // Always NO_ORACLE in our case
-    }
-
-    // Prepare IRM config data as bytes
-    // IRM config needs to be ABI encoded as IInterestRateModelV2.Config
-    // Matching: abi.encode(irmModelData.getConfigData(_config.interestRateModelConfig0))
-    const encodeIRMConfig = (irmConfig: { config?: { [key: string]: string | number | boolean } } | null): string => {
-        if (!irmConfig || !irmConfig.config) {
-          return '0x'
-        }
-
-        const config = irmConfig.config
-        // IInterestRateModelV2.Config structure - order matches interface declaration
-        // All values are int256 except ri and Tcrit which are int112
-        const irmConfigAbi = [
-          'tuple(int256 uopt, int256 ucrit, int256 ulow, int256 ki, int256 kcrit, int256 klow, int256 klin, int256 beta, int112 ri, int112 Tcrit)'
-        ]
-        
-        try {
-          // Convert all values to BigInt, handling string or number inputs
-          const toBigInt = (value: string | number | boolean | null | undefined): bigint => {
-            if (value === null || value === undefined) return BigInt(0)
-            if (typeof value === 'string') {
-              // Handle string numbers
-              try {
-                return BigInt(value)
-              } catch {
-                return BigInt(0)
-              }
-            }
-            return BigInt(Math.floor(Number(value) || 0))
-          }
-
-          const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-          const encoded = abiCoder.encode(irmConfigAbi, [[
-            toBigInt(config.uopt),
-            toBigInt(config.ucrit),
-            toBigInt(config.ulow),
-            toBigInt(config.ki),
-            toBigInt(config.kcrit),
-            toBigInt(config.klow),
-            toBigInt(config.klin),
-            toBigInt(config.beta),
-            toBigInt(config.ri), // Will be cast to int112 by ABI encoder
-            toBigInt(config.Tcrit) // Will be cast to int112 by ABI encoder
-          ]])
-          return encoded
-        } catch (err) {
-          console.error('Error encoding IRM config:', err)
-          return '0x'
-        }
+      if (irmFactoryAddress === ethers.ZeroAddress) {
+        validationWarnings.push('InterestRateModelV2Factory address not found. Deployment may fail.')
       }
 
-    const irmConfigData0Encoded = encodeIRMConfig(wizardData.selectedIRM0)
-    const irmConfigData1Encoded = encodeIRMConfig(wizardData.selectedIRM1)
-
-    // Prepare ClonableHookReceiver
-    // Matching: _getClonableHookReceiverConfig(hookReceiverImplementation)
-    // Initialization data is abi.encode(owner) where owner is from Step 8 (hook owner selection)
-    // This matches: abi.encode(_getClonableHookReceiverOwner())
-    let initializationData = '0x'
-    if (wizardData.hookOwnerAddress && wizardData.hookOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.hookOwnerAddress)) {
-      try {
-        const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-        // Encode the owner address: abi.encode(address owner)
-        const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
-        initializationData = abiCoder.encode(['address'], [normalizedAddress])
-      } catch (err) {
-        console.error('Error encoding initialization data:', err)
-        initializationData = '0x'
+      // Validate hook owner address is set
+      if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
+        validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
       }
-    }
 
-    const _clonableHookReceiver = {
-      implementation: hookReceiverImplementation,
-      initializationData: initializationData
+      // Update warnings list - replace validation warnings but keep others
+      setWarnings(prevWarnings => {
+        // Keep warnings from other sources (like fetchDeploymentData) that are not validation warnings
+        const otherWarnings = prevWarnings.filter(w => 
+          !w.includes('Hook implementation address') &&
+          !w.includes('InterestRateModelV2Factory address') &&
+          !w.includes('Hook owner address') &&
+          !w.includes('SiloDeployer address') &&
+          !w.includes('deployment data')
+        )
+        // Combine with new validation warnings
+        const newWarnings = [...otherWarnings, ...validationWarnings]
+        // Only update if there are actually warnings to show
+        return newWarnings
+      })
+    } catch (error) {
+      console.error('Error preparing deploy args:', error)
+      setError(error instanceof Error ? error.message : 'Failed to prepare deployment arguments')
     }
-
-    // Prepare ISiloConfig.InitData
-    // Convert basis points to 18 decimals (multiply by 10^14)
-    const to18Decimals = (bp: number): bigint => {
-      return BigInt(Math.round(bp * 100)) * BP2DP_NORMALIZATION
-    }
-
-    const _siloInitData = {
-      deployer: ethers.ZeroAddress, // Can be set by user or left as zero
-      hookReceiver: ethers.ZeroAddress, // CLONE_IMPLEMENTATION means zero, will use implementation
-      daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0).toString(),
-      deployerFee: to18Decimals(wizardData.feesConfiguration?.deployerFee || 0).toString(),
-      token0: wizardData.token0.address,
-      solvencyOracle0: _oracles.solvencyOracle0.deployed,
-      maxLtvOracle0: ethers.ZeroAddress,
-      interestRateModel0: irmFactoryAddress,
-      maxLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.maxLTV || 0).toString(),
-      lt0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationThreshold || 0).toString(),
-      liquidationTargetLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationTargetLTV || 0).toString(),
-      liquidationFee0: to18Decimals(wizardData.feesConfiguration?.token0.liquidationFee || 0).toString(),
-      flashloanFee0: to18Decimals(wizardData.feesConfiguration?.token0.flashloanFee || 0).toString(),
-      callBeforeQuote0: false,
-      token1: wizardData.token1.address,
-      solvencyOracle1: _oracles.solvencyOracle1.deployed,
-      maxLtvOracle1: ethers.ZeroAddress,
-      interestRateModel1: irmFactoryAddress,
-      maxLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.maxLTV || 0).toString(),
-      lt1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationThreshold || 0).toString(),
-      liquidationTargetLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationTargetLTV || 0).toString(),
-      liquidationFee1: to18Decimals(wizardData.feesConfiguration?.token1.liquidationFee || 0).toString(),
-      flashloanFee1: to18Decimals(wizardData.feesConfiguration?.token1.flashloanFee || 0).toString(),
-      callBeforeQuote1: false
-    }
-
-    const args: DeployArgs = {
-      _oracles,
-      _irmConfigData0: {
-        config: wizardData.selectedIRM0?.config || {},
-        encoded: irmConfigData0Encoded
-      },
-      _irmConfigData1: {
-        config: wizardData.selectedIRM1?.config || {},
-        encoded: irmConfigData1Encoded
-      },
-      _clonableHookReceiver,
-      _siloInitData
-    }
-
-    setDeployArgs(args)
   }, [wizardData, siloCoreDeployments])
 
   const handleDeploy = async () => {
@@ -586,6 +413,42 @@ export default function Step10Deployment() {
       return
     }
 
+    // Validate all required data before attempting deployment
+    const validationErrors: string[] = []
+    
+    if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
+      validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+    }
+    
+    if (deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress) {
+      validationErrors.push('Hook implementation address is missing. Please ensure the hook is properly configured.')
+    }
+    
+    if (deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress) {
+      validationErrors.push('Interest Rate Model 0 address is missing. Please ensure IRM is properly configured.')
+    }
+    
+    if (deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress) {
+      validationErrors.push('Interest Rate Model 1 address is missing. Please ensure IRM is properly configured.')
+    }
+    
+    if (!deployArgs._irmConfigData0.encoded || deployArgs._irmConfigData0.encoded === '0x') {
+      validationErrors.push('IRM Config Data 0 is empty. Please ensure IRM configuration is properly set.')
+    }
+    
+    if (!deployArgs._irmConfigData1.encoded || deployArgs._irmConfigData1.encoded === '0x') {
+      validationErrors.push('IRM Config Data 1 is empty. Please ensure IRM configuration is properly set.')
+    }
+    
+    if (!deployArgs._clonableHookReceiver.initializationData || deployArgs._clonableHookReceiver.initializationData === '0x') {
+      validationErrors.push('Hook initialization data is empty. Please ensure hook owner is properly set.')
+    }
+    
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(' '))
+      return
+    }
+
     setDeploying(true)
     setError('')
     setTxHash('')
@@ -594,128 +457,147 @@ export default function Step10Deployment() {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       
-      // Use initialization data from deployArgs (already encoded with hook owner address from Step 8)
-      // Validate that hook owner address is set
-      if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
-        throw new Error('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
-      }
-      
+      // Ensure initialization data is properly encoded
       let hookReceiverInitializationData = deployArgs._clonableHookReceiver.initializationData
       if (!hookReceiverInitializationData || hookReceiverInitializationData === '0x') {
         // Re-encode if needed
-        const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
-        hookReceiverInitializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [normalizedAddress])
+        if (wizardData.hookOwnerAddress && ethers.isAddress(wizardData.hookOwnerAddress)) {
+          const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
+          hookReceiverInitializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [normalizedAddress])
+        } else {
+          throw new Error('Hook owner address is not set or invalid')
+        }
       }
       
-      // Use clonableHookReceiver from deployArgs with the initialization data
+      // Use clonableHookReceiver from deployArgs - exact structure matching contract
       const clonableHookReceiver = {
         implementation: deployArgs._clonableHookReceiver.implementation,
         initializationData: hookReceiverInitializationData
       }
-
-      // ISiloDeployer ABI matching the interface
-      const deployerAbi = [
-        {
-          inputs: [
-            {
-              name: '_oracles',
-              type: 'tuple',
-              components: [
-                {
-                  name: 'solvencyOracle0',
-                  type: 'tuple',
-                  components: [
-                    { name: 'deployed', type: 'address' },
-                    { name: 'factory', type: 'address' },
-                    { name: 'txInput', type: 'bytes' }
-                  ]
-                },
-                {
-                  name: 'maxLtvOracle0',
-                  type: 'tuple',
-                  components: [
-                    { name: 'deployed', type: 'address' },
-                    { name: 'factory', type: 'address' },
-                    { name: 'txInput', type: 'bytes' }
-                  ]
-                },
-                {
-                  name: 'solvencyOracle1',
-                  type: 'tuple',
-                  components: [
-                    { name: 'deployed', type: 'address' },
-                    { name: 'factory', type: 'address' },
-                    { name: 'txInput', type: 'bytes' }
-                  ]
-                },
-                {
-                  name: 'maxLtvOracle1',
-                  type: 'tuple',
-                  components: [
-                    { name: 'deployed', type: 'address' },
-                    { name: 'factory', type: 'address' },
-                    { name: 'txInput', type: 'bytes' }
-                  ]
-                }
-              ]
-            },
-            { name: '_irmConfigData0', type: 'bytes' },
-            { name: '_irmConfigData1', type: 'bytes' },
-            {
-              name: '_clonableHookReceiver',
-              type: 'tuple',
-              components: [
-                { name: 'implementation', type: 'address' },
-                { name: 'initializationData', type: 'bytes' }
-              ]
-            },
-            {
-              name: '_siloInitData',
-              type: 'tuple',
-              components: [
-                { name: 'deployer', type: 'address' },
-                { name: 'hookReceiver', type: 'address' },
-                { name: 'daoFee', type: 'uint256' },
-                { name: 'deployerFee', type: 'uint256' },
-                { name: 'token0', type: 'address' },
-                { name: 'solvencyOracle0', type: 'address' },
-                { name: 'maxLtvOracle0', type: 'address' },
-                { name: 'interestRateModel0', type: 'address' },
-                { name: 'maxLtv0', type: 'uint256' },
-                { name: 'lt0', type: 'uint256' },
-                { name: 'liquidationTargetLtv0', type: 'uint256' },
-                { name: 'liquidationFee0', type: 'uint256' },
-                { name: 'flashloanFee0', type: 'uint256' },
-                { name: 'callBeforeQuote0', type: 'bool' },
-                { name: 'token1', type: 'address' },
-                { name: 'solvencyOracle1', type: 'address' },
-                { name: 'maxLtvOracle1', type: 'address' },
-                { name: 'interestRateModel1', type: 'address' },
-                { name: 'maxLtv1', type: 'uint256' },
-                { name: 'lt1', type: 'uint256' },
-                { name: 'liquidationTargetLtv1', type: 'uint256' },
-                { name: 'liquidationFee1', type: 'uint256' },
-                { name: 'flashloanFee1', type: 'uint256' },
-                { name: 'callBeforeQuote1', type: 'bool' }
-              ]
-            }
-          ],
-          name: 'deploy',
-          outputs: [{ name: 'siloConfig', type: 'address' }],
-          stateMutability: 'nonpayable',
-          type: 'function'
-        }
-      ]
+      
+      // Validate all addresses are valid before sending
+      if (!ethers.isAddress(clonableHookReceiver.implementation) || clonableHookReceiver.implementation === ethers.ZeroAddress) {
+        throw new Error('Hook implementation address is invalid')
+      }
+      
+      if (!ethers.isAddress(deployArgs._siloInitData.token0) || deployArgs._siloInitData.token0 === ethers.ZeroAddress) {
+        throw new Error('Token0 address is invalid')
+      }
+      
+      if (!ethers.isAddress(deployArgs._siloInitData.token1) || deployArgs._siloInitData.token1 === ethers.ZeroAddress) {
+        throw new Error('Token1 address is invalid')
+      }
+      
+      if (!ethers.isAddress(deployArgs._siloInitData.interestRateModel0) || deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress) {
+        throw new Error('Interest Rate Model 0 address is invalid')
+      }
+      
+      if (!ethers.isAddress(deployArgs._siloInitData.interestRateModel1) || deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress) {
+        throw new Error('Interest Rate Model 1 address is invalid')
+      }
 
       const deployerContract = new ethers.Contract(deployerAddress, deployerAbi, signer)
 
-      // Execute deploy transaction
+      // Prepare exact transaction arguments - ensure no extra fields
+      // These must match exactly what's shown in JSON
+      const txOracles = deployArgs._oracles
+      const txIrmConfigData0 = deployArgs._irmConfigData0.encoded
+      const txIrmConfigData1 = deployArgs._irmConfigData1.encoded
+      const txClonableHookReceiver = clonableHookReceiver
+      const txSiloInitData = deployArgs._siloInitData
+
+      // Prepare transaction data object for detailed logging
+      // This matches exactly the arguments passed to deploy() function
+      const transactionData = {
+        functionName: 'deploy',
+        arguments: {
+          _oracles: {
+            solvencyOracle0: {
+              deployed: txOracles.solvencyOracle0.deployed,
+              factory: txOracles.solvencyOracle0.factory,
+              txInput: txOracles.solvencyOracle0.txInput
+            },
+            maxLtvOracle0: {
+              deployed: txOracles.maxLtvOracle0.deployed,
+              factory: txOracles.maxLtvOracle0.factory,
+              txInput: txOracles.maxLtvOracle0.txInput
+            },
+            solvencyOracle1: {
+              deployed: txOracles.solvencyOracle1.deployed,
+              factory: txOracles.solvencyOracle1.factory,
+              txInput: txOracles.solvencyOracle1.txInput
+            },
+            maxLtvOracle1: {
+              deployed: txOracles.maxLtvOracle1.deployed,
+              factory: txOracles.maxLtvOracle1.factory,
+              txInput: txOracles.maxLtvOracle1.txInput
+            }
+          },
+          _irmConfigData0: txIrmConfigData0,
+          _irmConfigData1: txIrmConfigData1,
+          _clonableHookReceiver: {
+            implementation: txClonableHookReceiver.implementation,
+            initializationData: txClonableHookReceiver.initializationData
+          },
+          _siloInitData: {
+            deployer: txSiloInitData.deployer,
+            hookReceiver: txSiloInitData.hookReceiver,
+            daoFee: txSiloInitData.daoFee.toString(),
+            deployerFee: txSiloInitData.deployerFee.toString(),
+            token0: txSiloInitData.token0,
+            solvencyOracle0: txSiloInitData.solvencyOracle0,
+            maxLtvOracle0: txSiloInitData.maxLtvOracle0,
+            interestRateModel0: txSiloInitData.interestRateModel0,
+            maxLtv0: txSiloInitData.maxLtv0.toString(),
+            lt0: txSiloInitData.lt0.toString(),
+            liquidationTargetLtv0: txSiloInitData.liquidationTargetLtv0.toString(),
+            liquidationFee0: txSiloInitData.liquidationFee0.toString(),
+            flashloanFee0: txSiloInitData.flashloanFee0.toString(),
+            callBeforeQuote0: txSiloInitData.callBeforeQuote0,
+            token1: txSiloInitData.token1,
+            solvencyOracle1: txSiloInitData.solvencyOracle1,
+            maxLtvOracle1: txSiloInitData.maxLtvOracle1,
+            interestRateModel1: txSiloInitData.interestRateModel1,
+            maxLtv1: txSiloInitData.maxLtv1.toString(),
+            lt1: txSiloInitData.lt1.toString(),
+            liquidationTargetLtv1: txSiloInitData.liquidationTargetLtv1.toString(),
+            liquidationFee1: txSiloInitData.liquidationFee1.toString(),
+            flashloanFee1: txSiloInitData.flashloanFee1.toString(),
+            callBeforeQuote1: txSiloInitData.callBeforeQuote1
+          }
+        },
+        deployerAddress: deployerAddress,
+        contractAddress: deployerAddress
+      }
+
+      // Log transaction data as formatted JSON for easy inspection
+      console.log('=== DEPLOY TRANSACTION DATA ===')
+      console.log(JSON.stringify(transactionData, null, 2))
+      console.log('=== END TRANSACTION DATA ===')
+
+      // Validate with estimateGas first so we get a clear revert reason without sending tx
+      try {
+        await deployerContract.deploy.estimateGas(
+          txOracles,
+          txIrmConfigData0,
+          txIrmConfigData1,
+          txClonableHookReceiver,
+          txSiloInitData
+        )
+      } catch (estimateErr: unknown) {
+        const msg = formatContractError(estimateErr, deployerInterface)
+        setError('Transaction validation failed:\n' + msg)
+        setDeploying(false)
+        return
+      }
+
+      // Execute deploy transaction - use exact arguments matching contract interface
       const tx = await deployerContract.deploy(
-        deployArgs._oracles,
-        deployArgs._irmConfigData0.encoded,
-        deployArgs._irmConfigData1.encoded,
-        clonableHookReceiver,
-        deployArgs._siloInitData
+        txOracles,
+        txIrmConfigData0,
+        txIrmConfigData1,
+        txClonableHookReceiver,
+        txSiloInitData
       )
 
       setTxHash(tx.hash)
@@ -727,7 +609,7 @@ export default function Step10Deployment() {
       setError('')
     } catch (err: unknown) {
       console.error('Deployment error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Transaction failed. Please check your wallet and try again.'
+      const errorMessage = formatContractError(err, deployerInterface)
       setError(errorMessage)
       setTxHash('')
     } finally {
@@ -863,29 +745,7 @@ export default function Step10Deployment() {
         </button>
       </div>
 
-      {/* Deploy Arguments as JSON */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>
-        </p>
-        {deployArgs ? (
-          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
-            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-              <code>{JSON.stringify(deployArgs, null, 2)}</code>
-            </pre>
-          </div>
-        ) : (
-          <div className="bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-gray-400 text-sm">
-              {!wizardData.token0 || !wizardData.token1 
-                ? 'Please complete previous steps to generate deployment arguments.'
-                : 'Preparing deployment arguments...'}
-            </p>
-          </div>
-        )}
-      </div>
-
+      {/* Warnings and Errors */}
       {warnings.length > 0 && (
         <div className="bg-yellow-900/50 border border-yellow-500 rounded-lg p-4 mb-6">
           <div className="text-yellow-400 text-sm font-semibold mb-2">
@@ -922,6 +782,29 @@ export default function Step10Deployment() {
           </a>
         </div>
       )}
+
+      {/* Deploy Arguments as JSON */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
+        <p className="text-sm text-gray-400 mb-4">
+          Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>
+        </p>
+        {deployArgs ? (
+          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
+            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+              <code>{JSON.stringify(deployArgs, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2)}</code>
+            </pre>
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-gray-400 text-sm">
+              {!wizardData.token0 || !wizardData.token1 
+                ? 'Please complete previous steps to generate deployment arguments.'
+                : 'Preparing deployment arguments...'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

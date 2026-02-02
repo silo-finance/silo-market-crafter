@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
+import erc20Artifact from '@/abis/IERC20.json'
+
+/** Foundry artifact: ABI under "abi" key – use as-is, never modify */
+const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 interface TokenMetadata {
   symbol: string
@@ -265,14 +269,6 @@ export default function Step1Assets() {
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum)
-    
-    // Minimal ERC20 ABI for symbol, decimals, and name
-    const erc20Abi = [
-      'function symbol() view returns (string)',
-      'function decimals() view returns (uint8)',
-      'function name() view returns (string)'
-    ]
-    
     const contract = new ethers.Contract(address, erc20Abi, provider)
     
     try {
