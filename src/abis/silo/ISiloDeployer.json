@@ -1,1 +1,833 @@
-{"abi":[{"type":"function","name":"deploy","inputs":[{"name":"_oracles","type":"tuple","internalType":"struct ISiloDeployer.Oracles","components":[{"name":"solvencyOracle0","type":"tuple","internalType":"struct ISiloDeployer.OracleCreationTxData","components":[{"name":"deployed","type":"address","internalType":"address"},{"name":"factory","type":"address","internalType":"address"},{"name":"txInput","type":"bytes","internalType":"bytes"}]},{"name":"maxLtvOracle0","type":"tuple","internalType":"struct ISiloDeployer.OracleCreationTxData","components":[{"name":"deployed","type":"address","internalType":"address"},{"name":"factory","type":"address","internalType":"address"},{"name":"txInput","type":"bytes","internalType":"bytes"}]},{"name":"solvencyOracle1","type":"tuple","internalType":"struct ISiloDeployer.OracleCreationTxData","components":[{"name":"deployed","type":"address","internalType":"address"},{"name":"factory","type":"address","internalType":"address"},{"name":"txInput","type":"bytes","internalType":"bytes"}]},{"name":"maxLtvOracle1","type":"tuple","internalType":"struct ISiloDeployer.OracleCreationTxData","components":[{"name":"deployed","type":"address","internalType":"address"},{"name":"factory","type":"address","internalType":"address"},{"name":"txInput","type":"bytes","internalType":"bytes"}]}]},{"name":"_irmConfigData0","type":"bytes","internalType":"bytes"},{"name":"_irmConfigData1","type":"bytes","internalType":"bytes"},{"name":"_clonableHookReceiver","type":"tuple","internalType":"struct ISiloDeployer.ClonableHookReceiver","components":[{"name":"implementation","type":"address","internalType":"address"},{"name":"initializationData","type":"bytes","internalType":"bytes"}]},{"name":"_siloInitData","type":"tuple","internalType":"struct ISiloConfig.InitData","components":[{"name":"deployer","type":"address","internalType":"address"},{"name":"hookReceiver","type":"address","internalType":"address"},{"name":"deployerFee","type":"uint256","internalType":"uint256"},{"name":"daoFee","type":"uint256","internalType":"uint256"},{"name":"token0","type":"address","internalType":"address"},{"name":"solvencyOracle0","type":"address","internalType":"address"},{"name":"maxLtvOracle0","type":"address","internalType":"address"},{"name":"interestRateModel0","type":"address","internalType":"address"},{"name":"maxLtv0","type":"uint256","internalType":"uint256"},{"name":"lt0","type":"uint256","internalType":"uint256"},{"name":"liquidationTargetLtv0","type":"uint256","internalType":"uint256"},{"name":"liquidationFee0","type":"uint256","internalType":"uint256"},{"name":"flashloanFee0","type":"uint256","internalType":"uint256"},{"name":"callBeforeQuote0","type":"bool","internalType":"bool"},{"name":"token1","type":"address","internalType":"address"},{"name":"solvencyOracle1","type":"address","internalType":"address"},{"name":"maxLtvOracle1","type":"address","internalType":"address"},{"name":"interestRateModel1","type":"address","internalType":"address"},{"name":"maxLtv1","type":"uint256","internalType":"uint256"},{"name":"lt1","type":"uint256","internalType":"uint256"},{"name":"liquidationTargetLtv1","type":"uint256","internalType":"uint256"},{"name":"liquidationFee1","type":"uint256","internalType":"uint256"},{"name":"flashloanFee1","type":"uint256","internalType":"uint256"},{"name":"callBeforeQuote1","type":"bool","internalType":"bool"}]}],"outputs":[{"name":"siloConfig","type":"address","internalType":"contract ISiloConfig"}],"stateMutability":"nonpayable"},{"type":"event","name":"SiloCreated","inputs":[{"name":"siloConfig","type":"address","indexed":false,"internalType":"contract ISiloConfig"}],"anonymous":false},{"type":"error","name":"FailedToCreateAnOracle","inputs":[{"name":"_factory","type":"address","internalType":"address"}]},{"type":"error","name":"HookReceiverMisconfigured","inputs":[]}],"bytecode":{"object":"0x","sourceMap":"","linkReferences":{}},"deployedBytecode":{"object":"0x","sourceMap":"","linkReferences":{}},"methodIdentifiers":{"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))":"27bafe46"},"rawMetadata":"{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"FailedToCreateAnOracle\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HookReceiverMisconfigured\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"contract ISiloConfig\",\"name\":\"siloConfig\",\"type\":\"address\"}],\"name\":\"SiloCreated\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"solvencyOracle0\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"maxLtvOracle0\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"solvencyOracle1\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"maxLtvOracle1\",\"type\":\"tuple\"}],\"internalType\":\"struct ISiloDeployer.Oracles\",\"name\":\"_oracles\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"_irmConfigData0\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"_irmConfigData1\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initializationData\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.ClonableHookReceiver\",\"name\":\"_clonableHookReceiver\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel0\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee0\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote0\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel1\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee1\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote1\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.InitData\",\"name\":\"_siloInitData\",\"type\":\"tuple\"}],\"name\":\"deploy\",\"outputs\":[{\"internalType\":\"contract ISiloConfig\",\"name\":\"siloConfig\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"errors\":{\"FailedToCreateAnOracle(address)\":[{\"details\":\"Revert if an oracle factory fails to create an oracle\"}],\"HookReceiverMisconfigured()\":[{\"details\":\"Revert if for the deployment provided both hook receiver and hook receiver implementation\"}]},\"events\":{\"SiloCreated(address)\":{\"details\":\"Emit after the Silo creation\"}},\"kind\":\"dev\",\"methods\":{\"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"params\":{\"_clonableHookReceiver\":\"Hook receiver implementation to clone (ignored if implementation has address(0))\",\"_irmConfigData0\":\"IRM config data for a silo `_TOKEN0`\",\"_irmConfigData1\":\"IRM config data for a silo `_TOKEN1`\",\"_oracles\":\"Oracles to be create during the silo creation\",\"_siloInitData\":\"Silo configuration for the silo creation\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"notice\":\"Deploy silo\"}},\"notice\":\"Silo Deployer\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/ISiloDeployer.sol\":\"ISiloDeployer\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol\":{\"keccak256\":\"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf\",\"dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb\"]},\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b\",\"dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827\",\"dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e\",\"dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX\"]},\"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol\":{\"keccak256\":\"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587\",\"dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7\"]},\"silo-core/contracts/interfaces/IDynamicKinkModel.sol\":{\"keccak256\":\"0x7bf864dd1881ce2c50fcc01d77c0c4eb5d106f3714bbf00c81ca87b3413a05b5\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://0c30a06e9321b3381beb85c8b4a1b3f9b272e852a0bf331f197355cf7bdf7ad2\",\"dweb:/ipfs/QmYSeYFv7C4uaTNdGiS57NFHsUtjec5L3PbvZBnAGX5icB\"]},\"silo-core/contracts/interfaces/IDynamicKinkModelConfig.sol\":{\"keccak256\":\"0x24773fefdfe5c74f2768d347e6e5b96ed64a4c05f894dbe0e9412fc03e0bc6f2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b4c0fbfc0f5579c55869e409a6a1b5cc32306f9bb3d15ce114d5488c35417ecb\",\"dweb:/ipfs/QmdNPsT8BUYWSat9DaWBP1uKqxdDggCzNn2iZJA5yAEyNB\"]},\"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol\":{\"keccak256\":\"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c\",\"dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS\"]},\"silo-core/contracts/interfaces/IERC3156FlashLender.sol\":{\"keccak256\":\"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb\",\"dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa\"]},\"silo-core/contracts/interfaces/IHookReceiver.sol\":{\"keccak256\":\"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e\",\"dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet\"]},\"silo-core/contracts/interfaces/IInterestRateModelV2.sol\":{\"keccak256\":\"0x83060aa92978f92affd468bdebd7bc223b265781e7d39c0362534996549a2d1a\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a491f2c0072d273bfe83f6538faa9afb0a792e6dd13a46e9c6f6e1b42d210896\",\"dweb:/ipfs/QmckyeJqZtNox5fLRKznxoTTuCk8iPbQz36RP7obEodp8a\"]},\"silo-core/contracts/interfaces/IInterestRateModelV2Config.sol\":{\"keccak256\":\"0x42d070e869bf6dc31f66311236b159691fdc783a36b37d4f56cb95ebbbd8ce64\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://fb8a1910d0bdfc93635f1f986aaaeda8f74d5edab21861f074c74179b6638bc7\",\"dweb:/ipfs/QmVXThfXJTe2i66PRDFXMCMyJb6RjGQ9dDhsZqoLyZ9YBB\"]},\"silo-core/contracts/interfaces/ISilo.sol\":{\"keccak256\":\"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8\",\"dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4\"]},\"silo-core/contracts/interfaces/ISiloConfig.sol\":{\"keccak256\":\"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036\",\"dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS\"]},\"silo-core/contracts/interfaces/ISiloDeployer.sol\":{\"keccak256\":\"0x8af8b20a99ed6e129297a54a3be82f77a4ede8fdd1bc7f675c985c762a6fe97a\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7e643f18e33161c79d2f599665318a41be7b25f7a212144d12a7893fb662f73a\",\"dweb:/ipfs/QmX5aXDUm5nJVroxspSiiGBCAVfVveEY5oGYVS8vaN3njP\"]},\"silo-core/contracts/interfaces/ISiloFactory.sol\":{\"keccak256\":\"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67\",\"dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv\"]}},\"version\":1}","metadata":{"compiler":{"version":"0.8.28+commit.7893614a"},"language":"Solidity","output":{"abi":[{"inputs":[{"internalType":"address","name":"_factory","type":"address"}],"type":"error","name":"FailedToCreateAnOracle"},{"inputs":[],"type":"error","name":"HookReceiverMisconfigured"},{"inputs":[{"internalType":"contract ISiloConfig","name":"siloConfig","type":"address","indexed":false}],"type":"event","name":"SiloCreated","anonymous":false},{"inputs":[{"internalType":"struct ISiloDeployer.Oracles","name":"_oracles","type":"tuple","components":[{"internalType":"struct ISiloDeployer.OracleCreationTxData","name":"solvencyOracle0","type":"tuple","components":[{"internalType":"address","name":"deployed","type":"address"},{"internalType":"address","name":"factory","type":"address"},{"internalType":"bytes","name":"txInput","type":"bytes"}]},{"internalType":"struct ISiloDeployer.OracleCreationTxData","name":"maxLtvOracle0","type":"tuple","components":[{"internalType":"address","name":"deployed","type":"address"},{"internalType":"address","name":"factory","type":"address"},{"internalType":"bytes","name":"txInput","type":"bytes"}]},{"internalType":"struct ISiloDeployer.OracleCreationTxData","name":"solvencyOracle1","type":"tuple","components":[{"internalType":"address","name":"deployed","type":"address"},{"internalType":"address","name":"factory","type":"address"},{"internalType":"bytes","name":"txInput","type":"bytes"}]},{"internalType":"struct ISiloDeployer.OracleCreationTxData","name":"maxLtvOracle1","type":"tuple","components":[{"internalType":"address","name":"deployed","type":"address"},{"internalType":"address","name":"factory","type":"address"},{"internalType":"bytes","name":"txInput","type":"bytes"}]}]},{"internalType":"bytes","name":"_irmConfigData0","type":"bytes"},{"internalType":"bytes","name":"_irmConfigData1","type":"bytes"},{"internalType":"struct ISiloDeployer.ClonableHookReceiver","name":"_clonableHookReceiver","type":"tuple","components":[{"internalType":"address","name":"implementation","type":"address"},{"internalType":"bytes","name":"initializationData","type":"bytes"}]},{"internalType":"struct ISiloConfig.InitData","name":"_siloInitData","type":"tuple","components":[{"internalType":"address","name":"deployer","type":"address"},{"internalType":"address","name":"hookReceiver","type":"address"},{"internalType":"uint256","name":"deployerFee","type":"uint256"},{"internalType":"uint256","name":"daoFee","type":"uint256"},{"internalType":"address","name":"token0","type":"address"},{"internalType":"address","name":"solvencyOracle0","type":"address"},{"internalType":"address","name":"maxLtvOracle0","type":"address"},{"internalType":"address","name":"interestRateModel0","type":"address"},{"internalType":"uint256","name":"maxLtv0","type":"uint256"},{"internalType":"uint256","name":"lt0","type":"uint256"},{"internalType":"uint256","name":"liquidationTargetLtv0","type":"uint256"},{"internalType":"uint256","name":"liquidationFee0","type":"uint256"},{"internalType":"uint256","name":"flashloanFee0","type":"uint256"},{"internalType":"bool","name":"callBeforeQuote0","type":"bool"},{"internalType":"address","name":"token1","type":"address"},{"internalType":"address","name":"solvencyOracle1","type":"address"},{"internalType":"address","name":"maxLtvOracle1","type":"address"},{"internalType":"address","name":"interestRateModel1","type":"address"},{"internalType":"uint256","name":"maxLtv1","type":"uint256"},{"internalType":"uint256","name":"lt1","type":"uint256"},{"internalType":"uint256","name":"liquidationTargetLtv1","type":"uint256"},{"internalType":"uint256","name":"liquidationFee1","type":"uint256"},{"internalType":"uint256","name":"flashloanFee1","type":"uint256"},{"internalType":"bool","name":"callBeforeQuote1","type":"bool"}]}],"stateMutability":"nonpayable","type":"function","name":"deploy","outputs":[{"internalType":"contract ISiloConfig","name":"siloConfig","type":"address"}]}],"devdoc":{"kind":"dev","methods":{"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))":{"params":{"_clonableHookReceiver":"Hook receiver implementation to clone (ignored if implementation has address(0))","_irmConfigData0":"IRM config data for a silo `_TOKEN0`","_irmConfigData1":"IRM config data for a silo `_TOKEN1`","_oracles":"Oracles to be create during the silo creation","_siloInitData":"Silo configuration for the silo creation"}}},"version":1},"userdoc":{"kind":"user","methods":{"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))":{"notice":"Deploy silo"}},"version":1}},"settings":{"remappings":["@ensdomains/=node_modules/@ensdomains/","@openzeppelin/=gitmodules/openzeppelin-contracts-5/","@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/","@uniswap/v3-core/=gitmodules/uniswap/v3-core/","ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/","a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/","chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/","chainlink/=gitmodules/chainlink/contracts/src/","createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/","crytic/=gitmodules/crytic/","ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/","erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/","forge-std/=gitmodules/forge-std/src/","halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/","hardhat/=node_modules/hardhat/","morpho-blue/=gitmodules/morpho-blue/src/","openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/","openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/","openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/","openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/","openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/","openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/","prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/","properties/=gitmodules/crytic/properties/contracts/","pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/","silo-core/=silo-core/","silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/","silo-oracles/=silo-oracles/","silo-vaults/=silo-vaults/","solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/","solmate/=gitmodules/crytic/properties/lib/solmate/src/","uniswap/=gitmodules/uniswap/","x-silo/=node_modules/x-silo/"],"optimizer":{"enabled":true,"runs":200},"metadata":{"bytecodeHash":"ipfs"},"compilationTarget":{"silo-core/contracts/interfaces/ISiloDeployer.sol":"ISiloDeployer"},"evmVersion":"cancun","libraries":{}},"sources":{"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol":{"keccak256":"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06","urls":["bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf","dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb"],"license":"MIT"},"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol":{"keccak256":"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d","urls":["bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b","dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5"],"license":"MIT"},"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol":{"keccak256":"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4","urls":["bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009","dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"],"license":"MIT"},"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol":{"keccak256":"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28","urls":["bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323","dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"],"license":"MIT"},"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol":{"keccak256":"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de","urls":["bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827","dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA"],"license":"MIT"},"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol":{"keccak256":"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c","urls":["bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e","dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX"],"license":"MIT"},"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol":{"keccak256":"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05","urls":["bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587","dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7"],"license":"MIT"},"silo-core/contracts/interfaces/IDynamicKinkModel.sol":{"keccak256":"0x7bf864dd1881ce2c50fcc01d77c0c4eb5d106f3714bbf00c81ca87b3413a05b5","urls":["bzz-raw://0c30a06e9321b3381beb85c8b4a1b3f9b272e852a0bf331f197355cf7bdf7ad2","dweb:/ipfs/QmYSeYFv7C4uaTNdGiS57NFHsUtjec5L3PbvZBnAGX5icB"],"license":"MIT"},"silo-core/contracts/interfaces/IDynamicKinkModelConfig.sol":{"keccak256":"0x24773fefdfe5c74f2768d347e6e5b96ed64a4c05f894dbe0e9412fc03e0bc6f2","urls":["bzz-raw://b4c0fbfc0f5579c55869e409a6a1b5cc32306f9bb3d15ce114d5488c35417ecb","dweb:/ipfs/QmdNPsT8BUYWSat9DaWBP1uKqxdDggCzNn2iZJA5yAEyNB"],"license":"MIT"},"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol":{"keccak256":"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c","urls":["bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c","dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS"],"license":"MIT"},"silo-core/contracts/interfaces/IERC3156FlashLender.sol":{"keccak256":"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd","urls":["bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb","dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa"],"license":"MIT"},"silo-core/contracts/interfaces/IHookReceiver.sol":{"keccak256":"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371","urls":["bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e","dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet"],"license":"MIT"},"silo-core/contracts/interfaces/IInterestRateModelV2.sol":{"keccak256":"0x83060aa92978f92affd468bdebd7bc223b265781e7d39c0362534996549a2d1a","urls":["bzz-raw://a491f2c0072d273bfe83f6538faa9afb0a792e6dd13a46e9c6f6e1b42d210896","dweb:/ipfs/QmckyeJqZtNox5fLRKznxoTTuCk8iPbQz36RP7obEodp8a"],"license":"MIT"},"silo-core/contracts/interfaces/IInterestRateModelV2Config.sol":{"keccak256":"0x42d070e869bf6dc31f66311236b159691fdc783a36b37d4f56cb95ebbbd8ce64","urls":["bzz-raw://fb8a1910d0bdfc93635f1f986aaaeda8f74d5edab21861f074c74179b6638bc7","dweb:/ipfs/QmVXThfXJTe2i66PRDFXMCMyJb6RjGQ9dDhsZqoLyZ9YBB"],"license":"MIT"},"silo-core/contracts/interfaces/ISilo.sol":{"keccak256":"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7","urls":["bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8","dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4"],"license":"MIT"},"silo-core/contracts/interfaces/ISiloConfig.sol":{"keccak256":"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e","urls":["bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036","dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS"],"license":"MIT"},"silo-core/contracts/interfaces/ISiloDeployer.sol":{"keccak256":"0x8af8b20a99ed6e129297a54a3be82f77a4ede8fdd1bc7f675c985c762a6fe97a","urls":["bzz-raw://7e643f18e33161c79d2f599665318a41be7b25f7a212144d12a7893fb662f73a","dweb:/ipfs/QmX5aXDUm5nJVroxspSiiGBCAVfVveEY5oGYVS8vaN3njP"],"license":"MIT"},"silo-core/contracts/interfaces/ISiloFactory.sol":{"keccak256":"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca","urls":["bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67","dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv"],"license":"MIT"}},"version":1},"id":204}
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "deploy",
+      "inputs": [
+        {
+          "name": "_oracles",
+          "type": "tuple",
+          "internalType": "struct ISiloDeployer.Oracles",
+          "components": [
+            {
+              "name": "solvencyOracle0",
+              "type": "tuple",
+              "internalType": "struct ISiloDeployer.OracleCreationTxData",
+              "components": [
+                {
+                  "name": "deployed",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "factory",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "txInput",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "maxLtvOracle0",
+              "type": "tuple",
+              "internalType": "struct ISiloDeployer.OracleCreationTxData",
+              "components": [
+                {
+                  "name": "deployed",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "factory",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "txInput",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "solvencyOracle1",
+              "type": "tuple",
+              "internalType": "struct ISiloDeployer.OracleCreationTxData",
+              "components": [
+                {
+                  "name": "deployed",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "factory",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "txInput",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "maxLtvOracle1",
+              "type": "tuple",
+              "internalType": "struct ISiloDeployer.OracleCreationTxData",
+              "components": [
+                {
+                  "name": "deployed",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "factory",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "txInput",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "_irmConfigData0",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "_irmConfigData1",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "_clonableHookReceiver",
+          "type": "tuple",
+          "internalType": "struct ISiloDeployer.ClonableHookReceiver",
+          "components": [
+            {
+              "name": "implementation",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "initializationData",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ]
+        },
+        {
+          "name": "_siloInitData",
+          "type": "tuple",
+          "internalType": "struct ISiloConfig.InitData",
+          "components": [
+            {
+              "name": "deployer",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "hookReceiver",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "deployerFee",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "daoFee",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "token0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "solvencyOracle0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtvOracle0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "interestRateModel0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtv0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "lt0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationTargetLtv0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationFee0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "flashloanFee0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "callBeforeQuote0",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "token1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "solvencyOracle1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtvOracle1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "interestRateModel1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtv1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "lt1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationTargetLtv1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationFee1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "flashloanFee1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "callBeforeQuote1",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "siloConfig",
+          "type": "address",
+          "internalType": "contract ISiloConfig"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "SiloCreated",
+      "inputs": [
+        {
+          "name": "siloConfig",
+          "type": "address",
+          "indexed": false,
+          "internalType": "contract ISiloConfig"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "FailedToCreateAnOracle",
+      "inputs": [
+        {
+          "name": "_factory",
+          "type": "address",
+          "internalType": "address"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "HookReceiverMisconfigured",
+      "inputs": []
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": "27bafe46"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"FailedToCreateAnOracle\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HookReceiverMisconfigured\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"contract ISiloConfig\",\"name\":\"siloConfig\",\"type\":\"address\"}],\"name\":\"SiloCreated\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"solvencyOracle0\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"maxLtvOracle0\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"solvencyOracle1\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployed\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"factory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"txInput\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.OracleCreationTxData\",\"name\":\"maxLtvOracle1\",\"type\":\"tuple\"}],\"internalType\":\"struct ISiloDeployer.Oracles\",\"name\":\"_oracles\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"_irmConfigData0\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"_irmConfigData1\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initializationData\",\"type\":\"bytes\"}],\"internalType\":\"struct ISiloDeployer.ClonableHookReceiver\",\"name\":\"_clonableHookReceiver\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel0\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee0\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote0\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel1\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee1\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote1\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.InitData\",\"name\":\"_siloInitData\",\"type\":\"tuple\"}],\"name\":\"deploy\",\"outputs\":[{\"internalType\":\"contract ISiloConfig\",\"name\":\"siloConfig\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"errors\":{\"FailedToCreateAnOracle(address)\":[{\"details\":\"Revert if an oracle factory fails to create an oracle\"}],\"HookReceiverMisconfigured()\":[{\"details\":\"Revert if for the deployment provided both hook receiver and hook receiver implementation\"}]},\"events\":{\"SiloCreated(address)\":{\"details\":\"Emit after the Silo creation\"}},\"kind\":\"dev\",\"methods\":{\"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"params\":{\"_clonableHookReceiver\":\"Hook receiver implementation to clone (ignored if implementation has address(0))\",\"_irmConfigData0\":\"IRM config data for a silo `_TOKEN0`\",\"_irmConfigData1\":\"IRM config data for a silo `_TOKEN1`\",\"_oracles\":\"Oracles to be create during the silo creation\",\"_siloInitData\":\"Silo configuration for the silo creation\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"notice\":\"Deploy silo\"}},\"notice\":\"Silo Deployer\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/ISiloDeployer.sol\":\"ISiloDeployer\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol\":{\"keccak256\":\"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf\",\"dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb\"]},\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b\",\"dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827\",\"dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e\",\"dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX\"]},\"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol\":{\"keccak256\":\"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587\",\"dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7\"]},\"silo-core/contracts/interfaces/IDynamicKinkModel.sol\":{\"keccak256\":\"0x7bf864dd1881ce2c50fcc01d77c0c4eb5d106f3714bbf00c81ca87b3413a05b5\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://0c30a06e9321b3381beb85c8b4a1b3f9b272e852a0bf331f197355cf7bdf7ad2\",\"dweb:/ipfs/QmYSeYFv7C4uaTNdGiS57NFHsUtjec5L3PbvZBnAGX5icB\"]},\"silo-core/contracts/interfaces/IDynamicKinkModelConfig.sol\":{\"keccak256\":\"0x24773fefdfe5c74f2768d347e6e5b96ed64a4c05f894dbe0e9412fc03e0bc6f2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b4c0fbfc0f5579c55869e409a6a1b5cc32306f9bb3d15ce114d5488c35417ecb\",\"dweb:/ipfs/QmdNPsT8BUYWSat9DaWBP1uKqxdDggCzNn2iZJA5yAEyNB\"]},\"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol\":{\"keccak256\":\"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c\",\"dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS\"]},\"silo-core/contracts/interfaces/IERC3156FlashLender.sol\":{\"keccak256\":\"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb\",\"dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa\"]},\"silo-core/contracts/interfaces/IHookReceiver.sol\":{\"keccak256\":\"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e\",\"dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet\"]},\"silo-core/contracts/interfaces/IInterestRateModelV2.sol\":{\"keccak256\":\"0x83060aa92978f92affd468bdebd7bc223b265781e7d39c0362534996549a2d1a\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a491f2c0072d273bfe83f6538faa9afb0a792e6dd13a46e9c6f6e1b42d210896\",\"dweb:/ipfs/QmckyeJqZtNox5fLRKznxoTTuCk8iPbQz36RP7obEodp8a\"]},\"silo-core/contracts/interfaces/IInterestRateModelV2Config.sol\":{\"keccak256\":\"0x42d070e869bf6dc31f66311236b159691fdc783a36b37d4f56cb95ebbbd8ce64\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://fb8a1910d0bdfc93635f1f986aaaeda8f74d5edab21861f074c74179b6638bc7\",\"dweb:/ipfs/QmVXThfXJTe2i66PRDFXMCMyJb6RjGQ9dDhsZqoLyZ9YBB\"]},\"silo-core/contracts/interfaces/ISilo.sol\":{\"keccak256\":\"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8\",\"dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4\"]},\"silo-core/contracts/interfaces/ISiloConfig.sol\":{\"keccak256\":\"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036\",\"dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS\"]},\"silo-core/contracts/interfaces/ISiloDeployer.sol\":{\"keccak256\":\"0x8af8b20a99ed6e129297a54a3be82f77a4ede8fdd1bc7f675c985c762a6fe97a\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7e643f18e33161c79d2f599665318a41be7b25f7a212144d12a7893fb662f73a\",\"dweb:/ipfs/QmX5aXDUm5nJVroxspSiiGBCAVfVveEY5oGYVS8vaN3njP\"]},\"silo-core/contracts/interfaces/ISiloFactory.sol\":{\"keccak256\":\"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67\",\"dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.28+commit.7893614a"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_factory",
+              "type": "address"
+            }
+          ],
+          "type": "error",
+          "name": "FailedToCreateAnOracle"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "HookReceiverMisconfigured"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract ISiloConfig",
+              "name": "siloConfig",
+              "type": "address",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "SiloCreated",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "struct ISiloDeployer.Oracles",
+              "name": "_oracles",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "struct ISiloDeployer.OracleCreationTxData",
+                  "name": "solvencyOracle0",
+                  "type": "tuple",
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "deployed",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "factory",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "txInput",
+                      "type": "bytes"
+                    }
+                  ]
+                },
+                {
+                  "internalType": "struct ISiloDeployer.OracleCreationTxData",
+                  "name": "maxLtvOracle0",
+                  "type": "tuple",
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "deployed",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "factory",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "txInput",
+                      "type": "bytes"
+                    }
+                  ]
+                },
+                {
+                  "internalType": "struct ISiloDeployer.OracleCreationTxData",
+                  "name": "solvencyOracle1",
+                  "type": "tuple",
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "deployed",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "factory",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "txInput",
+                      "type": "bytes"
+                    }
+                  ]
+                },
+                {
+                  "internalType": "struct ISiloDeployer.OracleCreationTxData",
+                  "name": "maxLtvOracle1",
+                  "type": "tuple",
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "deployed",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "factory",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "txInput",
+                      "type": "bytes"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "internalType": "bytes",
+              "name": "_irmConfigData0",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_irmConfigData1",
+              "type": "bytes"
+            },
+            {
+              "internalType": "struct ISiloDeployer.ClonableHookReceiver",
+              "name": "_clonableHookReceiver",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "implementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "initializationData",
+                  "type": "bytes"
+                }
+              ]
+            },
+            {
+              "internalType": "struct ISiloConfig.InitData",
+              "name": "_siloInitData",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "deployer",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "hookReceiver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "deployerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "daoFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "token0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "solvencyOracle0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "maxLtvOracle0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "interestRateModel0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxLtv0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lt0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationTargetLtv0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationFee0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flashloanFee0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "callBeforeQuote0",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "address",
+                  "name": "token1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "solvencyOracle1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "maxLtvOracle1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "interestRateModel1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxLtv1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lt1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationTargetLtv1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationFee1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flashloanFee1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "callBeforeQuote1",
+                  "type": "bool"
+                }
+              ]
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "deploy",
+          "outputs": [
+            {
+              "internalType": "contract ISiloConfig",
+              "name": "siloConfig",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {
+          "deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": {
+            "params": {
+              "_clonableHookReceiver": "Hook receiver implementation to clone (ignored if implementation has address(0))",
+              "_irmConfigData0": "IRM config data for a silo `_TOKEN0`",
+              "_irmConfigData1": "IRM config data for a silo `_TOKEN1`",
+              "_oracles": "Oracles to be create during the silo creation",
+              "_siloInitData": "Silo configuration for the silo creation"
+            }
+          }
+        },
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {
+          "deploy(((address,address,bytes),(address,address,bytes),(address,address,bytes),(address,address,bytes)),bytes,bytes,(address,bytes),(address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": {
+            "notice": "Deploy silo"
+          }
+        },
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        "@ensdomains/=node_modules/@ensdomains/",
+        "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+        "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+        "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+        "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+        "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+        "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+        "chainlink/=gitmodules/chainlink/contracts/src/",
+        "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+        "crytic/=gitmodules/crytic/",
+        "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+        "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+        "forge-std/=gitmodules/forge-std/src/",
+        "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+        "hardhat/=node_modules/hardhat/",
+        "morpho-blue/=gitmodules/morpho-blue/src/",
+        "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+        "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+        "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+        "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+        "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+        "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+        "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+        "properties/=gitmodules/crytic/properties/contracts/",
+        "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+        "silo-core/=silo-core/",
+        "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+        "silo-oracles/=silo-oracles/",
+        "silo-vaults/=silo-vaults/",
+        "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+        "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+        "uniswap/=gitmodules/uniswap/",
+        "x-silo/=node_modules/x-silo/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "silo-core/contracts/interfaces/ISiloDeployer.sol": "ISiloDeployer"
+      },
+      "evmVersion": "cancun",
+      "libraries": {}
+    },
+    "sources": {
+      "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol": {
+        "keccak256": "0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06",
+        "urls": [
+          "bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf",
+          "dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol": {
+        "keccak256": "0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d",
+        "urls": [
+          "bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b",
+          "dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+        "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+        "urls": [
+          "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+          "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+        "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+        "urls": [
+          "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+          "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol": {
+        "keccak256": "0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de",
+        "urls": [
+          "bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827",
+          "dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol": {
+        "keccak256": "0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c",
+        "urls": [
+          "bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e",
+          "dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ICrossReentrancyGuard.sol": {
+        "keccak256": "0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05",
+        "urls": [
+          "bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587",
+          "dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IDynamicKinkModel.sol": {
+        "keccak256": "0x7bf864dd1881ce2c50fcc01d77c0c4eb5d106f3714bbf00c81ca87b3413a05b5",
+        "urls": [
+          "bzz-raw://0c30a06e9321b3381beb85c8b4a1b3f9b272e852a0bf331f197355cf7bdf7ad2",
+          "dweb:/ipfs/QmYSeYFv7C4uaTNdGiS57NFHsUtjec5L3PbvZBnAGX5icB"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IDynamicKinkModelConfig.sol": {
+        "keccak256": "0x24773fefdfe5c74f2768d347e6e5b96ed64a4c05f894dbe0e9412fc03e0bc6f2",
+        "urls": [
+          "bzz-raw://b4c0fbfc0f5579c55869e409a6a1b5cc32306f9bb3d15ce114d5488c35417ecb",
+          "dweb:/ipfs/QmdNPsT8BUYWSat9DaWBP1uKqxdDggCzNn2iZJA5yAEyNB"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IERC3156FlashBorrower.sol": {
+        "keccak256": "0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c",
+        "urls": [
+          "bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c",
+          "dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IERC3156FlashLender.sol": {
+        "keccak256": "0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd",
+        "urls": [
+          "bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb",
+          "dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IHookReceiver.sol": {
+        "keccak256": "0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371",
+        "urls": [
+          "bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e",
+          "dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IInterestRateModelV2.sol": {
+        "keccak256": "0x83060aa92978f92affd468bdebd7bc223b265781e7d39c0362534996549a2d1a",
+        "urls": [
+          "bzz-raw://a491f2c0072d273bfe83f6538faa9afb0a792e6dd13a46e9c6f6e1b42d210896",
+          "dweb:/ipfs/QmckyeJqZtNox5fLRKznxoTTuCk8iPbQz36RP7obEodp8a"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IInterestRateModelV2Config.sol": {
+        "keccak256": "0x42d070e869bf6dc31f66311236b159691fdc783a36b37d4f56cb95ebbbd8ce64",
+        "urls": [
+          "bzz-raw://fb8a1910d0bdfc93635f1f986aaaeda8f74d5edab21861f074c74179b6638bc7",
+          "dweb:/ipfs/QmVXThfXJTe2i66PRDFXMCMyJb6RjGQ9dDhsZqoLyZ9YBB"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISilo.sol": {
+        "keccak256": "0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7",
+        "urls": [
+          "bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8",
+          "dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloConfig.sol": {
+        "keccak256": "0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e",
+        "urls": [
+          "bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036",
+          "dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloDeployer.sol": {
+        "keccak256": "0x8af8b20a99ed6e129297a54a3be82f77a4ede8fdd1bc7f675c985c762a6fe97a",
+        "urls": [
+          "bzz-raw://7e643f18e33161c79d2f599665318a41be7b25f7a212144d12a7893fb662f73a",
+          "dweb:/ipfs/QmX5aXDUm5nJVroxspSiiGBCAVfVveEY5oGYVS8vaN3njP"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloFactory.sol": {
+        "keccak256": "0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca",
+        "urls": [
+          "bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67",
+          "dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "id": 204
+}
