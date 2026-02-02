@@ -91,6 +91,7 @@ export interface WizardData {
   feesConfiguration: FeesConfiguration | null
   selectedHook: HookType | null
   hookOwnerAddress: string | null
+  lastDeployTxHash: string | null
 }
 
 export enum StepStatus {
@@ -117,6 +118,7 @@ interface WizardContextType {
   updateHookOwnerAddress: (address: string | null) => void
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
+  setLastDeployTxHash: (txHash: string | null) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -137,7 +139,8 @@ const initialWizardData: WizardData = {
   borrowConfiguration: null,
   feesConfiguration: null,
   selectedHook: null,
-  hookOwnerAddress: null
+  hookOwnerAddress: null,
+  lastDeployTxHash: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -375,6 +378,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setLastDeployTxHash = (txHash: string | null) => {
+    setWizardData(prev => ({ ...prev, lastDeployTxHash: txHash }))
+  }
+
   const resetWizard = () => {
     setWizardData(initialWizardData)
   }
@@ -419,6 +426,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateHookOwnerAddress,
         generateJSONConfig,
         parseJSONConfig,
+        setLastDeployTxHash,
         resetWizard,
         resetWizardWithCache
       }}

@@ -1,0 +1,781 @@
+{
+    "abi": [
+        {
+            "type": "constructor",
+            "inputs": [
+                {
+                    "name": "_quoteToken",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "DECIMALS_TO_SCALE",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint8",
+                    "internalType": "uint8"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "QUOTE_TOKEN",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "SCALE_FACTOR",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "VERSION",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "version",
+                    "type": "string",
+                    "internalType": "string"
+                }
+            ],
+            "stateMutability": "pure"
+        },
+        {
+            "type": "function",
+            "name": "baseToken",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "token",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "beforeQuote",
+            "inputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "decimals",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint8",
+                    "internalType": "uint8"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "description",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "string",
+                    "internalType": "string"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getRoundData",
+            "inputs": [
+                {
+                    "name": "",
+                    "type": "uint80",
+                    "internalType": "uint80"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint80",
+                    "internalType": "uint80"
+                },
+                {
+                    "name": "",
+                    "type": "int256",
+                    "internalType": "int256"
+                },
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "",
+                    "type": "uint80",
+                    "internalType": "uint80"
+                }
+            ],
+            "stateMutability": "pure"
+        },
+        {
+            "type": "function",
+            "name": "latestRoundData",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "roundId",
+                    "type": "uint80",
+                    "internalType": "uint80"
+                },
+                {
+                    "name": "answer",
+                    "type": "int256",
+                    "internalType": "int256"
+                },
+                {
+                    "name": "startedAt",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "updatedAt",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "answeredInRound",
+                    "type": "uint80",
+                    "internalType": "uint80"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "quote",
+            "inputs": [
+                {
+                    "name": "_baseAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_baseToken",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "quoteAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "quoteToken",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "version",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "pure"
+        },
+        {
+            "type": "error",
+            "name": "AssetNotSupported",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "SafeCastOverflowedUintToInt",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ]
+        },
+        {
+            "type": "error",
+            "name": "TokenDecimalsTooLarge",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "TokenIsNotAContract",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroPrice",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x60c060405234801561000f575f5ffd5b50604051610b02380380610b0283398101604081905261002e916101b2565b5f6100388261008c565b9050601260ff82161061005e5760405163a7617b4560e01b815260040160405180910390fd5b6100698160126101f3565b6100779060ff16600a6102f5565b60a052506001600160a01b0316608052610336565b6040805160048152602481019091526020810180516001600160e01b0390811663313ce56760e01b179091525f91829182916100cb918691906100fc16565b91509150816100dd57505f9392505050565b808060200190518101906100f19190610300565b60ff16949350505050565b5f60606001600160a01b0384163b610127576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b0316856040516101419190610320565b5f60405180830381855afa9150503d805f8114610179576040519150601f19603f3d011682016040523d82523d5f602084013e61017e565b606091505b5091509150816101a3575f60405180602001604052805f8152509350935050506101ab565b600193509150505b9250929050565b5f602082840312156101c2575f5ffd5b81516001600160a01b03811681146101d8575f5ffd5b9392505050565b634e487b7160e01b5f52601160045260245ffd5b60ff828116828216039081111561020c5761020c6101df565b92915050565b6001815b600184111561024d57808504811115610231576102316101df565b600184161561023f57908102905b60019390931c928002610216565b935093915050565b5f826102635750600161020c565b8161026f57505f61020c565b8160018114610285576002811461028f576102ab565b600191505061020c565b60ff8411156102a0576102a06101df565b50506001821b61020c565b5060208310610133831016604e8410600b84101617156102ce575081810a61020c565b6102da5f198484610212565b805f19048211156102ed576102ed6101df565b029392505050565b5f6101d88383610255565b5f60208284031215610310575f5ffd5b815160ff811681146101d8575f5ffd5b5f82518060208501845e5f920191825250919050565b60805160a0516107906103725f395f818161020101526102c401525f818160f7015281816101800152818161026f015261031801526107905ff3fe608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c80639a6fc8f511610088578063ce4b5bbe11610063578063ce4b5bbe146101fc578063f9fa619a14610223578063feaf968c14610236578063ffa1ad741461023e575f5ffd5b80639a6fc8f5146101a2578063a6391566146101f4578063c55dae63146100f5575f5ffd5b806313b0be33146100cf578063217a4b70146100f5578063313ce5671461012f57806354fd4d50146101445780637284e4161461014b57806378892cea1461017b575b5f5ffd5b6100e26100dd36600461054c565b61026c565b6040519081526020015b60405180910390f35b7f00000000000000000000000000000000000000000000000000000000000000005b6040516001600160a01b0390911681526020016100ec565b60125b60405160ff90911681526020016100ec565b60016100e2565b60408051808201909152600b81526a53696c6f204f7261636c6560a81b60208201525b6040516100ec9190610576565b6101177f000000000000000000000000000000000000000000000000000000000000000081565b6101bd6101b03660046105ab565b505f908190819081908190565b6040805169ffffffffffffffffffff968716815260208101959095528401929092526060830152909116608082015260a0016100ec565b610132601281565b6100e27f000000000000000000000000000000000000000000000000000000000000000081565b6102346102313660046105db565b50565b005b6101bd610311565b60408051808201909152601281527104f7261636c655363616c657220342e302e360741b602082015261016e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146102bf5760405163981a2a2b60e01b815260040160405180910390fd5b6102e97f000000000000000000000000000000000000000000000000000000000000000084610608565b9050805f0361030b57604051634dfba02360e01b815260040160405180910390fd5b92915050565b5f808080807f000000000000000000000000000000000000000000000000000000000000000081610341826103dc565b9050306103ca816313b0be3361035885600a610702565b6040516001600160e01b031960e084901b16815260048101919091526001600160a01b0387166024820152604401602060405180830381865afa1580156103a1573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103c5919061070d565b610447565b97984297508796505f95509350505050565b6040805160048152602481019091526020810180516001600160e01b031663313ce56760e01b1790525f908190819061041690859061047b565b915091508161042857505f9392505050565b8080602001905181019061043c9190610724565b60ff16949350505050565b5f6001600160ff1b038211156104775760405163123baf0360e11b81526004810183905260240160405180910390fd5b5090565b5f60606001600160a01b0384163b6104a6576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b0316856040516104c09190610744565b5f60405180830381855afa9150503d805f81146104f8576040519150601f19603f3d011682016040523d82523d5f602084013e6104fd565b606091505b509150915081610522575f60405180602001604052805f81525093509350505061052a565b600193509150505b9250929050565b80356001600160a01b0381168114610547575f5ffd5b919050565b5f5f6040838503121561055d575f5ffd5b8235915061056d60208401610531565b90509250929050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b5f602082840312156105bb575f5ffd5b813569ffffffffffffffffffff811681146105d4575f5ffd5b9392505050565b5f602082840312156105eb575f5ffd5b6105d482610531565b634e487b7160e01b5f52601160045260245ffd5b808202811582820484141761030b5761030b6105f4565b6001815b600184111561065a5780850481111561063e5761063e6105f4565b600184161561064c57908102905b60019390931c928002610623565b935093915050565b5f826106705750600161030b565b8161067c57505f61030b565b8160018114610692576002811461069c576106b8565b600191505061030b565b60ff8411156106ad576106ad6105f4565b50506001821b61030b565b5060208310610133831016604e8410600b84101617156106db575081810a61030b565b6106e75f19848461061f565b805f19048211156106fa576106fa6105f4565b029392505050565b5f6105d48383610662565b5f6020828403121561071d575f5ffd5b5051919050565b5f60208284031215610734575f5ffd5b815160ff811681146105d4575f5ffd5b5f82518060208501845e5f92019182525091905056fea264697066735822122074a333fa03cb924632be8612a249bcea0e783494c6c51380075a57aaecf45e4764736f6c634300081c0033",
+        "sourceMap": "714:1998:161:-:0;;;1481:326;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;1524:24;1557:45;1590:11;1557:32;:45::i;:::-;1524:79;-1:-1:-1;879:2:161;1621:38;;;;1613:72;;;;-1:-1:-1;;;1613:72:161;;;;;;;;;;;;1725:38;1745:18;879:2;1725:38;:::i;:::-;1711:53;;1717:47;;1711:2;:53;:::i;:::-;1696:68;;-1:-1:-1;;;;;;1775:25:161;;;714:1998;;308:466:74;475:43;;;;;;;;;;;;;;;;;-1:-1:-1;;;;;475:43:74;;;-1:-1:-1;;;475:43:74;;;;377:7;;;;;;448:71;;467:6;;475:43;448:18;:71;:::i;:::-;396:123;;;;679:11;674:51;;-1:-1:-1;713:1:74;;308:466;-1:-1:-1;;;308:466:74:o;674:51::-;753:4;742:25;;;;;;;;;;;;:::i;:::-;735:32;;;308:466;-1:-1:-1;;;;308:466:74:o;2065:539::-;2151:4;2157:12;-1:-1:-1;;;;;1575:20:73;;;2274:61:74;;;;-1:-1:-1;;;2274:61:74;;;;;;;;;;;;2347:12;2361:19;2384:6;-1:-1:-1;;;;;2384:17:74;2402:5;2384:24;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;2346:62;;;;2514:7;2509:57;;2545:5;2537:18;;;;;;;;;;;;;;;;;;;;2509:57;2584:4;;-1:-1:-1;2590:6:74;-1:-1:-1;;2065:539:74;;;;;;:::o;14:290:234:-;84:6;137:2;125:9;116:7;112:23;108:32;105:52;;;153:1;150;143:12;105:52;179:16;;-1:-1:-1;;;;;224:31:234;;214:42;;204:70;;270:1;267;260:12;204:70;293:5;14:290;-1:-1:-1;;;14:290:234:o;309:127::-;370:10;365:3;361:20;358:1;351:31;401:4;398:1;391:15;425:4;422:1;415:15;441:151;531:4;524:12;;;510;;;506:31;;549:14;;546:40;;;566:18;;:::i;:::-;441:151;;;;:::o;597:375::-;685:1;703:5;717:249;738:1;728:8;725:15;717:249;;;788:4;783:3;779:14;773:4;770:24;767:50;;;797:18;;:::i;:::-;847:1;837:8;833:16;830:49;;;861:16;;;;830:49;944:1;940:16;;;;;900:15;;717:249;;;597:375;;;;;;:::o;977:902::-;1026:5;1056:8;1046:80;;-1:-1:-1;1097:1:234;1111:5;;1046:80;1145:4;1135:76;;-1:-1:-1;1182:1:234;1196:5;;1135:76;1227:4;1245:1;1240:59;;;;1313:1;1308:174;;;;1220:262;;1240:59;1270:1;1261:10;;1284:5;;;1308:174;1345:3;1335:8;1332:17;1329:43;;;1352:18;;:::i;:::-;-1:-1:-1;;1408:1:234;1394:16;;1467:5;;1220:262;;1566:2;1556:8;1553:16;1547:3;1541:4;1538:13;1534:36;1528:2;1518:8;1515:16;1510:2;1504:4;1501:12;1497:35;1494:77;1491:203;;;-1:-1:-1;1603:19:234;;;1679:5;;1491:203;1726:42;-1:-1:-1;;1751:8:234;1745:4;1726:42;:::i;:::-;1804:6;1800:1;1796:6;1792:19;1783:7;1780:32;1777:58;;;1815:18;;:::i;:::-;1853:20;;977:902;-1:-1:-1;;;977:902:234:o;1884:131::-;1944:5;1973:36;2000:8;1994:4;1973:36;:::i;2020:273::-;2088:6;2141:2;2129:9;2120:7;2116:23;2112:32;2109:52;;;2157:1;2154;2147:12;2109:52;2189:9;2183:16;2239:4;2232:5;2228:16;2221:5;2218:27;2208:55;;2259:1;2256;2249:12;2298:301;2427:3;2465:6;2459:13;2511:6;2504:4;2496:6;2492:17;2487:3;2481:37;2573:1;2537:16;;2562:13;;;-1:-1:-1;2537:16:234;2298:301;-1:-1:-1;2298:301:234:o;:::-;714:1998:161;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c80639a6fc8f511610088578063ce4b5bbe11610063578063ce4b5bbe146101fc578063f9fa619a14610223578063feaf968c14610236578063ffa1ad741461023e575f5ffd5b80639a6fc8f5146101a2578063a6391566146101f4578063c55dae63146100f5575f5ffd5b806313b0be33146100cf578063217a4b70146100f5578063313ce5671461012f57806354fd4d50146101445780637284e4161461014b57806378892cea1461017b575b5f5ffd5b6100e26100dd36600461054c565b61026c565b6040519081526020015b60405180910390f35b7f00000000000000000000000000000000000000000000000000000000000000005b6040516001600160a01b0390911681526020016100ec565b60125b60405160ff90911681526020016100ec565b60016100e2565b60408051808201909152600b81526a53696c6f204f7261636c6560a81b60208201525b6040516100ec9190610576565b6101177f000000000000000000000000000000000000000000000000000000000000000081565b6101bd6101b03660046105ab565b505f908190819081908190565b6040805169ffffffffffffffffffff968716815260208101959095528401929092526060830152909116608082015260a0016100ec565b610132601281565b6100e27f000000000000000000000000000000000000000000000000000000000000000081565b6102346102313660046105db565b50565b005b6101bd610311565b60408051808201909152601281527104f7261636c655363616c657220342e302e360741b602082015261016e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146102bf5760405163981a2a2b60e01b815260040160405180910390fd5b6102e97f000000000000000000000000000000000000000000000000000000000000000084610608565b9050805f0361030b57604051634dfba02360e01b815260040160405180910390fd5b92915050565b5f808080807f000000000000000000000000000000000000000000000000000000000000000081610341826103dc565b9050306103ca816313b0be3361035885600a610702565b6040516001600160e01b031960e084901b16815260048101919091526001600160a01b0387166024820152604401602060405180830381865afa1580156103a1573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103c5919061070d565b610447565b97984297508796505f95509350505050565b6040805160048152602481019091526020810180516001600160e01b031663313ce56760e01b1790525f908190819061041690859061047b565b915091508161042857505f9392505050565b8080602001905181019061043c9190610724565b60ff16949350505050565b5f6001600160ff1b038211156104775760405163123baf0360e11b81526004810183905260240160405180910390fd5b5090565b5f60606001600160a01b0384163b6104a6576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b0316856040516104c09190610744565b5f60405180830381855afa9150503d805f81146104f8576040519150601f19603f3d011682016040523d82523d5f602084013e6104fd565b606091505b509150915081610522575f60405180602001604052805f81525093509350505061052a565b600193509150505b9250929050565b80356001600160a01b0381168114610547575f5ffd5b919050565b5f5f6040838503121561055d575f5ffd5b8235915061056d60208401610531565b90509250929050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b5f602082840312156105bb575f5ffd5b813569ffffffffffffffffffff811681146105d4575f5ffd5b9392505050565b5f602082840312156105eb575f5ffd5b6105d482610531565b634e487b7160e01b5f52601160045260245ffd5b808202811582820484141761030b5761030b6105f4565b6001815b600184111561065a5780850481111561063e5761063e6105f4565b600184161561064c57908102905b60019390931c928002610623565b935093915050565b5f826106705750600161030b565b8161067c57505f61030b565b8160018114610692576002811461069c576106b8565b600191505061030b565b60ff8411156106ad576106ad6105f4565b50506001821b61030b565b5060208310610133831016604e8410600b84101617156106db575081810a61030b565b6106e75f19848461061f565b805f19048211156106fa576106fa6105f4565b029392505050565b5f6105d48383610662565b5f6020828403121561071d575f5ffd5b5051919050565b5f60208284031215610734575f5ffd5b815160ff811681146105d4575f5ffd5b5f82518060208501845e5f92019182525091905056fea264697066735822122074a333fa03cb924632be8612a249bcea0e783494c6c51380075a57aaecf45e4764736f6c634300081c0033",
+        "sourceMap": "714:1998:161:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1930:280;;;;;;:::i;:::-;;:::i;:::-;;;597:25:234;;;585:2;570:18;1930:280:161;;;;;;;;2247:106;2334:11;2247:106;;;-1:-1:-1;;;;;797:32:234;;;779:51;;767:2;752:18;2247:106:161;633:203:234;640:84:79;715:2;640:84;;;1013:4:234;1001:17;;;983:36;;971:2;956:18;640:84:79;841:184:234;842:76:79;910:1;842:76;;730:106;809:20;;;;;;;;;;;;-1:-1:-1;;;809:20:79;;;;730:106;;;;;;;:::i;935:36:161:-;;;;;999:162:79;;;;;;:::i;:::-;-1:-1:-1;1076:6:79;;;;;;;;;;999:162;;;;;2029:22:234;2017:35;;;1999:54;;2084:2;2069:18;;2062:34;;;;2112:18;;2105:34;;;;2170:2;2155:18;;2148:34;2219:35;;;2213:3;2198:19;;2191:64;1986:3;1971:19;999:162:79;1746:515:234;837:44:161;;879:2;837:44;;1122:37;;;;;1844:49;;;;;;:::i;:::-;;;;;1298:634:79;;;:::i;2443:121:161:-;2527:30;;;;;;;;;;;;-1:-1:-1;;;2527:30:161;;;;2443:121;;1930:280;2017:19;2070:11;-1:-1:-1;;;;;2056:25:161;:10;-1:-1:-1;;;;;2056:25:161;;2048:55;;;;-1:-1:-1;;;2048:55:161;;;;;;;;;;;;2128:26;2142:12;2128:11;:26;:::i;:::-;2114:40;;2173:11;2188:1;2173:16;2165:38;;;;-1:-1:-1;;;2165:38:161;;;;;;;;;;;;1930:280;;;;:::o;1298:634:79:-;1401:14;;;;;2334:11:161;1401:14:79;1647:39;2334:11:161;1647:32:79;:39::i;:::-;1623:63;-1:-1:-1;1737:4:79;1762:59;1737:4;1780:12;1793:19;1623:63;1793:2;:19;:::i;:::-;1780:40;;-1:-1:-1;;;;;;1780:40:79;;;;;;;;;;4359:25:234;;;;-1:-1:-1;;;;;4420:32:234;;4400:18;;;4393:60;4332:18;;1780:40:79;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;1762:17;:59::i;:::-;1298:634;;1844:15;;-1:-1:-1;1844:15:79;;-1:-1:-1;1924:1:79;;-1:-1:-1;1298:634:79;-1:-1:-1;;;;1298:634:79:o;308:466:74:-;475:43;;;;;;;;;;;;;;;;;-1:-1:-1;;;;;475:43:74;-1:-1:-1;;;475:43:74;;;377:7;;;;;;448:71;;467:6;;448:18;:71::i;:::-;396:123;;;;679:11;674:51;;-1:-1:-1;713:1:74;;308:466;-1:-1:-1;;;308:466:74:o;674:51::-;753:4;742:25;;;;;;;;;;;;:::i;:::-;735:32;;;308:466;-1:-1:-1;;;;308:466:74:o;34380:314:36:-;34436:6;-1:-1:-1;;;;;34557:5:36;:33;34553:105;;;34613:34;;-1:-1:-1;;;34613:34:36;;;;;597:25:234;;;570:18;;34613:34:36;;;;;;;34553:105;-1:-1:-1;34681:5:36;34380:314::o;2065:539:74:-;2151:4;2157:12;-1:-1:-1;;;;;1575:20:73;;;2274:61:74;;;;-1:-1:-1;;;2274:61:74;;;;;;;;;;;;2347:12;2361:19;2384:6;-1:-1:-1;;;;;2384:17:74;2402:5;2384:24;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;2346:62;;;;2514:7;2509:57;;2545:5;2537:18;;;;;;;;;;;;;;;;;;;;2509:57;2584:4;;-1:-1:-1;2590:6:74;-1:-1:-1;;2065:539:74;;;;;;:::o;14:173:234:-;82:20;;-1:-1:-1;;;;;131:31:234;;121:42;;111:70;;177:1;174;167:12;111:70;14:173;;;:::o;192:254::-;260:6;268;321:2;309:9;300:7;296:23;292:32;289:52;;;337:1;334;327:12;289:52;373:9;360:23;350:33;;402:38;436:2;425:9;421:18;402:38;:::i;:::-;392:48;;192:254;;;;;:::o;1030:418::-;1179:2;1168:9;1161:21;1142:4;1211:6;1205:13;1254:6;1249:2;1238:9;1234:18;1227:34;1313:6;1308:2;1300:6;1296:15;1291:2;1280:9;1276:18;1270:50;1369:1;1364:2;1355:6;1344:9;1340:22;1336:31;1329:42;1439:2;1432;1428:7;1423:2;1415:6;1411:15;1407:29;1396:9;1392:45;1388:54;1380:62;;;1030:418;;;;:::o;1453:288::-;1511:6;1564:2;1552:9;1543:7;1539:23;1535:32;1532:52;;;1580:1;1577;1570:12;1532:52;1619:9;1606:23;1669:22;1662:5;1658:34;1651:5;1648:45;1638:73;;1707:1;1704;1697:12;1638:73;1730:5;1453:288;-1:-1:-1;;;1453:288:234:o;2266:186::-;2325:6;2378:2;2366:9;2357:7;2353:23;2349:32;2346:52;;;2394:1;2391;2384:12;2346:52;2417:29;2436:9;2417:29;:::i;2457:127::-;2518:10;2513:3;2509:20;2506:1;2499:31;2549:4;2546:1;2539:15;2573:4;2570:1;2563:15;2589:168;2662:9;;;2693;;2710:15;;;2704:22;;2690:37;2680:71;;2731:18;;:::i;2762:375::-;2850:1;2868:5;2882:249;2903:1;2893:8;2890:15;2882:249;;;2953:4;2948:3;2944:14;2938:4;2935:24;2932:50;;;2962:18;;:::i;:::-;3012:1;3002:8;2998:16;2995:49;;;3026:16;;;;2995:49;3109:1;3105:16;;;;;3065:15;;2882:249;;;2762:375;;;;;;:::o;3142:902::-;3191:5;3221:8;3211:80;;-1:-1:-1;3262:1:234;3276:5;;3211:80;3310:4;3300:76;;-1:-1:-1;3347:1:234;3361:5;;3300:76;3392:4;3410:1;3405:59;;;;3478:1;3473:174;;;;3385:262;;3405:59;3435:1;3426:10;;3449:5;;;3473:174;3510:3;3500:8;3497:17;3494:43;;;3517:18;;:::i;:::-;-1:-1:-1;;3573:1:234;3559:16;;3632:5;;3385:262;;3731:2;3721:8;3718:16;3712:3;3706:4;3703:13;3699:36;3693:2;3683:8;3680:16;3675:2;3669:4;3666:12;3662:35;3659:77;3656:203;;;-1:-1:-1;3768:19:234;;;3844:5;;3656:203;3891:42;-1:-1:-1;;3916:8:234;3910:4;3891:42;:::i;:::-;3969:6;3965:1;3961:6;3957:19;3948:7;3945:32;3942:58;;;3980:18;;:::i;:::-;4018:20;;3142:902;-1:-1:-1;;;3142:902:234:o;4049:131::-;4109:5;4138:36;4165:8;4159:4;4138:36;:::i;4464:184::-;4534:6;4587:2;4575:9;4566:7;4562:23;4558:32;4555:52;;;4603:1;4600;4593:12;4555:52;-1:-1:-1;4626:16:234;;4464:184;-1:-1:-1;4464:184:234:o;4653:273::-;4721:6;4774:2;4762:9;4753:7;4749:23;4745:32;4742:52;;;4790:1;4787;4780:12;4742:52;4822:9;4816:16;4872:4;4865:5;4861:16;4854:5;4851:27;4841:55;;4892:1;4889;4882:12;4931:301;5060:3;5098:6;5092:13;5144:6;5137:4;5129:6;5125:17;5120:3;5114:37;5206:1;5170:16;;5195:13;;;-1:-1:-1;5170:16:234;4931:301;-1:-1:-1;4931:301:234:o",
+        "linkReferences": {},
+        "immutableReferences": {
+            "57298": [
+                {
+                    "start": 247,
+                    "length": 32
+                },
+                {
+                    "start": 384,
+                    "length": 32
+                },
+                {
+                    "start": 623,
+                    "length": 32
+                },
+                {
+                    "start": 792,
+                    "length": 32
+                }
+            ],
+            "57301": [
+                {
+                    "start": 513,
+                    "length": 32
+                },
+                {
+                    "start": 708,
+                    "length": 32
+                }
+            ]
+        }
+    },
+    "methodIdentifiers": {
+        "DECIMALS_TO_SCALE()": "a6391566",
+        "QUOTE_TOKEN()": "78892cea",
+        "SCALE_FACTOR()": "ce4b5bbe",
+        "VERSION()": "ffa1ad74",
+        "baseToken()": "c55dae63",
+        "beforeQuote(address)": "f9fa619a",
+        "decimals()": "313ce567",
+        "description()": "7284e416",
+        "getRoundData(uint80)": "9a6fc8f5",
+        "latestRoundData()": "feaf968c",
+        "quote(uint256,address)": "13b0be33",
+        "quoteToken()": "217a4b70",
+        "version()": "54fd4d50"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_quoteToken\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AssetNotSupported\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"SafeCastOverflowedUintToInt\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TokenDecimalsTooLarge\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TokenIsNotAContract\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroPrice\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DECIMALS_TO_SCALE\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"QUOTE_TOKEN\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SCALE_FACTOR\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"VERSION\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"baseToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"beforeQuote\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"description\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint80\",\"name\":\"\",\"type\":\"uint80\"}],\"name\":\"getRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"\",\"type\":\"uint80\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"answer\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_baseAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_baseToken\",\"type\":\"address\"}],\"name\":\"quote\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"quoteAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"quoteToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"errors\":{\"AssetNotSupported()\":[{\"details\":\"revert if the baseToken to quote is not equal to QUOTE_TOKEN\"}],\"SafeCastOverflowedUintToInt(uint256)\":[{\"details\":\"An uint value doesn't fit in an int of `bits` size.\"}],\"TokenDecimalsTooLarge()\":[{\"details\":\"revert if the original token decimals is more or equal 18\"}],\"ZeroPrice()\":[{\"details\":\"revert for zero price\"}]},\"kind\":\"dev\",\"methods\":{\"VERSION()\":{\"returns\":{\"version\":\"The version of the contract in format \\\"SiloLens v3.17.0\\\"\"}},\"quote(uint256,address)\":{\"params\":{\"_baseAmount\":\"Amount of priced token\",\"_baseToken\":\"Address of priced token\"},\"returns\":{\"quoteAmount\":\"Returns quote price for _baseAmount of _baseToken\"}},\"quoteToken()\":{\"returns\":{\"_0\":\"address of token in which quote (price) is denominated\"}}},\"stateVariables\":{\"DECIMALS_TO_SCALE\":{\"details\":\"the amounts will be scaled to 18 decimals.\"},\"QUOTE_TOKEN\":{\"details\":\"token address to use for a quote.\"},\"SCALE_FACTOR\":{\"details\":\"scale factor will be multiplied with base token's amount to calculate the scaled value.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"VERSION()\":{\"notice\":\"Returns the version of the contract\"},\"decimals()\":{\"notice\":\"all Silo oracles should return price in 18 decimals\"},\"getRoundData(uint80)\":{\"notice\":\"not in use, always returns 0s, use latestRoundData instead\"},\"latestRoundData()\":{\"notice\":\"this function follows the Chainlink V3 interface but only answer is used, all other return values are zero\"}},\"notice\":\"OracleScaler is an oracle, which scales the token amounts to 18 decimals instead of original decimals. For example, USDC decimals are 6. 1 USDC is 10**6. This oracle will scale this amount to 10**18. If the token decimals > 18, this oracle will revert. This oracle was created to increase the precision for LTV calculation of low decimal tokens.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/scaler/OracleScaler.sol\":\"OracleScaler\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7\",\"dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/math/SafeCast.sol\":{\"keccak256\":\"0x8cd59334ed58b8884cd1f775afc9400db702e674e5d6a7a438c655b9de788d7e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://99e62c7de7318f413b6352e3f2704ca23e7725ff144e43c8bd574d12dbf29047\",\"dweb:/ipfs/QmSEXG2rBx1VxU2uFTWdiChjDvA4osEY2mesjmoVeVhHko\"]},\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-core/contracts/interfaces/IVersioned.sol\":{\"keccak256\":\"0xb8714d8e82ad5d89925184b527235413c6883fad427c6d56074d8137bbe48537\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7f8ea64713ad9ef97f3e5eee661ec743eccf9511a5e772040fa091fda3283521\",\"dweb:/ipfs/QmPGBP7yQDDaMvmJukWhpWQyTfYxAZfQ5iUjMfHZmtt9AR\"]},\"silo-core/contracts/lib/IsContract.sol\":{\"keccak256\":\"0x41b56d956197ed75353b8a6512d7413443eb83142cc49688c58d1713d94fe3e1\",\"license\":\"BUSL-1.1\",\"urls\":[\"bzz-raw://92dfafd9987ef27a6816dc10d1dd0593e626700e253a7782bc1229c48e714d4c\",\"dweb:/ipfs/QmPr1MPU6eZp4DVVEF1x49muGu3drGgqbs6nhCYPAUhEo6\"]},\"silo-core/contracts/lib/TokenHelper.sol\":{\"keccak256\":\"0x336e02e4f0df931242ffe7db44ad12be06b3b4c3c8e93e89778414515d3df397\",\"license\":\"BUSL-1.1\",\"urls\":[\"bzz-raw://2d6d13d5e86efbdbb633a3f9ae1a008c6a8f09d31a5834150515f9a7ddd503e8\",\"dweb:/ipfs/QmNfpocvWz2y89pXyQS7gccorCTWSuj8GaWDoyV496mvwq\"]},\"silo-oracles/contracts/_common/Aggregator.sol\":{\"keccak256\":\"0xbdee43ceb006c8c5d81a6be2a383ba600cb5c91b0dc3b6b871a0a5945b1aa669\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://23e01864a87f1730999dadbe9a67e75e70305f78dca4c5520d444a8dbdb9f0ae\",\"dweb:/ipfs/QmZoEeJ2bCbvZgdhaqKUbKE8BzVXtjXqPkgBLEWt77dh4k\"]},\"silo-oracles/contracts/scaler/OracleScaler.sol\":{\"keccak256\":\"0xcf37814734c0ea8a8f4c2acc19368c24c7c4c2d380d2d1b3c83633d8be7e59bc\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://ffbf48362b63f6c2be3f9e9400dce9fd12a1e1c3b16e3999c817310ed9e2fd44\",\"dweb:/ipfs/QmXZw5j1NfT1NkLA6ECSD9EfLLvyNEBgyCrk7acKq6f81b\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_quoteToken",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "constructor"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "AssetNotSupported"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256"
+                        }
+                    ],
+                    "type": "error",
+                    "name": "SafeCastOverflowedUintToInt"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "TokenDecimalsTooLarge"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "TokenIsNotAContract"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroPrice"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "DECIMALS_TO_SCALE",
+                    "outputs": [
+                        {
+                            "internalType": "uint8",
+                            "name": "",
+                            "type": "uint8"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "QUOTE_TOKEN",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "SCALE_FACTOR",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "pure",
+                    "type": "function",
+                    "name": "VERSION",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "version",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "baseToken",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "token",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "beforeQuote"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "decimals",
+                    "outputs": [
+                        {
+                            "internalType": "uint8",
+                            "name": "",
+                            "type": "uint8"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "description",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint80",
+                            "name": "",
+                            "type": "uint80"
+                        }
+                    ],
+                    "stateMutability": "pure",
+                    "type": "function",
+                    "name": "getRoundData",
+                    "outputs": [
+                        {
+                            "internalType": "uint80",
+                            "name": "",
+                            "type": "uint80"
+                        },
+                        {
+                            "internalType": "int256",
+                            "name": "",
+                            "type": "int256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint80",
+                            "name": "",
+                            "type": "uint80"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "latestRoundData",
+                    "outputs": [
+                        {
+                            "internalType": "uint80",
+                            "name": "roundId",
+                            "type": "uint80"
+                        },
+                        {
+                            "internalType": "int256",
+                            "name": "answer",
+                            "type": "int256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "startedAt",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "updatedAt",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint80",
+                            "name": "answeredInRound",
+                            "type": "uint80"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "_baseAmount",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_baseToken",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "quote",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "quoteAmount",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "quoteToken",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "pure",
+                    "type": "function",
+                    "name": "version",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "VERSION()": {
+                        "returns": {
+                            "version": "The version of the contract in format \"SiloLens v3.17.0\""
+                        }
+                    },
+                    "quote(uint256,address)": {
+                        "params": {
+                            "_baseAmount": "Amount of priced token",
+                            "_baseToken": "Address of priced token"
+                        },
+                        "returns": {
+                            "quoteAmount": "Returns quote price for _baseAmount of _baseToken"
+                        }
+                    },
+                    "quoteToken()": {
+                        "returns": {
+                            "_0": "address of token in which quote (price) is denominated"
+                        }
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "VERSION()": {
+                        "notice": "Returns the version of the contract"
+                    },
+                    "decimals()": {
+                        "notice": "all Silo oracles should return price in 18 decimals"
+                    },
+                    "getRoundData(uint80)": {
+                        "notice": "not in use, always returns 0s, use latestRoundData instead"
+                    },
+                    "latestRoundData()": {
+                        "notice": "this function follows the Chainlink V3 interface but only answer is used, all other return values are zero"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-oracles/contracts/scaler/OracleScaler.sol": "OracleScaler"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+                "keccak256": "0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd",
+                "urls": [
+                    "bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7",
+                    "dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+                "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+                "urls": [
+                    "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+                    "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+                "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+                "urls": [
+                    "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+                    "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/utils/math/SafeCast.sol": {
+                "keccak256": "0x8cd59334ed58b8884cd1f775afc9400db702e674e5d6a7a438c655b9de788d7e",
+                "urls": [
+                    "bzz-raw://99e62c7de7318f413b6352e3f2704ca23e7725ff144e43c8bd574d12dbf29047",
+                    "dweb:/ipfs/QmSEXG2rBx1VxU2uFTWdiChjDvA4osEY2mesjmoVeVhHko"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IVersioned.sol": {
+                "keccak256": "0xb8714d8e82ad5d89925184b527235413c6883fad427c6d56074d8137bbe48537",
+                "urls": [
+                    "bzz-raw://7f8ea64713ad9ef97f3e5eee661ec743eccf9511a5e772040fa091fda3283521",
+                    "dweb:/ipfs/QmPGBP7yQDDaMvmJukWhpWQyTfYxAZfQ5iUjMfHZmtt9AR"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/lib/IsContract.sol": {
+                "keccak256": "0x41b56d956197ed75353b8a6512d7413443eb83142cc49688c58d1713d94fe3e1",
+                "urls": [
+                    "bzz-raw://92dfafd9987ef27a6816dc10d1dd0593e626700e253a7782bc1229c48e714d4c",
+                    "dweb:/ipfs/QmPr1MPU6eZp4DVVEF1x49muGu3drGgqbs6nhCYPAUhEo6"
+                ],
+                "license": "BUSL-1.1"
+            },
+            "silo-core/contracts/lib/TokenHelper.sol": {
+                "keccak256": "0x336e02e4f0df931242ffe7db44ad12be06b3b4c3c8e93e89778414515d3df397",
+                "urls": [
+                    "bzz-raw://2d6d13d5e86efbdbb633a3f9ae1a008c6a8f09d31a5834150515f9a7ddd503e8",
+                    "dweb:/ipfs/QmNfpocvWz2y89pXyQS7gccorCTWSuj8GaWDoyV496mvwq"
+                ],
+                "license": "BUSL-1.1"
+            },
+            "silo-oracles/contracts/_common/Aggregator.sol": {
+                "keccak256": "0xbdee43ceb006c8c5d81a6be2a383ba600cb5c91b0dc3b6b871a0a5945b1aa669",
+                "urls": [
+                    "bzz-raw://23e01864a87f1730999dadbe9a67e75e70305f78dca4c5520d444a8dbdb9f0ae",
+                    "dweb:/ipfs/QmZoEeJ2bCbvZgdhaqKUbKE8BzVXtjXqPkgBLEWt77dh4k"
+                ],
+                "license": "GPL-2.0-or-later"
+            },
+            "silo-oracles/contracts/scaler/OracleScaler.sol": {
+                "keccak256": "0xcf37814734c0ea8a8f4c2acc19368c24c7c4c2d380d2d1b3c83633d8be7e59bc",
+                "urls": [
+                    "bzz-raw://ffbf48362b63f6c2be3f9e9400dce9fd12a1e1c3b16e3999c817310ed9e2fd44",
+                    "dweb:/ipfs/QmXZw5j1NfT1NkLA6ECSD9EfLLvyNEBgyCrk7acKq6f81b"
+                ],
+                "license": "GPL-2.0-or-later"
+            }
+        },
+        "version": 1
+    },
+    "id": 161
+}

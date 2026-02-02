@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
+import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
+
+/** Foundry artifact: ABI under "abi" key – use as-is, never modify */
+const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -134,13 +138,7 @@ export default function Step3OracleConfiguration() {
 
             const provider = new ethers.BrowserProvider(window.ethereum)
             
-            // Oracle ABI for QUOTE_TOKEN and SCALE_FACTOR methods
-            const oracleAbi = [
-              'function QUOTE_TOKEN() view returns (address)',
-              'function SCALE_FACTOR() view returns (uint256)'
-            ]
-            
-            const contract = new ethers.Contract(oracle.address, oracleAbi, provider)
+            const contract = new ethers.Contract(oracle.address, oracleScalerAbi, provider)
             
             // Check if QUOTE_TOKEN matches our token (case insensitive)
             const quoteToken = await contract.QUOTE_TOKEN()

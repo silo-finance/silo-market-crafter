@@ -157,12 +157,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0 Oracle</div>
-                      <div className="text-xs text-gray-400 capitalize">{String(wizardData.oracleType0)}</div>
+                      <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType0.type}</div>
                     </div>
                     {wizardData.oracleType1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
                         <div className="text-sm font-medium text-white">Token 1 Oracle</div>
-                        <div className="text-xs text-gray-400 capitalize">{String(wizardData.oracleType1)}</div>
+                        <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType1.type}</div>
                       </div>
                     )}
                   </div>

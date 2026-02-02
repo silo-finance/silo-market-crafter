@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, IRMConfig } from '@/contexts/WizardContext'
+import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 
 interface IRMConfigItem {
   name: string
@@ -42,7 +43,8 @@ export default function Step4IRMSelection() {
           throw new Error(`Failed to fetch IRM configs: ${response.statusText}`)
         }
         
-        const data: IRMDeployments = await response.json()
+        const rawText = await response.text()
+        const data: IRMDeployments = parseJsonPreservingBigInt(rawText)
         setIrmDeployments(data)
         
         // Convert array format to IRMConfig array
