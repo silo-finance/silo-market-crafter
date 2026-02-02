@@ -95,7 +95,7 @@ export default function Step10Deployment() {
     if (wizardData.lastDeployTxHash && !txHash) {
       setTxHash(wizardData.lastDeployTxHash)
     }
-  }, [wizardData.lastDeployTxHash])
+  }, [wizardData.lastDeployTxHash, txHash])
 
   // Fetch SiloDeployer address and SiloCore deployments
   useEffect(() => {

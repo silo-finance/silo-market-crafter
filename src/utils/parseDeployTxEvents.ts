@@ -71,8 +71,7 @@ export function parseDeployTxReceipt(receipt: ethers.TransactionReceipt): Deploy
         else result.shareTokens1 = entry
         shareTokenIndex++
       } else if (parsed.name === 'NewSiloHook') {
-        const silo = parsed.args[0] as string
-        const hook = parsed.args[1] as string
+        const [, hook] = parsed.args as [string, string]
         if (hookIndex === 0) result.hook0 = hook
         else result.hook1 = hook
         hookIndex++
