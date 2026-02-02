@@ -28,7 +28,7 @@ function irmEncodedBytesToConfigObject(encoded: string): { [key: string]: string
   const configParamType = getConfigFn?.outputs?.[0]
   if (!configParamType) throw new Error('IInterestRateModelV2.Config type not found in ABI')
   const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-  const decoded = abiCoder.decode([configParamType], encoded) as [unknown[]]
+  const decoded = abiCoder.decode([configParamType], encoded) as unknown as [unknown[]]
   const arr = decoded[0] as unknown[]
   const keys = ['uopt', 'ucrit', 'ulow', 'ki', 'kcrit', 'klow', 'klin', 'beta', 'ri', 'Tcrit']
   const obj: { [key: string]: string } = {}
