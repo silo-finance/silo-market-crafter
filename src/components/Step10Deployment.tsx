@@ -63,7 +63,7 @@ function formatContractError(err: unknown, contractInterface: ethers.Interface):
 
 export default function Step10Deployment() {
   const router = useRouter()
-  const { wizardData, markStepCompleted } = useWizard()
+  const { wizardData, markStepCompleted, setLastDeployTxHash } = useWizard()
   
   const [deployerAddress, setDeployerAddress] = useState<string>('')
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
@@ -89,6 +89,13 @@ export default function Step10Deployment() {
     return chainMap[chainId] || 'mainnet'
   }
 
+
+  // Restore txHash from context when returning to step 10 after a deploy (e.g. after refresh)
+  useEffect(() => {
+    if (wizardData.lastDeployTxHash && !txHash) {
+      setTxHash(wizardData.lastDeployTxHash)
+    }
+  }, [wizardData.lastDeployTxHash])
 
   // Fetch SiloDeployer address and SiloCore deployments
   useEffect(() => {
@@ -601,11 +608,12 @@ export default function Step10Deployment() {
       )
 
       setTxHash(tx.hash)
-      
+
       // Wait for transaction confirmation
       await tx.wait()
-      
+
       markStepCompleted(10)
+      setLastDeployTxHash(tx.hash)
       setError('')
     } catch (err: unknown) {
       console.error('Deployment error:', err)
@@ -713,8 +721,9 @@ export default function Step10Deployment() {
         <button
           onClick={handleDeploy}
           disabled={
-            deploying || 
-            !deployerAddress || 
+            !!txHash ||
+            deploying ||
+            !deployerAddress ||
             !deployArgs ||
             !wizardData.hookOwnerAddress ||
             !ethers.isAddress(wizardData.hookOwnerAddress) ||
@@ -734,6 +743,8 @@ export default function Step10Deployment() {
               </svg>
               <span>Deploying...</span>
             </>
+          ) : txHash ? (
+            <span>Market deployed</span>
           ) : (
             <>
               <span>Create Market</span>
@@ -776,10 +787,17 @@ export default function Step10Deployment() {
             href={getBlockExplorerUrl(txHash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 text-sm underline"
+            className="text-blue-400 hover:text-blue-300 text-sm underline block mb-3"
           >
             View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
           </a>
+          <button
+            type="button"
+            onClick={() => router.push(`/wizard?step=11&tx=${txHash}`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+          >
+            Go to verification
+          </button>
         </div>
       )}
 
