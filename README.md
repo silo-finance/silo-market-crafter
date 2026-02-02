@@ -5,16 +5,24 @@ UI for market creation for Silo - A modern web3 application built with Next.js, 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 20 (use `nvm use` when `.nvmrc` is present, or `nvm use 20`)
 - npm or yarn
 
 ### Installation
 
 1. Install dependencies:
 ```bash
-nvm use v20
+nvm use 20
 npm install
 ```
+
+If you get `ENOTEMPTY` or engine warnings, use Node 20 and do a clean install:
+```bash
+nvm use 20
+rm -rf node_modules
+npm install
+```
+Use `npm install --legacy-peer-deps` if you hit peer dependency conflicts.
 
 2. Run the development server:
 ```bash
