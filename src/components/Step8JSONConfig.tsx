@@ -77,6 +77,30 @@ export default function Step8JSONConfig() {
         </div>
       </div>
 
+      {/* Navigation */}
+      <div className="flex justify-between mb-6">
+        <button
+          type="button"
+          onClick={goToPreviousStep}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Hook Owner</span>
+        </button>
+
+        <button
+          onClick={handleDeploy}
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+        >
+          <span>Deploy Market</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+        </button>
+      </div>
+
       {/* JSON Configuration Display */}
       <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
         <div className="flex justify-between items-center mb-4">
@@ -106,30 +130,6 @@ export default function Step8JSONConfig() {
             {jsonConfig}
           </pre>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between mt-8">
-        <button
-          type="button"
-          onClick={goToPreviousStep}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Hook Owner</span>
-        </button>
-
-        <button
-          onClick={handleDeploy}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
-          <span>Deploy Market</span>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-        </button>
       </div>
     </div>
   )
