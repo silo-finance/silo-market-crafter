@@ -140,23 +140,23 @@ export function prepareDeployArgs(
     chainlink: ChainlinkOracleConfig | null | undefined
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
-      const baseToken = chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address
-      const quoteToken = chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address
-      const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator !== ethers.ZeroAddress ? chainlink.secondaryAggregator : ethers.ZeroAddress
-      const txInput = chainlinkV3FactoryInterface.encodeFunctionData('create', [
-        {
-          baseToken,
-          quoteToken,
-          primaryAggregator: chainlink.primaryAggregator,
-          primaryHeartbeat: 0,
-          secondaryAggregator: secondaryAgg,
-          secondaryHeartbeat: 0,
-          normalizationDivider: BigInt(chainlink.normalizationDivider),
-          normalizationMultiplier: BigInt(chainlink.normalizationMultiplier),
-          invertSecondPrice: chainlink.invertSecondPrice
-        },
-        ethers.ZeroHash
-      ])
+      const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
+      const quoteToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+      const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator.trim() !== '' && chainlink.secondaryAggregator !== ethers.ZeroAddress ? ethers.getAddress(chainlink.secondaryAggregator) : ethers.ZeroAddress
+      const primaryAggregator = ethers.getAddress(chainlink.primaryAggregator)
+      // Encode config as single tuple (array form) so ethers does not expand it into multiple args; ABI order: baseToken, quoteToken, primaryAggregator, primaryHeartbeat, secondaryAggregator, secondaryHeartbeat, normalizationDivider, normalizationMultiplier, invertSecondPrice
+      const configTuple = [
+        baseToken,
+        quoteToken,
+        primaryAggregator,
+        0, // primaryHeartbeat uint32
+        secondaryAgg,
+        0, // secondaryHeartbeat uint32
+        BigInt(chainlink.normalizationDivider),
+        BigInt(chainlink.normalizationMultiplier),
+        chainlink.invertSecondPrice
+      ]
+      const txInput = chainlinkV3FactoryInterface.encodeFunctionData('create', [configTuple, ethers.ZeroHash])
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.chainlinkV3OracleFactory,
@@ -229,10 +229,13 @@ export function prepareDeployArgs(
     const immutableArgsTuple = [timelock, rcompCap]
     const initialOwner = ethers.ZeroAddress
     const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-    return abiCoder.encode(
-      ['tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256),tuple(uint32,int96),address'],
-      [configTuple, immutableArgsTuple, initialOwner]
-    )
+    // Pass 3 separate types so AbiCoder expects 3 values (not 1 type string and 3 values)
+    const types = [
+      'tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256)',
+      'tuple(uint32,int96)',
+      'address'
+    ]
+    return abiCoder.encode(types, [configTuple, immutableArgsTuple, initialOwner])
   }
 
   // Prepare IRM config data as bytes
@@ -335,11 +338,12 @@ export function prepareDeployArgs(
     return BigInt(Math.round(bp * 100)) * BP2DP_NORMALIZATION
   }
 
+  // Order of fields must match ISiloConfig.InitData ABI: deployer, hookReceiver, deployerFee, daoFee, ...
   const _siloInitData = {
     deployer: ethers.ZeroAddress, // Can be set by user or left as zero
     hookReceiver: ethers.ZeroAddress, // CLONE_IMPLEMENTATION means zero, will use implementation
-    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0),
     deployerFee: to18Decimals(wizardData.feesConfiguration?.deployerFee || 0),
+    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0),
     token0: wizardData.token0.address,
     solvencyOracle0: _oracles.solvencyOracle0.deployed,
     maxLtvOracle0: ethers.ZeroAddress,
