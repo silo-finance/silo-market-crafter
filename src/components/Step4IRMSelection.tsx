@@ -47,6 +47,15 @@ const getChainName = (chainId: string): string => {
   return chainMap[chainId] || `chain_${chainId}`
 }
 
+/** Format rcompCap (18 decimals) as e18 notation, e.g. 2e18 instead of 2000000000000000000 */
+function formatRcompCapE18(val: number | bigint | string): string {
+  const n = typeof val === 'bigint' ? Number(val) : typeof val === 'string' ? Number(val) : val
+  const coeff = n / 1e18
+  if (Number.isInteger(coeff)) return `${coeff}e18`
+  const rounded = Math.round(coeff * 100) / 100
+  return `${rounded}e18`
+}
+
 export default function Step4IRMSelection() {
   const router = useRouter()
   const { wizardData, updateSelectedIRM0, updateSelectedIRM1, updateIRMModelType, markStepCompleted } = useWizard()
@@ -314,12 +323,9 @@ export default function Step4IRMSelection() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+        <h1 className="text-4xl font-bold text-white">
           Step 4: Interest Rate Model Selection
         </h1>
-        <p className="text-gray-300 text-lg">
-          Choose Dynamic IRM (default) or IRM V2 (legacy) and configure per token
-        </p>
       </div>
 
       {/* Tabs: Dynamic IRM (default) | IRM V2 */}
@@ -451,7 +457,7 @@ export default function Step4IRMSelection() {
                           onClick={() => setKinkToken0Immutable(imm)}
                         >
                           <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {imm.rcompCap}</span>
+                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatRcompCapE18(imm.rcompCap)}</span>
                         </div>
                       ))
                     )}
@@ -511,7 +517,7 @@ export default function Step4IRMSelection() {
                           onClick={() => setKinkToken1Immutable(imm)}
                         >
                           <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {imm.rcompCap}</span>
+                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatRcompCapE18(imm.rcompCap)}</span>
                         </div>
                       ))
                     )}
