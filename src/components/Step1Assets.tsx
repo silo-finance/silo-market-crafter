@@ -4,8 +4,43 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
-import { normalizeAddress } from '@/utils/addressValidation'
+import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import erc20Artifact from '@/abis/IERC20.json'
+
+/** Base URL for per-chain token addresses (symbol -> address). Branch: develop. */
+const ADDRESSES_JSON_BASE = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/common/addresses'
+
+const getChainNameForAddresses = (chainId: string): string => {
+  const map: { [key: string]: string } = {
+    '1': 'mainnet',
+    '137': 'polygon',
+    '42161': 'arbitrum_one',
+    '43114': 'avalanche',
+    '8453': 'base',
+    '11155111': 'sepolia',
+    '10': 'optimism',
+    '31337': 'anvil',
+    '146': 'sonic',
+    '653': 'sonic_testnet'
+  }
+  return map[chainId] || `chain_${chainId}`
+}
+
+function getExplorerAddressUrl(chainId: string, address: string): string {
+  const id = parseInt(chainId, 10)
+  const explorerMap: { [key: number]: string } = {
+    1: 'https://etherscan.io',
+    137: 'https://polygonscan.com',
+    10: 'https://optimistic.etherscan.io',
+    42161: 'https://arbiscan.io',
+    43114: 'https://snowtrace.io',
+    8453: 'https://basescan.org',
+    146: 'https://sonicscan.org',
+    653: 'https://sonicscan.org'
+  }
+  const base = explorerMap[id] || 'https://etherscan.io'
+  return `${base}/address/${address}`
+}
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
@@ -43,6 +78,9 @@ export default function Step1Assets() {
   // Initialize state with empty values to avoid hydration mismatch
   const [token0Address, setToken0Address] = useState('')
   const [token1Address, setToken1Address] = useState('')
+  /** Resolved address used for fetch/submit: from normalized hex input or from symbol lookup. */
+  const [token0ResolvedAddress, setToken0ResolvedAddress] = useState<string | null>(null)
+  const [token1ResolvedAddress, setToken1ResolvedAddress] = useState<string | null>(null)
   const [token0Metadata, setToken0Metadata] = useState<TokenMetadata | null>(null)
   const [token1Metadata, setToken1Metadata] = useState<TokenMetadata | null>(null)
   const [token0Loading, setToken0Loading] = useState(false)
@@ -65,9 +103,11 @@ export default function Step1Assets() {
     
     if (cachedToken0Address) {
       setToken0Address(cachedToken0Address)
+      setToken0ResolvedAddress(null)
     }
     if (cachedToken1Address) {
       setToken1Address(cachedToken1Address)
+      setToken1ResolvedAddress(null)
     }
     if (cachedToken0Metadata) {
       try {
@@ -104,39 +144,45 @@ export default function Step1Assets() {
 
 
   const switchAddresses = () => {
-    // Swap addresses
     const tempAddress = token0Address
     setToken0Address(token1Address)
     setToken1Address(tempAddress)
 
-    // Save swapped addresses to cache
+    const tempResolved = token0ResolvedAddress
+    setToken0ResolvedAddress(token1ResolvedAddress)
+    setToken1ResolvedAddress(tempResolved)
+
     saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, token1Address)
     saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, tempAddress)
 
-    // Swap metadata
     const tempMetadata = token0Metadata
     setToken0Metadata(token1Metadata)
     setToken1Metadata(tempMetadata)
 
-    // Save swapped metadata to cache
     saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, token1Metadata)
     saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, tempMetadata)
 
-    // Swap errors
     const tempError = token0Error
     setToken0Error(token1Error)
     setToken1Error(tempError)
 
-    // Swap loading states
     const tempLoading = token0Loading
     setToken0Loading(token1Loading)
     setToken1Loading(tempLoading)
   }
 
   // Load existing data if available (from wizard context or cache)
+  // When JSON was loaded with symbols (address empty), show symbol in input and resolve to address below
   useEffect(() => {
     if (wizardData.token0) {
-      setToken0Address(wizardData.token0.address)
+      const hasAddress = Boolean(wizardData.token0.address?.trim())
+      if (hasAddress) {
+        setToken0Address(wizardData.token0.address)
+        setToken0ResolvedAddress(wizardData.token0.address)
+      } else {
+        setToken0Address(wizardData.token0.symbol || '')
+        setToken0ResolvedAddress(null)
+      }
       setToken0Metadata({
         symbol: wizardData.token0.symbol,
         decimals: wizardData.token0.decimals,
@@ -150,6 +196,7 @@ export default function Step1Assets() {
         setToken0Address(cachedAddress)
       } else {
         setToken0Address('')
+        setToken0ResolvedAddress(null)
       }
       if (cachedMetadata) {
         try {
@@ -162,14 +209,21 @@ export default function Step1Assets() {
       }
       setToken0Error('')
     } else {
-      // Clear local state when wizard data is reset
       setToken0Address('')
       setToken0Metadata(null)
+      setToken0ResolvedAddress(null)
       setToken0Error('')
     }
     
     if (wizardData.token1) {
-      setToken1Address(wizardData.token1.address)
+      const hasAddress = Boolean(wizardData.token1.address?.trim())
+      if (hasAddress) {
+        setToken1Address(wizardData.token1.address)
+        setToken1ResolvedAddress(wizardData.token1.address)
+      } else {
+        setToken1Address(wizardData.token1.symbol || '')
+        setToken1ResolvedAddress(null)
+      }
       setToken1Metadata({
         symbol: wizardData.token1.symbol,
         decimals: wizardData.token1.decimals,
@@ -183,6 +237,7 @@ export default function Step1Assets() {
         setToken1Address(cachedAddress)
       } else {
         setToken1Address('')
+        setToken1ResolvedAddress(null)
       }
       if (cachedMetadata) {
         try {
@@ -195,9 +250,9 @@ export default function Step1Assets() {
       }
       setToken1Error('')
     } else {
-      // Clear local state when wizard data is reset
       setToken1Address('')
       setToken1Metadata(null)
+      setToken1ResolvedAddress(null)
       setToken1Error('')
     }
   }, [wizardData.token0, wizardData.token1, isClient, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
@@ -295,14 +350,20 @@ export default function Step1Assets() {
     }
   }
 
-  const validateAndFetchToken = useCallback(async (address: string, tokenType: 'token0' | 'token1') => {
+  const validateAndFetchToken = useCallback(async (
+    address: string,
+    tokenType: 'token0' | 'token1',
+    options?: { skipUpdateInput?: boolean }
+  ) => {
     if (!address.trim()) {
       if (tokenType === 'token0') {
         setToken0Metadata(null)
         setToken0Error('')
+        setToken0ResolvedAddress(null)
       } else {
         setToken1Metadata(null)
         setToken1Error('')
+        setToken1ResolvedAddress(null)
       }
       return
     }
@@ -314,21 +375,29 @@ export default function Step1Assets() {
         setToken0Metadata(null)
         setToken0Error('Invalid address format')
         setToken0Loading(false)
+        setToken0ResolvedAddress(null)
       } else {
         setToken1Metadata(null)
         setToken1Error('Invalid address format')
         setToken1Loading(false)
+        setToken1ResolvedAddress(null)
       }
       return
     }
 
-    // Update the input field with the normalized address if it's different
-    if (normalizedAddress !== address) {
+    // Update the input field with the normalized address only when user entered hex (not when resolved from symbol)
+    if (!options?.skipUpdateInput && normalizedAddress !== address) {
       if (tokenType === 'token0') {
         setToken0Address(normalizedAddress)
       } else {
         setToken1Address(normalizedAddress)
       }
+    }
+
+    if (tokenType === 'token0') {
+      setToken0ResolvedAddress(normalizedAddress)
+    } else {
+      setToken1ResolvedAddress(normalizedAddress)
     }
 
     // Set loading state
@@ -346,12 +415,10 @@ export default function Step1Assets() {
       if (tokenType === 'token0') {
         setToken0Metadata(metadata)
         setToken0Error('')
-        // Save metadata to cache
         saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, metadata)
       } else {
         setToken1Metadata(metadata)
         setToken1Error('')
-        // Save metadata to cache
         saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, metadata)
       }
     } catch (err) {
@@ -359,12 +426,12 @@ export default function Step1Assets() {
       if (tokenType === 'token0') {
         setToken0Metadata(null)
         setToken0Error(errorMessage)
-        // Clear metadata from cache on error
+        setToken0ResolvedAddress(null)
         saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, null)
       } else {
         setToken1Metadata(null)
         setToken1Error(errorMessage)
-        // Clear metadata from cache on error
+        setToken1ResolvedAddress(null)
         saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, null)
       }
     } finally {
@@ -376,15 +443,112 @@ export default function Step1Assets() {
     }
   }, [CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, saveMetadataToCache])
 
-  // Debounced validation for token0
-  const debouncedValidateToken0 = debounce((address: string) => {
-    validateAndFetchToken(address, 'token0')
+  /** Resolve symbol to address from Silo repo addresses JSON (case-insensitive full match). Returns address and exact symbol (key from JSON) for input display. */
+  const resolveSymbolToAddress = useCallback(async (
+    chainId: string,
+    symbol: string
+  ): Promise<{ address: string; exactSymbol: string } | null> => {
+    const chainName = getChainNameForAddresses(chainId)
+    const url = `${ADDRESSES_JSON_BASE}/${chainName}.json`
+    try {
+      const res = await fetch(url)
+      if (!res.ok) return null
+      const data = (await res.json()) as Record<string, string>
+      const key = symbol.trim()
+      const found = Object.keys(data).find(k => k.toLowerCase() === key.toLowerCase())
+      if (!found) return null
+      const addr = data[found]
+      if (typeof addr !== 'string' || !addr.startsWith('0x')) return null
+      return { address: addr, exactSymbol: found }
+    } catch {
+      return null
+    }
+  }, [])
+
+  /**
+   * Process input: if hex address -> normalize and fetch metadata.
+   * If not hex -> treat as symbol, lookup in addresses JSON (case-insensitive); if found use that address and fetch metadata; if not show "Please enter the token address manually."
+   */
+  const processTokenInput = useCallback(async (value: string, tokenType: 'token0' | 'token1') => {
+    const setLoading = tokenType === 'token0' ? setToken0Loading : setToken1Loading
+    const setError = tokenType === 'token0' ? setToken0Error : setToken1Error
+    const setMetadata = tokenType === 'token0' ? setToken0Metadata : setToken1Metadata
+    const setResolved = tokenType === 'token0' ? setToken0ResolvedAddress : setToken1ResolvedAddress
+    const saveMetaKey = tokenType === 'token0' ? CACHE_KEYS.TOKEN0_METADATA : CACHE_KEYS.TOKEN1_METADATA
+
+    if (!value.trim()) {
+      setMetadata(null)
+      setError('')
+      setResolved(null)
+      return
+    }
+
+    if (isHexAddress(value)) {
+      await validateAndFetchToken(value, tokenType)
+      return
+    }
+
+    // Symbol path: need chainId
+    let chainId: string
+    try {
+      if (!window.ethereum) {
+        setError('Connect your wallet to look up token by symbol.')
+        setResolved(null)
+        setMetadata(null)
+        saveMetadataToCache(saveMetaKey, null)
+        return
+      }
+      const hex = await window.ethereum.request({ method: 'eth_chainId' }) as string
+      chainId = parseInt(hex, 16).toString()
+    } catch {
+      setError('Could not read network. Please enter the token address manually.')
+      setResolved(null)
+      setMetadata(null)
+      saveMetadataToCache(saveMetaKey, null)
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    setResolved(null)
+    setMetadata(null)
+
+    const result = await resolveSymbolToAddress(chainId, value)
+    if (!result) {
+      setLoading(false)
+      setError('Please enter the token address manually.')
+      setResolved(null)
+      saveMetadataToCache(saveMetaKey, null)
+      return
+    }
+
+    const setAddress = tokenType === 'token0' ? setToken0Address : setToken1Address
+    const cacheAddressKey = tokenType === 'token0' ? CACHE_KEYS.TOKEN0_ADDRESS : CACHE_KEYS.TOKEN1_ADDRESS
+    setAddress(result.exactSymbol)
+    saveToCache(cacheAddressKey, result.exactSymbol)
+
+    setResolved(result.address)
+    await validateAndFetchToken(result.address, tokenType, { skipUpdateInput: true })
+    setLoading(false)
+  }, [validateAndFetchToken, resolveSymbolToAddress, saveMetadataToCache, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN1_ADDRESS])
+
+  // Debounced: resolve (symbol or hex) and fetch metadata
+  const debouncedValidateToken0 = debounce((value: string) => {
+    processTokenInput(value, 'token0')
   }, 500)
 
-  // Debounced validation for token1
-  const debouncedValidateToken1 = debounce((address: string) => {
-    validateAndFetchToken(address, 'token1')
+  const debouncedValidateToken1 = debounce((value: string) => {
+    processTokenInput(value, 'token1')
   }, 500)
+
+  // When token input or network is set (e.g. from cache), run validation so symbol lookup runs
+  useEffect(() => {
+    if (isClient && token0Address) debouncedValidateToken0(token0Address)
+  }, [isClient, token0Address, wizardData.networkInfo?.chainId])
+
+  useEffect(() => {
+    if (isClient && token1Address) debouncedValidateToken1(token1Address)
+  }, [isClient, token1Address, wizardData.networkInfo?.chainId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -392,11 +556,10 @@ export default function Step1Assets() {
     setLoading(true)
 
     try {
-      // Normalize addresses first
-      const normalizedToken0 = normalizeAddress(token0Address)
-      const normalizedToken1 = normalizeAddress(token1Address)
-      
-      // Validate addresses
+      // Use resolved address (from hex input or symbol lookup); fallback to normalizing raw input
+      const normalizedToken0 = token0ResolvedAddress ?? normalizeAddress(token0Address)
+      const normalizedToken1 = token1ResolvedAddress ?? normalizeAddress(token1Address)
+
       if (!normalizedToken0) {
         throw new Error('Invalid Token 0 address')
       }
@@ -504,6 +667,24 @@ export default function Step1Assets() {
         <p className="text-gray-300 text-lg">
           Choose the two tokens for your new market
         </p>
+        <p className="text-gray-400 text-sm mt-2">
+          All supported symbols can be viewed{' '}
+          <a
+            href={
+              wizardData.networkInfo?.chainId
+                ? `${ADDRESSES_JSON_BASE}/${getChainNameForAddresses(wizardData.networkInfo.chainId)}.json`
+                : 'https://github.com/silo-finance/silo-contracts-v2/tree/develop/common/addresses'
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+          >
+            {wizardData.networkInfo?.chainId
+              ? `in this JSON file (${wizardData.networkInfo.networkName})`
+              : 'in the repository (connect wallet for network-specific list)'}
+          </a>
+          .
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -511,7 +692,7 @@ export default function Step1Assets() {
           <div className="space-y-4">
             <div>
               <label htmlFor="token0" className="block text-sm font-medium text-gray-300 mb-2">
-                Token 0 Address
+                Token 0 – address or symbol
               </label>
               <div className="relative">
                 <input
@@ -532,7 +713,7 @@ export default function Step1Assets() {
                     
                     debouncedValidateToken0(value)
                   }}
-                  placeholder="0x..."
+                  placeholder="0x... or e.g. WETH, USDC"
                   className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     token0Error ? 'border-red-500' : token0Metadata ? 'border-green-500' : 'border-gray-700'
                   }`}
@@ -547,6 +728,23 @@ export default function Step1Assets() {
                   </div>
                 )}
               </div>
+              {token0ResolvedAddress && token0Address.trim() !== token0ResolvedAddress && (
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
+                  Matched address:{' '}
+                  {wizardData.networkInfo?.chainId ? (
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token0ResolvedAddress)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 underline"
+                    >
+                      {normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}
+                    </a>
+                  ) : (
+                    <span>{normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}</span>
+                  )}
+                </div>
+              )}
               {token0Error && (
                 <div className="mt-2 text-sm text-red-400">
                   ✗ {token0Error}
@@ -575,7 +773,7 @@ export default function Step1Assets() {
 
             <div>
               <label htmlFor="token1" className="block text-sm font-medium text-gray-300 mb-2">
-                Token 1 Address
+                Token 1 – address or symbol
               </label>
               <div className="relative">
                 <input
@@ -596,7 +794,7 @@ export default function Step1Assets() {
                     
                     debouncedValidateToken1(value)
                   }}
-                  placeholder="0x..."
+                  placeholder="0x... or e.g. WETH, USDC"
                   className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     token1Error ? 'border-red-500' : token1Metadata ? 'border-green-500' : 'border-gray-700'
                   }`}
@@ -611,6 +809,23 @@ export default function Step1Assets() {
                   </div>
                 )}
               </div>
+              {token1ResolvedAddress && token1Address.trim() !== token1ResolvedAddress && (
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
+                  Matched address:{' '}
+                  {wizardData.networkInfo?.chainId ? (
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token1ResolvedAddress)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 underline"
+                    >
+                      {normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}
+                    </a>
+                  ) : (
+                    <span>{normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}</span>
+                  )}
+                </div>
+              )}
               {token1Error && (
                 <div className="mt-2 text-sm text-red-400">
                   ✗ {token1Error}

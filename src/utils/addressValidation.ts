@@ -34,3 +34,12 @@ export function normalizeAddress(address: string): string | null {
 export function isValidAddressFormat(address: string): boolean {
   return normalizeAddress(address) !== null
 }
+
+/**
+ * Returns true if the string looks like a hex address (0x + 40 hex chars).
+ * Used to decide whether to treat input as address or as token symbol.
+ */
+export function isHexAddress(str: string): boolean {
+  const s = str.trim()
+  return s.length === 42 && s.toLowerCase().startsWith('0x') && /^0x[0-9a-fA-F]{40}$/.test(s)
+}
