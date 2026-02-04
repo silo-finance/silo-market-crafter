@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments } from '@/utils/deployArgs'
+import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
@@ -287,7 +288,8 @@ export default function Step10Deployment() {
         'SiloHookV1.sol',
         'SiloHookV2.sol', 
         'SiloHookV3.sol',
-        'InterestRateModelV2Factory.sol'
+        'InterestRateModelV2Factory.sol',
+        'DynamicKinkModelFactory.sol'
       ]
 
       const deployments: SiloCoreDeployments = {}
@@ -319,27 +321,32 @@ export default function Step10Deployment() {
     }
   }, [wizardData.networkInfo?.chainId])
 
-  // Fetch SiloDeployer version using Silo Lens
+  // Fetch SiloDeployer version using Silo Lens (cached per chainId+address)
   useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!deployerAddress || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, deployerAddress)
+    if (cached != null) {
+      setDeployerVersion(cached)
+      return
+    }
     const fetchDeployerVersion = async () => {
-      if (!deployerAddress || !siloLensAddress || !window.ethereum) {
-        return
-      }
-
+      if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = await lensContract.getVersion(deployerAddress)
+        const version = String(await lensContract.getVersion(deployerAddress))
+        setCachedVersion(chainId, deployerAddress, version)
         setDeployerVersion(version)
         console.log(`SiloDeployer version: ${version}`)
       } catch (err) {
         console.warn('Failed to fetch SiloDeployer version:', err)
-        // Don't set error, just log - version is optional info
+        setCachedVersion(chainId, deployerAddress, '—')
+        setDeployerVersion('—')
       }
     }
-
     fetchDeployerVersion()
-  }, [deployerAddress, siloLensAddress])
+  }, [deployerAddress, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Prepare deploy arguments from JSON config (matching Solidity script logic)
   // Always prepare arguments even if deployer address is not available
@@ -356,7 +363,10 @@ export default function Step10Deployment() {
         ? `${wizardData.selectedHook}.sol` 
         : 'SiloHookV1.sol'
       const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
-      const irmFactoryAddress = siloCoreDeployments['InterestRateModelV2Factory.sol'] || ethers.ZeroAddress
+      const irmFactoryName = wizardData.irmModelType === 'kink'
+        ? 'DynamicKinkModelFactory.sol'
+        : 'InterestRateModelV2Factory.sol'
+      const irmFactoryAddress = siloCoreDeployments[irmFactoryName] || ethers.ZeroAddress
 
       console.log(`Looking up hook implementation: ${hookImplementationName}`, {
         found: hookReceiverImplementation !== ethers.ZeroAddress,
@@ -364,7 +374,7 @@ export default function Step10Deployment() {
         availableDeployments: Object.keys(siloCoreDeployments)
       })
 
-      console.log(`Looking up IRM factory: InterestRateModelV2Factory.sol`, {
+      console.log(`Looking up IRM factory: ${irmFactoryName}`, {
         found: irmFactoryAddress !== ethers.ZeroAddress,
         address: irmFactoryAddress
       })
@@ -375,7 +385,7 @@ export default function Step10Deployment() {
       }
 
       if (irmFactoryAddress === ethers.ZeroAddress) {
-        validationWarnings.push('InterestRateModelV2Factory address not found. Deployment may fail.')
+        validationWarnings.push(`${irmFactoryName} address not found. Deployment may fail.`)
       }
 
       // Validate hook owner address is set
@@ -388,7 +398,7 @@ export default function Step10Deployment() {
         // Keep warnings from other sources (like fetchDeploymentData) that are not validation warnings
         const otherWarnings = prevWarnings.filter(w => 
           !w.includes('Hook implementation address') &&
-          !w.includes('InterestRateModelV2Factory address') &&
+          !w.includes('address not found') &&
           !w.includes('Hook owner address') &&
           !w.includes('SiloDeployer address') &&
           !w.includes('deployment data')

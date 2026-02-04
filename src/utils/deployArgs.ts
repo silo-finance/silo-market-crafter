@@ -105,8 +105,11 @@ export function prepareDeployArgs(
   // This matches how SiloCoreDeployments.get() works in Solidity
   const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
 
-  // Resolve IRM factory address using the exact contract name
-  const irmFactoryAddress = siloCoreDeployments['InterestRateModelV2Factory.sol'] || ethers.ZeroAddress
+  // Resolve IRM factory address by model type: Kink vs legacy IRM
+  const irmFactoryName = wizardData.irmModelType === 'kink'
+    ? 'DynamicKinkModelFactory.sol'
+    : 'InterestRateModelV2Factory.sol'
+  const irmFactoryAddress = siloCoreDeployments[irmFactoryName] || ethers.ZeroAddress
 
   // Prepare Oracles struct: either deployed address or factory + createOracleScaler calldata
   const getOracleTxData = (oracleAddress: string | undefined) => {
@@ -147,8 +150,52 @@ export function prepareDeployArgs(
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 
+  // Encode Kink IRM config as ISiloDeployer.DKinkIRMConfig: (Config, ImmutableArgs, initialOwner)
+  // IDynamicKinkModel.Config: ulow,u1,u2,ucrit,rmin(int256), kmin,kmax(int96), alpha,cminus,cplus,c1,c2,dmax(int256)
+  // IDynamicKinkModel.ImmutableArgs: timelock(uint32), rcompCap(int96)
+  const toBigIntSafe = (value: string | number | boolean | null | undefined): bigint => {
+    if (value === null || value === undefined) return BigInt(0)
+    if (typeof value === 'string') {
+      try {
+        return BigInt(value)
+      } catch {
+        return BigInt(0)
+      }
+    }
+    return BigInt(Math.floor(Number(value) || 0))
+  }
+
+  const encodeKinkConfig = (irmConfig: { config?: { [key: string]: string | number | boolean } } | null): string => {
+    if (!irmConfig?.config) return '0x'
+    const c = irmConfig.config
+    const configTuple = [
+      toBigIntSafe(c.ulow),
+      toBigIntSafe(c.u1),
+      toBigIntSafe(c.u2),
+      toBigIntSafe(c.ucrit),
+      toBigIntSafe(c.rmin),
+      BigInt(Number(c.kmin) ?? 0), // int96
+      BigInt(Number(c.kmax) ?? 0), // int96
+      toBigIntSafe(c.alpha),
+      toBigIntSafe(c.cminus),
+      toBigIntSafe(c.cplus),
+      toBigIntSafe(c.c1),
+      toBigIntSafe(c.c2),
+      toBigIntSafe(c.dmax)
+    ]
+    const timelock = Number(c.timelock) ?? 0
+    const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
+    const immutableArgsTuple = [timelock, rcompCap]
+    const initialOwner = ethers.ZeroAddress
+    const abiCoder = ethers.AbiCoder.defaultAbiCoder()
+    return abiCoder.encode(
+      ['tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256),tuple(uint32,int96),address'],
+      [configTuple, immutableArgsTuple, initialOwner]
+    )
+  }
+
   // Prepare IRM config data as bytes
-  // IRM config is ABI-encoded as IInterestRateModelV2.Config (tuple from Foundry artifact, never modified)
+  // IRM (legacy) config is ABI-encoded as IInterestRateModelV2.Config (tuple from Foundry artifact, never modified)
   // Validation mirrors InterestRateModelV2Factory.verifyConfig() so we fail early with a clear message
   const DP = BigInt(1e18)
   const encodeIRMConfig = (irmConfig: { config?: { [key: string]: string | number | boolean } } | null): string => {
@@ -158,17 +205,7 @@ export function prepareDeployArgs(
 
     const config = irmConfig.config
 
-    const toBigInt = (value: string | number | boolean | null | undefined): bigint => {
-      if (value === null || value === undefined) return BigInt(0)
-      if (typeof value === 'string') {
-        try {
-          return BigInt(value)
-        } catch {
-          return BigInt(0)
-        }
-      }
-      return BigInt(Math.floor(Number(value) || 0))
-    }
+    const toBigInt = toBigIntSafe
 
     const uopt = toBigInt(config.uopt)
     const ucrit = toBigInt(config.ucrit)
@@ -221,8 +258,13 @@ export function prepareDeployArgs(
     }
   }
 
-  const irmConfigData0Encoded = encodeIRMConfig(wizardData.selectedIRM0)
-  const irmConfigData1Encoded = encodeIRMConfig(wizardData.selectedIRM1)
+  const isKink = wizardData.irmModelType === 'kink'
+  const irmConfigData0Encoded = isKink
+    ? encodeKinkConfig(wizardData.selectedIRM0)
+    : encodeIRMConfig(wizardData.selectedIRM0)
+  const irmConfigData1Encoded = isKink
+    ? encodeKinkConfig(wizardData.selectedIRM1)
+    : encodeIRMConfig(wizardData.selectedIRM1)
 
   // Prepare ClonableHookReceiver
   // Matching: _getClonableHookReceiverConfig(hookReceiverImplementation)

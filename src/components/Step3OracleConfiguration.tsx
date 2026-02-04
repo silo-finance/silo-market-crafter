@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
+import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 
@@ -153,22 +154,32 @@ export default function Step3OracleConfiguration() {
     fetchLens()
   }, [wizardData.networkInfo?.chainId])
 
-  // Fetch OracleScalerFactory version via Silo Lens getVersion(contractAddress)
+  // Fetch OracleScalerFactory version via Silo Lens (cached per chainId+address)
   useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!oracleScalerFactory?.address || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, oracleScalerFactory.address)
+    if (cached != null) {
+      setOracleScalerFactory(prev => prev ? { ...prev, version: cached } : null)
+      return
+    }
     const fetchFactoryVersion = async () => {
-      if (!oracleScalerFactory?.address || !siloLensAddress || !window.ethereum) return
+      if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = await lensContract.getVersion(oracleScalerFactory.address)
-        setOracleScalerFactory(prev => prev ? { ...prev, version: String(version) } : null)
+        const version = String(await lensContract.getVersion(oracleScalerFactory!.address))
+        setCachedVersion(chainId, oracleScalerFactory!.address, version)
+        setOracleScalerFactory(prev => prev ? { ...prev, version } : null)
       } catch (err) {
         console.warn('Failed to fetch OracleScalerFactory version from Silo Lens:', err)
-        setOracleScalerFactory(prev => prev ? { ...prev, version: '—' } : null)
+        const fallback = '—'
+        setCachedVersion(chainId, oracleScalerFactory!.address, fallback)
+        setOracleScalerFactory(prev => prev ? { ...prev, version: fallback } : null)
       }
     }
     fetchFactoryVersion()
-  }, [oracleScalerFactory?.address, siloLensAddress])
+  }, [oracleScalerFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
   useEffect(() => {

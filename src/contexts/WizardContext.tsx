@@ -2,6 +2,39 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+      on: (event: string, callback: (...args: unknown[]) => void) => void
+      removeListener: (event: string, callback: (...args: unknown[]) => void) => void
+    }
+  }
+}
+
+/** Map chainId (decimal string) to display name; used when syncing from wallet (e.g. chainChanged). */
+function getNetworkNameForChainId(chainIdDecimal: string): string {
+  const id = parseInt(chainIdDecimal, 10)
+  const map: Record<number, string> = {
+    1: 'Ethereum Mainnet',
+    11155111: 'Sepolia',
+    137: 'Polygon',
+    42161: 'Arbitrum One',
+    421614: 'Arbitrum Sepolia',
+    43114: 'Avalanche C-Chain',
+    8453: 'Base',
+    146: 'Sonic',
+    653: 'Sonic Testnet',
+    10: 'Optimism',
+    100: 'Gnosis',
+    56: 'BNB Smart Chain',
+    250: 'Fantom Opera',
+    25: 'Cronos',
+    1284: 'Moonbeam',
+  }
+  return map[id] ?? `Network ${chainIdDecimal}`
+}
+
 export interface TokenData {
   address: string
   symbol: string
@@ -46,6 +79,8 @@ export interface OracleConfiguration {
     scalerOracle?: ScalerOracle
   }
 }
+
+export type IRMModelType = 'kink' | 'irm'
 
 export interface IRMConfig {
   name: string
@@ -93,6 +128,8 @@ export interface WizardData {
   oracleType0: OracleType | null
   oracleType1: OracleType | null
   oracleConfiguration: OracleConfiguration | null
+  /** Which IRM model is active: Kink (default) or legacy IRM (InterestRateModelV2). */
+  irmModelType: IRMModelType
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
   borrowConfiguration: BorrowConfiguration | null
@@ -115,9 +152,11 @@ interface WizardContextType {
   updateToken0: (token: TokenData) => void
   updateToken1: (token: TokenData) => void
   updateNetworkInfo: (networkInfo: NetworkInfo) => void
+  clearNetworkInfo: () => void
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
+  updateIRMModelType: (type: IRMModelType) => void
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
@@ -151,6 +190,7 @@ const initialWizardData: WizardData = {
   oracleType0: null,
   oracleType1: null,
   oracleConfiguration: null,
+  irmModelType: 'kink',
   selectedIRM0: null,
   selectedIRM1: null,
   borrowConfiguration: null,
@@ -164,28 +204,54 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardData] = useState<WizardData>(initialWizardData)
   const [isClient, setIsClient] = useState(false)
 
-  // Load saved data after component mounts (client-side only)
+  // Load saved data after component mounts (client-side only).
+  // Never restore networkInfo from cache – it must always come from the connected wallet.
   useEffect(() => {
     setIsClient(true)
-    
-    // Load from localStorage if available
     const saved = localStorage.getItem('silo-wizard-data')
     if (saved) {
       try {
-        const parsedData = JSON.parse(saved)
-        setWizardData(parsedData)
+        const parsedData = JSON.parse(saved) as WizardData
+        setWizardData({ ...parsedData, networkInfo: null })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }
     }
   }, [])
 
-  // Save wizard data to localStorage whenever it changes (client-side only)
+  // Save wizard data to localStorage whenever it changes (client-side only).
+  // Do not persist networkInfo so the app always follows the wallet network on next load.
   useEffect(() => {
     if (isClient) {
-      localStorage.setItem('silo-wizard-data', JSON.stringify(wizardData))
+      const toSave = { ...wizardData, networkInfo: null }
+      localStorage.setItem('silo-wizard-data', JSON.stringify(toSave))
     }
   }, [wizardData, isClient])
+
+  // Sync network from MetaMask when user switches chain (e.g. Sonic → Arbitrum)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const applyNetwork = (chainIdHex: string) => {
+      const networkId = parseInt(chainIdHex, 16).toString()
+      const networkName = getNetworkNameForChainId(networkId)
+      setWizardData(prev => ({ ...prev, networkInfo: { chainId: networkId, networkName } }))
+    }
+
+    const handleChainChanged = (...args: unknown[]) => {
+      const chainId = args[0] as string
+      applyNetwork(chainId)
+    }
+
+    window.ethereum.request({ method: 'eth_chainId' }).then((chainId: unknown) => {
+      applyNetwork(chainId as string)
+    }).catch(() => {})
+
+    window.ethereum.on('chainChanged', handleChainChanged)
+    return () => {
+      window.ethereum?.removeListener?.('chainChanged', handleChainChanged)
+    }
+  }, [])
 
   const updateStep = (step: number) => {
     setWizardData(prev => ({ ...prev, currentStep: step }))
@@ -210,6 +276,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, networkInfo }))
   }
 
+  const clearNetworkInfo = () => {
+    setWizardData(prev => ({ ...prev, networkInfo: null }))
+  }
+
   const updateOracleType0 = (oracleType: OracleType) => {
     setWizardData(prev => ({ ...prev, oracleType0: oracleType }))
   }
@@ -220,6 +290,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const updateOracleConfiguration = (config: OracleConfiguration) => {
     setWizardData(prev => ({ ...prev, oracleConfiguration: config }))
+  }
+
+  const updateIRMModelType = (type: IRMModelType) => {
+    setWizardData(prev => ({ ...prev, irmModelType: type }))
   }
 
   const updateSelectedIRM0 = (irm: IRMConfig) => {
@@ -263,7 +337,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle0: "NO_ORACLE",
-      interestRateModel0: "InterestRateModelV2Factory.sol",
+      interestRateModel0: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
       maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.round(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
       lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
@@ -277,7 +351,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle1: "NO_ORACLE",
-      interestRateModel1: "InterestRateModelV2Factory.sol",
+      interestRateModel1: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
       maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.round(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
       lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
@@ -332,6 +406,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         }
       }
       
+      // Parse IRM model type from factory name in config
+      const irmModelType: IRMModelType =
+        config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
+
       // Parse IRM configuration
       const irm0: IRMConfig = {
         name: config.interestRateModelConfig0 || '',
@@ -385,6 +463,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         token0: token0Data,
         token1: token1Data,
         oracleConfiguration: oracleConfig,
+        irmModelType,
         selectedIRM0: irm0,
         selectedIRM1: irm1,
         borrowConfiguration: borrowConfig,
@@ -425,9 +504,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateToken0,
         updateToken1,
         updateNetworkInfo,
+        clearNetworkInfo,
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
+        updateIRMModelType,
         updateSelectedIRM0,
         updateSelectedIRM1,
         updateBorrowConfiguration,
