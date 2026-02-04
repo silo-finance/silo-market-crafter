@@ -125,6 +125,15 @@ interface WizardContextType {
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined)
 
+/** All localStorage keys used by the wizard. Reset form must clear these. */
+export const WIZARD_CACHE_KEYS = [
+  'silo-wizard-token0-address',
+  'silo-wizard-token1-address',
+  'silo-wizard-token0-metadata',
+  'silo-wizard-token1-metadata',
+  'silo-wizard-data'
+] as const
+
 const initialWizardData: WizardData = {
   currentStep: 0,
   completedSteps: [],
@@ -387,22 +396,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   }
 
   const resetWizardWithCache = () => {
-    // Clear all localStorage cache
     if (typeof window !== 'undefined') {
-      const cacheKeys = [
-        'silo-wizard-token0-address',
-        'silo-wizard-token1-address', 
-        'silo-wizard-token0-metadata',
-        'silo-wizard-token1-metadata',
-        'silo-wizard-data'
-      ]
-      
-      cacheKeys.forEach(key => {
-        localStorage.removeItem(key)
-      })
+      WIZARD_CACHE_KEYS.forEach(key => localStorage.removeItem(key))
     }
-    
-    // Reset wizard data
     setWizardData(initialWizardData)
   }
 

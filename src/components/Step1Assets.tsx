@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { useWizard } from '@/contexts/WizardContext'
+import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
 import erc20Artifact from '@/abis/IERC20.json'
 
@@ -33,12 +33,11 @@ export default function Step1Assets() {
   const router = useRouter()
   const { wizardData, updateToken0, updateToken1, updateNetworkInfo, markStepCompleted } = useWizard()
   
-  // Cache keys for localStorage
   const CACHE_KEYS = {
-    TOKEN0_ADDRESS: 'silo-wizard-token0-address',
-    TOKEN1_ADDRESS: 'silo-wizard-token1-address',
-    TOKEN0_METADATA: 'silo-wizard-token0-metadata',
-    TOKEN1_METADATA: 'silo-wizard-token1-metadata'
+    TOKEN0_ADDRESS: WIZARD_CACHE_KEYS[0],
+    TOKEN1_ADDRESS: WIZARD_CACHE_KEYS[1],
+    TOKEN0_METADATA: WIZARD_CACHE_KEYS[2],
+    TOKEN1_METADATA: WIZARD_CACHE_KEYS[3]
   }
 
   // Initialize state with empty values to avoid hydration mismatch
@@ -144,12 +143,13 @@ export default function Step1Assets() {
         name: wizardData.token0.name
       })
     } else if (isClient) {
-      // If no wizard data but we're on client, try to load from cache
+      // If no wizard data but we're on client, try to load from cache (or clear after reset)
       const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN0_ADDRESS)
       const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN0_METADATA)
-      
       if (cachedAddress) {
         setToken0Address(cachedAddress)
+      } else {
+        setToken0Address('')
       }
       if (cachedMetadata) {
         try {
@@ -157,7 +157,10 @@ export default function Step1Assets() {
         } catch (err) {
           console.warn('Failed to parse cached token0 metadata:', err)
         }
+      } else {
+        setToken0Metadata(null)
       }
+      setToken0Error('')
     } else {
       // Clear local state when wizard data is reset
       setToken0Address('')
@@ -173,12 +176,13 @@ export default function Step1Assets() {
         name: wizardData.token1.name
       })
     } else if (isClient) {
-      // If no wizard data but we're on client, try to load from cache
+      // If no wizard data but we're on client, try to load from cache (or clear after reset)
       const cachedAddress = localStorage.getItem(CACHE_KEYS.TOKEN1_ADDRESS)
       const cachedMetadata = localStorage.getItem(CACHE_KEYS.TOKEN1_METADATA)
-      
       if (cachedAddress) {
         setToken1Address(cachedAddress)
+      } else {
+        setToken1Address('')
       }
       if (cachedMetadata) {
         try {
@@ -186,7 +190,10 @@ export default function Step1Assets() {
         } catch (err) {
           console.warn('Failed to parse cached token1 metadata:', err)
         }
+      } else {
+        setToken1Metadata(null)
       }
+      setToken1Error('')
     } else {
       // Clear local state when wizard data is reset
       setToken1Address('')

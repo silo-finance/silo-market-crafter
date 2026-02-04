@@ -58,10 +58,9 @@ export default function ResetButton() {
                 Are you sure you want to reset the form? This will:
               </p>
               <ul className="text-sm text-gray-400 space-y-1 ml-4">
-                <li>• Clear all entered token addresses</li>
-                <li>• Remove all cached data</li>
-                <li>• Reset oracle selections</li>
-                <li>• Return to Step 1</li>
+                <li>• Clear all data from every step (tokens, network, oracles, IRM, borrow, fees, hook, JSON config, deploy tx)</li>
+                <li>• Remove all cached data from this browser</li>
+                <li>• Return to the start (Step 0)</li>
               </ul>
             </div>
 

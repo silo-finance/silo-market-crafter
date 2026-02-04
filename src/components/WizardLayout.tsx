@@ -120,7 +120,6 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       }`}>
                         {item.title}
                       </div>
-                      <div className="text-xs text-gray-500">{item.description}</div>
                     </div>
                   </div>
                 ))}
