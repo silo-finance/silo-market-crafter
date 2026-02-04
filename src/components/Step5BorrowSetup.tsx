@@ -100,10 +100,24 @@ export default function Step5BorrowSetup() {
     token1: {}
   })
 
-  // Load existing configuration if available
+  // Load existing configuration if available and run validation (e.g. LT > 0 when borrowable)
   useEffect(() => {
     if (wizardData.borrowConfiguration) {
-      setBorrowConfig(wizardData.borrowConfiguration)
+      const config = wizardData.borrowConfiguration
+      setBorrowConfig(config)
+      setValidationErrors(prev => ({
+        ...prev,
+        token0: {
+          liquidationThreshold: validateValue(0, 'liquidationThreshold', config.token0.liquidationThreshold, config),
+          maxLTV: validateValue(0, 'maxLTV', config.token0.maxLTV, config),
+          liquidationTargetLTV: validateValue(0, 'liquidationTargetLTV', config.token0.liquidationTargetLTV, config)
+        },
+        token1: {
+          liquidationThreshold: validateValue(1, 'liquidationThreshold', config.token1.liquidationThreshold, config),
+          maxLTV: validateValue(1, 'maxLTV', config.token1.maxLTV, config),
+          liquidationTargetLTV: validateValue(1, 'liquidationTargetLTV', config.token1.liquidationTargetLTV, config)
+        }
+      }))
     }
   }, [wizardData.borrowConfiguration])
 
@@ -115,6 +129,11 @@ export default function Step5BorrowSetup() {
     // Basic range validation
     if (value < 0 || value > 100) {
       errors.push('Value must be between 0 and 100')
+    }
+
+    // When token is borrowable, LT / Max LTV / Liquidation Target LTV must all be greater than 0
+    if (!tokenConfig.nonBorrowable && value === 0) {
+      errors.push('Must be greater than 0 when token is borrowable')
     }
 
     // Validation rules
@@ -196,6 +215,32 @@ export default function Step5BorrowSetup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    const msg = 'Must be greater than 0 when token is borrowable'
+    const token0Borrowable = !borrowConfig.token0.nonBorrowable
+    const token1Borrowable = !borrowConfig.token1.nonBorrowable
+
+    const token0Errors = {
+      liquidationThreshold: token0Borrowable && borrowConfig.token0.liquidationThreshold === 0 ? msg : undefined,
+      maxLTV: token0Borrowable && borrowConfig.token0.maxLTV === 0 ? msg : undefined,
+      liquidationTargetLTV: token0Borrowable && borrowConfig.token0.liquidationTargetLTV === 0 ? msg : undefined
+    }
+    const token1Errors = {
+      liquidationThreshold: token1Borrowable && borrowConfig.token1.liquidationThreshold === 0 ? msg : undefined,
+      maxLTV: token1Borrowable && borrowConfig.token1.maxLTV === 0 ? msg : undefined,
+      liquidationTargetLTV: token1Borrowable && borrowConfig.token1.liquidationTargetLTV === 0 ? msg : undefined
+    }
+
+    const hasErrors = Object.values(token0Errors).some(Boolean) || Object.values(token1Errors).some(Boolean)
+    if (hasErrors) {
+      setValidationErrors(prev => ({
+        ...prev,
+        token0: { ...prev.token0, ...token0Errors },
+        token1: { ...prev.token1, ...token1Errors }
+      }))
+      return
+    }
+
     updateBorrowConfiguration(borrowConfig)
     markStepCompleted(5)
     router.push('/wizard?step=6')

@@ -20,12 +20,20 @@ export interface OracleType {
   reason?: string
 }
 
+/** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
+export interface CustomScalerCreate {
+  factoryAddress: string
+  quoteToken: string
+}
+
 export interface ScalerOracle {
   name: string
   address: string
   scaleFactor: string
   valid: boolean
   resultDecimals?: number
+  /** If set, this scaler is not deployed yet; deploy will use factory + encoded createOracleScaler(quoteToken, bytes32(0)). */
+  customCreate?: CustomScalerCreate
 }
 
 export interface OracleConfiguration {
@@ -250,7 +258,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       daoFee: wizardData.feesConfiguration?.daoFee ? Math.round(wizardData.feesConfiguration.daoFee * 100) : 0,
       deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.round(wizardData.feesConfiguration.deployerFee * 100) : 0,
       token0: wizardData.token0?.symbol || "",
-      solvencyOracle0: wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE",
+      solvencyOracle0: (() => {
+        const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
+        return n === "Custom Scaler" ? "PLACEHOLDER" : n
+      })(),
       maxLtvOracle0: "NO_ORACLE",
       interestRateModel0: "InterestRateModelV2Factory.sol",
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
@@ -261,7 +272,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.round(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
       callBeforeQuote0: false,
       token1: wizardData.token1?.symbol || "",
-      solvencyOracle1: wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE",
+      solvencyOracle1: (() => {
+        const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
+        return n === "Custom Scaler" ? "PLACEHOLDER" : n
+      })(),
       maxLtvOracle1: "NO_ORACLE",
       interestRateModel1: "InterestRateModelV2Factory.sol",
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",

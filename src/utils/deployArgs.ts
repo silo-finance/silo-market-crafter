@@ -1,13 +1,16 @@
 import { ethers } from 'ethers'
-import type { WizardData } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
+import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
 
 const deployerAbi = (deployerArtifact as FoundryArtifact).abi
 const irmV2Abi = (irmV2Artifact as FoundryArtifact).abi
+const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
+const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -105,8 +108,7 @@ export function prepareDeployArgs(
   // Resolve IRM factory address using the exact contract name
   const irmFactoryAddress = siloCoreDeployments['InterestRateModelV2Factory.sol'] || ethers.ZeroAddress
 
-  // Prepare Oracles struct
-  // For already deployed oracles, we only need the deployed address
+  // Prepare Oracles struct: either deployed address or factory + createOracleScaler calldata
   const getOracleTxData = (oracleAddress: string | undefined) => {
     if (!oracleAddress || oracleAddress === ethers.ZeroAddress) {
       return {
@@ -117,16 +119,32 @@ export function prepareDeployArgs(
     }
     return {
       deployed: oracleAddress,
-      factory: ethers.ZeroAddress, // Already deployed, no factory needed
-      txInput: '0x' // Already deployed, no tx input needed
+      factory: ethers.ZeroAddress,
+      txInput: '0x'
     }
   }
 
+  const getSolvencyOracleTxData = (scaler: ScalerOracle | null | undefined) => {
+    if (!scaler) return getOracleTxData(undefined)
+    if (scaler.customCreate) {
+      const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
+        scaler.customCreate.quoteToken,
+        ethers.ZeroHash
+      ])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: scaler.customCreate.factoryAddress,
+        txInput
+      }
+    }
+    return getOracleTxData(scaler.address)
+  }
+
   const _oracles = {
-    solvencyOracle0: getOracleTxData(wizardData.oracleConfiguration?.token0?.scalerOracle?.address),
-    maxLtvOracle0: getOracleTxData(ethers.ZeroAddress), // Always NO_ORACLE in our case
-    solvencyOracle1: getOracleTxData(wizardData.oracleConfiguration?.token1?.scalerOracle?.address),
-    maxLtvOracle1: getOracleTxData(ethers.ZeroAddress) // Always NO_ORACLE in our case
+    solvencyOracle0: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token0?.scalerOracle),
+    maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
+    solvencyOracle1: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token1?.scalerOracle),
+    maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 
   // Prepare IRM config data as bytes
