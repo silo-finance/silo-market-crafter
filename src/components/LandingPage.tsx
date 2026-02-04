@@ -90,7 +90,7 @@ export default function LandingPage() {
                 Start New Wizard
               </h2>
               <p className="text-gray-400 mb-6">
-                Create a new Silo market configuration from scratch using our step-by-step wizard.
+                Create a new Silo market in few easy steps.
               </p>
               <button
                 onClick={handleStartWizard}
