@@ -1,0 +1,297 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "create",
+            "inputs": [
+                {
+                    "name": "_config",
+                    "type": "tuple",
+                    "internalType": "struct IChainlinkV3Oracle.ChainlinkV3DeploymentConfig",
+                    "components": [
+                        {
+                            "name": "baseToken",
+                            "type": "address",
+                            "internalType": "contract IERC20Metadata"
+                        },
+                        {
+                            "name": "quoteToken",
+                            "type": "address",
+                            "internalType": "contract IERC20Metadata"
+                        },
+                        {
+                            "name": "primaryAggregator",
+                            "type": "address",
+                            "internalType": "contract AggregatorV3Interface"
+                        },
+                        {
+                            "name": "primaryHeartbeat",
+                            "type": "uint32",
+                            "internalType": "uint32"
+                        },
+                        {
+                            "name": "secondaryAggregator",
+                            "type": "address",
+                            "internalType": "contract AggregatorV3Interface"
+                        },
+                        {
+                            "name": "secondaryHeartbeat",
+                            "type": "uint32",
+                            "internalType": "uint32"
+                        },
+                        {
+                            "name": "normalizationDivider",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "normalizationMultiplier",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "invertSecondPrice",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "oracle",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "create((address,address,address,uint32,address,uint32,uint256,uint256,bool),bytes32)": "5b996c42"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"internalType\":\"contract IERC20Metadata\",\"name\":\"baseToken\",\"type\":\"address\"},{\"internalType\":\"contract IERC20Metadata\",\"name\":\"quoteToken\",\"type\":\"address\"},{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"primaryAggregator\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"primaryHeartbeat\",\"type\":\"uint32\"},{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"secondaryAggregator\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"secondaryHeartbeat\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"normalizationDivider\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"normalizationMultiplier\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"invertSecondPrice\",\"type\":\"bool\"}],\"internalType\":\"struct IChainlinkV3Oracle.ChainlinkV3DeploymentConfig\",\"name\":\"_config\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"create\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"oracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/interfaces/IChainlinkV3Factory.sol\":\"IChainlinkV3Factory\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7\",\"dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-oracles/contracts/_common/Layer1OracleConfig.sol\":{\"keccak256\":\"0xfd6183e0a85599a3d59621b810fdccd1366bd333111a7143552451f6157b68a7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://9487bea127fb242a8b6d51b8d224377df4e3b96de45da7284f57d7506d48d83d\",\"dweb:/ipfs/QmNkkf6Li4MJntwnviDVoP9aUe8vdVMxMp16AhzjzAXfjZ\"]},\"silo-oracles/contracts/chainlinkV3/ChainlinkV3OracleConfig.sol\":{\"keccak256\":\"0x99e842ca7f72e1da44949b87f6b0f450cf9cbf0f23057ea1a827a3ae65d80f21\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://2caf6483081fa73d899a45e415dbf3063f5344d967ad12ea009aeffd4b3fb10e\",\"dweb:/ipfs/QmZDJFHuxLsE8UFaozbTg4ST1gvywDmfRyXSNKtKXPfJ6f\"]},\"silo-oracles/contracts/interfaces/IChainlinkV3Factory.sol\":{\"keccak256\":\"0xa39b4532a0178b364dca372231c0c8018467f524b6adf24993b92e798b8d3468\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ae33bf82ff21c6964c55c8793227cc5c45c26bff0e74e3af43c011701d041a22\",\"dweb:/ipfs/QmW3gJ5CXj1LVDLmNoarfUCDxuBX8ZGDgPiYfW6ChZvx67\"]},\"silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol\":{\"keccak256\":\"0xccdd914c899e9ac9e46e7ce4145cfae92514618d862ff1ae5db7d943d3a97fdd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2584f9a1f651e626b02ef33464566bb0eaed553fa7675abd33096373c5d76c28\",\"dweb:/ipfs/QmeJBSz7ZGZBFwJjqp2VBvjKCCRVnwcm8oHHrF38oyDZ9A\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "struct IChainlinkV3Oracle.ChainlinkV3DeploymentConfig",
+                            "name": "_config",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "contract IERC20Metadata",
+                                    "name": "baseToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "contract IERC20Metadata",
+                                    "name": "quoteToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "contract AggregatorV3Interface",
+                                    "name": "primaryAggregator",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint32",
+                                    "name": "primaryHeartbeat",
+                                    "type": "uint32"
+                                },
+                                {
+                                    "internalType": "contract AggregatorV3Interface",
+                                    "name": "secondaryAggregator",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint32",
+                                    "name": "secondaryHeartbeat",
+                                    "type": "uint32"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "normalizationDivider",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "normalizationMultiplier",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "invertSecondPrice",
+                                    "type": "bool"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "create",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "oracle",
+                            "type": "address"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {},
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {},
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-oracles/contracts/interfaces/IChainlinkV3Factory.sol": "IChainlinkV3Factory"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+                "keccak256": "0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd",
+                "urls": [
+                    "bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7",
+                    "dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+                "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+                "urls": [
+                    "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+                    "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+                "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+                "urls": [
+                    "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+                    "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/_common/Layer1OracleConfig.sol": {
+                "keccak256": "0xfd6183e0a85599a3d59621b810fdccd1366bd333111a7143552451f6157b68a7",
+                "urls": [
+                    "bzz-raw://9487bea127fb242a8b6d51b8d224377df4e3b96de45da7284f57d7506d48d83d",
+                    "dweb:/ipfs/QmNkkf6Li4MJntwnviDVoP9aUe8vdVMxMp16AhzjzAXfjZ"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/chainlinkV3/ChainlinkV3OracleConfig.sol": {
+                "keccak256": "0x99e842ca7f72e1da44949b87f6b0f450cf9cbf0f23057ea1a827a3ae65d80f21",
+                "urls": [
+                    "bzz-raw://2caf6483081fa73d899a45e415dbf3063f5344d967ad12ea009aeffd4b3fb10e",
+                    "dweb:/ipfs/QmZDJFHuxLsE8UFaozbTg4ST1gvywDmfRyXSNKtKXPfJ6f"
+                ],
+                "license": "GPL-2.0-or-later"
+            },
+            "silo-oracles/contracts/interfaces/IChainlinkV3Factory.sol": {
+                "keccak256": "0xa39b4532a0178b364dca372231c0c8018467f524b6adf24993b92e798b8d3468",
+                "urls": [
+                    "bzz-raw://ae33bf82ff21c6964c55c8793227cc5c45c26bff0e74e3af43c011701d041a22",
+                    "dweb:/ipfs/QmW3gJ5CXj1LVDLmNoarfUCDxuBX8ZGDgPiYfW6ChZvx67"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IChainlinkV3Oracle.sol": {
+                "keccak256": "0xccdd914c899e9ac9e46e7ce4145cfae92514618d862ff1ae5db7d943d3a97fdd",
+                "urls": [
+                    "bzz-raw://2584f9a1f651e626b02ef33464566bb0eaed553fa7675abd33096373c5d76c28",
+                    "dweb:/ipfs/QmeJBSz7ZGZBFwJjqp2VBvjKCCRVnwcm8oHHrF38oyDZ9A"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 960
+}

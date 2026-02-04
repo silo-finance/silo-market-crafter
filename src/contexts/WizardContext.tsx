@@ -48,9 +48,19 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler'
+  type: 'none' | 'scaler' | 'chainlink'
   enabled: boolean
   reason?: string
+}
+
+/** Chainlink V3 oracle deployment config (one of normalizationDivider or normalizationMultiplier is non-zero). */
+export interface ChainlinkOracleConfig {
+  baseToken: 'token0' | 'token1'
+  primaryAggregator: string
+  secondaryAggregator: string
+  normalizationDivider: string
+  normalizationMultiplier: string
+  invertSecondPrice: boolean
 }
 
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
@@ -71,12 +81,14 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler'
+    type: 'none' | 'scaler' | 'chainlink'
     scalerOracle?: ScalerOracle
+    chainlinkOracle?: ChainlinkOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler'
+    type: 'none' | 'scaler' | 'chainlink'
     scalerOracle?: ScalerOracle
+    chainlinkOracle?: ChainlinkOracleConfig
   }
 }
 
@@ -333,6 +345,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.round(wizardData.feesConfiguration.deployerFee * 100) : 0,
       token0: wizardData.token0?.symbol || "",
       solvencyOracle0: (() => {
+        const t = wizardData.oracleConfiguration?.token0?.type
+        if (t === 'chainlink') return 'Chainlink'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -345,8 +359,22 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.round(wizardData.feesConfiguration.token0.liquidationFee * 100) : 0,
       flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.round(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
       callBeforeQuote0: false,
+      ...(wizardData.oracleConfiguration?.token0?.type === 'chainlink' && wizardData.oracleConfiguration?.token0?.chainlinkOracle
+        ? {
+            chainlinkOracle0: {
+              baseToken: wizardData.oracleConfiguration.token0.chainlinkOracle.baseToken,
+              primaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.primaryAggregator,
+              secondaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.secondaryAggregator || '',
+              normalizationDivider: wizardData.oracleConfiguration.token0.chainlinkOracle.normalizationDivider,
+              normalizationMultiplier: wizardData.oracleConfiguration.token0.chainlinkOracle.normalizationMultiplier,
+              invertSecondPrice: wizardData.oracleConfiguration.token0.chainlinkOracle.invertSecondPrice
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
+        const t = wizardData.oracleConfiguration?.token1?.type
+        if (t === 'chainlink') return 'Chainlink'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -358,7 +386,19 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token1.liquidationTargetLTV * 100) : 0,
       liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.round(wizardData.feesConfiguration.token1.liquidationFee * 100) : 0,
       flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.round(wizardData.feesConfiguration.token1.flashloanFee * 100) : 0,
-      callBeforeQuote1: false
+      callBeforeQuote1: false,
+      ...(wizardData.oracleConfiguration?.token1?.type === 'chainlink' && wizardData.oracleConfiguration?.token1?.chainlinkOracle
+        ? {
+            chainlinkOracle1: {
+              baseToken: wizardData.oracleConfiguration.token1.chainlinkOracle.baseToken,
+              primaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.primaryAggregator,
+              secondaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.secondaryAggregator || '',
+              normalizationDivider: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationDivider,
+              normalizationMultiplier: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationMultiplier,
+              invertSecondPrice: wizardData.oracleConfiguration.token1.chainlinkOracle.invertSecondPrice
+            }
+          }
+        : {})
     }
     return JSON.stringify(config, null, 4)
   }
@@ -383,26 +423,50 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       }
       
       // Parse oracle configuration
+      const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : 'scaler'
+      const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : 'scaler'
+      const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
+        ? {
+            baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            primaryAggregator: String(config.chainlinkOracle0.primaryAggregator ?? ''),
+            secondaryAggregator: String(config.chainlinkOracle0.secondaryAggregator ?? ''),
+            normalizationDivider: String(config.chainlinkOracle0.normalizationDivider ?? '0'),
+            normalizationMultiplier: String(config.chainlinkOracle0.normalizationMultiplier ?? '0'),
+            invertSecondPrice: Boolean(config.chainlinkOracle0.invertSecondPrice)
+          }
+        : undefined
+      const chainlink1 = config.chainlinkOracle1 && oracleType1 === 'chainlink'
+        ? {
+            baseToken: (config.chainlinkOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            primaryAggregator: String(config.chainlinkOracle1.primaryAggregator ?? ''),
+            secondaryAggregator: String(config.chainlinkOracle1.secondaryAggregator ?? ''),
+            normalizationDivider: String(config.chainlinkOracle1.normalizationDivider ?? '0'),
+            normalizationMultiplier: String(config.chainlinkOracle1.normalizationMultiplier ?? '0'),
+            invertSecondPrice: Boolean(config.chainlinkOracle1.invertSecondPrice)
+          }
+        : undefined
       const oracleConfig: OracleConfiguration = {
         token0: {
-          type: config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : 'scaler',
-          scalerOracle: config.solvencyOracle0 !== 'NO_ORACLE' ? {
+          type: oracleType0,
+          scalerOracle: oracleType0 === 'scaler' ? {
             name: config.solvencyOracle0,
-            address: '', // Will be resolved
+            address: '',
             valid: true,
             resultDecimals: 18,
-            scaleFactor: '1' // Default scale factor
-          } : undefined
+            scaleFactor: '1'
+          } : undefined,
+          chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined
         },
         token1: {
-          type: config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : 'scaler',
-          scalerOracle: config.solvencyOracle1 !== 'NO_ORACLE' ? {
+          type: oracleType1,
+          scalerOracle: oracleType1 === 'scaler' ? {
             name: config.solvencyOracle1,
-            address: '', // Will be resolved
+            address: '',
             valid: true,
             resultDecimals: 18,
-            scaleFactor: '1' // Default scale factor
-          } : undefined
+            scaleFactor: '1'
+          } : undefined,
+          chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined
         }
       }
       

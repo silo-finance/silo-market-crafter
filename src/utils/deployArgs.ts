@@ -1,8 +1,9 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
+import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
@@ -11,6 +12,8 @@ const deployerAbi = (deployerArtifact as FoundryArtifact).abi
 const irmV2Abi = (irmV2Artifact as FoundryArtifact).abi
 const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
 const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
+const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).abi
+const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -79,13 +82,18 @@ export interface DeployArgs {
   }
 }
 
+export interface OracleDeployments {
+  chainlinkV3OracleFactory?: string
+}
+
 /**
  * Prepare deploy arguments from wizard data (matching Solidity script logic)
- * This function extracts the logic from Step10Deployment component for reuse in tests
+ * oracleDeployments: optional ChainlinkV3OracleFactory address (from silo-oracles deployments)
  */
 export function prepareDeployArgs(
   wizardData: WizardData,
-  siloCoreDeployments: SiloCoreDeployments
+  siloCoreDeployments: SiloCoreDeployments,
+  oracleDeployments?: OracleDeployments
 ): DeployArgs {
   if (!wizardData.token0 || !wizardData.token1) {
     throw new Error('Both token0 and token1 must be set')
@@ -127,7 +135,34 @@ export function prepareDeployArgs(
     }
   }
 
-  const getSolvencyOracleTxData = (scaler: ScalerOracle | null | undefined) => {
+  const getSolvencyOracleTxData = (
+    scaler: ScalerOracle | null | undefined,
+    chainlink: ChainlinkOracleConfig | null | undefined
+  ) => {
+    if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
+      const baseToken = chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address
+      const quoteToken = chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address
+      const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator !== ethers.ZeroAddress ? chainlink.secondaryAggregator : ethers.ZeroAddress
+      const txInput = chainlinkV3FactoryInterface.encodeFunctionData('create', [
+        {
+          baseToken,
+          quoteToken,
+          primaryAggregator: chainlink.primaryAggregator,
+          primaryHeartbeat: 0,
+          secondaryAggregator: secondaryAgg,
+          secondaryHeartbeat: 0,
+          normalizationDivider: BigInt(chainlink.normalizationDivider),
+          normalizationMultiplier: BigInt(chainlink.normalizationMultiplier),
+          invertSecondPrice: chainlink.invertSecondPrice
+        },
+        ethers.ZeroHash
+      ])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.chainlinkV3OracleFactory,
+        txInput
+      }
+    }
     if (!scaler) return getOracleTxData(undefined)
     if (scaler.customCreate) {
       const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
@@ -144,9 +179,15 @@ export function prepareDeployArgs(
   }
 
   const _oracles = {
-    solvencyOracle0: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token0?.scalerOracle),
+    solvencyOracle0: getSolvencyOracleTxData(
+      wizardData.oracleConfiguration?.token0?.scalerOracle,
+      wizardData.oracleConfiguration?.token0?.chainlinkOracle
+    ),
     maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
-    solvencyOracle1: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token1?.scalerOracle),
+    solvencyOracle1: getSolvencyOracleTxData(
+      wizardData.oracleConfiguration?.token1?.scalerOracle,
+      wizardData.oracleConfiguration?.token1?.chainlinkOracle
+    ),
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 

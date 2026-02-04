@@ -7,8 +7,8 @@ import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import erc20Artifact from '@/abis/IERC20.json'
 
-/** Base URL for per-chain token addresses (symbol -> address). Branch: develop. */
-const ADDRESSES_JSON_BASE = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/common/addresses'
+/** Base URL for per-chain token addresses (symbol -> address). Branch: master. */
+const ADDRESSES_JSON_BASE = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/common/addresses'
 
 const getChainNameForAddresses = (chainId: string): string => {
   const map: { [key: string]: string } = {
@@ -673,7 +673,7 @@ export default function Step1Assets() {
             href={
               wizardData.networkInfo?.chainId
                 ? `${ADDRESSES_JSON_BASE}/${getChainNameForAddresses(wizardData.networkInfo.chainId)}.json`
-                : 'https://github.com/silo-finance/silo-contracts-v2/tree/develop/common/addresses'
+                : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'
             }
             target="_blank"
             rel="noopener noreferrer"

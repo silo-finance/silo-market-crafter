@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
-import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments } from '@/utils/deployArgs'
+import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -70,6 +70,7 @@ export default function Step10Deployment() {
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [deployerVersion, setDeployerVersion] = useState<string>('')
   const [siloCoreDeployments, setSiloCoreDeployments] = useState<SiloCoreDeployments>({})
+  const [oracleDeployments, setOracleDeployments] = useState<OracleDeployments>({})
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState('')
@@ -316,8 +317,28 @@ export default function Step10Deployment() {
       }
     }
 
+    const fetchOracleDeployments = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ChainlinkV3OracleFactory.sol.json`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) {
+            setOracleDeployments({ chainlinkV3OracleFactory: address })
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch ChainlinkV3OracleFactory:', err)
+      }
+    }
+
     if (wizardData.networkInfo?.chainId) {
       fetchSiloCoreDeployments()
+      fetchOracleDeployments()
     }
   }, [wizardData.networkInfo?.chainId])
 
@@ -355,7 +376,7 @@ export default function Step10Deployment() {
 
     try {
       // Use the extracted utility function
-      const args = prepareDeployArgs(wizardData, siloCoreDeployments)
+      const args = prepareDeployArgs(wizardData, siloCoreDeployments, oracleDeployments)
       setDeployArgs(args)
 
       // Validate critical addresses and set warnings (but don't prevent argument preparation)
@@ -412,7 +433,7 @@ export default function Step10Deployment() {
       console.error('Error preparing deploy args:', error)
       setError(error instanceof Error ? error.message : 'Failed to prepare deployment arguments')
     }
-  }, [wizardData, siloCoreDeployments])
+  }, [wizardData, siloCoreDeployments, oracleDeployments])
 
   const handleDeploy = async () => {
     if (!window.ethereum) {
