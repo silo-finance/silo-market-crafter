@@ -17,6 +17,7 @@ const initialWizardData: WizardData = {
   oracleType0: null,
   oracleType1: null,
   oracleConfiguration: null,
+  irmModelType: 'kink',
   selectedIRM0: null,
   selectedIRM1: null,
   borrowConfiguration: null,
@@ -73,6 +74,9 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     }
   }
   
+  // Parse IRM model type from factory name in config
+  const irmModelType = config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
+
   // Parse IRM configuration
   const irm0: IRMConfig = {
     name: config.interestRateModelConfig0 || '',
@@ -125,6 +129,7 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     token0: token0Data,
     token1: token1Data,
     oracleConfiguration: oracleConfig,
+    irmModelType,
     selectedIRM0: irm0,
     selectedIRM1: irm1,
     borrowConfiguration: borrowConfig,

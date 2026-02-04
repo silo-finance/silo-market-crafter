@@ -47,6 +47,8 @@ export interface OracleConfiguration {
   }
 }
 
+export type IRMModelType = 'kink' | 'irm'
+
 export interface IRMConfig {
   name: string
   config: {
@@ -93,6 +95,8 @@ export interface WizardData {
   oracleType0: OracleType | null
   oracleType1: OracleType | null
   oracleConfiguration: OracleConfiguration | null
+  /** Which IRM model is active: Kink (default) or legacy IRM (InterestRateModelV2). */
+  irmModelType: IRMModelType
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
   borrowConfiguration: BorrowConfiguration | null
@@ -118,6 +122,7 @@ interface WizardContextType {
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
+  updateIRMModelType: (type: IRMModelType) => void
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
@@ -151,6 +156,7 @@ const initialWizardData: WizardData = {
   oracleType0: null,
   oracleType1: null,
   oracleConfiguration: null,
+  irmModelType: 'kink',
   selectedIRM0: null,
   selectedIRM1: null,
   borrowConfiguration: null,
@@ -222,6 +228,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, oracleConfiguration: config }))
   }
 
+  const updateIRMModelType = (type: IRMModelType) => {
+    setWizardData(prev => ({ ...prev, irmModelType: type }))
+  }
+
   const updateSelectedIRM0 = (irm: IRMConfig) => {
     setWizardData(prev => ({ ...prev, selectedIRM0: irm }))
   }
@@ -263,7 +273,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle0: "NO_ORACLE",
-      interestRateModel0: "InterestRateModelV2Factory.sol",
+      interestRateModel0: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
       maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.round(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
       lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
@@ -277,7 +287,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle1: "NO_ORACLE",
-      interestRateModel1: "InterestRateModelV2Factory.sol",
+      interestRateModel1: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
       maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.round(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
       lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
@@ -332,6 +342,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         }
       }
       
+      // Parse IRM model type from factory name in config
+      const irmModelType: IRMModelType =
+        config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
+
       // Parse IRM configuration
       const irm0: IRMConfig = {
         name: config.interestRateModelConfig0 || '',
@@ -385,6 +399,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         token0: token0Data,
         token1: token1Data,
         oracleConfiguration: oracleConfig,
+        irmModelType,
         selectedIRM0: irm0,
         selectedIRM1: irm1,
         borrowConfiguration: borrowConfig,
@@ -428,6 +443,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
+        updateIRMModelType,
         updateSelectedIRM0,
         updateSelectedIRM1,
         updateBorrowConfiguration,
