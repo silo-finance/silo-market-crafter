@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useWizard } from '@/contexts/WizardContext'
+import { normalizeAddress } from '@/utils/addressValidation'
 
 declare global {
   interface Window {
@@ -15,6 +17,7 @@ declare global {
 }
 
 export default function Header() {
+  const { clearNetworkInfo } = useWizard()
   const [isConnected, setIsConnected] = useState(false)
   const [account, setAccount] = useState<string>('')
   const [networkId, setNetworkId] = useState<string>('')
@@ -216,7 +219,16 @@ export default function Header() {
   }
 
   const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
+    const checksummed = normalizeAddress(address) ?? address
+    return `${checksummed.slice(0, 6)}...${checksummed.slice(-4)}`
+  }
+
+  const disconnectWallet = () => {
+    setIsConnected(false)
+    setAccount('')
+    setNetworkId('')
+    setNetworkName('')
+    clearNetworkInfo()
   }
 
   return (
@@ -232,6 +244,7 @@ export default function Header() {
                 width={32}
                 height={32}
                 className="h-8 w-auto"
+                style={{ width: 'auto' }}
               />
             </Link>
           </div>
@@ -256,12 +269,15 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* MetaMask Connect Button */}
+          {/* MetaMask Connect / Disconnect */}
           <div className="flex items-center">
             {isConnected ? (
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <div className="text-sm text-gray-300">
+                  <div
+                    className="text-sm text-gray-300 font-mono"
+                    title={normalizeAddress(account) ?? account}
+                  >
                     {formatAddress(account)}
                   </div>
                   <div className="text-xs text-gray-400">
@@ -269,6 +285,13 @@ export default function Header() {
                   </div>
                 </div>
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <button
+                  type="button"
+                  onClick={disconnectWallet}
+                  className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Disconnect
+                </button>
               </div>
             ) : (
               <button

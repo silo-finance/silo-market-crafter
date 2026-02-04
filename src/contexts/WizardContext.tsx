@@ -2,6 +2,39 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+      on: (event: string, callback: (...args: unknown[]) => void) => void
+      removeListener: (event: string, callback: (...args: unknown[]) => void) => void
+    }
+  }
+}
+
+/** Map chainId (decimal string) to display name; used when syncing from wallet (e.g. chainChanged). */
+function getNetworkNameForChainId(chainIdDecimal: string): string {
+  const id = parseInt(chainIdDecimal, 10)
+  const map: Record<number, string> = {
+    1: 'Ethereum Mainnet',
+    11155111: 'Sepolia',
+    137: 'Polygon',
+    42161: 'Arbitrum One',
+    421614: 'Arbitrum Sepolia',
+    43114: 'Avalanche C-Chain',
+    8453: 'Base',
+    146: 'Sonic',
+    653: 'Sonic Testnet',
+    10: 'Optimism',
+    100: 'Gnosis',
+    56: 'BNB Smart Chain',
+    250: 'Fantom Opera',
+    25: 'Cronos',
+    1284: 'Moonbeam',
+  }
+  return map[id] ?? `Network ${chainIdDecimal}`
+}
+
 export interface TokenData {
   address: string
   symbol: string
@@ -119,6 +152,7 @@ interface WizardContextType {
   updateToken0: (token: TokenData) => void
   updateToken1: (token: TokenData) => void
   updateNetworkInfo: (networkInfo: NetworkInfo) => void
+  clearNetworkInfo: () => void
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
@@ -170,28 +204,54 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardData] = useState<WizardData>(initialWizardData)
   const [isClient, setIsClient] = useState(false)
 
-  // Load saved data after component mounts (client-side only)
+  // Load saved data after component mounts (client-side only).
+  // Never restore networkInfo from cache – it must always come from the connected wallet.
   useEffect(() => {
     setIsClient(true)
-    
-    // Load from localStorage if available
     const saved = localStorage.getItem('silo-wizard-data')
     if (saved) {
       try {
-        const parsedData = JSON.parse(saved)
-        setWizardData(parsedData)
+        const parsedData = JSON.parse(saved) as WizardData
+        setWizardData({ ...parsedData, networkInfo: null })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }
     }
   }, [])
 
-  // Save wizard data to localStorage whenever it changes (client-side only)
+  // Save wizard data to localStorage whenever it changes (client-side only).
+  // Do not persist networkInfo so the app always follows the wallet network on next load.
   useEffect(() => {
     if (isClient) {
-      localStorage.setItem('silo-wizard-data', JSON.stringify(wizardData))
+      const toSave = { ...wizardData, networkInfo: null }
+      localStorage.setItem('silo-wizard-data', JSON.stringify(toSave))
     }
   }, [wizardData, isClient])
+
+  // Sync network from MetaMask when user switches chain (e.g. Sonic → Arbitrum)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const applyNetwork = (chainIdHex: string) => {
+      const networkId = parseInt(chainIdHex, 16).toString()
+      const networkName = getNetworkNameForChainId(networkId)
+      setWizardData(prev => ({ ...prev, networkInfo: { chainId: networkId, networkName } }))
+    }
+
+    const handleChainChanged = (...args: unknown[]) => {
+      const chainId = args[0] as string
+      applyNetwork(chainId)
+    }
+
+    window.ethereum.request({ method: 'eth_chainId' }).then((chainId: unknown) => {
+      applyNetwork(chainId as string)
+    }).catch(() => {})
+
+    window.ethereum.on('chainChanged', handleChainChanged)
+    return () => {
+      window.ethereum?.removeListener?.('chainChanged', handleChainChanged)
+    }
+  }, [])
 
   const updateStep = (step: number) => {
     setWizardData(prev => ({ ...prev, currentStep: step }))
@@ -214,6 +274,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const updateNetworkInfo = (networkInfo: NetworkInfo) => {
     setWizardData(prev => ({ ...prev, networkInfo }))
+  }
+
+  const clearNetworkInfo = () => {
+    setWizardData(prev => ({ ...prev, networkInfo: null }))
   }
 
   const updateOracleType0 = (oracleType: OracleType) => {
@@ -440,6 +504,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateToken0,
         updateToken1,
         updateNetworkInfo,
+        clearNetworkInfo,
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
