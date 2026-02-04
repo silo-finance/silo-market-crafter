@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments } from '@/utils/deployArgs'
+import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
@@ -320,27 +321,32 @@ export default function Step10Deployment() {
     }
   }, [wizardData.networkInfo?.chainId])
 
-  // Fetch SiloDeployer version using Silo Lens
+  // Fetch SiloDeployer version using Silo Lens (cached per chainId+address)
   useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!deployerAddress || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, deployerAddress)
+    if (cached != null) {
+      setDeployerVersion(cached)
+      return
+    }
     const fetchDeployerVersion = async () => {
-      if (!deployerAddress || !siloLensAddress || !window.ethereum) {
-        return
-      }
-
+      if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = await lensContract.getVersion(deployerAddress)
+        const version = String(await lensContract.getVersion(deployerAddress))
+        setCachedVersion(chainId, deployerAddress, version)
         setDeployerVersion(version)
         console.log(`SiloDeployer version: ${version}`)
       } catch (err) {
         console.warn('Failed to fetch SiloDeployer version:', err)
-        // Don't set error, just log - version is optional info
+        setCachedVersion(chainId, deployerAddress, '—')
+        setDeployerVersion('—')
       }
     }
-
     fetchDeployerVersion()
-  }, [deployerAddress, siloLensAddress])
+  }, [deployerAddress, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Prepare deploy arguments from JSON config (matching Solidity script logic)
   // Always prepare arguments even if deployer address is not available

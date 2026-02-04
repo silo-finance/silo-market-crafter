@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, IRMConfig, IRMModelType } from '@/contexts/WizardContext'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
+import { normalizeAddress } from '@/utils/addressValidation'
+import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -33,6 +35,7 @@ interface KinkImmutableItem {
 const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
 const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
 const KINK_FACTORY_NAME = 'DynamicKinkModelFactory.sol'
+const IRM_V2_FACTORY_NAME = 'InterestRateModelV2Factory.sol'
 
 const getChainName = (chainId: string): string => {
   const chainMap: { [key: string]: string } = {
@@ -42,9 +45,28 @@ const getChainName = (chainId: string): string => {
     '43114': 'avalanche',
     '8453': 'base',
     '11155111': 'sepolia',
-    '31337': 'anvil'
+    '31337': 'anvil',
+    '146': 'sonic',
+    '653': 'sonic_testnet'
   }
   return chainMap[chainId] || `chain_${chainId}`
+}
+
+/** Block explorer base URL for current chain (for address links). */
+function getExplorerAddressUrl(chainId: string, address: string): string {
+  const id = parseInt(chainId, 10)
+  const explorerMap: { [key: number]: string } = {
+    1: 'https://etherscan.io',
+    137: 'https://polygonscan.com',
+    10: 'https://optimistic.etherscan.io',
+    42161: 'https://arbiscan.io',
+    43114: 'https://snowtrace.io',
+    8453: 'https://basescan.org',
+    146: 'https://sonicscan.org',
+    653: 'https://sonicscan.org'
+  }
+  const base = explorerMap[id] || 'https://etherscan.io'
+  return `${base}/address/${address}`
 }
 
 /** Format rcompCap (18 decimals) as e18 notation, e.g. 2e18 instead of 2000000000000000000 */
@@ -70,6 +92,8 @@ export default function Step4IRMSelection() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIRM0, setSelectedIRM0] = useState<IRMConfig | null>(wizardData.selectedIRM0)
   const [selectedIRM1, setSelectedIRM1] = useState<IRMConfig | null>(wizardData.selectedIRM1)
+  const [irmV2Factory, setIrmV2Factory] = useState<{ address: string; version: string } | null>(null)
+  const [irmV2SiloLensAddress, setIrmV2SiloLensAddress] = useState<string>('')
 
   // ----- Kink state -----
   const [kinkConfigs, setKinkConfigs] = useState<KinkConfigItem[]>([])
@@ -151,53 +175,101 @@ export default function Step4IRMSelection() {
     fetchKink()
   }, [activeTab])
 
-  // ----- Fetch Kink factory address and Silo Lens -----
+  // ----- Fetch both factory addresses + Silo Lens once when chainId is set (so both tabs have data when switching) -----
   useEffect(() => {
-    if (!wizardData.networkInfo?.chainId || activeTab !== 'kink') return
-    const chainName = getChainName(wizardData.networkInfo.chainId)
-    const fetchFactoryAndLens = async () => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) return
+    const chainName = getChainName(chainId)
+    const fetchAll = async () => {
       try {
-        const [factoryRes, lensRes] = await Promise.all([
+        const [kinkRes, irmV2Res, lensRes] = await Promise.all([
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${KINK_FACTORY_NAME}.json`),
+          fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${IRM_V2_FACTORY_NAME}.json`),
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`)
         ])
-        let address = ''
-        if (factoryRes.ok) {
-          const data = await factoryRes.json()
-          address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        let kinkAddr = ''
+        if (kinkRes.ok) {
+          const data = await kinkRes.json()
+          kinkAddr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
-        setKinkFactory(address ? { address, version: '' } : null)
+        setKinkFactory(kinkAddr ? { address: kinkAddr, version: '' } : null)
+        let irmV2Addr = ''
+        if (irmV2Res.ok) {
+          const data = await irmV2Res.json()
+          irmV2Addr = data.address && ethers.isAddress(data.address) ? data.address : ''
+        }
+        setIrmV2Factory(irmV2Addr ? { address: irmV2Addr, version: '' } : null)
         let lensAddr = ''
         if (lensRes.ok) {
           const data = await lensRes.json()
           lensAddr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
         setSiloLensAddress(lensAddr)
+        setIrmV2SiloLensAddress(lensAddr)
       } catch (err) {
-        console.warn('Failed to fetch Kink factory or Lens:', err)
+        console.warn('Failed to fetch factory or Lens:', err)
         setKinkFactory(null)
+        setIrmV2Factory(null)
         setSiloLensAddress('')
+        setIrmV2SiloLensAddress('')
       }
     }
-    fetchFactoryAndLens()
-  }, [wizardData.networkInfo?.chainId, activeTab])
+    fetchAll()
+  }, [wizardData.networkInfo?.chainId])
 
-  // ----- Fetch Kink factory version via Silo Lens -----
+  // ----- Fetch Kink factory version via Silo Lens (cached per chainId+address) -----
   useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!kinkFactory?.address || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, kinkFactory.address)
+    if (cached != null) {
+      setKinkFactory(prev => prev ? { ...prev, version: cached } : null)
+      return
+    }
     const fetchVersion = async () => {
-      if (!kinkFactory?.address || !siloLensAddress || !window.ethereum) return
+      if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = await lensContract.getVersion(kinkFactory.address)
-        setKinkFactory(prev => prev ? { ...prev, version: String(version) } : null)
+        const version = String(await lensContract.getVersion(kinkFactory!.address))
+        setCachedVersion(chainId, kinkFactory!.address, version)
+        setKinkFactory(prev => prev ? { ...prev, version } : null)
       } catch (err) {
         console.warn('Failed to fetch Kink factory version from Silo Lens:', err)
-        setKinkFactory(prev => prev ? { ...prev, version: '—' } : null)
+        const fallback = '—'
+        setCachedVersion(chainId, kinkFactory!.address, fallback)
+        setKinkFactory(prev => prev ? { ...prev, version: fallback } : null)
       }
     }
     fetchVersion()
-  }, [kinkFactory?.address, siloLensAddress])
+  }, [kinkFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+
+  // ----- Fetch IRM V2 factory version via Silo Lens (cached per chainId+address) -----
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!irmV2Factory?.address || !irmV2SiloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, irmV2Factory.address)
+    if (cached != null) {
+      setIrmV2Factory(prev => prev ? { ...prev, version: cached } : null)
+      return
+    }
+    const fetchVersion = async () => {
+      if (!window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const lensContract = new ethers.Contract(irmV2SiloLensAddress, siloLensAbi, provider)
+        const version = String(await lensContract.getVersion(irmV2Factory!.address))
+        setCachedVersion(chainId, irmV2Factory!.address, version)
+        setIrmV2Factory(prev => prev ? { ...prev, version } : null)
+      } catch (err) {
+        console.warn('Failed to fetch IRM V2 factory version from Silo Lens:', err)
+        const fallback = '—'
+        setCachedVersion(chainId, irmV2Factory!.address, fallback)
+        setIrmV2Factory(prev => prev ? { ...prev, version: fallback } : null)
+      }
+    }
+    fetchVersion()
+  }, [irmV2Factory?.address, irmV2SiloLensAddress, wizardData.networkInfo?.chainId])
 
   // ----- Kink filters -----
   useEffect(() => {
@@ -309,7 +381,7 @@ export default function Step4IRMSelection() {
             Step 4: Interest Rate Model Selection
           </h1>
           <p className="text-gray-300 text-lg">
-            Loading IRM V2 (legacy) configurations...
+            Loading IRM V2 (old) configurations...
           </p>
         </div>
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 text-center">
@@ -350,7 +422,7 @@ export default function Step4IRMSelection() {
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          IRM V2 (legacy)
+          IRM V2 (old)
         </button>
       </div>
 
@@ -363,15 +435,27 @@ export default function Step4IRMSelection() {
       <form onSubmit={handleSubmit}>
         {activeTab === 'kink' && (
           <>
-            {/* Dynamic IRM factory + version at top */}
+            {/* Dynamic IRM factory + address (explorer link) + version at top */}
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-6">
               <h3 className="text-sm font-medium text-gray-300 mb-1">Dynamic IRM Factory</h3>
-              <p className="text-lg font-semibold text-white">
-                {KINK_FACTORY_NAME}
-                {kinkFactory?.version && (
-                  <span className="ml-2 text-sm font-normal text-gray-400">({kinkFactory.version})</span>
-                )}
-              </p>
+              <p className="text-lg font-semibold text-white">{KINK_FACTORY_NAME}</p>
+              {kinkFactory?.address && wizardData.networkInfo?.chainId && (
+                <>
+                  <p className="mt-2 text-sm">
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, kinkFactory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-blue-400 hover:text-blue-300 underline break-all"
+                    >
+                      {normalizeAddress(kinkFactory.address) ?? kinkFactory.address}
+                    </a>
+                  </p>
+                  <p className="mt-1 text-sm text-gray-400">
+                    Version: {kinkFactory.version === '' ? 'Loading…' : kinkFactory.version}
+                  </p>
+                </>
+              )}
               {!kinkFactory?.address && wizardData.networkInfo?.chainId && (
                 <p className="text-xs text-amber-400 mt-1">Factory address not found for this network. Deploy may require manual config.</p>
               )}
@@ -536,6 +620,32 @@ export default function Step4IRMSelection() {
 
         {activeTab === 'irm' && (
           <>
+            {/* IRM V2 (old) factory + address (explorer link) + version at top */}
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-6">
+              <h3 className="text-sm font-medium text-gray-300 mb-1">IRM V2 (old) Factory</h3>
+              <p className="text-lg font-semibold text-white">{IRM_V2_FACTORY_NAME}</p>
+              {irmV2Factory?.address && wizardData.networkInfo?.chainId && (
+                <>
+                  <p className="mt-2 text-sm">
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, irmV2Factory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-blue-400 hover:text-blue-300 underline break-all"
+                    >
+                      {normalizeAddress(irmV2Factory.address) ?? irmV2Factory.address}
+                    </a>
+                  </p>
+                  <p className="mt-1 text-sm text-gray-400">
+                    Version: {irmV2Factory.version === '' ? 'Loading…' : irmV2Factory.version}
+                  </p>
+                </>
+              )}
+              {!irmV2Factory?.address && wizardData.networkInfo?.chainId && (
+                <p className="text-xs text-amber-400 mt-1">Factory address not found for this network.</p>
+              )}
+            </div>
+
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
               <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2">
                 Search Interest Rate Models
