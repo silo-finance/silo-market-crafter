@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
+import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
+const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -68,6 +70,8 @@ export default function Step3OracleConfiguration() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [loadingOracles, setLoadingOracles] = useState(true)
+  const [oracleScalerFactory, setOracleScalerFactory] = useState<{ address: string; version: string } | null>(null)
+  const [siloLensAddress, setSiloLensAddress] = useState<string>('')
 
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
@@ -102,6 +106,119 @@ export default function Step3OracleConfiguration() {
 
     fetchOracleDeployments()
   }, [])
+
+  // Fetch OracleScalerFactory address for current chain
+  useEffect(() => {
+    const fetchScalerFactory = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/OracleScalerFactory.sol.json`
+        )
+        if (!response.ok) {
+          setOracleScalerFactory(null)
+          return
+        }
+        const data = await response.json()
+        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        setOracleScalerFactory(address ? { address, version: '' } : null)
+      } catch {
+        setOracleScalerFactory(null)
+      }
+    }
+    fetchScalerFactory()
+  }, [wizardData.networkInfo?.chainId])
+
+  // Fetch SiloLens address for current chain (same pattern as Step10)
+  useEffect(() => {
+    const fetchLens = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+          setSiloLensAddress(address)
+        } else {
+          setSiloLensAddress('')
+        }
+      } catch {
+        setSiloLensAddress('')
+      }
+    }
+    fetchLens()
+  }, [wizardData.networkInfo?.chainId])
+
+  // Fetch OracleScalerFactory version via Silo Lens getVersion(contractAddress)
+  useEffect(() => {
+    const fetchFactoryVersion = async () => {
+      if (!oracleScalerFactory?.address || !siloLensAddress || !window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = await lensContract.getVersion(oracleScalerFactory.address)
+        setOracleScalerFactory(prev => prev ? { ...prev, version: String(version) } : null)
+      } catch (err) {
+        console.warn('Failed to fetch OracleScalerFactory version from Silo Lens:', err)
+        setOracleScalerFactory(prev => prev ? { ...prev, version: '—' } : null)
+      }
+    }
+    fetchFactoryVersion()
+  }, [oracleScalerFactory?.address, siloLensAddress])
+
+  // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
+  useEffect(() => {
+    if (
+      wizardData.oracleType0?.type === 'scaler' &&
+      availableScalers.token0.length === 0 &&
+      oracleScalerFactory &&
+      wizardData.token0
+    ) {
+      const quoteToken = wizardData.token0.address
+      setSelectedScalers(prev => {
+        if (prev.token0?.customCreate && prev.token0.customCreate.factoryAddress === oracleScalerFactory.address && prev.token0.customCreate.quoteToken === quoteToken) return prev
+        return {
+          ...prev,
+          token0: {
+            name: 'PLACEHOLDER',
+            address: '',
+            scaleFactor: '1',
+            valid: true,
+            customCreate: { factoryAddress: oracleScalerFactory.address, quoteToken }
+          }
+        }
+      })
+    }
+  }, [wizardData.oracleType0?.type, availableScalers.token0.length, oracleScalerFactory, wizardData.token0?.address])
+
+  // When no pre-deployed scalers for token1 but we have factory, set custom scaler (quote = token1)
+  useEffect(() => {
+    if (
+      wizardData.oracleType1?.type === 'scaler' &&
+      availableScalers.token1.length === 0 &&
+      oracleScalerFactory &&
+      wizardData.token1
+    ) {
+      const quoteToken = wizardData.token1.address
+      setSelectedScalers(prev => {
+        if (prev.token1?.customCreate && prev.token1.customCreate.factoryAddress === oracleScalerFactory.address && prev.token1.customCreate.quoteToken === quoteToken) return prev
+        return {
+          ...prev,
+          token1: {
+            name: 'PLACEHOLDER',
+            address: '',
+            scaleFactor: '1',
+            valid: true,
+            customCreate: { factoryAddress: oracleScalerFactory.address, quoteToken }
+          }
+        }
+      })
+    }
+  }, [wizardData.oracleType1?.type, availableScalers.token1.length, oracleScalerFactory, wizardData.token1?.address])
 
   // Find and validate scaler oracles for each token
   useEffect(() => {
@@ -224,18 +341,12 @@ export default function Step3OracleConfiguration() {
         throw new Error('Oracle types not selected. Please go back to Step 2.')
       }
 
-      // Validate selections
-      if (wizardData.oracleType0.type === 'scaler' && !selectedScalers.token0) {
-        throw new Error('Please select a scaler oracle for Token 0')
+      // Validate selections (pre-deployed or custom create)
+      if (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) {
+        throw new Error('Please select or configure a scaler oracle for Token 0')
       }
-      if (wizardData.oracleType0.type === 'scaler' && selectedScalers.token0 && !selectedScalers.token0.valid) {
-        throw new Error('Selected scaler oracle for Token 0 is not valid for this token')
-      }
-      if (wizardData.oracleType1.type === 'scaler' && !selectedScalers.token1) {
-        throw new Error('Please select a scaler oracle for Token 1')
-      }
-      if (wizardData.oracleType1.type === 'scaler' && selectedScalers.token1 && !selectedScalers.token1.valid) {
-        throw new Error('Selected scaler oracle for Token 1 is not valid for this token')
+      if (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
+        throw new Error('Please select or configure a scaler oracle for Token 1')
       }
 
       // Create oracle configuration
@@ -359,17 +470,32 @@ export default function Step3OracleConfiguration() {
                   <span>Loading available scaler oracles...</span>
                 </div>
               ) : availableScalers.token0.length === 0 ? (
-                <div className="bg-yellow-900/20 border border-yellow-500 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <span className="text-yellow-400 font-medium">No Compatible Scaler Oracles Found</span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {/* eslint-disable-next-line react/no-unescaped-entities */}
-                    No scaler oracles found that match this token&apos;s address.
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+                  <p className="text-sm font-medium text-gray-300">
+                    No pre-defined scaler found for this token. The scaler will be deployed together with the market.
                   </p>
+                  {oracleScalerFactory ? (
+                    <>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
+                        <a
+                          href={getBlockExplorerUrl(oracleScalerFactory.address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                        >
+                          {oracleScalerFactory.address}
+                        </a>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Version</p>
+                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">Quote token: Token 0 ({wizardData.token0.symbol})</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-yellow-400">Loading OracleScalerFactory for this chain…</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -401,7 +527,18 @@ export default function Step3OracleConfiguration() {
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                            <span className="text-sm text-gray-400">
+                              Factor:{' '}
+                              <a
+                                href={getBlockExplorerUrl(oracle.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {oracle.scaleFactor}
+                              </a>
+                            </span>
                             {oracle.valid ? (
                               <span className="text-green-400 text-xs">✓ Valid</span>
                             ) : (
@@ -471,17 +608,32 @@ export default function Step3OracleConfiguration() {
                   <span>Loading available scaler oracles...</span>
                 </div>
               ) : availableScalers.token1.length === 0 ? (
-                <div className="bg-yellow-900/20 border border-yellow-500 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <span className="text-yellow-400 font-medium">No Compatible Scaler Oracles Found</span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {/* eslint-disable-next-line react/no-unescaped-entities */}
-                    No scaler oracles found that match this token&apos;s address.
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+                  <p className="text-sm font-medium text-gray-300">
+                    No pre-defined scaler found for this token. The scaler will be deployed together with the market.
                   </p>
+                  {oracleScalerFactory ? (
+                    <>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
+                        <a
+                          href={getBlockExplorerUrl(oracleScalerFactory.address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                        >
+                          {oracleScalerFactory.address}
+                        </a>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Version</p>
+                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">Quote token: Token 1 ({wizardData.token1.symbol})</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-yellow-400">Loading OracleScalerFactory for this chain…</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -513,7 +665,18 @@ export default function Step3OracleConfiguration() {
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-400">Factor: {oracle.scaleFactor}</span>
+                            <span className="text-sm text-gray-400">
+                              Factor:{' '}
+                              <a
+                                href={getBlockExplorerUrl(oracle.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {oracle.scaleFactor}
+                              </a>
+                            </span>
                             {oracle.valid ? (
                               <span className="text-green-400 text-xs">✓ Valid</span>
                             ) : (
@@ -571,8 +734,8 @@ export default function Step3OracleConfiguration() {
           <button
             type="submit"
             disabled={loading || 
-              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || !selectedScalers.token0.valid)) || 
-              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || !selectedScalers.token1.valid))}
+              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) || 
+              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid)))}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

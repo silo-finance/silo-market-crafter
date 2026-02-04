@@ -1,0 +1,404 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "createOracleScaler",
+      "inputs": [
+        {
+          "name": "_quoteToken",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_externalSalt",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "oracleScaler",
+          "type": "address",
+          "internalType": "contract ISiloOracle"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "createdInFactory",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract ISiloOracle"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "nonces",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "OracleScalerCreated",
+      "inputs": [
+        {
+          "name": "oracleScaler",
+          "type": "address",
+          "indexed": true,
+          "internalType": "contract ISiloOracle"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "InvalidAccountNonce",
+      "inputs": [
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "currentNonce",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    }
+  ],
+  "bytecode": {
+    "object": "0x6080604052348015600e575f5ffd5b50610cea8061001c5f395ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80632ef8a828146100435780637ecebe0014610073578063b32d705b146100a9575b5f5ffd5b6100566100513660046101e9565b6100db565b6040516001600160a01b0390911681526020015b60405180910390f35b61009b610081366004610213565b6001600160a01b03165f9081526020819052604090205490565b60405190815260200161006a565b6100cb6100b7366004610213565b60016020525f908152604090205460ff1681565b604051901515815260200161006a565b335f81815260208181526040808320805460018101909155815160609590951b6bffffffffffffffffffffffff191685840152603485015260548085018690528151808603909101815260749094019052825192019190912083604051610141906101c5565b6001600160a01b0390911681526020018190604051809103905ff590508015801561016e573d5f5f3e3d5ffd5b506001600160a01b0381165f818152600160208190526040808320805460ff19169092179091555192935090917fbb706ea96deb6edf25f6e205044c7df4bacee2faf98bac84430437d00f6f524d9190a292915050565b610a7f8061023683390190565b6001600160a01b03811681146101e6575f5ffd5b50565b5f5f604083850312156101fa575f5ffd5b8235610205816101d2565b946020939093013593505050565b5f60208284031215610223575f5ffd5b813561022e816101d2565b939250505056fe60c060405234801561000f575f5ffd5b50604051610a7f380380610a7f83398101604081905261002e916101b2565b5f6100388261008c565b9050601260ff82161061005e5760405163a7617b4560e01b815260040160405180910390fd5b6100698160126101f3565b6100779060ff16600a6102f5565b60a052506001600160a01b0316608052610336565b6040805160048152602481019091526020810180516001600160e01b0390811663313ce56760e01b179091525f91829182916100cb918691906100fc16565b91509150816100dd57505f9392505050565b808060200190518101906100f19190610300565b60ff16949350505050565b5f60606001600160a01b0384163b610127576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b0316856040516101419190610320565b5f60405180830381855afa9150503d805f8114610179576040519150601f19603f3d011682016040523d82523d5f602084013e61017e565b606091505b5091509150816101a3575f60405180602001604052805f8152509350935050506101ab565b600193509150505b9250929050565b5f602082840312156101c2575f5ffd5b81516001600160a01b03811681146101d8575f5ffd5b9392505050565b634e487b7160e01b5f52601160045260245ffd5b60ff828116828216039081111561020c5761020c6101df565b92915050565b6001815b600184111561024d57808504811115610231576102316101df565b600184161561023f57908102905b60019390931c928002610216565b935093915050565b5f826102635750600161020c565b8161026f57505f61020c565b8160018114610285576002811461028f576102ab565b600191505061020c565b60ff8411156102a0576102a06101df565b50506001821b61020c565b5060208310610133831016604e8410600b84101617156102ce575081810a61020c565b6102da5f198484610212565b805f19048211156102ed576102ed6101df565b029392505050565b5f6101d88383610255565b5f60208284031215610310575f5ffd5b815160ff811681146101d8575f5ffd5b5f82518060208501845e5f920191825250919050565b60805160a05161070d6103725f395f818161020101526102c401525f818160f7015281816101800152818161026f0152610318015261070d5ff3fe608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c80639a6fc8f511610088578063ce4b5bbe11610063578063ce4b5bbe146101fc578063f9fa619a14610223578063feaf968c14610236578063ffa1ad741461023e575f5ffd5b80639a6fc8f5146101a2578063a6391566146101f4578063c55dae63146100f5575f5ffd5b806313b0be33146100cf578063217a4b70146100f5578063313ce5671461012f57806354fd4d50146101445780637284e4161461014b57806378892cea1461017b575b5f5ffd5b6100e26100dd3660046104e0565b61026c565b6040519081526020015b60405180910390f35b7f00000000000000000000000000000000000000000000000000000000000000005b6040516001600160a01b0390911681526020016100ec565b60125b60405160ff90911681526020016100ec565b60016100e2565b60408051808201909152600b81526a53696c6f204f7261636c6560a81b60208201525b6040516100ec919061050a565b6101177f000000000000000000000000000000000000000000000000000000000000000081565b6101bd6101b036600461053f565b505f908190819081908190565b6040805169ffffffffffffffffffff968716815260208101959095528401929092526060830152909116608082015260a0016100ec565b610132601281565b6100e27f000000000000000000000000000000000000000000000000000000000000000081565b61023461023136600461056f565b50565b005b6101bd610311565b60408051808201909152601281527104f7261636c655363616c657220342e302e360741b602082015261016e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146102bf5760405163981a2a2b60e01b815260040160405180910390fd5b6102e97f00000000000000000000000000000000000000000000000000000000000000008461059c565b9050805f0361030b57604051634dfba02360e01b815260040160405180910390fd5b92915050565b5f808080807f00000000000000000000000000000000000000000000000000000000000000008161034182610370565b905061035f61035a61035483600a610696565b8461026c565b6103db565b96974296508695505f945092505050565b6040805160048152602481019091526020810180516001600160e01b031663313ce56760e01b1790525f90819081906103aa90859061040f565b91509150816103bc57505f9392505050565b808060200190518101906103d091906106a1565b60ff16949350505050565b5f6001600160ff1b0382111561040b5760405163123baf0360e11b81526004810183905260240160405180910390fd5b5090565b5f60606001600160a01b0384163b61043a576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b03168560405161045491906106c1565b5f60405180830381855afa9150503d805f811461048c576040519150601f19603f3d011682016040523d82523d5f602084013e610491565b606091505b5091509150816104b6575f60405180602001604052805f8152509350935050506104be565b600193509150505b9250929050565b80356001600160a01b03811681146104db575f5ffd5b919050565b5f5f604083850312156104f1575f5ffd5b82359150610501602084016104c5565b90509250929050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b5f6020828403121561054f575f5ffd5b813569ffffffffffffffffffff81168114610568575f5ffd5b9392505050565b5f6020828403121561057f575f5ffd5b610568826104c5565b634e487b7160e01b5f52601160045260245ffd5b808202811582820484141761030b5761030b610588565b6001815b60018411156105ee578085048111156105d2576105d2610588565b60018416156105e057908102905b60019390931c9280026105b7565b935093915050565b5f826106045750600161030b565b8161061057505f61030b565b816001811461062657600281146106305761064c565b600191505061030b565b60ff84111561064157610641610588565b50506001821b61030b565b5060208310610133831016604e8410600b841016171561066f575081810a61030b565b61067b5f1984846105b3565b805f190482111561068e5761068e610588565b029392505050565b5f61056883836105f6565b5f602082840312156106b1575f5ffd5b815160ff81168114610568575f5ffd5b5f82518060208501845e5f92019182525091905056fea264697066735822122098167f62582c215715b81b3595eebfd4c28511ffb0d208dd0be3c5c20c6560d964736f6c634300081c0033a2646970667358221220ea498b32cae9c78a8ee0d379329fdf392e5ea2ed42747549203f76631117b33c64736f6c634300081c0033",
+    "sourceMap": "385:509:135:-:0;;;;;;;;;;;;;;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80632ef8a828146100435780637ecebe0014610073578063b32d705b146100a9575b5f5ffd5b6100566100513660046101e9565b6100db565b6040516001600160a01b0390911681526020015b60405180910390f35b61009b610081366004610213565b6001600160a01b03165f9081526020819052604090205490565b60405190815260200161006a565b6100cb6100b7366004610213565b60016020525f908152604090205460ff1681565b604051901515815260200161006a565b335f81815260208181526040808320805460018101909155815160609590951b6bffffffffffffffffffffffff191685840152603485015260548085018690528151808603909101815260749094019052825192019190912083604051610141906101c5565b6001600160a01b0390911681526020018190604051809103905ff590508015801561016e573d5f5f3e3d5ffd5b506001600160a01b0381165f818152600160208190526040808320805460ff19169092179091555192935090917fbb706ea96deb6edf25f6e205044c7df4bacee2faf98bac84430437d00f6f524d9190a292915050565b610a7f8061023683390190565b6001600160a01b03811681146101e6575f5ffd5b50565b5f5f604083850312156101fa575f5ffd5b8235610205816101d2565b946020939093013593505050565b5f60208284031215610223575f5ffd5b813561022e816101d2565b939250505056fe60c060405234801561000f575f5ffd5b50604051610a7f380380610a7f83398101604081905261002e916101b2565b5f6100388261008c565b9050601260ff82161061005e5760405163a7617b4560e01b815260040160405180910390fd5b6100698160126101f3565b6100779060ff16600a6102f5565b60a052506001600160a01b0316608052610336565b6040805160048152602481019091526020810180516001600160e01b0390811663313ce56760e01b179091525f91829182916100cb918691906100fc16565b91509150816100dd57505f9392505050565b808060200190518101906100f19190610300565b60ff16949350505050565b5f60606001600160a01b0384163b610127576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b0316856040516101419190610320565b5f60405180830381855afa9150503d805f8114610179576040519150601f19603f3d011682016040523d82523d5f602084013e61017e565b606091505b5091509150816101a3575f60405180602001604052805f8152509350935050506101ab565b600193509150505b9250929050565b5f602082840312156101c2575f5ffd5b81516001600160a01b03811681146101d8575f5ffd5b9392505050565b634e487b7160e01b5f52601160045260245ffd5b60ff828116828216039081111561020c5761020c6101df565b92915050565b6001815b600184111561024d57808504811115610231576102316101df565b600184161561023f57908102905b60019390931c928002610216565b935093915050565b5f826102635750600161020c565b8161026f57505f61020c565b8160018114610285576002811461028f576102ab565b600191505061020c565b60ff8411156102a0576102a06101df565b50506001821b61020c565b5060208310610133831016604e8410600b84101617156102ce575081810a61020c565b6102da5f198484610212565b805f19048211156102ed576102ed6101df565b029392505050565b5f6101d88383610255565b5f60208284031215610310575f5ffd5b815160ff811681146101d8575f5ffd5b5f82518060208501845e5f920191825250919050565b60805160a05161070d6103725f395f818161020101526102c401525f818160f7015281816101800152818161026f0152610318015261070d5ff3fe608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c80639a6fc8f511610088578063ce4b5bbe11610063578063ce4b5bbe146101fc578063f9fa619a14610223578063feaf968c14610236578063ffa1ad741461023e575f5ffd5b80639a6fc8f5146101a2578063a6391566146101f4578063c55dae63146100f5575f5ffd5b806313b0be33146100cf578063217a4b70146100f5578063313ce5671461012f57806354fd4d50146101445780637284e4161461014b57806378892cea1461017b575b5f5ffd5b6100e26100dd3660046104e0565b61026c565b6040519081526020015b60405180910390f35b7f00000000000000000000000000000000000000000000000000000000000000005b6040516001600160a01b0390911681526020016100ec565b60125b60405160ff90911681526020016100ec565b60016100e2565b60408051808201909152600b81526a53696c6f204f7261636c6560a81b60208201525b6040516100ec919061050a565b6101177f000000000000000000000000000000000000000000000000000000000000000081565b6101bd6101b036600461053f565b505f908190819081908190565b6040805169ffffffffffffffffffff968716815260208101959095528401929092526060830152909116608082015260a0016100ec565b610132601281565b6100e27f000000000000000000000000000000000000000000000000000000000000000081565b61023461023136600461056f565b50565b005b6101bd610311565b60408051808201909152601281527104f7261636c655363616c657220342e302e360741b602082015261016e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146102bf5760405163981a2a2b60e01b815260040160405180910390fd5b6102e97f00000000000000000000000000000000000000000000000000000000000000008461059c565b9050805f0361030b57604051634dfba02360e01b815260040160405180910390fd5b92915050565b5f808080807f00000000000000000000000000000000000000000000000000000000000000008161034182610370565b905061035f61035a61035483600a610696565b8461026c565b6103db565b96974296508695505f945092505050565b6040805160048152602481019091526020810180516001600160e01b031663313ce56760e01b1790525f90819081906103aa90859061040f565b91509150816103bc57505f9392505050565b808060200190518101906103d091906106a1565b60ff16949350505050565b5f6001600160ff1b0382111561040b5760405163123baf0360e11b81526004810183905260240160405180910390fd5b5090565b5f60606001600160a01b0384163b61043a576040516373d39f9d60e01b815260040160405180910390fd5b5f5f856001600160a01b03168560405161045491906106c1565b5f60405180830381855afa9150503d805f811461048c576040519150601f19603f3d011682016040523d82523d5f602084013e610491565b606091505b5091509150816104b6575f60405180602001604052805f8152509350935050506104be565b600193509150505b9250929050565b80356001600160a01b03811681146104db575f5ffd5b919050565b5f5f604083850312156104f1575f5ffd5b82359150610501602084016104c5565b90509250929050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b5f6020828403121561054f575f5ffd5b813569ffffffffffffffffffff81168114610568575f5ffd5b9392505050565b5f6020828403121561057f575f5ffd5b610568826104c5565b634e487b7160e01b5f52601160045260245ffd5b808202811582820484141761030b5761030b610588565b6001815b60018411156105ee578085048111156105d2576105d2610588565b60018416156105e057908102905b60019390931c9280026105b7565b935093915050565b5f826106045750600161030b565b8161061057505f61030b565b816001811461062657600281146106305761064c565b600191505061030b565b60ff84111561064157610641610588565b50506001821b61030b565b5060208310610133831016604e8410600b841016171561066f575081810a61030b565b61067b5f1984846105b3565b805f190482111561068e5761068e610588565b029392505050565b5f61056883836105f6565b5f602082840312156106b1575f5ffd5b815160ff81168114610568575f5ffd5b5f82518060208501845e5f92019182525091905056fea264697066735822122098167f62582c215715b81b3595eebfd4c28511ffb0d208dd0be3c5c20c6560d964736f6c634300081c0033a2646970667358221220ea498b32cae9c78a8ee0d379329fdf392e5ea2ed42747549203f76631117b33c64736f6c634300081c0033",
+    "sourceMap": "385:509:135:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;560:332;;;;;;:::i;:::-;;:::i;:::-;;;-1:-1:-1;;;;;655:32:154;;;637:51;;625:2;610:18;560:332:135;;;;;;;;538:107:32;;;;;;:::i;:::-;-1:-1:-1;;;;;624:14:32;598:7;624:14;;;;;;;;;;;;538:107;;;;1097:25:154;;;1085:2;1070:18;538:107:32;951:177:154;460:52:135;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;1571:14:154;;1564:22;1546:41;;1534:2;1519:18;460:52:135;1406:187:154;560:332:135;460:10:0;680:24:135;1121:14:32;;;;;;;;;;;:16;;;;;;;;430:112:0;;2011:2:154;2007:15;;;;-1:-1:-1;;2003:53:154;430:112:0;;;1991:66:154;2073:12;;;2066:28;2110:12;;;;2103:28;;;430:112:0;;;;;;;;;;2147:12:154;;;;430:112:0;;420:123;;;;;;;;776:11:135;731:57;;;;;:::i;:::-;-1:-1:-1;;;;;655:32:154;;;637:51;;625:2;610:18;731:57:135;;;;;;;;;;;;;;;;;;;;;;;;;;-1:-1:-1;;;;;;799:30:135;;;;;;832:4;799:30;;;;;;;;:37;;-1:-1:-1;;799:37:135;;;;;;;852:33;716:72;;-1:-1:-1;799:30:135;;852:33;;799:30;852:33;560:332;;;;:::o;-1:-1:-1:-;;;;;;;;:::o;14:131:154:-;-1:-1:-1;;;;;89:31:154;;79:42;;69:70;;135:1;132;125:12;69:70;14:131;:::o;150:315::-;218:6;226;279:2;267:9;258:7;254:23;250:32;247:52;;;295:1;292;285:12;247:52;334:9;321:23;353:31;378:5;353:31;:::i;:::-;403:5;455:2;440:18;;;;427:32;;-1:-1:-1;;;150:315:154:o;699:247::-;758:6;811:2;799:9;790:7;786:23;782:32;779:52;;;827:1;824;817:12;779:52;866:9;853:23;885:31;910:5;885:31;:::i;:::-;935:5;699:247;-1:-1:-1;;;699:247:154:o",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "createOracleScaler(address,bytes32)": "2ef8a828",
+    "createdInFactory(address)": "b32d705b",
+    "nonces(address)": "7ecebe00"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"currentNonce\",\"type\":\"uint256\"}],\"name\":\"InvalidAccountNonce\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"contract ISiloOracle\",\"name\":\"oracleScaler\",\"type\":\"address\"}],\"name\":\"OracleScalerCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_quoteToken\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"createOracleScaler\",\"outputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"oracleScaler\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"createdInFactory\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"nonces\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"errors\":{\"InvalidAccountNonce(address,uint256)\":[{\"details\":\"The nonce used for an `account` is not the expected current nonce.\"}]},\"kind\":\"dev\",\"methods\":{\"createOracleScaler(address,bytes32)\":{\"params\":{\"_externalSalt\":\"The external salt to be used together with factory salt\",\"_quoteToken\":\"The quote token for this oracle to support.\"},\"returns\":{\"oracleScaler\":\"The oracle scaler created\"}},\"nonces(address)\":{\"details\":\"Returns the next unused nonce for an address.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"createOracleScaler(address,bytes32)\":{\"notice\":\"Create a new oracle scaler\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/scaler/OracleScalerFactory.sol\":\"OracleScalerFactory\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"common/utils/Create2Factory.sol\":{\"keccak256\":\"0xb87f5173d5a98341aa02325fe84ad93902182aeaf091fb988b64572f9953c6d6\",\"license\":\"BUSL-1.1\",\"urls\":[\"bzz-raw://1e20a12f944b63b6baa688941beba119bb9ac36e5038966ddf7e1fcc6ae65a27\",\"dweb:/ipfs/QmTG4Cb4QWYR6KTbuo52oA5L8g62q3iDoLRLXn7L7kk99d\"]},\"gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7\",\"dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/Nonces.sol\":{\"keccak256\":\"0x0082767004fca261c332e9ad100868327a863a88ef724e844857128845ab350f\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://132dce9686a54e025eb5ba5d2e48208f847a1ec3e60a3e527766d7bf53fb7f9e\",\"dweb:/ipfs/QmXn1a2nUZMpu2z6S88UoTfMVtY2YNh86iGrzJDYmMkKeZ\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/math/SafeCast.sol\":{\"keccak256\":\"0x8cd59334ed58b8884cd1f775afc9400db702e674e5d6a7a438c655b9de788d7e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://99e62c7de7318f413b6352e3f2704ca23e7725ff144e43c8bd574d12dbf29047\",\"dweb:/ipfs/QmSEXG2rBx1VxU2uFTWdiChjDvA4osEY2mesjmoVeVhHko\"]},\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-core/contracts/interfaces/IVersioned.sol\":{\"keccak256\":\"0xb8714d8e82ad5d89925184b527235413c6883fad427c6d56074d8137bbe48537\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7f8ea64713ad9ef97f3e5eee661ec743eccf9511a5e772040fa091fda3283521\",\"dweb:/ipfs/QmPGBP7yQDDaMvmJukWhpWQyTfYxAZfQ5iUjMfHZmtt9AR\"]},\"silo-core/contracts/lib/IsContract.sol\":{\"keccak256\":\"0x41b56d956197ed75353b8a6512d7413443eb83142cc49688c58d1713d94fe3e1\",\"license\":\"BUSL-1.1\",\"urls\":[\"bzz-raw://92dfafd9987ef27a6816dc10d1dd0593e626700e253a7782bc1229c48e714d4c\",\"dweb:/ipfs/QmPr1MPU6eZp4DVVEF1x49muGu3drGgqbs6nhCYPAUhEo6\"]},\"silo-core/contracts/lib/TokenHelper.sol\":{\"keccak256\":\"0x336e02e4f0df931242ffe7db44ad12be06b3b4c3c8e93e89778414515d3df397\",\"license\":\"BUSL-1.1\",\"urls\":[\"bzz-raw://2d6d13d5e86efbdbb633a3f9ae1a008c6a8f09d31a5834150515f9a7ddd503e8\",\"dweb:/ipfs/QmNfpocvWz2y89pXyQS7gccorCTWSuj8GaWDoyV496mvwq\"]},\"silo-oracles/contracts/_common/Aggregator.sol\":{\"keccak256\":\"0xe0491779001c89d8d26dae816e3876fe5310a1cf9ac832c04f90a254488edd89\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://e9bc48753296bc83d3798e39c7100517821e3fee6586bd3376a56a0c4a58bcad\",\"dweb:/ipfs/QmdEnc5fbA9WonngZi6nMM5LMpp2tw8ZhruSHgawRcJkQv\"]},\"silo-oracles/contracts/interfaces/IOracleScalerFactory.sol\":{\"keccak256\":\"0x5f192877cc7e7d17712171eb2ff061350129685ff98182e9331613f7759998e8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://76f711ba207bef109c5bf43c4a5a9c5b8fc356c796b5e096a63db0ca01f1d015\",\"dweb:/ipfs/Qmapk9WHdzkfdgmaeD65HwJeXWvLdHo3JpogvgKhp9A1sG\"]},\"silo-oracles/contracts/scaler/OracleScaler.sol\":{\"keccak256\":\"0x9e625da012a1b7ec73f461e028b9824aa3491a65fe6a44678d557e2569c8da5e\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://1616f217b429e32cb72e5b30c1a734651f8cfab97bef12ec01dc86c75f859f3d\",\"dweb:/ipfs/QmYSk68TmN14axb5eFRJtZsS5fNVReeabistzGDVUDQHLj\"]},\"silo-oracles/contracts/scaler/OracleScalerFactory.sol\":{\"keccak256\":\"0x44d6ebb6f30624d76ad84fbc158f6f1848ac4bcf519993ba013e60333a070c3e\",\"license\":\"GPL-2.0-or-later\",\"urls\":[\"bzz-raw://fa3c4e09d091aaeb2da28713280583c6d798b2cc4a32d601f8b98b029f035e43\",\"dweb:/ipfs/QmYqyWjhJHJgcQzPD7jF7qx1CVgTYB9MCtAnA1bwaiNZkE\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.28+commit.7893614a"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "currentNonce",
+              "type": "uint256"
+            }
+          ],
+          "type": "error",
+          "name": "InvalidAccountNonce"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract ISiloOracle",
+              "name": "oracleScaler",
+              "type": "address",
+              "indexed": true
+            }
+          ],
+          "type": "event",
+          "name": "OracleScalerCreated",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_quoteToken",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "_externalSalt",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "createOracleScaler",
+          "outputs": [
+            {
+              "internalType": "contract ISiloOracle",
+              "name": "oracleScaler",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract ISiloOracle",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "createdInFactory",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "nonces",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {
+          "createOracleScaler(address,bytes32)": {
+            "params": {
+              "_externalSalt": "The external salt to be used together with factory salt",
+              "_quoteToken": "The quote token for this oracle to support."
+            },
+            "returns": {
+              "oracleScaler": "The oracle scaler created"
+            }
+          },
+          "nonces(address)": {
+            "details": "Returns the next unused nonce for an address."
+          }
+        },
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {
+          "createOracleScaler(address,bytes32)": {
+            "notice": "Create a new oracle scaler"
+          }
+        },
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        "@ensdomains/=node_modules/@ensdomains/",
+        "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+        "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+        "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+        "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+        "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+        "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+        "chainlink/=gitmodules/chainlink/contracts/src/",
+        "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+        "crytic/=gitmodules/crytic/",
+        "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+        "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+        "forge-std/=gitmodules/forge-std/src/",
+        "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+        "hardhat/=node_modules/hardhat/",
+        "morpho-blue/=gitmodules/morpho-blue/src/",
+        "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+        "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+        "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+        "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+        "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+        "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+        "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+        "properties/=gitmodules/crytic/properties/contracts/",
+        "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+        "silo-core/=silo-core/",
+        "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+        "silo-oracles/=silo-oracles/",
+        "silo-vaults/=silo-vaults/",
+        "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+        "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+        "uniswap/=gitmodules/uniswap/",
+        "x-silo/=node_modules/x-silo/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "silo-oracles/contracts/scaler/OracleScalerFactory.sol": "OracleScalerFactory"
+      },
+      "evmVersion": "cancun",
+      "libraries": {}
+    },
+    "sources": {
+      "common/utils/Create2Factory.sol": {
+        "keccak256": "0xb87f5173d5a98341aa02325fe84ad93902182aeaf091fb988b64572f9953c6d6",
+        "urls": [
+          "bzz-raw://1e20a12f944b63b6baa688941beba119bb9ac36e5038966ddf7e1fcc6ae65a27",
+          "dweb:/ipfs/QmTG4Cb4QWYR6KTbuo52oA5L8g62q3iDoLRLXn7L7kk99d"
+        ],
+        "license": "BUSL-1.1"
+      },
+      "gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+        "keccak256": "0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd",
+        "urls": [
+          "bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7",
+          "dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+        "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+        "urls": [
+          "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+          "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+        "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+        "urls": [
+          "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+          "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/utils/Nonces.sol": {
+        "keccak256": "0x0082767004fca261c332e9ad100868327a863a88ef724e844857128845ab350f",
+        "urls": [
+          "bzz-raw://132dce9686a54e025eb5ba5d2e48208f847a1ec3e60a3e527766d7bf53fb7f9e",
+          "dweb:/ipfs/QmXn1a2nUZMpu2z6S88UoTfMVtY2YNh86iGrzJDYmMkKeZ"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/utils/math/SafeCast.sol": {
+        "keccak256": "0x8cd59334ed58b8884cd1f775afc9400db702e674e5d6a7a438c655b9de788d7e",
+        "urls": [
+          "bzz-raw://99e62c7de7318f413b6352e3f2704ca23e7725ff144e43c8bd574d12dbf29047",
+          "dweb:/ipfs/QmSEXG2rBx1VxU2uFTWdiChjDvA4osEY2mesjmoVeVhHko"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloOracle.sol": {
+        "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+        "urls": [
+          "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+          "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IVersioned.sol": {
+        "keccak256": "0xb8714d8e82ad5d89925184b527235413c6883fad427c6d56074d8137bbe48537",
+        "urls": [
+          "bzz-raw://7f8ea64713ad9ef97f3e5eee661ec743eccf9511a5e772040fa091fda3283521",
+          "dweb:/ipfs/QmPGBP7yQDDaMvmJukWhpWQyTfYxAZfQ5iUjMfHZmtt9AR"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/lib/IsContract.sol": {
+        "keccak256": "0x41b56d956197ed75353b8a6512d7413443eb83142cc49688c58d1713d94fe3e1",
+        "urls": [
+          "bzz-raw://92dfafd9987ef27a6816dc10d1dd0593e626700e253a7782bc1229c48e714d4c",
+          "dweb:/ipfs/QmPr1MPU6eZp4DVVEF1x49muGu3drGgqbs6nhCYPAUhEo6"
+        ],
+        "license": "BUSL-1.1"
+      },
+      "silo-core/contracts/lib/TokenHelper.sol": {
+        "keccak256": "0x336e02e4f0df931242ffe7db44ad12be06b3b4c3c8e93e89778414515d3df397",
+        "urls": [
+          "bzz-raw://2d6d13d5e86efbdbb633a3f9ae1a008c6a8f09d31a5834150515f9a7ddd503e8",
+          "dweb:/ipfs/QmNfpocvWz2y89pXyQS7gccorCTWSuj8GaWDoyV496mvwq"
+        ],
+        "license": "BUSL-1.1"
+      },
+      "silo-oracles/contracts/_common/Aggregator.sol": {
+        "keccak256": "0xe0491779001c89d8d26dae816e3876fe5310a1cf9ac832c04f90a254488edd89",
+        "urls": [
+          "bzz-raw://e9bc48753296bc83d3798e39c7100517821e3fee6586bd3376a56a0c4a58bcad",
+          "dweb:/ipfs/QmdEnc5fbA9WonngZi6nMM5LMpp2tw8ZhruSHgawRcJkQv"
+        ],
+        "license": "GPL-2.0-or-later"
+      },
+      "silo-oracles/contracts/interfaces/IOracleScalerFactory.sol": {
+        "keccak256": "0x5f192877cc7e7d17712171eb2ff061350129685ff98182e9331613f7759998e8",
+        "urls": [
+          "bzz-raw://76f711ba207bef109c5bf43c4a5a9c5b8fc356c796b5e096a63db0ca01f1d015",
+          "dweb:/ipfs/Qmapk9WHdzkfdgmaeD65HwJeXWvLdHo3JpogvgKhp9A1sG"
+        ],
+        "license": "MIT"
+      },
+      "silo-oracles/contracts/scaler/OracleScaler.sol": {
+        "keccak256": "0x9e625da012a1b7ec73f461e028b9824aa3491a65fe6a44678d557e2569c8da5e",
+        "urls": [
+          "bzz-raw://1616f217b429e32cb72e5b30c1a734651f8cfab97bef12ec01dc86c75f859f3d",
+          "dweb:/ipfs/QmYSk68TmN14axb5eFRJtZsS5fNVReeabistzGDVUDQHLj"
+        ],
+        "license": "GPL-2.0-or-later"
+      },
+      "silo-oracles/contracts/scaler/OracleScalerFactory.sol": {
+        "keccak256": "0x44d6ebb6f30624d76ad84fbc158f6f1848ac4bcf519993ba013e60333a070c3e",
+        "urls": [
+          "bzz-raw://fa3c4e09d091aaeb2da28713280583c6d798b2cc4a32d601f8b98b029f035e43",
+          "dweb:/ipfs/QmYqyWjhJHJgcQzPD7jF7qx1CVgTYB9MCtAnA1bwaiNZkE"
+        ],
+        "license": "GPL-2.0-or-later"
+      }
+    },
+    "version": 1
+  },
+  "id": 135
+}
