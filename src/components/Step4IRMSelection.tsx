@@ -119,7 +119,7 @@ export default function Step4IRMSelection() {
     }
   }, [activeTab, updateIRMModelType, wizardData.irmModelType])
 
-  // Sync local IRM selection with context when on IRM tab
+  // Sync local IRM selection with context when on IRM tab (and when returning to step – restore from context)
   useEffect(() => {
     if (activeTab === 'irm') {
       setSelectedIRM0(wizardData.selectedIRM0)
@@ -127,7 +127,32 @@ export default function Step4IRMSelection() {
     }
   }, [activeTab, wizardData.selectedIRM0, wizardData.selectedIRM1])
 
-  // ----- Fetch IRM (legacy) configs from repo (do not copy locally – they may change) -----
+  // Rehydrate Kink selection from context when returning to step 4 (lists must be loaded first)
+  useEffect(() => {
+    if (kinkConfigs.length === 0 || kinkImmutables.length === 0) return
+    const name0 = wizardData.selectedIRM0?.name ?? ''
+    const name1 = wizardData.selectedIRM1?.name ?? ''
+    if (name0.includes(':')) {
+      const [configName0, immutableName0] = name0.split(':')
+      const cfg0 = kinkConfigs.find(c => c.name === configName0)
+      const imm0 = kinkImmutables.find(i => i.name === immutableName0)
+      if (cfg0 && imm0) {
+        setKinkToken0Config(cfg0)
+        setKinkToken0Immutable(imm0)
+      }
+    }
+    if (name1.includes(':')) {
+      const [configName1, immutableName1] = name1.split(':')
+      const cfg1 = kinkConfigs.find(c => c.name === configName1)
+      const imm1 = kinkImmutables.find(i => i.name === immutableName1)
+      if (cfg1 && imm1) {
+        setKinkToken1Config(cfg1)
+        setKinkToken1Immutable(imm1)
+      }
+    }
+  }, [kinkConfigs, kinkImmutables, wizardData.selectedIRM0?.name, wizardData.selectedIRM1?.name])
+
+  // ----- Fetch IRM (legacy) configs from repo once on mount (so IRM tab has data when switching) -----
   useEffect(() => {
     const fetchIRMConfigs = async () => {
       try {
@@ -146,13 +171,13 @@ export default function Step4IRMSelection() {
         setFilteredIRMs(irmConfigs)
       } catch (err) {
         console.error('Error fetching IRM configs:', err)
-        if (activeTab === 'irm') setError(err instanceof Error ? err.message : 'Failed to fetch IRM configurations')
+        setError(err instanceof Error ? err.message : 'Failed to fetch IRM configurations')
       }
     }
     fetchIRMConfigs()
-  }, [activeTab])
+  }, [])
 
-  // ----- Fetch Kink configs and immutables from repo (each time, no local copy) -----
+  // ----- Fetch Kink configs and immutables from repo once on mount (so both tabs have data when switching) -----
   useEffect(() => {
     const fetchKink = async () => {
       try {
@@ -169,11 +194,11 @@ export default function Step4IRMSelection() {
         setFilteredKinkImmutables(immutables)
       } catch (err) {
         console.error('Error fetching Kink configs:', err)
-        if (activeTab === 'kink') setError(err instanceof Error ? err.message : 'Failed to fetch Kink configurations')
+        setError(err instanceof Error ? err.message : 'Failed to fetch Kink configurations')
       }
     }
     fetchKink()
-  }, [activeTab])
+  }, [])
 
   // ----- Fetch both factory addresses + Silo Lens once when chainId is set (so both tabs have data when switching) -----
   useEffect(() => {
@@ -310,22 +335,24 @@ export default function Step4IRMSelection() {
     return { name, config: merged }
   }
 
-  // Sync Kink selection to context when Kink selections change. Do not add updateSelectedIRM0/1 to deps (they change every render and cause infinite loop).
+  // Sync Kink selection to context when Kink selections change. Do not overwrite context with empty when returning to step (context still has valid "config:immutable" – rehydration will restore local state).
   useEffect(() => {
     if (activeTab !== 'kink') return
     const irm0 = buildKinkIRMConfig(kinkToken0Config, kinkToken0Immutable)
     const irm1 = buildKinkIRMConfig(kinkToken1Config, kinkToken1Immutable)
+    const existing0 = wizardData.selectedIRM0?.name ?? ''
+    const existing1 = wizardData.selectedIRM1?.name ?? ''
     if (irm0) updateSelectedIRM0(irm0)
-    else updateSelectedIRM0({ name: '', config: {} })
+    else if (!existing0.includes(':')) updateSelectedIRM0({ name: '', config: {} })
     if (irm1) updateSelectedIRM1(irm1)
-    else updateSelectedIRM1({ name: '', config: {} })
+    else if (!existing1.includes(':')) updateSelectedIRM1({ name: '', config: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when kink selection state changes
   }, [activeTab, kinkToken0Config, kinkToken0Immutable, kinkToken1Config, kinkToken1Immutable])
 
-  // Loading: wait for at least one tab's data
+  // Loading per tab (for inline "Loading…" in lists only; we no longer block the whole page)
   useEffect(() => {
-    const irmReady = activeTab === 'irm' ? availableIRMs.length > 0 : true
-    const kinkReady = activeTab === 'kink' ? kinkConfigs.length > 0 && kinkImmutables.length > 0 : true
+    const irmReady = availableIRMs.length > 0
+    const kinkReady = kinkConfigs.length > 0 && kinkImmutables.length > 0
     setLoading(activeTab === 'irm' ? !irmReady : !kinkReady)
   }, [activeTab, availableIRMs.length, kinkConfigs.length, kinkImmutables.length])
 
@@ -369,28 +396,6 @@ export default function Step4IRMSelection() {
   const canProceedKink = kinkToken0Config && kinkToken0Immutable && kinkToken1Config && kinkToken1Immutable
   const canProceedIRM = selectedIRM0 && selectedIRM1
   const canProceed = activeTab === 'kink' ? canProceedKink : canProceedIRM
-
-  // Only show full-page loading when on IRM V2 tab and IRM configs not loaded yet. Dynamic IRM tab always shows its content (with loading in lists).
-  const showFullPageLoading = loading && activeTab === 'irm'
-
-  if (showFullPageLoading) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Step 4: Interest Rate Model Selection
-          </h1>
-          <p className="text-gray-300 text-lg">
-            Loading IRM V2 (old) configurations...
-          </p>
-        </div>
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-400 mt-4">Fetching configurations...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -669,7 +674,11 @@ export default function Step4IRMSelection() {
                 <h3 className="text-lg font-semibold text-white mb-4">
                   Interest Rate Model for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
                 </h3>
-                {filteredIRMs.length === 0 ? (
+                {loading && filteredIRMs.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    Loading configurations…
+                  </div>
+                ) : filteredIRMs.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
                     {searchTerm ? 'No IRMs found matching your search.' : 'No IRMs available.'}
                   </div>
@@ -720,7 +729,11 @@ export default function Step4IRMSelection() {
                 <h3 className="text-lg font-semibold text-white mb-4">
                   Interest Rate Model for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
                 </h3>
-                {filteredIRMs.length === 0 ? (
+                {loading && filteredIRMs.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    Loading configurations…
+                  </div>
+                ) : filteredIRMs.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
                     {searchTerm ? 'No IRMs found matching your search.' : 'No IRMs available.'}
                   </div>
