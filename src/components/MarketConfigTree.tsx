@@ -1,0 +1,336 @@
+'use client'
+
+import React from 'react'
+import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
+import CopyButton from '@/components/CopyButton'
+import { ethers } from 'ethers'
+
+interface MarketConfigTreeProps {
+  config: MarketConfig
+  explorerUrl: string
+}
+
+interface TokenMeta {
+  symbol?: string
+  decimals?: number
+}
+
+export interface OwnerBulletItem {
+  address: string
+  isContract?: boolean
+  name?: string
+}
+
+interface TreeNodeProps {
+  label: string
+  value?: string | bigint | boolean | null
+  address?: string
+  tokenMeta?: TokenMeta
+  suffixText?: string
+  bulletItems?: string[]
+  ownerBullets?: OwnerBulletItem[]
+  children?: React.ReactNode
+  explorerUrl: string
+  isPercentage?: boolean
+  valueMuted?: boolean
+}
+
+function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
+  const { address, isContract, name } = item
+  if (!address || address === ethers.ZeroAddress) return null
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+      <span className="text-gray-400 text-sm">Owner:</span>
+      <a
+        href={`${explorerUrl}/address/${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:text-blue-300 font-mono text-sm"
+      >
+        {formatAddress(address)}
+      </a>
+      <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+      {isContract !== undefined && (
+        <span className="text-gray-500 text-xs font-medium px-1.5 py-0.5 rounded bg-gray-800">
+          {isContract ? 'Contract' : 'EOA'}
+        </span>
+      )}
+      {name != null && name !== '' && (
+        <span className="text-gray-400 text-sm">({name})</span>
+      )}
+    </span>
+  )
+}
+
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
+  const hasAddress = address && address !== ethers.ZeroAddress
+  const hasValue = value !== undefined && value !== null && !hasAddress
+  const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
+  const hasSuffix = suffixText != null && suffixText !== ''
+
+  return (
+    <li className="tree-item">
+      <span className="tree-item-content">
+        <span className="text-gray-300 text-sm font-medium">{label}:</span>
+        {' '}
+        
+        {hasAddress && (
+          <>
+            <a
+              href={`${explorerUrl}/address/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 font-mono text-sm"
+            >
+              {formatAddress(address)}
+            </a>
+            <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+            {hasTokenMeta && (
+              <span className="text-gray-400 text-sm ml-1">
+                {' '}
+                ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
+              </span>
+            )}
+            {hasSuffix && (
+              <span className="text-gray-400 text-sm ml-1">
+                {' '}
+                ({suffixText})
+              </span>
+            )}
+          </>
+        )}
+        {hasValue && (
+          <span className={valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'}>
+            {typeof value === 'boolean'
+              ? (value ? 'Yes' : 'No')
+              : isPercentage && typeof value === 'bigint'
+                ? formatPercentage(value)
+                : typeof value === 'bigint'
+                  ? value.toString()
+                  : String(value)}
+          </span>
+        )}
+        {address === ethers.ZeroAddress && (
+          <span className="text-gray-500 text-sm italic">Zero Address</span>
+        )}
+      </span>
+      {bulletItems && bulletItems.length > 0 && (
+        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+          {bulletItems.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
+      {ownerBullets && ownerBullets.length > 0 && (
+        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+          {ownerBullets.map((item, i) => (
+            <li key={i}>
+              <OwnerBulletContent item={item} explorerUrl={explorerUrl} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {children && <ol className="tree">{children}</ol>}
+    </li>
+  )
+}
+
+export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTreeProps) {
+  return (
+    <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
+      <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
+      
+      <ol className="tree">
+        <TreeNode label="Silo Config" address={config.siloConfig} explorerUrl={explorerUrl}>
+          <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
+            {config.siloId !== null && (
+              <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
+            )}
+            <TreeNode label="Silos" explorerUrl={explorerUrl}>
+              <TreeNode label="silo0" address={config.silo0.silo} explorerUrl={explorerUrl} />
+              <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
+            </TreeNode>
+          </TreeNode>
+        </TreeNode>
+
+        <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl}>
+          <TreeNode label="Token" address={config.silo0.token} tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
+            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
+          </TreeNode>
+          <TreeNode
+            label="Solvency Oracle"
+            address={config.silo0.solvencyOracle.address}
+            suffixText={config.silo0.solvencyOracle.version}
+            bulletItems={config.silo0.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.solvencyOracle.quotePrice)}`] : undefined}
+            explorerUrl={explorerUrl}
+          >
+            {config.silo0.solvencyOracle.type && (
+              <TreeNode label="Type" value={config.silo0.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
+            )}
+            {config.silo0.solvencyOracle.config && Object.entries(config.silo0.solvencyOracle.config).map(([key, val]) => (
+              <TreeNode
+                key={key}
+                label={key}
+                value={typeof val === 'string' ? val : String(val)}
+                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                explorerUrl={explorerUrl}
+              />
+            ))}
+          </TreeNode>
+          {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
+            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
+          ) : config.silo0.maxLtvOracle.address.toLowerCase() === config.silo0.solvencyOracle.address.toLowerCase() ? (
+            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+          ) : (
+            <TreeNode
+              label="Max LTV Oracle"
+              address={config.silo0.maxLtvOracle.address}
+              suffixText={config.silo0.maxLtvOracle.version}
+              bulletItems={config.silo0.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.maxLtvOracle.quotePrice)}`] : undefined}
+              explorerUrl={explorerUrl}
+            >
+              {config.silo0.maxLtvOracle.type && (
+                <TreeNode label="Type" value={config.silo0.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
+              )}
+              {config.silo0.maxLtvOracle.config && Object.entries(config.silo0.maxLtvOracle.config).map(([key, val]) => (
+                <TreeNode
+                  key={key}
+                  label={key}
+                  value={typeof val === 'string' ? val : String(val)}
+                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                  explorerUrl={explorerUrl}
+                />
+              ))}
+            </TreeNode>
+          )}
+          <TreeNode
+            label="Interest Rate Model"
+            address={config.silo0.interestRateModel.address}
+            suffixText={config.silo0.interestRateModel.version}
+            ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
+            explorerUrl={explorerUrl}
+          >
+            {config.silo0.interestRateModel.type && (
+              <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
+            )}
+            {config.silo0.interestRateModel.config && Object.entries(config.silo0.interestRateModel.config).map(([key, val]) => (
+              <TreeNode
+                key={key}
+                label={key}
+                value={typeof val === 'string' ? val : String(val)}
+                explorerUrl={explorerUrl}
+              />
+            ))}
+          </TreeNode>
+          <TreeNode label="Max LTV" value={config.silo0.maxLtv} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Threshold (LT)" value={config.silo0.lt} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Target LTV" value={config.silo0.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Fee" value={config.silo0.liquidationFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode
+            label="Hook Receiver"
+            address={config.silo0.hookReceiver}
+            suffixText={config.silo0.hookReceiverVersion}
+            ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
+            explorerUrl={explorerUrl}
+          />
+          <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
+        </TreeNode>
+
+        <TreeNode label="Silo 1" address={config.silo1.silo} explorerUrl={explorerUrl}>
+          <TreeNode label="Token" address={config.silo1.token} tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
+            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
+          </TreeNode>
+          <TreeNode
+            label="Solvency Oracle"
+            address={config.silo1.solvencyOracle.address}
+            suffixText={config.silo1.solvencyOracle.version}
+            bulletItems={config.silo1.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.solvencyOracle.quotePrice)}`] : undefined}
+            explorerUrl={explorerUrl}
+          >
+            {config.silo1.solvencyOracle.type && (
+              <TreeNode label="Type" value={config.silo1.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
+            )}
+            {config.silo1.solvencyOracle.config && Object.entries(config.silo1.solvencyOracle.config).map(([key, val]) => (
+              <TreeNode
+                key={key}
+                label={key}
+                value={typeof val === 'string' ? val : String(val)}
+                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                explorerUrl={explorerUrl}
+              />
+            ))}
+          </TreeNode>
+          {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
+            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
+          ) : config.silo1.maxLtvOracle.address.toLowerCase() === config.silo1.solvencyOracle.address.toLowerCase() ? (
+            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+          ) : (
+            <TreeNode
+              label="Max LTV Oracle"
+              address={config.silo1.maxLtvOracle.address}
+              suffixText={config.silo1.maxLtvOracle.version}
+              bulletItems={config.silo1.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.maxLtvOracle.quotePrice)}`] : undefined}
+              explorerUrl={explorerUrl}
+            >
+              {config.silo1.maxLtvOracle.type && (
+                <TreeNode label="Type" value={config.silo1.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
+              )}
+              {config.silo1.maxLtvOracle.config && Object.entries(config.silo1.maxLtvOracle.config).map(([key, val]) => (
+                <TreeNode
+                  key={key}
+                  label={key}
+                  value={typeof val === 'string' ? val : String(val)}
+                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                  explorerUrl={explorerUrl}
+                />
+              ))}
+            </TreeNode>
+          )}
+          <TreeNode
+            label="Interest Rate Model"
+            address={config.silo1.interestRateModel.address}
+            suffixText={config.silo1.interestRateModel.version}
+            ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
+            explorerUrl={explorerUrl}
+          >
+            {config.silo1.interestRateModel.type && (
+              <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
+            )}
+            {config.silo1.interestRateModel.config && Object.entries(config.silo1.interestRateModel.config).map(([key, val]) => (
+              <TreeNode
+                key={key}
+                label={key}
+                value={typeof val === 'string' ? val : String(val)}
+                explorerUrl={explorerUrl}
+              />
+            ))}
+          </TreeNode>
+          <TreeNode label="Max LTV" value={config.silo1.maxLtv} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Threshold (LT)" value={config.silo1.lt} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Target LTV" value={config.silo1.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Liquidation Fee" value={config.silo1.liquidationFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="DAO Fee" value={config.silo1.daoFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Deployer Fee" value={config.silo1.deployerFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode
+            label="Hook Receiver"
+            address={config.silo1.hookReceiver}
+            suffixText={config.silo1.hookReceiverVersion}
+            ownerBullets={config.silo1.hookReceiverOwner ? [{ address: config.silo1.hookReceiverOwner, isContract: config.silo1.hookReceiverOwnerIsContract, name: config.silo1.hookReceiverOwnerName }] : undefined}
+            explorerUrl={explorerUrl}
+          />
+          <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
+        </TreeNode>
+      </ol>
+    </div>
+  )
+}
