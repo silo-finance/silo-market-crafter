@@ -1,0 +1,2674 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "SILO_ID",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "siloId",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "accrueInterestForBothSilos",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "accrueInterestForSilo",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "borrowerCollateralSilo",
+            "inputs": [
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "collateralSilo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getAssetForSilo",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "asset",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getCollateralShareTokenAndAsset",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_collateralType",
+                    "type": "uint8",
+                    "internalType": "enum ISilo.CollateralType"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "shareToken",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "asset",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getConfig",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "config",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getConfigsForBorrow",
+            "inputs": [
+                {
+                    "name": "_debtSilo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "collateralConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                },
+                {
+                    "name": "debtConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getConfigsForSolvency",
+            "inputs": [
+                {
+                    "name": "borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "collateralConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                },
+                {
+                    "name": "debtConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getConfigsForWithdraw",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "depositConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.DepositConfig",
+                    "components": [
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        }
+                    ]
+                },
+                {
+                    "name": "collateralConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                },
+                {
+                    "name": "debtConfig",
+                    "type": "tuple",
+                    "internalType": "struct ISiloConfig.ConfigData",
+                    "components": [
+                        {
+                            "name": "daoFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "deployerFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "silo",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "token",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "protectedShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "collateralShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "debtShareToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "solvencyOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtvOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "interestRateModel",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "lt",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationTargetLtv",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "liquidationFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "flashloanFee",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "callBeforeQuote",
+                            "type": "bool",
+                            "internalType": "bool"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getDebtShareTokenAndAsset",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "shareToken",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "asset",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getDebtSilo",
+            "inputs": [
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "debtSilo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getFeesWithAsset",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "daoFee",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "deployerFee",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "flashloanFee",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "asset",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getShareTokens",
+            "inputs": [
+                {
+                    "name": "_silo",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "protectedShareToken",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "collateralShareToken",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "debtShareToken",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "getSilos",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "silo0",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "silo1",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "hasDebtInOtherSilo",
+            "inputs": [
+                {
+                    "name": "_thisSilo",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "hasDebt",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "onDebtTransfer",
+            "inputs": [
+                {
+                    "name": "_sender",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_recipient",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "reentrancyGuardEntered",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "entered",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "setOtherSiloAsCollateralSilo",
+            "inputs": [
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "collateralSiloChanged",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "setThisSiloAsCollateralSilo",
+            "inputs": [
+                {
+                    "name": "_borrower",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "collateralSiloChanged",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "turnOffReentrancyProtection",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "turnOnReentrancyProtection",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "error",
+            "name": "CrossReentrancyNotActive",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "CrossReentrantCall",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "DebtExistInOtherSilo",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "Deprecated",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "FeeTooHigh",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlyDebtShareToken",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlySilo",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlySiloOrTokenOrHookReceiver",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "WrongSilo",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "SILO_ID()": "189e17e4",
+        "accrueInterestForBothSilos()": "7d16b1f5",
+        "accrueInterestForSilo(address)": "255d70c8",
+        "borrowerCollateralSilo(address)": "a5abc68a",
+        "getAssetForSilo(address)": "07439b49",
+        "getCollateralShareTokenAndAsset(address,uint8)": "4b82d63d",
+        "getConfig(address)": "e48a5f7b",
+        "getConfigsForBorrow(address)": "2e6da205",
+        "getConfigsForSolvency(address)": "94c0527d",
+        "getConfigsForWithdraw(address,address)": "1544a6db",
+        "getDebtShareTokenAndAsset(address)": "3c3eac12",
+        "getDebtSilo(address)": "0b1d67c6",
+        "getFeesWithAsset(address)": "a135e0a0",
+        "getShareTokens(address)": "483b24f0",
+        "getSilos()": "aecc90cb",
+        "hasDebtInOtherSilo(address,address)": "038c0a5e",
+        "onDebtTransfer(address,address)": "72db6559",
+        "reentrancyGuardEntered()": "d2c725e0",
+        "setOtherSiloAsCollateralSilo(address)": "f6f8174f",
+        "setThisSiloAsCollateralSilo(address)": "40c755e1",
+        "turnOffReentrancyProtection()": "62402b04",
+        "turnOnReentrancyProtection()": "9dd41330"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"CrossReentrancyNotActive\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CrossReentrantCall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DebtExistInOtherSilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Deprecated\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"FeeTooHigh\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyDebtShareToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlySilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlySiloOrTokenOrHookReceiver\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"WrongSilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SILO_ID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"siloId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"accrueInterestForBothSilos\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"accrueInterestForSilo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"borrowerCollateralSilo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"collateralSilo\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getAssetForSilo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"},{\"internalType\":\"enum ISilo.CollateralType\",\"name\":\"_collateralType\",\"type\":\"uint8\"}],\"name\":\"getCollateralShareTokenAndAsset\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"shareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getConfig\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"config\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_debtSilo\",\"type\":\"address\"}],\"name\":\"getConfigsForBorrow\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"collateralConfig\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"debtConfig\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"borrower\",\"type\":\"address\"}],\"name\":\"getConfigsForSolvency\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"collateralConfig\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"debtConfig\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"getConfigsForWithdraw\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"}],\"internalType\":\"struct ISiloConfig.DepositConfig\",\"name\":\"depositConfig\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"collateralConfig\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.ConfigData\",\"name\":\"debtConfig\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getDebtShareTokenAndAsset\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"shareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"getDebtSilo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"debtSilo\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getFeesWithAsset\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getShareTokens\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSilos\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"silo0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"silo1\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_thisSilo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"hasDebtInOtherSilo\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"hasDebt\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipient\",\"type\":\"address\"}],\"name\":\"onDebtTransfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"reentrancyGuardEntered\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"entered\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"setOtherSiloAsCollateralSilo\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"collateralSiloChanged\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_borrower\",\"type\":\"address\"}],\"name\":\"setThisSiloAsCollateralSilo\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"collateralSiloChanged\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"turnOffReentrancyProtection\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"turnOnReentrancyProtection\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"SILO_ID()\":{\"details\":\"Each silo is assigned a unique ID. ERC-721 token is minted with identical ID to deployer. An owner of that token receives the deployer fees.\",\"returns\":{\"siloId\":\"The ID of the silo\"}},\"accrueInterestForSilo(address)\":{\"params\":{\"_silo\":\"silo for which accrue interest\"}},\"borrowerCollateralSilo(address)\":{\"details\":\"As a user can deposit into `Silo0` and `Silo1`, this property specifies which Silo will be used as collateral for the debt. Later on, it will be used for max LTV and solvency checks. After being set, the collateral silo is never set to `address(0)` again but such getters as `getConfigsForSolvency`, `getConfigsForBorrow`, `getConfigsForWithdraw` will return empty collateral silo config if borrower doesn't have debt. In the SiloConfig collateral silo is set by the following functions: `onDebtTransfer` - only if the recipient doesn't have collateral silo set (inherits it from the sender) This function is called on debt share token transfer (debt transfer). `setOtherSiloAsCollateralSilo` - sets the opposite silo as collateral from the one that calls the function. In the Silo collateral silo is set by the following functions: `borrow` - always sets opposite silo as collateral. If Silo0 borrows, then Silo1 will be collateral and vice versa.\",\"params\":{\"_borrower\":\"The address of the borrower for which the collateral silo is being retrieved\"},\"returns\":{\"collateralSilo\":\"The address of the collateral silo for the specified borrower\"}},\"getAssetForSilo(address)\":{\"details\":\"This function reverts for incorrect silo address input\",\"params\":{\"_silo\":\"The address of the silo for which the associated asset is being retrieved\"},\"returns\":{\"asset\":\"The address of the asset associated with the specified silo\"}},\"getCollateralShareTokenAndAsset(address,uint8)\":{\"params\":{\"_collateralType\":\"The type of collateral\",\"_silo\":\"The address of the silo for which the share token and silo token are being retrieved\"},\"returns\":{\"asset\":\"The address of the silo token\",\"shareToken\":\"The address of the share token (collateral or protected collateral)\"}},\"getConfig(address)\":{\"details\":\"This function reverts for incorrect silo address input.\",\"params\":{\"_silo\":\"The address of the silo for which configuration data is being retrieved\"},\"returns\":{\"config\":\"The configuration data for the specified silo\"}},\"getConfigsForBorrow(address)\":{\"details\":\"This function reverts for incorrect silo address input.\",\"params\":{\"_debtSilo\":\"The address of the silo for which configuration data is being retrieved\"},\"returns\":{\"collateralConfig\":\"The configuration data for the collateral silo (always other than `_debtSilo`)\",\"debtConfig\":\"The configuration data for the debt silo (always config for `_debtSilo`)\"}},\"getConfigsForSolvency(address)\":{\"params\":{\"borrower\":\"borrower address for which debtConfig will be returned\"},\"returns\":{\"collateralConfig\":\"The configuration data for collateral silo (empty if there is no debt).\",\"debtConfig\":\"The configuration data for debt silo (empty if there is no debt).\"}},\"getConfigsForWithdraw(address,address)\":{\"details\":\"This function reverts for incorrect silo address input.\",\"params\":{\"_silo\":\"The address of the silo for which configuration data is being retrieved\"},\"returns\":{\"collateralConfig\":\"The configuration data for the collateral silo (empty if there is no debt)\",\"debtConfig\":\"The configuration data for the debt silo (empty if there is no debt)\",\"depositConfig\":\"The configuration data for the specified silo (always config for `_silo`)\"}},\"getDebtShareTokenAndAsset(address)\":{\"params\":{\"_silo\":\"The address of the silo for which the share token and silo token are being retrieved\"},\"returns\":{\"asset\":\"The address of the silo token\",\"shareToken\":\"The address of the share token (debt)\"}},\"getDebtSilo(address)\":{\"details\":\"This function reverts if debt present in two silo (should not happen)\",\"params\":{\"_borrower\":\"The address of the borrower for which the debt silo is being retrieved\"}},\"getFeesWithAsset(address)\":{\"details\":\"This function reverts for incorrect silo address input\",\"params\":{\"_silo\":\"The address of the silo for which fee-related information is being retrieved.\"},\"returns\":{\"asset\":\"The address of the asset associated with the specified silo.\",\"daoFee\":\"The DAO fee percentage in 18 decimals points.\",\"deployerFee\":\"The deployer fee percentage in 18 decimals points.\",\"flashloanFee\":\"The flashloan fee percentage in 18 decimals points.\"}},\"getShareTokens(address)\":{\"details\":\"This function reverts for incorrect silo address input\",\"params\":{\"_silo\":\"The address of the silo for which share tokens are being retrieved\"},\"returns\":{\"collateralShareToken\":\"The address of the collateral share token\",\"debtShareToken\":\"The address of the debt share token\",\"protectedShareToken\":\"The address of the protected (non-borrowable) share token\"}},\"getSilos()\":{\"returns\":{\"silo0\":\"The address of the first silo\",\"silo1\":\"The address of the second silo\"}},\"hasDebtInOtherSilo(address,address)\":{\"params\":{\"_borrower\":\"The address of the borrower for which the debt is checked\",\"_thisSilo\":\"The address of the silo in respect of which the debt is checked\"},\"returns\":{\"hasDebt\":\"true if the borrower has debt in other silo\"}},\"onDebtTransfer(address,address)\":{\"details\":\"It should be called on debt transfer (debt share token transfer). In the case if the`_recipient` doesn't have configured a collateral silo, it will be set to the collateral silo of the `_sender`.\",\"params\":{\"_recipient\":\"recipient address\",\"_sender\":\"sender address\"}},\"reentrancyGuardEntered()\":{\"returns\":{\"entered\":\"true if the reentrancy guard is currently set to \\\"entered\\\", which indicates there is a `nonReentrant` function in the call stack.\"}},\"setOtherSiloAsCollateralSilo(address)\":{\"details\":\"Revert if msg.sender is not a SILO_0 or SILO_1.Always set collateral silo opposite to the msg.sender.\",\"params\":{\"_borrower\":\"borrower address\"},\"returns\":{\"collateralSiloChanged\":\"TRUE if collateral silo changed\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"SILO_ID()\":{\"notice\":\"Retrieves the silo ID\"},\"accrueInterestForBothSilos()\":{\"notice\":\"Accrue interest for both silos (SILO_0 and SILO_1 in a config)\"},\"accrueInterestForSilo(address)\":{\"notice\":\"Accrue interest for the silo\"},\"borrowerCollateralSilo(address)\":{\"notice\":\"Retrieves the collateral silo for a specific borrower.\"},\"getAssetForSilo(address)\":{\"notice\":\"Retrieves the asset associated with a specific silo\"},\"getCollateralShareTokenAndAsset(address,uint8)\":{\"notice\":\"Retrieves the share token and the silo token associated with a specific silo\"},\"getConfig(address)\":{\"notice\":\"Retrieves configuration data for a specific silo\"},\"getConfigsForBorrow(address)\":{\"notice\":\"Retrieves configuration data for a specific silo for borrow fn.\"},\"getConfigsForSolvency(address)\":{\"notice\":\"Retrieves configuration data for both silos. First config is for the silo that is asking for configs.\"},\"getConfigsForWithdraw(address,address)\":{\"notice\":\"Retrieves configuration data for a specific silo for withdraw fn.\"},\"getDebtShareTokenAndAsset(address)\":{\"notice\":\"Retrieves the share token and the silo token associated with a specific silo\"},\"getDebtSilo(address)\":{\"notice\":\"Retrieves the debt silo associated with a specific borrower\"},\"getFeesWithAsset(address)\":{\"notice\":\"Retrieves fee-related information for a specific silo\"},\"getShareTokens(address)\":{\"notice\":\"Retrieves share tokens associated with a specific silo\"},\"getSilos()\":{\"notice\":\"Retrieves the addresses of the two silos\"},\"hasDebtInOtherSilo(address,address)\":{\"notice\":\"Verifies if the borrower has debt in other silo by checking the debt share token balance\"},\"reentrancyGuardEntered()\":{\"notice\":\"view method for checking cross Silo reentrancy flag\"},\"setOtherSiloAsCollateralSilo(address)\":{\"notice\":\"Set collateral silo\"},\"setThisSiloAsCollateralSilo(address)\":{\"notice\":\"deprecated\"},\"turnOffReentrancyProtection()\":{\"notice\":\"only silo method for cross Silo reentrancy\"},\"turnOnReentrancyProtection()\":{\"notice\":\"only silo method for cross Silo reentrancy\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/ISiloConfig.sol\":\"ISiloConfig\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol\":{\"keccak256\":\"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf\",\"dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb\"]},\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b\",\"dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827\",\"dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e\",\"dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX\"]},\"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol\":{\"keccak256\":\"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587\",\"dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7\"]},\"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol\":{\"keccak256\":\"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c\",\"dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS\"]},\"silo-core/contracts/interfaces/IERC3156FlashLender.sol\":{\"keccak256\":\"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb\",\"dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa\"]},\"silo-core/contracts/interfaces/IHookReceiver.sol\":{\"keccak256\":\"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e\",\"dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet\"]},\"silo-core/contracts/interfaces/ISilo.sol\":{\"keccak256\":\"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8\",\"dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4\"]},\"silo-core/contracts/interfaces/ISiloConfig.sol\":{\"keccak256\":\"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036\",\"dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS\"]},\"silo-core/contracts/interfaces/ISiloFactory.sol\":{\"keccak256\":\"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67\",\"dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "CrossReentrancyNotActive"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "CrossReentrantCall"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "DebtExistInOtherSilo"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "Deprecated"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "FeeTooHigh"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlyDebtShareToken"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlySilo"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlySiloOrTokenOrHookReceiver"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "WrongSilo"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "SILO_ID",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "siloId",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "accrueInterestForBothSilos"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "accrueInterestForSilo"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "borrowerCollateralSilo",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "collateralSilo",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getAssetForSilo",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "asset",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "enum ISilo.CollateralType",
+                            "name": "_collateralType",
+                            "type": "uint8"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getCollateralShareTokenAndAsset",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "shareToken",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "asset",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getConfig",
+                    "outputs": [
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "config",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_debtSilo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getConfigsForBorrow",
+                    "outputs": [
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "collateralConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "debtConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getConfigsForSolvency",
+                    "outputs": [
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "collateralConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "debtConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getConfigsForWithdraw",
+                    "outputs": [
+                        {
+                            "internalType": "struct ISiloConfig.DepositConfig",
+                            "name": "depositConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "collateralConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "struct ISiloConfig.ConfigData",
+                            "name": "debtConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "uint256",
+                                    "name": "daoFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "deployerFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "silo",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "token",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "protectedShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "collateralShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "debtShareToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "solvencyOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "maxLtvOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "interestRateModel",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "lt",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationTargetLtv",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "liquidationFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "flashloanFee",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "callBeforeQuote",
+                                    "type": "bool"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getDebtShareTokenAndAsset",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "shareToken",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "asset",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getDebtSilo",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "debtSilo",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getFeesWithAsset",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "daoFee",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "deployerFee",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "flashloanFee",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "asset",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_silo",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getShareTokens",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "protectedShareToken",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "collateralShareToken",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "debtShareToken",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "getSilos",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "silo0",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "silo1",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_thisSilo",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "hasDebtInOtherSilo",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "hasDebt",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_sender",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_recipient",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "onDebtTransfer"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "reentrancyGuardEntered",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "entered",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "setOtherSiloAsCollateralSilo",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "collateralSiloChanged",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_borrower",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "setThisSiloAsCollateralSilo",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "collateralSiloChanged",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "turnOffReentrancyProtection"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "turnOnReentrancyProtection"
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "SILO_ID()": {
+                        "details": "Each silo is assigned a unique ID. ERC-721 token is minted with identical ID to deployer. An owner of that token receives the deployer fees.",
+                        "returns": {
+                            "siloId": "The ID of the silo"
+                        }
+                    },
+                    "accrueInterestForSilo(address)": {
+                        "params": {
+                            "_silo": "silo for which accrue interest"
+                        }
+                    },
+                    "borrowerCollateralSilo(address)": {
+                        "details": "As a user can deposit into `Silo0` and `Silo1`, this property specifies which Silo will be used as collateral for the debt. Later on, it will be used for max LTV and solvency checks. After being set, the collateral silo is never set to `address(0)` again but such getters as `getConfigsForSolvency`, `getConfigsForBorrow`, `getConfigsForWithdraw` will return empty collateral silo config if borrower doesn't have debt. In the SiloConfig collateral silo is set by the following functions: `onDebtTransfer` - only if the recipient doesn't have collateral silo set (inherits it from the sender) This function is called on debt share token transfer (debt transfer). `setOtherSiloAsCollateralSilo` - sets the opposite silo as collateral from the one that calls the function. In the Silo collateral silo is set by the following functions: `borrow` - always sets opposite silo as collateral. If Silo0 borrows, then Silo1 will be collateral and vice versa.",
+                        "params": {
+                            "_borrower": "The address of the borrower for which the collateral silo is being retrieved"
+                        },
+                        "returns": {
+                            "collateralSilo": "The address of the collateral silo for the specified borrower"
+                        }
+                    },
+                    "getAssetForSilo(address)": {
+                        "details": "This function reverts for incorrect silo address input",
+                        "params": {
+                            "_silo": "The address of the silo for which the associated asset is being retrieved"
+                        },
+                        "returns": {
+                            "asset": "The address of the asset associated with the specified silo"
+                        }
+                    },
+                    "getCollateralShareTokenAndAsset(address,uint8)": {
+                        "params": {
+                            "_collateralType": "The type of collateral",
+                            "_silo": "The address of the silo for which the share token and silo token are being retrieved"
+                        },
+                        "returns": {
+                            "asset": "The address of the silo token",
+                            "shareToken": "The address of the share token (collateral or protected collateral)"
+                        }
+                    },
+                    "getConfig(address)": {
+                        "details": "This function reverts for incorrect silo address input.",
+                        "params": {
+                            "_silo": "The address of the silo for which configuration data is being retrieved"
+                        },
+                        "returns": {
+                            "config": "The configuration data for the specified silo"
+                        }
+                    },
+                    "getConfigsForBorrow(address)": {
+                        "details": "This function reverts for incorrect silo address input.",
+                        "params": {
+                            "_debtSilo": "The address of the silo for which configuration data is being retrieved"
+                        },
+                        "returns": {
+                            "collateralConfig": "The configuration data for the collateral silo (always other than `_debtSilo`)",
+                            "debtConfig": "The configuration data for the debt silo (always config for `_debtSilo`)"
+                        }
+                    },
+                    "getConfigsForSolvency(address)": {
+                        "params": {
+                            "borrower": "borrower address for which debtConfig will be returned"
+                        },
+                        "returns": {
+                            "collateralConfig": "The configuration data for collateral silo (empty if there is no debt).",
+                            "debtConfig": "The configuration data for debt silo (empty if there is no debt)."
+                        }
+                    },
+                    "getConfigsForWithdraw(address,address)": {
+                        "details": "This function reverts for incorrect silo address input.",
+                        "params": {
+                            "_silo": "The address of the silo for which configuration data is being retrieved"
+                        },
+                        "returns": {
+                            "collateralConfig": "The configuration data for the collateral silo (empty if there is no debt)",
+                            "debtConfig": "The configuration data for the debt silo (empty if there is no debt)",
+                            "depositConfig": "The configuration data for the specified silo (always config for `_silo`)"
+                        }
+                    },
+                    "getDebtShareTokenAndAsset(address)": {
+                        "params": {
+                            "_silo": "The address of the silo for which the share token and silo token are being retrieved"
+                        },
+                        "returns": {
+                            "asset": "The address of the silo token",
+                            "shareToken": "The address of the share token (debt)"
+                        }
+                    },
+                    "getDebtSilo(address)": {
+                        "details": "This function reverts if debt present in two silo (should not happen)",
+                        "params": {
+                            "_borrower": "The address of the borrower for which the debt silo is being retrieved"
+                        }
+                    },
+                    "getFeesWithAsset(address)": {
+                        "details": "This function reverts for incorrect silo address input",
+                        "params": {
+                            "_silo": "The address of the silo for which fee-related information is being retrieved."
+                        },
+                        "returns": {
+                            "asset": "The address of the asset associated with the specified silo.",
+                            "daoFee": "The DAO fee percentage in 18 decimals points.",
+                            "deployerFee": "The deployer fee percentage in 18 decimals points.",
+                            "flashloanFee": "The flashloan fee percentage in 18 decimals points."
+                        }
+                    },
+                    "getShareTokens(address)": {
+                        "details": "This function reverts for incorrect silo address input",
+                        "params": {
+                            "_silo": "The address of the silo for which share tokens are being retrieved"
+                        },
+                        "returns": {
+                            "collateralShareToken": "The address of the collateral share token",
+                            "debtShareToken": "The address of the debt share token",
+                            "protectedShareToken": "The address of the protected (non-borrowable) share token"
+                        }
+                    },
+                    "getSilos()": {
+                        "returns": {
+                            "silo0": "The address of the first silo",
+                            "silo1": "The address of the second silo"
+                        }
+                    },
+                    "hasDebtInOtherSilo(address,address)": {
+                        "params": {
+                            "_borrower": "The address of the borrower for which the debt is checked",
+                            "_thisSilo": "The address of the silo in respect of which the debt is checked"
+                        },
+                        "returns": {
+                            "hasDebt": "true if the borrower has debt in other silo"
+                        }
+                    },
+                    "onDebtTransfer(address,address)": {
+                        "details": "It should be called on debt transfer (debt share token transfer). In the case if the`_recipient` doesn't have configured a collateral silo, it will be set to the collateral silo of the `_sender`.",
+                        "params": {
+                            "_recipient": "recipient address",
+                            "_sender": "sender address"
+                        }
+                    },
+                    "reentrancyGuardEntered()": {
+                        "returns": {
+                            "entered": "true if the reentrancy guard is currently set to \"entered\", which indicates there is a `nonReentrant` function in the call stack."
+                        }
+                    },
+                    "setOtherSiloAsCollateralSilo(address)": {
+                        "details": "Revert if msg.sender is not a SILO_0 or SILO_1.Always set collateral silo opposite to the msg.sender.",
+                        "params": {
+                            "_borrower": "borrower address"
+                        },
+                        "returns": {
+                            "collateralSiloChanged": "TRUE if collateral silo changed"
+                        }
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "SILO_ID()": {
+                        "notice": "Retrieves the silo ID"
+                    },
+                    "accrueInterestForBothSilos()": {
+                        "notice": "Accrue interest for both silos (SILO_0 and SILO_1 in a config)"
+                    },
+                    "accrueInterestForSilo(address)": {
+                        "notice": "Accrue interest for the silo"
+                    },
+                    "borrowerCollateralSilo(address)": {
+                        "notice": "Retrieves the collateral silo for a specific borrower."
+                    },
+                    "getAssetForSilo(address)": {
+                        "notice": "Retrieves the asset associated with a specific silo"
+                    },
+                    "getCollateralShareTokenAndAsset(address,uint8)": {
+                        "notice": "Retrieves the share token and the silo token associated with a specific silo"
+                    },
+                    "getConfig(address)": {
+                        "notice": "Retrieves configuration data for a specific silo"
+                    },
+                    "getConfigsForBorrow(address)": {
+                        "notice": "Retrieves configuration data for a specific silo for borrow fn."
+                    },
+                    "getConfigsForSolvency(address)": {
+                        "notice": "Retrieves configuration data for both silos. First config is for the silo that is asking for configs."
+                    },
+                    "getConfigsForWithdraw(address,address)": {
+                        "notice": "Retrieves configuration data for a specific silo for withdraw fn."
+                    },
+                    "getDebtShareTokenAndAsset(address)": {
+                        "notice": "Retrieves the share token and the silo token associated with a specific silo"
+                    },
+                    "getDebtSilo(address)": {
+                        "notice": "Retrieves the debt silo associated with a specific borrower"
+                    },
+                    "getFeesWithAsset(address)": {
+                        "notice": "Retrieves fee-related information for a specific silo"
+                    },
+                    "getShareTokens(address)": {
+                        "notice": "Retrieves share tokens associated with a specific silo"
+                    },
+                    "getSilos()": {
+                        "notice": "Retrieves the addresses of the two silos"
+                    },
+                    "hasDebtInOtherSilo(address,address)": {
+                        "notice": "Verifies if the borrower has debt in other silo by checking the debt share token balance"
+                    },
+                    "reentrancyGuardEntered()": {
+                        "notice": "view method for checking cross Silo reentrancy flag"
+                    },
+                    "setOtherSiloAsCollateralSilo(address)": {
+                        "notice": "Set collateral silo"
+                    },
+                    "setThisSiloAsCollateralSilo(address)": {
+                        "notice": "deprecated"
+                    },
+                    "turnOffReentrancyProtection()": {
+                        "notice": "only silo method for cross Silo reentrancy"
+                    },
+                    "turnOnReentrancyProtection()": {
+                        "notice": "only silo method for cross Silo reentrancy"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-core/contracts/interfaces/ISiloConfig.sol": "ISiloConfig"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol": {
+                "keccak256": "0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06",
+                "urls": [
+                    "bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf",
+                    "dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol": {
+                "keccak256": "0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d",
+                "urls": [
+                    "bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b",
+                    "dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+                "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+                "urls": [
+                    "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+                    "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+                "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+                "urls": [
+                    "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+                    "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol": {
+                "keccak256": "0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de",
+                "urls": [
+                    "bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827",
+                    "dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol": {
+                "keccak256": "0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c",
+                "urls": [
+                    "bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e",
+                    "dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ICrossReentrancyGuard.sol": {
+                "keccak256": "0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05",
+                "urls": [
+                    "bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587",
+                    "dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IERC3156FlashBorrower.sol": {
+                "keccak256": "0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c",
+                "urls": [
+                    "bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c",
+                    "dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IERC3156FlashLender.sol": {
+                "keccak256": "0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd",
+                "urls": [
+                    "bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb",
+                    "dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IHookReceiver.sol": {
+                "keccak256": "0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371",
+                "urls": [
+                    "bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e",
+                    "dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISilo.sol": {
+                "keccak256": "0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7",
+                "urls": [
+                    "bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8",
+                    "dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloConfig.sol": {
+                "keccak256": "0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e",
+                "urls": [
+                    "bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036",
+                    "dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloFactory.sol": {
+                "keccak256": "0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca",
+                "urls": [
+                    "bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67",
+                    "dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 203
+}

@@ -1,0 +1,2622 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "approve",
+      "inputs": [
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "balanceOf",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "balance",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "burn",
+      "inputs": [
+        {
+          "name": "_siloIdToBurn",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "createSilo",
+      "inputs": [
+        {
+          "name": "_siloConfig",
+          "type": "address",
+          "internalType": "contract ISiloConfig"
+        },
+        {
+          "name": "_siloImpl",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_shareProtectedCollateralTokenImpl",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_shareDebtTokenImpl",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_deployer",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_creator",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "creatorSiloCounter",
+      "inputs": [
+        {
+          "name": "_creator",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "daoFeeRange",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ISiloFactory.Range",
+          "components": [
+            {
+              "name": "min",
+              "type": "uint128",
+              "internalType": "uint128"
+            },
+            {
+              "name": "max",
+              "type": "uint128",
+              "internalType": "uint128"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "daoFeeReceiver",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getApproved",
+      "inputs": [
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "operator",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getFeeReceivers",
+      "inputs": [
+        {
+          "name": "_silo",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "dao",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "deployer",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getNextSiloId",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "idToSiloConfig",
+      "inputs": [
+        {
+          "name": "_id",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isApprovedForAll",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "operator",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isSilo",
+      "inputs": [
+        {
+          "name": "_silo",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "maxDeployerFee",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "maxFlashloanFee",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "maxLiquidationFee",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "ownerOf",
+      "inputs": [
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "safeTransferFrom",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "safeTransferFrom",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "data",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setApprovalForAll",
+      "inputs": [
+        {
+          "name": "operator",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "approved",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setBaseURI",
+      "inputs": [
+        {
+          "name": "_newBaseURI",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setDaoFee",
+      "inputs": [
+        {
+          "name": "_minFee",
+          "type": "uint128",
+          "internalType": "uint128"
+        },
+        {
+          "name": "_maxFee",
+          "type": "uint128",
+          "internalType": "uint128"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setDaoFeeReceiver",
+      "inputs": [
+        {
+          "name": "_newDaoFeeReceiver",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setDaoFeeReceiverForAsset",
+      "inputs": [
+        {
+          "name": "_asset",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_newDaoFeeReceiver",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setDaoFeeReceiverForSilo",
+      "inputs": [
+        {
+          "name": "_silo",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_newDaoFeeReceiver",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setMaxDeployerFee",
+      "inputs": [
+        {
+          "name": "_newMaxDeployerFee",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setMaxFlashloanFee",
+      "inputs": [
+        {
+          "name": "_newMaxFlashloanFee",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setMaxLiquidationFee",
+      "inputs": [
+        {
+          "name": "_newMaxLiquidationFee",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "supportsInterface",
+      "inputs": [
+        {
+          "name": "interfaceId",
+          "type": "bytes4",
+          "internalType": "bytes4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "transferFrom",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "validateSiloInitData",
+      "inputs": [
+        {
+          "name": "_initData",
+          "type": "tuple",
+          "internalType": "struct ISiloConfig.InitData",
+          "components": [
+            {
+              "name": "deployer",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "hookReceiver",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "deployerFee",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "daoFee",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "token0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "solvencyOracle0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtvOracle0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "interestRateModel0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtv0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "lt0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationTargetLtv0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationFee0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "flashloanFee0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "callBeforeQuote0",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "token1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "solvencyOracle1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtvOracle1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "interestRateModel1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "maxLtv1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "lt1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationTargetLtv1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "liquidationFee1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "flashloanFee1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "callBeforeQuote1",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "Approval",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "approved",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ApprovalForAll",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "operator",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "approved",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "BaseURI",
+      "inputs": [
+        {
+          "name": "newBaseURI",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "DaoFeeChanged",
+      "inputs": [
+        {
+          "name": "minDaoFee",
+          "type": "uint128",
+          "indexed": false,
+          "internalType": "uint128"
+        },
+        {
+          "name": "maxDaoFee",
+          "type": "uint128",
+          "indexed": false,
+          "internalType": "uint128"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "DaoFeeReceiverChanged",
+      "inputs": [
+        {
+          "name": "daoFeeReceiver",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "DaoFeeReceiverChangedForAsset",
+      "inputs": [
+        {
+          "name": "asset",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "daoFeeReceiver",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "DaoFeeReceiverChangedForSilo",
+      "inputs": [
+        {
+          "name": "silo",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "daoFeeReceiver",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MaxDeployerFeeChanged",
+      "inputs": [
+        {
+          "name": "maxDeployerFee",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MaxFlashloanFeeChanged",
+      "inputs": [
+        {
+          "name": "maxFlashloanFee",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MaxLiquidationFeeChanged",
+      "inputs": [
+        {
+          "name": "maxLiquidationFee",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "NewSilo",
+      "inputs": [
+        {
+          "name": "implementation",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "token0",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "token1",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "silo0",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "silo1",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "siloConfig",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "NewSiloHook",
+      "inputs": [
+        {
+          "name": "silo",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "hook",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "NewSiloShareTokens",
+      "inputs": [
+        {
+          "name": "protectedShareToken",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "collateralShareToken",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "debtShareToken",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Transfer",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "ConfigMismatchShareCollateralToken",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ConfigMismatchShareDebtToken",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ConfigMismatchShareProtectedToken",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ConfigMismatchSilo",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "DaoFeeReceiverZeroAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "DaoMaxRangeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "DaoMinRangeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "EmptyToken0",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "EmptyToken1",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "HookIsZeroAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCallBeforeQuote",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidDeployer",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidFeeRange",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidIrm",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidLt",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidMaxLtv",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidQuoteToken",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "LiquidationTargetLtvTooHigh",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "MaxDeployerFeeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "MaxFeeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "MaxFlashloanFeeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "MaxLiquidationFeeExceeded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "MissingHookReceiver",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotYourSilo",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "OracleMisconfiguration",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SameAsset",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SameDaoFeeReceiver",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SameRange",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ZeroAddress",
+      "inputs": []
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "approve(address,uint256)": "095ea7b3",
+    "balanceOf(address)": "70a08231",
+    "burn(uint256)": "42966c68",
+    "createSilo(address,address,address,address,address,address)": "2fe74fc6",
+    "creatorSiloCounter(address)": "42dba1a2",
+    "daoFeeRange()": "e20d7170",
+    "daoFeeReceiver()": "61ed96f5",
+    "getApproved(uint256)": "081812fc",
+    "getFeeReceivers(address)": "181a0a72",
+    "getNextSiloId()": "49f33f2e",
+    "idToSiloConfig(uint256)": "de9bfd06",
+    "isApprovedForAll(address,address)": "e985e9c5",
+    "isSilo(address)": "12f0dcd8",
+    "maxDeployerFee()": "a4c3e272",
+    "maxFlashloanFee()": "63fcc73f",
+    "maxLiquidationFee()": "eeb016f2",
+    "ownerOf(uint256)": "6352211e",
+    "safeTransferFrom(address,address,uint256)": "42842e0e",
+    "safeTransferFrom(address,address,uint256,bytes)": "b88d4fde",
+    "setApprovalForAll(address,bool)": "a22cb465",
+    "setBaseURI(string)": "55f804b3",
+    "setDaoFee(uint128,uint128)": "5b5864a4",
+    "setDaoFeeReceiver(address)": "ab12bf80",
+    "setDaoFeeReceiverForAsset(address,address)": "819e7fd1",
+    "setDaoFeeReceiverForSilo(address,address)": "4bc8c7ca",
+    "setMaxDeployerFee(uint256)": "5410b1a9",
+    "setMaxFlashloanFee(uint256)": "56bf27ae",
+    "setMaxLiquidationFee(uint256)": "bc2ef3f3",
+    "supportsInterface(bytes4)": "01ffc9a7",
+    "transferFrom(address,address,uint256)": "23b872dd",
+    "validateSiloInitData((address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": "8016854c"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"ConfigMismatchShareCollateralToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ConfigMismatchShareDebtToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ConfigMismatchShareProtectedToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ConfigMismatchSilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DaoFeeReceiverZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DaoMaxRangeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DaoMinRangeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EmptyToken0\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EmptyToken1\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HookIsZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCallBeforeQuote\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidDeployer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidFeeRange\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidIrm\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidLt\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidMaxLtv\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidQuoteToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LiquidationTargetLtvTooHigh\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaxDeployerFeeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaxFeeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaxFlashloanFeeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaxLiquidationFeeExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MissingHookReceiver\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotYourSilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OracleMisconfiguration\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SameAsset\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SameDaoFeeReceiver\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SameRange\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"newBaseURI\",\"type\":\"string\"}],\"name\":\"BaseURI\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint128\",\"name\":\"minDaoFee\",\"type\":\"uint128\"},{\"indexed\":false,\"internalType\":\"uint128\",\"name\":\"maxDaoFee\",\"type\":\"uint128\"}],\"name\":\"DaoFeeChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"daoFeeReceiver\",\"type\":\"address\"}],\"name\":\"DaoFeeReceiverChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"daoFeeReceiver\",\"type\":\"address\"}],\"name\":\"DaoFeeReceiverChangedForAsset\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"daoFeeReceiver\",\"type\":\"address\"}],\"name\":\"DaoFeeReceiverChangedForSilo\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"maxDeployerFee\",\"type\":\"uint256\"}],\"name\":\"MaxDeployerFeeChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"maxFlashloanFee\",\"type\":\"uint256\"}],\"name\":\"MaxFlashloanFeeChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"maxLiquidationFee\",\"type\":\"uint256\"}],\"name\":\"MaxLiquidationFeeChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"silo0\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"silo1\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"siloConfig\",\"type\":\"address\"}],\"name\":\"NewSilo\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"silo\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"hook\",\"type\":\"address\"}],\"name\":\"NewSiloHook\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"protectedShareToken\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"collateralShareToken\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"debtShareToken\",\"type\":\"address\"}],\"name\":\"NewSiloShareTokens\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_siloIdToBurn\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloConfig\",\"name\":\"_siloConfig\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_siloImpl\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_shareProtectedCollateralTokenImpl\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_shareDebtTokenImpl\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_creator\",\"type\":\"address\"}],\"name\":\"createSilo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_creator\",\"type\":\"address\"}],\"name\":\"creatorSiloCounter\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"daoFeeRange\",\"outputs\":[{\"components\":[{\"internalType\":\"uint128\",\"name\":\"min\",\"type\":\"uint128\"},{\"internalType\":\"uint128\",\"name\":\"max\",\"type\":\"uint128\"}],\"internalType\":\"struct ISiloFactory.Range\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"daoFeeReceiver\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"getFeeReceivers\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"dao\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"deployer\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextSiloId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"}],\"name\":\"idToSiloConfig\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"}],\"name\":\"isSilo\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxDeployerFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxFlashloanFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxLiquidationFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_newBaseURI\",\"type\":\"string\"}],\"name\":\"setBaseURI\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint128\",\"name\":\"_minFee\",\"type\":\"uint128\"},{\"internalType\":\"uint128\",\"name\":\"_maxFee\",\"type\":\"uint128\"}],\"name\":\"setDaoFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_newDaoFeeReceiver\",\"type\":\"address\"}],\"name\":\"setDaoFeeReceiver\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_asset\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_newDaoFeeReceiver\",\"type\":\"address\"}],\"name\":\"setDaoFeeReceiverForAsset\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_silo\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_newDaoFeeReceiver\",\"type\":\"address\"}],\"name\":\"setDaoFeeReceiverForSilo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newMaxDeployerFee\",\"type\":\"uint256\"}],\"name\":\"setMaxDeployerFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newMaxFlashloanFee\",\"type\":\"uint256\"}],\"name\":\"setMaxFlashloanFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newMaxLiquidationFee\",\"type\":\"uint256\"}],\"name\":\"setMaxLiquidationFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"deployerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"daoFee\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel0\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee0\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote0\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"solvencyOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"maxLtvOracle1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"interestRateModel1\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lt1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationTargetLtv1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationFee1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"flashloanFee1\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"callBeforeQuote1\",\"type\":\"bool\"}],\"internalType\":\"struct ISiloConfig.InitData\",\"name\":\"_initData\",\"type\":\"tuple\"}],\"name\":\"validateSiloInitData\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"Approval(address,address,uint256)\":{\"details\":\"Emitted when `owner` enables `approved` to manage the `tokenId` token.\"},\"ApprovalForAll(address,address,bool)\":{\"details\":\"Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.\"},\"DaoFeeChanged(uint128,uint128)\":{\"params\":{\"maxDaoFee\":\"Value of the new maximal DAO fee.\",\"minDaoFee\":\"Value of the new minimal DAO fee.\"}},\"DaoFeeReceiverChanged(address)\":{\"params\":{\"daoFeeReceiver\":\"Address of the new DAO fee receiver.\"}},\"DaoFeeReceiverChangedForAsset(address,address)\":{\"params\":{\"asset\":\"Address for which new DAO fee receiver is set.\",\"daoFeeReceiver\":\"Address of the new DAO fee receiver.\"}},\"DaoFeeReceiverChangedForSilo(address,address)\":{\"params\":{\"daoFeeReceiver\":\"Address of the new DAO fee receiver.\",\"silo\":\"Address for which new DAO fee receiver is set.\"}},\"MaxDeployerFeeChanged(uint256)\":{\"params\":{\"maxDeployerFee\":\"Value of the new max deployer fee.\"}},\"MaxFlashloanFeeChanged(uint256)\":{\"params\":{\"maxFlashloanFee\":\"Value of the new max flashloan fee.\"}},\"MaxLiquidationFeeChanged(uint256)\":{\"params\":{\"maxLiquidationFee\":\"Value of the new max liquidation fee.\"}},\"NewSilo(address,address,address,address,address,address)\":{\"params\":{\"implementation\":\"Address of the Silo implementation.\",\"silo0\":\"Address of the first Silo.\",\"silo1\":\"Address of the second Silo.\",\"siloConfig\":\"Address of the SiloConfig.\",\"token0\":\"Address of the first Silo token.\",\"token1\":\"Address of the second Silo token.\"}},\"Transfer(address,address,uint256)\":{\"details\":\"Emitted when `tokenId` token is transferred from `from` to `to`.\"}},\"kind\":\"dev\",\"methods\":{\"approve(address,uint256)\":{\"details\":\"Gives permission to `to` to transfer `tokenId` token to another account. The approval is cleared when the token is transferred. Only a single account can be approved at a time, so approving the zero address clears previous approvals. Requirements: - The caller must own the token or be an approved operator. - `tokenId` must exist. Emits an {Approval} event.\"},\"balanceOf(address)\":{\"details\":\"Returns the number of tokens in ``owner``'s account.\"},\"burn(uint256)\":{\"params\":{\"_siloIdToBurn\":\"silo ID to burn.\"}},\"createSilo(address,address,address,address,address,address)\":{\"params\":{\"_creator\":\"Address of the creator.\",\"_deployer\":\"Address of the deployer.\",\"_shareDebtTokenImpl\":\"Address of the `ShareDebtToken` implementation.\",\"_shareProtectedCollateralTokenImpl\":\"Address of the `ShareProtectedCollateralToken` implementation.\",\"_siloConfig\":\"Silo configuration.\",\"_siloImpl\":\"Address of the `Silo` implementation.\"}},\"getApproved(uint256)\":{\"details\":\"Returns the account approved for `tokenId` token. Requirements: - `tokenId` must exist.\"},\"getFeeReceivers(address)\":{\"params\":{\"_silo\":\"Silo address.\"},\"returns\":{\"dao\":\"DAO fee receiver.\",\"deployer\":\"Deployer fee receiver.\"}},\"isApprovedForAll(address,address)\":{\"details\":\"Returns if the `operator` is allowed to manage all of the assets of `owner`. See {setApprovalForAll}\"},\"isSilo(address)\":{\"details\":\"True if the address was deployed using SiloFactory.\"},\"ownerOf(uint256)\":{\"details\":\"Returns the owner of the `tokenId` token. Requirements: - `tokenId` must exist.\"},\"safeTransferFrom(address,address,uint256)\":{\"details\":\"Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients are aware of the ERC-721 protocol to prevent tokens from being forever locked. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must exist and be owned by `from`. - If the caller is not `from`, it must have been allowed to move this token by either {approve} or   {setApprovalForAll}. - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon   a safe transfer. Emits a {Transfer} event.\"},\"safeTransferFrom(address,address,uint256,bytes)\":{\"details\":\"Safely transfers `tokenId` token from `from` to `to`. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must exist and be owned by `from`. - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}. - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon   a safe transfer. Emits a {Transfer} event.\"},\"setApprovalForAll(address,bool)\":{\"details\":\"Approve or remove `operator` as an operator for the caller. Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller. Requirements: - The `operator` cannot be the address zero. Emits an {ApprovalForAll} event.\"},\"setBaseURI(string)\":{\"params\":{\"_newBaseURI\":\"Value of the new base URI.\"}},\"setDaoFee(uint128,uint128)\":{\"params\":{\"_maxFee\":\"Value of the new DAO maximal fee.\",\"_minFee\":\"Value of the new DAO minimal fee.\"}},\"setDaoFeeReceiver(address)\":{\"params\":{\"_newDaoFeeReceiver\":\"Address of the new DAO fee receiver.\"}},\"setDaoFeeReceiverForAsset(address,address)\":{\"params\":{\"_asset\":\"Address for which new DAO fee receiver is set.\",\"_newDaoFeeReceiver\":\"Address of the new DAO fee receiver.\"}},\"setDaoFeeReceiverForSilo(address,address)\":{\"params\":{\"_newDaoFeeReceiver\":\"Address of the new DAO fee receiver.\",\"_silo\":\"Address for which new DAO fee receiver is set.\"}},\"setMaxDeployerFee(uint256)\":{\"params\":{\"_newMaxDeployerFee\":\"Value of the new max deployer fee.\"}},\"setMaxFlashloanFee(uint256)\":{\"params\":{\"_newMaxFlashloanFee\":\"Value of the new max flashloan fee.\"}},\"setMaxLiquidationFee(uint256)\":{\"params\":{\"_newMaxLiquidationFee\":\"Value of the new max liquidation fee.\"}},\"supportsInterface(bytes4)\":{\"details\":\"Returns true if this contract implements the interface defined by `interfaceId`. See the corresponding https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section] to learn more about how these ids are created. This function call must use less than 30 000 gas.\"},\"transferFrom(address,address,uint256)\":{\"details\":\"Transfers `tokenId` token from `from` to `to`. WARNING: Note that the caller is responsible to confirm that the recipient is capable of receiving ERC-721 or else they may be permanently lost. Usage of {safeTransferFrom} prevents loss, though the caller must understand this adds an external call which potentially creates a reentrancy vulnerability. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must be owned by `from`. - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}. Emits a {Transfer} event.\"},\"validateSiloInitData((address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"params\":{\"_initData\":\"Silo init data.\"}}},\"version\":1},\"userdoc\":{\"events\":{\"DaoFeeChanged(uint128,uint128)\":{\"notice\":\"Emitted on the update of DAO fee.\"},\"DaoFeeReceiverChanged(address)\":{\"notice\":\"Emitted on the change of DAO fee receiver.\"},\"DaoFeeReceiverChangedForAsset(address,address)\":{\"notice\":\"Emitted on the change of DAO fee receiver for particular asset\"},\"DaoFeeReceiverChangedForSilo(address,address)\":{\"notice\":\"Emitted on the change of DAO fee receiver for particular silo\"},\"MaxDeployerFeeChanged(uint256)\":{\"notice\":\"Emitted on the update of max deployer fee.\"},\"MaxFlashloanFeeChanged(uint256)\":{\"notice\":\"Emitted on the update of max flashloan fee.\"},\"MaxLiquidationFeeChanged(uint256)\":{\"notice\":\"Emitted on the update of max liquidation fee.\"},\"NewSilo(address,address,address,address,address,address)\":{\"notice\":\"Emitted on the creation of a Silo.\"},\"NewSiloShareTokens(address,address,address)\":{\"notice\":\"Emitted on the creation of a Silo, note that collateral share token == silo\"}},\"kind\":\"user\",\"methods\":{\"burn(uint256)\":{\"notice\":\"NFT ownership represents the deployer fee receiver for the each Silo ID.  After burning,  the deployer fee is sent to the DAO. Burning doesn't affect Silo's behavior. It is only about fee distribution.\"},\"createSilo(address,address,address,address,address,address)\":{\"notice\":\"Create a new Silo.\"},\"creatorSiloCounter(address)\":{\"notice\":\"Get the counter of silos created by the wallet.\"},\"daoFeeRange()\":{\"notice\":\"Acceptable DAO fee range for new Silos. Denominated in 18 decimals points. 1e18 == 100%.\"},\"daoFeeReceiver()\":{\"notice\":\"The recipient of DAO fees.\"},\"getFeeReceivers(address)\":{\"notice\":\"Get the DAO and deployer fee receivers for a particular Silo address.\"},\"getNextSiloId()\":{\"notice\":\"Id of a next Silo to be deployed. This is an ID of non-existing Silo outside of createSilo function call. ID of a first Silo is 1.\"},\"idToSiloConfig(uint256)\":{\"notice\":\"Get SiloConfig address by Silo id.\"},\"isSilo(address)\":{\"notice\":\"Do not use this method to check if silo is secure. Anyone can deploy silo with any configuration and implementation. Most critical part of verification would be to check who deployed it.\"},\"maxDeployerFee()\":{\"notice\":\"Max deployer fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%.\"},\"maxFlashloanFee()\":{\"notice\":\"Max flashloan fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%.\"},\"maxLiquidationFee()\":{\"notice\":\"Max liquidation fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%.\"},\"setBaseURI(string)\":{\"notice\":\"Update the base URI.\"},\"setDaoFee(uint128,uint128)\":{\"notice\":\"Update the value of DAO fee. Updated value will be used only for a new Silos. Previously deployed SiloConfigs are immutable.\"},\"setDaoFeeReceiver(address)\":{\"notice\":\"Set the default DAO fee receiver.\"},\"setDaoFeeReceiverForAsset(address,address)\":{\"notice\":\"Set the new DAO fee receiver for asset, this setup will be used when fee receiver for silo is empty.\"},\"setDaoFeeReceiverForSilo(address,address)\":{\"notice\":\"Set the new DAO fee receiver for silo. This setup has highest priority.\"},\"setMaxDeployerFee(uint256)\":{\"notice\":\"Update the value of max deployer fee. Updated value will be used only for a new Silos max deployer fee validation. Previously deployed SiloConfigs are immutable.\"},\"setMaxFlashloanFee(uint256)\":{\"notice\":\"Update the value of max flashloan fee. Updated value will be used only for a new Silos max flashloan fee validation. Previously deployed SiloConfigs are immutable.\"},\"setMaxLiquidationFee(uint256)\":{\"notice\":\"Update the value of max liquidation fee. Updated value will be used only for a new Silos max liquidation fee validation. Previously deployed SiloConfigs are immutable.\"},\"validateSiloInitData((address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))\":{\"notice\":\"Validate InitData for a new Silo. Config will be checked for the fee limits, missing parameters.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/ISiloFactory.sol\":\"ISiloFactory\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol\":{\"keccak256\":\"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf\",\"dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb\"]},\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b\",\"dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827\",\"dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e\",\"dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX\"]},\"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol\":{\"keccak256\":\"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587\",\"dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7\"]},\"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol\":{\"keccak256\":\"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c\",\"dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS\"]},\"silo-core/contracts/interfaces/IERC3156FlashLender.sol\":{\"keccak256\":\"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb\",\"dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa\"]},\"silo-core/contracts/interfaces/IHookReceiver.sol\":{\"keccak256\":\"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e\",\"dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet\"]},\"silo-core/contracts/interfaces/ISilo.sol\":{\"keccak256\":\"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8\",\"dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4\"]},\"silo-core/contracts/interfaces/ISiloConfig.sol\":{\"keccak256\":\"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036\",\"dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS\"]},\"silo-core/contracts/interfaces/ISiloFactory.sol\":{\"keccak256\":\"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67\",\"dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.28+commit.7893614a"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "ConfigMismatchShareCollateralToken"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "ConfigMismatchShareDebtToken"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "ConfigMismatchShareProtectedToken"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "ConfigMismatchSilo"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "DaoFeeReceiverZeroAddress"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "DaoMaxRangeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "DaoMinRangeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "EmptyToken0"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "EmptyToken1"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "HookIsZeroAddress"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidCallBeforeQuote"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidDeployer"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidFeeRange"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidIrm"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidLt"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidMaxLtv"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "InvalidQuoteToken"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "LiquidationTargetLtvTooHigh"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "MaxDeployerFeeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "MaxFeeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "MaxFlashloanFeeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "MaxLiquidationFeeExceeded"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "MissingHookReceiver"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "NotYourSilo"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "OracleMisconfiguration"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "SameAsset"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "SameDaoFeeReceiver"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "SameRange"
+        },
+        {
+          "inputs": [],
+          "type": "error",
+          "name": "ZeroAddress"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "approved",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256",
+              "indexed": true
+            }
+          ],
+          "type": "event",
+          "name": "Approval",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "bool",
+              "name": "approved",
+              "type": "bool",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "ApprovalForAll",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "newBaseURI",
+              "type": "string",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "BaseURI",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "minDaoFee",
+              "type": "uint128",
+              "indexed": false
+            },
+            {
+              "internalType": "uint128",
+              "name": "maxDaoFee",
+              "type": "uint128",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "DaoFeeChanged",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "daoFeeReceiver",
+              "type": "address",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "DaoFeeReceiverChanged",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "asset",
+              "type": "address",
+              "indexed": false
+            },
+            {
+              "internalType": "address",
+              "name": "daoFeeReceiver",
+              "type": "address",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "DaoFeeReceiverChangedForAsset",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "silo",
+              "type": "address",
+              "indexed": false
+            },
+            {
+              "internalType": "address",
+              "name": "daoFeeReceiver",
+              "type": "address",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "DaoFeeReceiverChangedForSilo",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "maxDeployerFee",
+              "type": "uint256",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "MaxDeployerFeeChanged",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "maxFlashloanFee",
+              "type": "uint256",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "MaxFlashloanFeeChanged",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "maxLiquidationFee",
+              "type": "uint256",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "MaxLiquidationFeeChanged",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "implementation",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "token0",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "token1",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "silo0",
+              "type": "address",
+              "indexed": false
+            },
+            {
+              "internalType": "address",
+              "name": "silo1",
+              "type": "address",
+              "indexed": false
+            },
+            {
+              "internalType": "address",
+              "name": "siloConfig",
+              "type": "address",
+              "indexed": false
+            }
+          ],
+          "type": "event",
+          "name": "NewSilo",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "silo",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "hook",
+              "type": "address",
+              "indexed": true
+            }
+          ],
+          "type": "event",
+          "name": "NewSiloHook",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "protectedShareToken",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "collateralShareToken",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "debtShareToken",
+              "type": "address",
+              "indexed": true
+            }
+          ],
+          "type": "event",
+          "name": "NewSiloShareTokens",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address",
+              "indexed": true
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256",
+              "indexed": true
+            }
+          ],
+          "type": "event",
+          "name": "Transfer",
+          "anonymous": false
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "approve"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "balance",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_siloIdToBurn",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "burn"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract ISiloConfig",
+              "name": "_siloConfig",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_siloImpl",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_shareProtectedCollateralTokenImpl",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_shareDebtTokenImpl",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_deployer",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_creator",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "createSilo"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_creator",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "creatorSiloCounter",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "daoFeeRange",
+          "outputs": [
+            {
+              "internalType": "struct ISiloFactory.Range",
+              "name": "",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "uint128",
+                  "name": "min",
+                  "type": "uint128"
+                },
+                {
+                  "internalType": "uint128",
+                  "name": "max",
+                  "type": "uint128"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "daoFeeReceiver",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getApproved",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_silo",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getFeeReceivers",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "dao",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "deployer",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getNextSiloId",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "idToSiloConfig",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "isApprovedForAll",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_silo",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "isSilo",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "maxDeployerFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "maxFlashloanFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "maxLiquidationFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "ownerOf",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "safeTransferFrom"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "safeTransferFrom"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "approved",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setApprovalForAll"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_newBaseURI",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setBaseURI"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "_minFee",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint128",
+              "name": "_maxFee",
+              "type": "uint128"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setDaoFee"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_newDaoFeeReceiver",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setDaoFeeReceiver"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_asset",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_newDaoFeeReceiver",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setDaoFeeReceiverForAsset"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_silo",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_newDaoFeeReceiver",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setDaoFeeReceiverForSilo"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_newMaxDeployerFee",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setMaxDeployerFee"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_newMaxFlashloanFee",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setMaxFlashloanFee"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_newMaxLiquidationFee",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setMaxLiquidationFee"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes4",
+              "name": "interfaceId",
+              "type": "bytes4"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "supportsInterface",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "transferFrom"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "struct ISiloConfig.InitData",
+              "name": "_initData",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "deployer",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "hookReceiver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "deployerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "daoFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "token0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "solvencyOracle0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "maxLtvOracle0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "interestRateModel0",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxLtv0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lt0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationTargetLtv0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationFee0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flashloanFee0",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "callBeforeQuote0",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "address",
+                  "name": "token1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "solvencyOracle1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "maxLtvOracle1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "interestRateModel1",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxLtv1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lt1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationTargetLtv1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationFee1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flashloanFee1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "callBeforeQuote1",
+                  "type": "bool"
+                }
+              ]
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "validateSiloInitData",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {
+          "approve(address,uint256)": {
+            "details": "Gives permission to `to` to transfer `tokenId` token to another account. The approval is cleared when the token is transferred. Only a single account can be approved at a time, so approving the zero address clears previous approvals. Requirements: - The caller must own the token or be an approved operator. - `tokenId` must exist. Emits an {Approval} event."
+          },
+          "balanceOf(address)": {
+            "details": "Returns the number of tokens in ``owner``'s account."
+          },
+          "burn(uint256)": {
+            "params": {
+              "_siloIdToBurn": "silo ID to burn."
+            }
+          },
+          "createSilo(address,address,address,address,address,address)": {
+            "params": {
+              "_creator": "Address of the creator.",
+              "_deployer": "Address of the deployer.",
+              "_shareDebtTokenImpl": "Address of the `ShareDebtToken` implementation.",
+              "_shareProtectedCollateralTokenImpl": "Address of the `ShareProtectedCollateralToken` implementation.",
+              "_siloConfig": "Silo configuration.",
+              "_siloImpl": "Address of the `Silo` implementation."
+            }
+          },
+          "getApproved(uint256)": {
+            "details": "Returns the account approved for `tokenId` token. Requirements: - `tokenId` must exist."
+          },
+          "getFeeReceivers(address)": {
+            "params": {
+              "_silo": "Silo address."
+            },
+            "returns": {
+              "dao": "DAO fee receiver.",
+              "deployer": "Deployer fee receiver."
+            }
+          },
+          "isApprovedForAll(address,address)": {
+            "details": "Returns if the `operator` is allowed to manage all of the assets of `owner`. See {setApprovalForAll}"
+          },
+          "isSilo(address)": {
+            "details": "True if the address was deployed using SiloFactory."
+          },
+          "ownerOf(uint256)": {
+            "details": "Returns the owner of the `tokenId` token. Requirements: - `tokenId` must exist."
+          },
+          "safeTransferFrom(address,address,uint256)": {
+            "details": "Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients are aware of the ERC-721 protocol to prevent tokens from being forever locked. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must exist and be owned by `from`. - If the caller is not `from`, it must have been allowed to move this token by either {approve} or   {setApprovalForAll}. - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon   a safe transfer. Emits a {Transfer} event."
+          },
+          "safeTransferFrom(address,address,uint256,bytes)": {
+            "details": "Safely transfers `tokenId` token from `from` to `to`. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must exist and be owned by `from`. - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}. - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon   a safe transfer. Emits a {Transfer} event."
+          },
+          "setApprovalForAll(address,bool)": {
+            "details": "Approve or remove `operator` as an operator for the caller. Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller. Requirements: - The `operator` cannot be the address zero. Emits an {ApprovalForAll} event."
+          },
+          "setBaseURI(string)": {
+            "params": {
+              "_newBaseURI": "Value of the new base URI."
+            }
+          },
+          "setDaoFee(uint128,uint128)": {
+            "params": {
+              "_maxFee": "Value of the new DAO maximal fee.",
+              "_minFee": "Value of the new DAO minimal fee."
+            }
+          },
+          "setDaoFeeReceiver(address)": {
+            "params": {
+              "_newDaoFeeReceiver": "Address of the new DAO fee receiver."
+            }
+          },
+          "setDaoFeeReceiverForAsset(address,address)": {
+            "params": {
+              "_asset": "Address for which new DAO fee receiver is set.",
+              "_newDaoFeeReceiver": "Address of the new DAO fee receiver."
+            }
+          },
+          "setDaoFeeReceiverForSilo(address,address)": {
+            "params": {
+              "_newDaoFeeReceiver": "Address of the new DAO fee receiver.",
+              "_silo": "Address for which new DAO fee receiver is set."
+            }
+          },
+          "setMaxDeployerFee(uint256)": {
+            "params": {
+              "_newMaxDeployerFee": "Value of the new max deployer fee."
+            }
+          },
+          "setMaxFlashloanFee(uint256)": {
+            "params": {
+              "_newMaxFlashloanFee": "Value of the new max flashloan fee."
+            }
+          },
+          "setMaxLiquidationFee(uint256)": {
+            "params": {
+              "_newMaxLiquidationFee": "Value of the new max liquidation fee."
+            }
+          },
+          "supportsInterface(bytes4)": {
+            "details": "Returns true if this contract implements the interface defined by `interfaceId`. See the corresponding https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section] to learn more about how these ids are created. This function call must use less than 30 000 gas."
+          },
+          "transferFrom(address,address,uint256)": {
+            "details": "Transfers `tokenId` token from `from` to `to`. WARNING: Note that the caller is responsible to confirm that the recipient is capable of receiving ERC-721 or else they may be permanently lost. Usage of {safeTransferFrom} prevents loss, though the caller must understand this adds an external call which potentially creates a reentrancy vulnerability. Requirements: - `from` cannot be the zero address. - `to` cannot be the zero address. - `tokenId` token must be owned by `from`. - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}. Emits a {Transfer} event."
+          },
+          "validateSiloInitData((address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": {
+            "params": {
+              "_initData": "Silo init data."
+            }
+          }
+        },
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {
+          "burn(uint256)": {
+            "notice": "NFT ownership represents the deployer fee receiver for the each Silo ID.  After burning,  the deployer fee is sent to the DAO. Burning doesn't affect Silo's behavior. It is only about fee distribution."
+          },
+          "createSilo(address,address,address,address,address,address)": {
+            "notice": "Create a new Silo."
+          },
+          "creatorSiloCounter(address)": {
+            "notice": "Get the counter of silos created by the wallet."
+          },
+          "daoFeeRange()": {
+            "notice": "Acceptable DAO fee range for new Silos. Denominated in 18 decimals points. 1e18 == 100%."
+          },
+          "daoFeeReceiver()": {
+            "notice": "The recipient of DAO fees."
+          },
+          "getFeeReceivers(address)": {
+            "notice": "Get the DAO and deployer fee receivers for a particular Silo address."
+          },
+          "getNextSiloId()": {
+            "notice": "Id of a next Silo to be deployed. This is an ID of non-existing Silo outside of createSilo function call. ID of a first Silo is 1."
+          },
+          "idToSiloConfig(uint256)": {
+            "notice": "Get SiloConfig address by Silo id."
+          },
+          "isSilo(address)": {
+            "notice": "Do not use this method to check if silo is secure. Anyone can deploy silo with any configuration and implementation. Most critical part of verification would be to check who deployed it."
+          },
+          "maxDeployerFee()": {
+            "notice": "Max deployer fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%."
+          },
+          "maxFlashloanFee()": {
+            "notice": "Max flashloan fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%."
+          },
+          "maxLiquidationFee()": {
+            "notice": "Max liquidation fee for a new Silos. Denominated in 18 decimals points. 1e18 == 100%."
+          },
+          "setBaseURI(string)": {
+            "notice": "Update the base URI."
+          },
+          "setDaoFee(uint128,uint128)": {
+            "notice": "Update the value of DAO fee. Updated value will be used only for a new Silos. Previously deployed SiloConfigs are immutable."
+          },
+          "setDaoFeeReceiver(address)": {
+            "notice": "Set the default DAO fee receiver."
+          },
+          "setDaoFeeReceiverForAsset(address,address)": {
+            "notice": "Set the new DAO fee receiver for asset, this setup will be used when fee receiver for silo is empty."
+          },
+          "setDaoFeeReceiverForSilo(address,address)": {
+            "notice": "Set the new DAO fee receiver for silo. This setup has highest priority."
+          },
+          "setMaxDeployerFee(uint256)": {
+            "notice": "Update the value of max deployer fee. Updated value will be used only for a new Silos max deployer fee validation. Previously deployed SiloConfigs are immutable."
+          },
+          "setMaxFlashloanFee(uint256)": {
+            "notice": "Update the value of max flashloan fee. Updated value will be used only for a new Silos max flashloan fee validation. Previously deployed SiloConfigs are immutable."
+          },
+          "setMaxLiquidationFee(uint256)": {
+            "notice": "Update the value of max liquidation fee. Updated value will be used only for a new Silos max liquidation fee validation. Previously deployed SiloConfigs are immutable."
+          },
+          "validateSiloInitData((address,address,uint256,uint256,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool,address,address,address,address,uint256,uint256,uint256,uint256,uint256,bool))": {
+            "notice": "Validate InitData for a new Silo. Config will be checked for the fee limits, missing parameters."
+          }
+        },
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        "@ensdomains/=node_modules/@ensdomains/",
+        "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+        "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+        "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+        "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+        "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+        "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+        "chainlink/=gitmodules/chainlink/contracts/src/",
+        "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+        "crytic/=gitmodules/crytic/",
+        "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+        "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+        "forge-std/=gitmodules/forge-std/src/",
+        "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+        "hardhat/=node_modules/hardhat/",
+        "morpho-blue/=gitmodules/morpho-blue/src/",
+        "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+        "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+        "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+        "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+        "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+        "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+        "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+        "properties/=gitmodules/crytic/properties/contracts/",
+        "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+        "silo-core/=silo-core/",
+        "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+        "silo-oracles/=silo-oracles/",
+        "silo-vaults/=silo-vaults/",
+        "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+        "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+        "uniswap/=gitmodules/uniswap/",
+        "x-silo/=node_modules/x-silo/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "silo-core/contracts/interfaces/ISiloFactory.sol": "ISiloFactory"
+      },
+      "evmVersion": "cancun",
+      "libraries": {}
+    },
+    "sources": {
+      "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol": {
+        "keccak256": "0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06",
+        "urls": [
+          "bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf",
+          "dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol": {
+        "keccak256": "0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d",
+        "urls": [
+          "bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b",
+          "dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+        "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+        "urls": [
+          "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+          "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+        "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+        "urls": [
+          "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+          "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol": {
+        "keccak256": "0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de",
+        "urls": [
+          "bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827",
+          "dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA"
+        ],
+        "license": "MIT"
+      },
+      "gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol": {
+        "keccak256": "0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c",
+        "urls": [
+          "bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e",
+          "dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ICrossReentrancyGuard.sol": {
+        "keccak256": "0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05",
+        "urls": [
+          "bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587",
+          "dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IERC3156FlashBorrower.sol": {
+        "keccak256": "0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c",
+        "urls": [
+          "bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c",
+          "dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IERC3156FlashLender.sol": {
+        "keccak256": "0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd",
+        "urls": [
+          "bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb",
+          "dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/IHookReceiver.sol": {
+        "keccak256": "0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371",
+        "urls": [
+          "bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e",
+          "dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISilo.sol": {
+        "keccak256": "0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7",
+        "urls": [
+          "bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8",
+          "dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloConfig.sol": {
+        "keccak256": "0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e",
+        "urls": [
+          "bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036",
+          "dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS"
+        ],
+        "license": "MIT"
+      },
+      "silo-core/contracts/interfaces/ISiloFactory.sol": {
+        "keccak256": "0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca",
+        "urls": [
+          "bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67",
+          "dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "id": 205
+}

@@ -1,0 +1,1470 @@
+{
+  "bySelector": {
+    "0xa0387940": "NotSupported()",
+    "0x3ee5aeb5": "ReentrancyGuardReentrantCall()",
+    "0x94572de9": "OnlyAllowedRole()",
+    "0x00f09cf3": "OnlyNotifier()",
+    "0x10b47cc3": "TooLongProgramName()",
+    "0xb5fbb2c0": "InvalidIncentivesProgramName()",
+    "0xd3b03ee1": "OnlyNotifierOrOwner()",
+    "0xd92e233d": "ZeroAddress()",
+    "0x35f2ab1e": "EmissionForTimeDeltaOverflow()",
+    "0x7decd257": "IndexOverflow()",
+    "0x1a751202": "NewIndexOverflow()",
+    "0xdc07e402": "InvalidDistributionEnd()",
+    "0xc52a9bd3": "InvalidConfiguration()",
+    "0x84cc26ce": "IndexOverflowAtEmissionsPerSecond()",
+    "0x8aa3a72f": "InvalidToAddress()",
+    "0x702b3d90": "InvalidUserAddress()",
+    "0x0176b160": "ClaimerUnauthorized()",
+    "0xdfde8671": "InvalidRewardToken()",
+    "0x83528a7f": "IncentivesProgramAlreadyExists()",
+    "0x0a96b475": "IncentivesProgramNotFound()",
+    "0x5ff3f2d0": "DifferentRewardsTokens()",
+    "0x495c2d91": "EmissionPerSecondTooHigh()",
+    "0xa5c94977": "EmptyShareToken()",
+    "0xe17fbf89": "CrossReentrantCall()",
+    "0xf874d859": "CrossReentrancyNotActive()",
+    "0x9fabe1c1": "AddressZero()",
+    "0xa3965ea1": "AlphaDividerZero()",
+    "0x0dc149f0": "AlreadyInitialized()",
+    "0x94a59061": "EmptySilo()",
+    "0xfa0bff64": "InvalidAlpha()",
+    "0x0ecdf469": "InvalidC1()",
+    "0xa90ddd0a": "InvalidC2()",
+    "0xf1db96b1": "InvalidCminus()",
+    "0x0a396c54": "InvalidCplus()",
+    "0xc3388909": "InvalidDefaultConfig()",
+    "0xa458376b": "InvalidDmax()",
+    "0x408b7f5a": "InvalidKmax()",
+    "0xc98dacd7": "InvalidKmin()",
+    "0x1c60274d": "InvalidKRange()",
+    "0x14f2ce3f": "InvalidRcompCap()",
+    "0xbe1b8d4a": "InvalidRcritMax()",
+    "0xfd1776e1": "InvalidRcritMin()",
+    "0x75b5650c": "InvalidRmin()",
+    "0x06cc02d1": "InvalidSilo()",
+    "0xa7bf4104": "InvalidT1()",
+    "0x7ae19342": "InvalidT2()",
+    "0xf8d10e82": "InvalidTimelock()",
+    "0xb7d09497": "InvalidTimestamp()",
+    "0x6e53e3f6": "InvalidTMin()",
+    "0x47be2827": "InvalidTLow()",
+    "0x736981b2": "InvalidTCrit()",
+    "0x7549e91a": "InvalidU1()",
+    "0x8a8bcf9a": "InvalidU2()",
+    "0x737b5322": "InvalidUcrit()",
+    "0x5c65494d": "InvalidUlow()",
+    "0x50891051": "NegativeRcomp()",
+    "0xa467392b": "NegativeRcur()",
+    "0x8cff98d0": "NoPendingUpdateToCancel()",
+    "0x818e62bc": "NoPendingConfig()",
+    "0x20a518da": "OnlySilo()",
+    "0xd8801bad": "PendingUpdate()",
+    "0x6690fb73": "XOverflow()",
+    "0xe4452e2b": "DeployerCannotBeZero()",
+    "0x54a4010f": "OwnerIsZeroAddress()",
+    "0xd938fa37": "InvalidShareToken()",
+    "0x60a0aaf0": "WrongGaugeShareToken()",
+    "0x0d0ab165": "CantRemoveActiveGauge()",
+    "0xd1af83ef": "EmptyGaugeAddress()",
+    "0xa86232c4": "RequestNotSupported()",
+    "0xb9de111c": "GaugeIsNotConfigured()",
+    "0xd0c72255": "GaugeAlreadyConfigured()",
+    "0x0fd0a908": "ExchangeAddressZero()",
+    "0x03a40bc4": "SwapCallFailed()",
+    "0x3ebfdaaf": "Swap()",
+    "0x4497be84": "ZeroAmountOut()",
+    "0x79c39cf9": "EmptySiloConfig()",
+    "0x11b61b6a": "AlreadyConfigured()",
+    "0xb1d936ee": "OnlySiloOrShareToken()",
+    "0x76c55eb6": "DeployConfigFirst()",
+    "0x78a83711": "InvalidBeta()",
+    "0x8344b2d4": "InvalidKcrit()",
+    "0xfe067815": "InvalidKi()",
+    "0x4e435a21": "InvalidKlin()",
+    "0xff8224a7": "InvalidKlow()",
+    "0x133249b8": "InvalidTcrit()",
+    "0xd22806e3": "InvalidTimestamps()",
+    "0x4fa7000c": "InvalidUopt()",
+    "0xc3bb31ac": "InvalidRi()",
+    "0x41cadab5": "FeeDidNotChanged()",
+    "0x22df46d8": "ReceiverDidNotChanged()",
+    "0x441485f6": "ReceiverZero()",
+    "0x58d620b3": "InvalidFee()",
+    "0x3ce3edfd": "EmptyNativeToken()",
+    "0xde94576c": "IncorrectNativeTokenAmount()",
+    "0xfd5ead80": "FlashloanFailed()",
+    "0x22ed7c60": "InvalidFlashloanLender()",
+    "0xbfda1f28": "InvalidInitiator()",
+    "0x846fe7bc": "UnknownAction()",
+    "0xf538c007": "SwapDidNotCoverObligations()",
+    "0x602e56ef": "UnableToRepayFlashloan()",
+    "0x155a4b5c": "UnexpectedCollateralToken()",
+    "0x4a782034": "UnexpectedDebtToken()",
+    "0x2ffe1c12": "NoDebtToCover()",
+    "0xd65db62d": "FullLiquidationRequired()",
+    "0x5e26aa2a": "UserIsSolvent()",
+    "0xcb18f7fe": "UnknownRatio()",
+    "0xced4ade6": "NoRepayAssets()",
+    "0x797c40e1": "NoCollateralToLiquidate()",
+    "0xfff923d6": "NoControllerForCollateral()",
+    "0xd8b23d2b": "CollateralNotSupportedForDefaulting()",
+    "0xa717c374": "TwoWayMarketNotAllowed()",
+    "0x8b3f4471": "EmptyCollateralShareToken()",
+    "0xfe568fd1": "DeductDefaultedDebtFromCollateralFailed()",
+    "0x80ac353a": "RepayDebtByDefaultingFailed()",
+    "0x732481ab": "InvalidLTConfig0()",
+    "0x4ac2d3d4": "InvalidLTConfig1()",
+    "0x66d5e718": "CollateralDepositNotAllowed()",
+    "0x7b4d1b88": "IncentivesControllerRequired()",
+    "0x0e8a9285": "WrongSiloConfig()",
+    "0x0ec5399c": "TransitionProtectedCollateralNotAllowed()",
+    "0x59d74a41": "OnlySiloConfig()",
+    "0x4269a059": "OwnerIsZero()",
+    "0xb05313bb": "RecipientIsZero()",
+    "0xe052bc40": "AmountExceedsAllowance()",
+    "0xef63243e": "RecipientNotSolventAfterTransfer()",
+    "0xf0ee386c": "SenderNotSolventAfterTransfer()",
+    "0x10cadee3": "ZeroTransfer()",
+    "0xd7df47b5": "UnsupportedFlashloanToken()",
+    "0x74bcc3c9": "FlashloanAmountTooBig()",
+    "0xd0d04f60": "NothingToWithdraw()",
+    "0x11b99875": "ProtectedProtection()",
+    "0x4323a555": "NotEnoughLiquidity()",
+    "0xe081c8f3": "NotSolvent()",
+    "0x038118f2": "BorrowNotPossible()",
+    "0x0e7b56b0": "EarnedZero()",
+    "0x950c0335": "AboveMaxLtv()",
+    "0x709d0298": "SiloInitialized()",
+    "0x80897acb": "OnlyHookReceiver()",
+    "0xc301e07e": "NoLiquidity()",
+    "0xf0bc6712": "InputCanBeAssetsOrShares()",
+    "0x369ce573": "CollateralSiloAlreadySet()",
+    "0x5fb67749": "RepayTooHigh()",
+    "0x1f2a2005": "ZeroAmount()",
+    "0x6536c9a7": "InputZeroShares()",
+    "0x284fe515": "ReturnZeroAssets()",
+    "0x648361af": "ReturnZeroShares()",
+    "0xc73b9d7c": "Deprecated()",
+    "0x329409fd": "OnlySiloOrTokenOrHookReceiver()",
+    "0x49d73a27": "WrongSilo()",
+    "0x36ed4fb9": "OnlyDebtShareToken()",
+    "0xfc6ba97d": "DebtExistInOtherSilo()",
+    "0xcd4e6167": "FeeTooHigh()",
+    "0x2ab98208": "FailedToCreateAnOracle(address)",
+    "0x32c5e961": "HookReceiverMisconfigured()",
+    "0xd83793a1": "MissingHookReceiver()",
+    "0x6042f30f": "DaoFeeReceiverZeroAddress()",
+    "0xfbbcc0e6": "SameDaoFeeReceiver()",
+    "0xd76354a6": "EmptyToken0()",
+    "0x9d5e829e": "EmptyToken1()",
+    "0xf4df6ae5": "MaxFeeExceeded()",
+    "0xc15a4e6d": "InvalidFeeRange()",
+    "0xa698a49a": "SameAsset()",
+    "0x11ce44e3": "SameRange()",
+    "0x2e4e395f": "InvalidIrm()",
+    "0x75fcbb89": "InvalidMaxLtv()",
+    "0x27fa2d4a": "InvalidLt()",
+    "0x043c669f": "InvalidDeployer()",
+    "0x722a3f85": "DaoMinRangeExceeded()",
+    "0xd5bd6212": "DaoMaxRangeExceeded()",
+    "0x2b01a301": "MaxDeployerFeeExceeded()",
+    "0x923f853d": "MaxFlashloanFeeExceeded()",
+    "0xf817842b": "MaxLiquidationFeeExceeded()",
+    "0x49cc3533": "InvalidCallBeforeQuote()",
+    "0x952268d3": "OracleMisconfiguration()",
+    "0xd15b4fe2": "InvalidQuoteToken()",
+    "0xa0db3f5e": "HookIsZeroAddress()",
+    "0x4a14a09a": "LiquidationTargetLtvTooHigh()",
+    "0x534bd04a": "NotYourSilo()",
+    "0xaaca26b9": "ConfigMismatchSilo()",
+    "0xcbcb16fd": "ConfigMismatchShareProtectedToken()",
+    "0xfc6059d1": "ConfigMismatchShareDebtToken()",
+    "0xa0d001d4": "ConfigMismatchShareCollateralToken()",
+    "0xc891add2": "InvalidAsset()",
+    "0xa4dfec71": "EmptyBalance(address)",
+    "0x9e41bdd7": "OnlyRouter()",
+    "0xb46716cd": "OnlyLeverageUser()",
+    "0x3022f2e4": "NativeTokenTransferFailed()",
+    "0x8181adca": "FeeOverflow()",
+    "0x435564db": "FlashLoanNotPossible()",
+    "0xdf48f19e": "InvalidAddressString()",
+    "0x8dcc3fe5": "FailedToParseBoolean()",
+    "0xa1e9dd9d": "InvalidTokenType()",
+    "0x73d39f9d": "TokenIsNotAContract()",
+    "0xb069aea6": "EmptyRecipient()",
+    "0x38773cb8": "KeyIsTaken()",
+    "0x513cc0b9": "EmptyCoordinates()",
+    "0xa46d4c72": "STokenNotSupported()",
+    "0xf33790cd": "MaxDebtToCoverZero()",
+    "0xabe8ece2": "UserSolvent()",
+    "0x14ea1133": "NewOracleZero()",
+    "0x36f16158": "ExistingAddress()",
+    "0x838b93c7": "InvalidEggsAddress()",
+    "0xd6234725": "NotImplemented()",
+    "0x1c38302d": "InvalidShadowUsdFeed()",
+    "0x981a2a2b": "AssetNotSupported()",
+    "0x4dfba023": "ZeroPrice()",
+    "0x924f4e09": "FeedHasZeroPrice()",
+    "0x00bfc921": "InvalidPrice()",
+    "0x69f8a2c0": "ZeroQuote()",
+    "0x7c5ab471": "InvalidSecondPrice()",
+    "0x77d66664": "BaseAmountOverflow()",
+    "0x7a99f98a": "TokensAreTheSame()",
+    "0x1c080052": "AggregatorsAreTheSame()",
+    "0x94bfc42a": "QuoteTokenNotMatchEth()",
+    "0xdea44292": "InvalidEthAggregatorDecimals()",
+    "0x3fc1fbea": "HugeDivider()",
+    "0x7d812a14": "HugeMultiplier()",
+    "0xd156ee7f": "MultiplierAndDividerZero()",
+    "0xb036333f": "EmptyPrimaryKey()",
+    "0x76d4e1e8": "InvalidKey()",
+    "0x22dc1858": "OldPrice()",
+    "0x02cbd274": "OldSecondaryPrice()",
+    "0x35278d12": "Overflow()",
+    "0x945841a5": "AssetZero()",
+    "0xa46b9ce0": "QuoteTokenZero()",
+    "0xef024699": "QuoteTokenMustBeTheSame()",
+    "0x87138d5c": "NotInitialized()",
+    "0xffdd918c": "EmptyConfigAddress()",
+    "0x68582072": "InvalidMaxYield()",
+    "0xe15c435a": "MaturityDateIsInThePast()",
+    "0xecb90424": "MaturityDateInvalid()",
+    "0x0d4f8ca9": "LinearOracleCannotBeZero()",
+    "0x4c2caa7f": "NormalizationDividerTooLarge()",
+    "0xa8bc506b": "AggregatorAlreadyExists()",
+    "0x8f9367aa": "OnlyAdminCanSetPrice()",
+    "0xfff335dd": "InvalidUnderlyingOracle()",
+    "0xb498fea1": "PendleOracleNotReady()",
+    "0x70dfbe5a": "PendlePtToSyRateIsZero()",
+    "0xba4dc8f6": "PendleOracleIsZero()",
+    "0x19a877a8": "PendlePtToAssetRateIsZero()",
+    "0x6d759629": "IncreaseCardinalityRequired()",
+    "0xe710511e": "OldestObservationSatisfied()",
+    "0x5df19a72": "PendleRateIsZero()",
+    "0xa7617b45": "TokenDecimalsTooLarge()"
+  },
+  "list": [
+    {
+      "signature": "AboveMaxLtv()",
+      "selectorHex": "0x950c0335",
+      "selectorDecimal": 2500592437
+    },
+    {
+      "signature": "AddressZero()",
+      "selectorHex": "0x9fabe1c1",
+      "selectorDecimal": 2678841793
+    },
+    {
+      "signature": "AggregatorAlreadyExists()",
+      "selectorHex": "0xa8bc506b",
+      "selectorDecimal": 2830913643
+    },
+    {
+      "signature": "AggregatorsAreTheSame()",
+      "selectorHex": "0x1c080052",
+      "selectorDecimal": 470286418
+    },
+    {
+      "signature": "AlphaDividerZero()",
+      "selectorHex": "0xa3965ea1",
+      "selectorDecimal": 2744540833
+    },
+    {
+      "signature": "AlreadyConfigured()",
+      "selectorHex": "0x11b61b6a",
+      "selectorDecimal": 297147242
+    },
+    {
+      "signature": "AlreadyInitialized()",
+      "selectorHex": "0x0dc149f0",
+      "selectorDecimal": 230771184
+    },
+    {
+      "signature": "AmountExceedsAllowance()",
+      "selectorHex": "0xe052bc40",
+      "selectorDecimal": 3763518528
+    },
+    {
+      "signature": "AssetNotSupported()",
+      "selectorHex": "0x981a2a2b",
+      "selectorDecimal": 2551851563
+    },
+    {
+      "signature": "AssetZero()",
+      "selectorHex": "0x945841a5",
+      "selectorDecimal": 2488811941
+    },
+    {
+      "signature": "BaseAmountOverflow()",
+      "selectorHex": "0x77d66664",
+      "selectorDecimal": 2010539620
+    },
+    {
+      "signature": "BorrowNotPossible()",
+      "selectorHex": "0x038118f2",
+      "selectorDecimal": 58792178
+    },
+    {
+      "signature": "CantRemoveActiveGauge()",
+      "selectorHex": "0x0d0ab165",
+      "selectorDecimal": 218804581
+    },
+    {
+      "signature": "ClaimerUnauthorized()",
+      "selectorHex": "0x0176b160",
+      "selectorDecimal": 24555872
+    },
+    {
+      "signature": "CollateralDepositNotAllowed()",
+      "selectorHex": "0x66d5e718",
+      "selectorDecimal": 1725294360
+    },
+    {
+      "signature": "CollateralNotSupportedForDefaulting()",
+      "selectorHex": "0xd8b23d2b",
+      "selectorDecimal": 3635559723
+    },
+    {
+      "signature": "CollateralSiloAlreadySet()",
+      "selectorHex": "0x369ce573",
+      "selectorDecimal": 916252019
+    },
+    {
+      "signature": "ConfigMismatchShareCollateralToken()",
+      "selectorHex": "0xa0d001d4",
+      "selectorDecimal": 2697986516
+    },
+    {
+      "signature": "ConfigMismatchShareDebtToken()",
+      "selectorHex": "0xfc6059d1",
+      "selectorDecimal": 4234172881
+    },
+    {
+      "signature": "ConfigMismatchShareProtectedToken()",
+      "selectorHex": "0xcbcb16fd",
+      "selectorDecimal": 3419084541
+    },
+    {
+      "signature": "ConfigMismatchSilo()",
+      "selectorHex": "0xaaca26b9",
+      "selectorDecimal": 2865374905
+    },
+    {
+      "signature": "CrossReentrancyNotActive()",
+      "selectorHex": "0xf874d859",
+      "selectorDecimal": 4168407129
+    },
+    {
+      "signature": "CrossReentrantCall()",
+      "selectorHex": "0xe17fbf89",
+      "selectorDecimal": 3783245705
+    },
+    {
+      "signature": "DaoFeeReceiverZeroAddress()",
+      "selectorHex": "0x6042f30f",
+      "selectorDecimal": 1615000335
+    },
+    {
+      "signature": "DaoMaxRangeExceeded()",
+      "selectorHex": "0xd5bd6212",
+      "selectorDecimal": 3585958418
+    },
+    {
+      "signature": "DaoMinRangeExceeded()",
+      "selectorHex": "0x722a3f85",
+      "selectorDecimal": 1915371397
+    },
+    {
+      "signature": "DebtExistInOtherSilo()",
+      "selectorHex": "0xfc6ba97d",
+      "selectorDecimal": 4234914173
+    },
+    {
+      "signature": "DeductDefaultedDebtFromCollateralFailed()",
+      "selectorHex": "0xfe568fd1",
+      "selectorDecimal": 4267085777
+    },
+    {
+      "signature": "DeployConfigFirst()",
+      "selectorHex": "0x76c55eb6",
+      "selectorDecimal": 1992646326
+    },
+    {
+      "signature": "DeployerCannotBeZero()",
+      "selectorHex": "0xe4452e2b",
+      "selectorDecimal": 3829739051
+    },
+    {
+      "signature": "Deprecated()",
+      "selectorHex": "0xc73b9d7c",
+      "selectorDecimal": 3342572924
+    },
+    {
+      "signature": "DifferentRewardsTokens()",
+      "selectorHex": "0x5ff3f2d0",
+      "selectorDecimal": 1609822928
+    },
+    {
+      "signature": "EarnedZero()",
+      "selectorHex": "0x0e7b56b0",
+      "selectorDecimal": 242964144
+    },
+    {
+      "signature": "EmissionForTimeDeltaOverflow()",
+      "selectorHex": "0x35f2ab1e",
+      "selectorDecimal": 905095966
+    },
+    {
+      "signature": "EmissionPerSecondTooHigh()",
+      "selectorHex": "0x495c2d91",
+      "selectorDecimal": 1230777745
+    },
+    {
+      "signature": "EmptyBalance(address)",
+      "selectorHex": "0xa4dfec71",
+      "selectorDecimal": 2766138481
+    },
+    {
+      "signature": "EmptyCollateralShareToken()",
+      "selectorHex": "0x8b3f4471",
+      "selectorDecimal": 2336179313
+    },
+    {
+      "signature": "EmptyConfigAddress()",
+      "selectorHex": "0xffdd918c",
+      "selectorDecimal": 4292710796
+    },
+    {
+      "signature": "EmptyCoordinates()",
+      "selectorHex": "0x513cc0b9",
+      "selectorDecimal": 1362935993
+    },
+    {
+      "signature": "EmptyGaugeAddress()",
+      "selectorHex": "0xd1af83ef",
+      "selectorDecimal": 3517940719
+    },
+    {
+      "signature": "EmptyNativeToken()",
+      "selectorHex": "0x3ce3edfd",
+      "selectorDecimal": 1021570557
+    },
+    {
+      "signature": "EmptyPrimaryKey()",
+      "selectorHex": "0xb036333f",
+      "selectorDecimal": 2956342079
+    },
+    {
+      "signature": "EmptyRecipient()",
+      "selectorHex": "0xb069aea6",
+      "selectorDecimal": 2959716006
+    },
+    {
+      "signature": "EmptyShareToken()",
+      "selectorHex": "0xa5c94977",
+      "selectorDecimal": 2781432183
+    },
+    {
+      "signature": "EmptySilo()",
+      "selectorHex": "0x94a59061",
+      "selectorDecimal": 2493878369
+    },
+    {
+      "signature": "EmptySiloConfig()",
+      "selectorHex": "0x79c39cf9",
+      "selectorDecimal": 2042862841
+    },
+    {
+      "signature": "EmptyToken0()",
+      "selectorHex": "0xd76354a6",
+      "selectorDecimal": 3613611174
+    },
+    {
+      "signature": "EmptyToken1()",
+      "selectorHex": "0x9d5e829e",
+      "selectorDecimal": 2640216734
+    },
+    {
+      "signature": "ExchangeAddressZero()",
+      "selectorHex": "0x0fd0a908",
+      "selectorDecimal": 265333000
+    },
+    {
+      "signature": "ExistingAddress()",
+      "selectorHex": "0x36f16158",
+      "selectorDecimal": 921788760
+    },
+    {
+      "signature": "FailedToCreateAnOracle(address)",
+      "selectorHex": "0x2ab98208",
+      "selectorDecimal": 716800520
+    },
+    {
+      "signature": "FailedToParseBoolean()",
+      "selectorHex": "0x8dcc3fe5",
+      "selectorDecimal": 2378973157
+    },
+    {
+      "signature": "FeedHasZeroPrice()",
+      "selectorHex": "0x924f4e09",
+      "selectorDecimal": 2454670857
+    },
+    {
+      "signature": "FeeDidNotChanged()",
+      "selectorHex": "0x41cadab5",
+      "selectorDecimal": 1103813301
+    },
+    {
+      "signature": "FeeOverflow()",
+      "selectorHex": "0x8181adca",
+      "selectorDecimal": 2172759498
+    },
+    {
+      "signature": "FeeTooHigh()",
+      "selectorHex": "0xcd4e6167",
+      "selectorDecimal": 3444466023
+    },
+    {
+      "signature": "FlashloanAmountTooBig()",
+      "selectorHex": "0x74bcc3c9",
+      "selectorDecimal": 1958527945
+    },
+    {
+      "signature": "FlashloanFailed()",
+      "selectorHex": "0xfd5ead80",
+      "selectorDecimal": 4250840448
+    },
+    {
+      "signature": "FlashLoanNotPossible()",
+      "selectorHex": "0x435564db",
+      "selectorDecimal": 1129669851
+    },
+    {
+      "signature": "FullLiquidationRequired()",
+      "selectorHex": "0xd65db62d",
+      "selectorDecimal": 3596465709
+    },
+    {
+      "signature": "GaugeAlreadyConfigured()",
+      "selectorHex": "0xd0c72255",
+      "selectorDecimal": 3502711381
+    },
+    {
+      "signature": "GaugeIsNotConfigured()",
+      "selectorHex": "0xb9de111c",
+      "selectorDecimal": 3118338332
+    },
+    {
+      "signature": "HookIsZeroAddress()",
+      "selectorHex": "0xa0db3f5e",
+      "selectorDecimal": 2698723166
+    },
+    {
+      "signature": "HookReceiverMisconfigured()",
+      "selectorHex": "0x32c5e961",
+      "selectorDecimal": 851831137
+    },
+    {
+      "signature": "HugeDivider()",
+      "selectorHex": "0x3fc1fbea",
+      "selectorDecimal": 1069677546
+    },
+    {
+      "signature": "HugeMultiplier()",
+      "selectorHex": "0x7d812a14",
+      "selectorDecimal": 2105616916
+    },
+    {
+      "signature": "IncentivesControllerRequired()",
+      "selectorHex": "0x7b4d1b88",
+      "selectorDecimal": 2068650888
+    },
+    {
+      "signature": "IncentivesProgramAlreadyExists()",
+      "selectorHex": "0x83528a7f",
+      "selectorDecimal": 2203224703
+    },
+    {
+      "signature": "IncentivesProgramNotFound()",
+      "selectorHex": "0x0a96b475",
+      "selectorDecimal": 177648757
+    },
+    {
+      "signature": "IncorrectNativeTokenAmount()",
+      "selectorHex": "0xde94576c",
+      "selectorDecimal": 3734263660
+    },
+    {
+      "signature": "IncreaseCardinalityRequired()",
+      "selectorHex": "0x6d759629",
+      "selectorDecimal": 1836422697
+    },
+    {
+      "signature": "IndexOverflow()",
+      "selectorHex": "0x7decd257",
+      "selectorDecimal": 2112672343
+    },
+    {
+      "signature": "IndexOverflowAtEmissionsPerSecond()",
+      "selectorHex": "0x84cc26ce",
+      "selectorDecimal": 2227971790
+    },
+    {
+      "signature": "InputCanBeAssetsOrShares()",
+      "selectorHex": "0xf0bc6712",
+      "selectorDecimal": 4038878994
+    },
+    {
+      "signature": "InputZeroShares()",
+      "selectorHex": "0x6536c9a7",
+      "selectorDecimal": 1698089383
+    },
+    {
+      "signature": "InvalidAddressString()",
+      "selectorHex": "0xdf48f19e",
+      "selectorDecimal": 3746099614
+    },
+    {
+      "signature": "InvalidAlpha()",
+      "selectorHex": "0xfa0bff64",
+      "selectorDecimal": 4195090276
+    },
+    {
+      "signature": "InvalidAsset()",
+      "selectorHex": "0xc891add2",
+      "selectorDecimal": 3364990418
+    },
+    {
+      "signature": "InvalidBeta()",
+      "selectorHex": "0x78a83711",
+      "selectorDecimal": 2024290065
+    },
+    {
+      "signature": "InvalidC1()",
+      "selectorHex": "0x0ecdf469",
+      "selectorDecimal": 248378473
+    },
+    {
+      "signature": "InvalidC2()",
+      "selectorHex": "0xa90ddd0a",
+      "selectorDecimal": 2836258058
+    },
+    {
+      "signature": "InvalidCallBeforeQuote()",
+      "selectorHex": "0x49cc3533",
+      "selectorDecimal": 1238119731
+    },
+    {
+      "signature": "InvalidCminus()",
+      "selectorHex": "0xf1db96b1",
+      "selectorDecimal": 4057700017
+    },
+    {
+      "signature": "InvalidConfiguration()",
+      "selectorHex": "0xc52a9bd3",
+      "selectorDecimal": 3307903955
+    },
+    {
+      "signature": "InvalidCplus()",
+      "selectorHex": "0x0a396c54",
+      "selectorDecimal": 171535444
+    },
+    {
+      "signature": "InvalidDefaultConfig()",
+      "selectorHex": "0xc3388909",
+      "selectorDecimal": 3275262217
+    },
+    {
+      "signature": "InvalidDeployer()",
+      "selectorHex": "0x043c669f",
+      "selectorDecimal": 71067295
+    },
+    {
+      "signature": "InvalidDistributionEnd()",
+      "selectorHex": "0xdc07e402",
+      "selectorDecimal": 3691504642
+    },
+    {
+      "signature": "InvalidDmax()",
+      "selectorHex": "0xa458376b",
+      "selectorDecimal": 2757244779
+    },
+    {
+      "signature": "InvalidEggsAddress()",
+      "selectorHex": "0x838b93c7",
+      "selectorDecimal": 2206962631
+    },
+    {
+      "signature": "InvalidEthAggregatorDecimals()",
+      "selectorHex": "0xdea44292",
+      "selectorDecimal": 3735306898
+    },
+    {
+      "signature": "InvalidFee()",
+      "selectorHex": "0x58d620b3",
+      "selectorDecimal": 1490428083
+    },
+    {
+      "signature": "InvalidFeeRange()",
+      "selectorHex": "0xc15a4e6d",
+      "selectorDecimal": 3243921005
+    },
+    {
+      "signature": "InvalidFlashloanLender()",
+      "selectorHex": "0x22ed7c60",
+      "selectorDecimal": 585989216
+    },
+    {
+      "signature": "InvalidIncentivesProgramName()",
+      "selectorHex": "0xb5fbb2c0",
+      "selectorDecimal": 3053171392
+    },
+    {
+      "signature": "InvalidInitiator()",
+      "selectorHex": "0xbfda1f28",
+      "selectorDecimal": 3218743080
+    },
+    {
+      "signature": "InvalidIrm()",
+      "selectorHex": "0x2e4e395f",
+      "selectorDecimal": 776878431
+    },
+    {
+      "signature": "InvalidKcrit()",
+      "selectorHex": "0x8344b2d4",
+      "selectorDecimal": 2202317524
+    },
+    {
+      "signature": "InvalidKey()",
+      "selectorHex": "0x76d4e1e8",
+      "selectorDecimal": 1993662952
+    },
+    {
+      "signature": "InvalidKi()",
+      "selectorHex": "0xfe067815",
+      "selectorDecimal": 4261836821
+    },
+    {
+      "signature": "InvalidKlin()",
+      "selectorHex": "0x4e435a21",
+      "selectorDecimal": 1313036833
+    },
+    {
+      "signature": "InvalidKlow()",
+      "selectorHex": "0xff8224a7",
+      "selectorDecimal": 4286719143
+    },
+    {
+      "signature": "InvalidKmax()",
+      "selectorHex": "0x408b7f5a",
+      "selectorDecimal": 1082883930
+    },
+    {
+      "signature": "InvalidKmin()",
+      "selectorHex": "0xc98dacd7",
+      "selectorDecimal": 3381505239
+    },
+    {
+      "signature": "InvalidKRange()",
+      "selectorHex": "0x1c60274d",
+      "selectorDecimal": 476063565
+    },
+    {
+      "signature": "InvalidLt()",
+      "selectorHex": "0x27fa2d4a",
+      "selectorDecimal": 670707018
+    },
+    {
+      "signature": "InvalidLTConfig0()",
+      "selectorHex": "0x732481ab",
+      "selectorDecimal": 1931772331
+    },
+    {
+      "signature": "InvalidLTConfig1()",
+      "selectorHex": "0x4ac2d3d4",
+      "selectorDecimal": 1254282196
+    },
+    {
+      "signature": "InvalidMaxLtv()",
+      "selectorHex": "0x75fcbb89",
+      "selectorDecimal": 1979497353
+    },
+    {
+      "signature": "InvalidMaxYield()",
+      "selectorHex": "0x68582072",
+      "selectorDecimal": 1750605938
+    },
+    {
+      "signature": "InvalidPrice()",
+      "selectorHex": "0x00bfc921",
+      "selectorDecimal": 12568865
+    },
+    {
+      "signature": "InvalidQuoteToken()",
+      "selectorHex": "0xd15b4fe2",
+      "selectorDecimal": 3512422370
+    },
+    {
+      "signature": "InvalidRcompCap()",
+      "selectorHex": "0x14f2ce3f",
+      "selectorDecimal": 351456831
+    },
+    {
+      "signature": "InvalidRcritMax()",
+      "selectorHex": "0xbe1b8d4a",
+      "selectorDecimal": 3189476682
+    },
+    {
+      "signature": "InvalidRcritMin()",
+      "selectorHex": "0xfd1776e1",
+      "selectorDecimal": 4246173409
+    },
+    {
+      "signature": "InvalidRewardToken()",
+      "selectorHex": "0xdfde8671",
+      "selectorDecimal": 3755902577
+    },
+    {
+      "signature": "InvalidRi()",
+      "selectorHex": "0xc3bb31ac",
+      "selectorDecimal": 3283825068
+    },
+    {
+      "signature": "InvalidRmin()",
+      "selectorHex": "0x75b5650c",
+      "selectorDecimal": 1974822156
+    },
+    {
+      "signature": "InvalidSecondPrice()",
+      "selectorHex": "0x7c5ab471",
+      "selectorDecimal": 2086319217
+    },
+    {
+      "signature": "InvalidShadowUsdFeed()",
+      "selectorHex": "0x1c38302d",
+      "selectorDecimal": 473444397
+    },
+    {
+      "signature": "InvalidShareToken()",
+      "selectorHex": "0xd938fa37",
+      "selectorDecimal": 3644389943
+    },
+    {
+      "signature": "InvalidSilo()",
+      "selectorHex": "0x06cc02d1",
+      "selectorDecimal": 114033361
+    },
+    {
+      "signature": "InvalidT1()",
+      "selectorHex": "0xa7bf4104",
+      "selectorDecimal": 2814329092
+    },
+    {
+      "signature": "InvalidT2()",
+      "selectorHex": "0x7ae19342",
+      "selectorDecimal": 2061603650
+    },
+    {
+      "signature": "InvalidTcrit()",
+      "selectorHex": "0x133249b8",
+      "selectorDecimal": 322062776
+    },
+    {
+      "signature": "InvalidTCrit()",
+      "selectorHex": "0x736981b2",
+      "selectorDecimal": 1936294322
+    },
+    {
+      "signature": "InvalidTimelock()",
+      "selectorHex": "0xf8d10e82",
+      "selectorDecimal": 4174450306
+    },
+    {
+      "signature": "InvalidTimestamp()",
+      "selectorHex": "0xb7d09497",
+      "selectorDecimal": 3083900055
+    },
+    {
+      "signature": "InvalidTimestamps()",
+      "selectorHex": "0xd22806e3",
+      "selectorDecimal": 3525838563
+    },
+    {
+      "signature": "InvalidTLow()",
+      "selectorHex": "0x47be2827",
+      "selectorDecimal": 1203644455
+    },
+    {
+      "signature": "InvalidTMin()",
+      "selectorHex": "0x6e53e3f6",
+      "selectorDecimal": 1850991606
+    },
+    {
+      "signature": "InvalidToAddress()",
+      "selectorHex": "0x8aa3a72f",
+      "selectorDecimal": 2325980975
+    },
+    {
+      "signature": "InvalidTokenType()",
+      "selectorHex": "0xa1e9dd9d",
+      "selectorDecimal": 2716458397
+    },
+    {
+      "signature": "InvalidU1()",
+      "selectorHex": "0x7549e91a",
+      "selectorDecimal": 1967778074
+    },
+    {
+      "signature": "InvalidU2()",
+      "selectorHex": "0x8a8bcf9a",
+      "selectorDecimal": 2324418458
+    },
+    {
+      "signature": "InvalidUcrit()",
+      "selectorHex": "0x737b5322",
+      "selectorDecimal": 1937462050
+    },
+    {
+      "signature": "InvalidUlow()",
+      "selectorHex": "0x5c65494d",
+      "selectorDecimal": 1550141773
+    },
+    {
+      "signature": "InvalidUnderlyingOracle()",
+      "selectorHex": "0xfff335dd",
+      "selectorDecimal": 4294129117
+    },
+    {
+      "signature": "InvalidUopt()",
+      "selectorHex": "0x4fa7000c",
+      "selectorDecimal": 1336344588
+    },
+    {
+      "signature": "InvalidUserAddress()",
+      "selectorHex": "0x702b3d90",
+      "selectorDecimal": 1881882000
+    },
+    {
+      "signature": "KeyIsTaken()",
+      "selectorHex": "0x38773cb8",
+      "selectorDecimal": 947338424
+    },
+    {
+      "signature": "LinearOracleCannotBeZero()",
+      "selectorHex": "0x0d4f8ca9",
+      "selectorDecimal": 223317161
+    },
+    {
+      "signature": "LiquidationTargetLtvTooHigh()",
+      "selectorHex": "0x4a14a09a",
+      "selectorDecimal": 1242865818
+    },
+    {
+      "signature": "MaturityDateInvalid()",
+      "selectorHex": "0xecb90424",
+      "selectorDecimal": 3971548196
+    },
+    {
+      "signature": "MaturityDateIsInThePast()",
+      "selectorHex": "0xe15c435a",
+      "selectorDecimal": 3780920154
+    },
+    {
+      "signature": "MaxDebtToCoverZero()",
+      "selectorHex": "0xf33790cd",
+      "selectorDecimal": 4080505037
+    },
+    {
+      "signature": "MaxDeployerFeeExceeded()",
+      "selectorHex": "0x2b01a301",
+      "selectorDecimal": 721527553
+    },
+    {
+      "signature": "MaxFeeExceeded()",
+      "selectorHex": "0xf4df6ae5",
+      "selectorDecimal": 4108282597
+    },
+    {
+      "signature": "MaxFlashloanFeeExceeded()",
+      "selectorHex": "0x923f853d",
+      "selectorDecimal": 2453636413
+    },
+    {
+      "signature": "MaxLiquidationFeeExceeded()",
+      "selectorHex": "0xf817842b",
+      "selectorDecimal": 4162290731
+    },
+    {
+      "signature": "MissingHookReceiver()",
+      "selectorHex": "0xd83793a1",
+      "selectorDecimal": 3627520929
+    },
+    {
+      "signature": "MultiplierAndDividerZero()",
+      "selectorHex": "0xd156ee7f",
+      "selectorDecimal": 3512135295
+    },
+    {
+      "signature": "NativeTokenTransferFailed()",
+      "selectorHex": "0x3022f2e4",
+      "selectorDecimal": 807596772
+    },
+    {
+      "signature": "NegativeRcomp()",
+      "selectorHex": "0x50891051",
+      "selectorDecimal": 1351159889
+    },
+    {
+      "signature": "NegativeRcur()",
+      "selectorHex": "0xa467392b",
+      "selectorDecimal": 2758228267
+    },
+    {
+      "signature": "NewIndexOverflow()",
+      "selectorHex": "0x1a751202",
+      "selectorDecimal": 443879938
+    },
+    {
+      "signature": "NewOracleZero()",
+      "selectorHex": "0x14ea1133",
+      "selectorDecimal": 350884147
+    },
+    {
+      "signature": "NoCollateralToLiquidate()",
+      "selectorHex": "0x797c40e1",
+      "selectorDecimal": 2038186209
+    },
+    {
+      "signature": "NoControllerForCollateral()",
+      "selectorHex": "0xfff923d6",
+      "selectorDecimal": 4294517718
+    },
+    {
+      "signature": "NoDebtToCover()",
+      "selectorHex": "0x2ffe1c12",
+      "selectorDecimal": 805182482
+    },
+    {
+      "signature": "NoLiquidity()",
+      "selectorHex": "0xc301e07e",
+      "selectorDecimal": 3271680126
+    },
+    {
+      "signature": "NoPendingConfig()",
+      "selectorHex": "0x818e62bc",
+      "selectorDecimal": 2173592252
+    },
+    {
+      "signature": "NoPendingUpdateToCancel()",
+      "selectorHex": "0x8cff98d0",
+      "selectorDecimal": 2365561040
+    },
+    {
+      "signature": "NoRepayAssets()",
+      "selectorHex": "0xced4ade6",
+      "selectorDecimal": 3470044646
+    },
+    {
+      "signature": "NormalizationDividerTooLarge()",
+      "selectorHex": "0x4c2caa7f",
+      "selectorDecimal": 1277995647
+    },
+    {
+      "signature": "NotEnoughLiquidity()",
+      "selectorHex": "0x4323a555",
+      "selectorDecimal": 1126409557
+    },
+    {
+      "signature": "NothingToWithdraw()",
+      "selectorHex": "0xd0d04f60",
+      "selectorDecimal": 3503312736
+    },
+    {
+      "signature": "NotImplemented()",
+      "selectorHex": "0xd6234725",
+      "selectorDecimal": 3592636197
+    },
+    {
+      "signature": "NotInitialized()",
+      "selectorHex": "0x87138d5c",
+      "selectorDecimal": 2266205532
+    },
+    {
+      "signature": "NotSolvent()",
+      "selectorHex": "0xe081c8f3",
+      "selectorDecimal": 3766601971
+    },
+    {
+      "signature": "NotSupported()",
+      "selectorHex": "0xa0387940",
+      "selectorDecimal": 2688055616
+    },
+    {
+      "signature": "NotYourSilo()",
+      "selectorHex": "0x534bd04a",
+      "selectorDecimal": 1397477450
+    },
+    {
+      "signature": "OldestObservationSatisfied()",
+      "selectorHex": "0xe710511e",
+      "selectorDecimal": 3876606238
+    },
+    {
+      "signature": "OldPrice()",
+      "selectorHex": "0x22dc1858",
+      "selectorDecimal": 584849496
+    },
+    {
+      "signature": "OldSecondaryPrice()",
+      "selectorHex": "0x02cbd274",
+      "selectorDecimal": 46912116
+    },
+    {
+      "signature": "OnlyAdminCanSetPrice()",
+      "selectorHex": "0x8f9367aa",
+      "selectorDecimal": 2408802218
+    },
+    {
+      "signature": "OnlyAllowedRole()",
+      "selectorHex": "0x94572de9",
+      "selectorDecimal": 2488741353
+    },
+    {
+      "signature": "OnlyDebtShareToken()",
+      "selectorHex": "0x36ed4fb9",
+      "selectorDecimal": 921522105
+    },
+    {
+      "signature": "OnlyHookReceiver()",
+      "selectorHex": "0x80897acb",
+      "selectorDecimal": 2156493515
+    },
+    {
+      "signature": "OnlyLeverageUser()",
+      "selectorHex": "0xb46716cd",
+      "selectorDecimal": 3026654925
+    },
+    {
+      "signature": "OnlyNotifier()",
+      "selectorHex": "0x00f09cf3",
+      "selectorDecimal": 15768819
+    },
+    {
+      "signature": "OnlyNotifierOrOwner()",
+      "selectorHex": "0xd3b03ee1",
+      "selectorDecimal": 3551543009
+    },
+    {
+      "signature": "OnlyRouter()",
+      "selectorHex": "0x9e41bdd7",
+      "selectorDecimal": 2655108567
+    },
+    {
+      "signature": "OnlySilo()",
+      "selectorHex": "0x20a518da",
+      "selectorDecimal": 547690714
+    },
+    {
+      "signature": "OnlySiloConfig()",
+      "selectorHex": "0x59d74a41",
+      "selectorDecimal": 1507281473
+    },
+    {
+      "signature": "OnlySiloOrShareToken()",
+      "selectorHex": "0xb1d936ee",
+      "selectorDecimal": 2983802606
+    },
+    {
+      "signature": "OnlySiloOrTokenOrHookReceiver()",
+      "selectorHex": "0x329409fd",
+      "selectorDecimal": 848562685
+    },
+    {
+      "signature": "OracleMisconfiguration()",
+      "selectorHex": "0x952268d3",
+      "selectorDecimal": 2502060243
+    },
+    {
+      "signature": "Overflow()",
+      "selectorHex": "0x35278d12",
+      "selectorDecimal": 891784466
+    },
+    {
+      "signature": "OwnerIsZero()",
+      "selectorHex": "0x4269a059",
+      "selectorDecimal": 1114218585
+    },
+    {
+      "signature": "OwnerIsZeroAddress()",
+      "selectorHex": "0x54a4010f",
+      "selectorDecimal": 1420034319
+    },
+    {
+      "signature": "PendingUpdate()",
+      "selectorHex": "0xd8801bad",
+      "selectorDecimal": 3632274349
+    },
+    {
+      "signature": "PendleOracleIsZero()",
+      "selectorHex": "0xba4dc8f6",
+      "selectorDecimal": 3125659894
+    },
+    {
+      "signature": "PendleOracleNotReady()",
+      "selectorHex": "0xb498fea1",
+      "selectorDecimal": 3029925537
+    },
+    {
+      "signature": "PendlePtToAssetRateIsZero()",
+      "selectorHex": "0x19a877a8",
+      "selectorDecimal": 430471080
+    },
+    {
+      "signature": "PendlePtToSyRateIsZero()",
+      "selectorHex": "0x70dfbe5a",
+      "selectorDecimal": 1893711450
+    },
+    {
+      "signature": "PendleRateIsZero()",
+      "selectorHex": "0x5df19a72",
+      "selectorDecimal": 1576114802
+    },
+    {
+      "signature": "ProtectedProtection()",
+      "selectorHex": "0x11b99875",
+      "selectorDecimal": 297375861
+    },
+    {
+      "signature": "QuoteTokenMustBeTheSame()",
+      "selectorHex": "0xef024699",
+      "selectorDecimal": 4009903769
+    },
+    {
+      "signature": "QuoteTokenNotMatchEth()",
+      "selectorHex": "0x94bfc42a",
+      "selectorDecimal": 2495595562
+    },
+    {
+      "signature": "QuoteTokenZero()",
+      "selectorHex": "0xa46b9ce0",
+      "selectorDecimal": 2758515936
+    },
+    {
+      "signature": "ReceiverDidNotChanged()",
+      "selectorHex": "0x22df46d8",
+      "selectorDecimal": 585058008
+    },
+    {
+      "signature": "ReceiverZero()",
+      "selectorHex": "0x441485f6",
+      "selectorDecimal": 1142195702
+    },
+    {
+      "signature": "RecipientIsZero()",
+      "selectorHex": "0xb05313bb",
+      "selectorDecimal": 2958234555
+    },
+    {
+      "signature": "RecipientNotSolventAfterTransfer()",
+      "selectorHex": "0xef63243e",
+      "selectorDecimal": 4016251966
+    },
+    {
+      "signature": "ReentrancyGuardReentrantCall()",
+      "selectorHex": "0x3ee5aeb5",
+      "selectorDecimal": 1055239861
+    },
+    {
+      "signature": "RepayDebtByDefaultingFailed()",
+      "selectorHex": "0x80ac353a",
+      "selectorDecimal": 2158769466
+    },
+    {
+      "signature": "RepayTooHigh()",
+      "selectorHex": "0x5fb67749",
+      "selectorDecimal": 1605793609
+    },
+    {
+      "signature": "RequestNotSupported()",
+      "selectorHex": "0xa86232c4",
+      "selectorDecimal": 2825007812
+    },
+    {
+      "signature": "ReturnZeroAssets()",
+      "selectorHex": "0x284fe515",
+      "selectorDecimal": 676324629
+    },
+    {
+      "signature": "ReturnZeroShares()",
+      "selectorHex": "0x648361af",
+      "selectorDecimal": 1686331823
+    },
+    {
+      "signature": "SameAsset()",
+      "selectorHex": "0xa698a49a",
+      "selectorDecimal": 2795021466
+    },
+    {
+      "signature": "SameDaoFeeReceiver()",
+      "selectorHex": "0xfbbcc0e6",
+      "selectorDecimal": 4223451366
+    },
+    {
+      "signature": "SameRange()",
+      "selectorHex": "0x11ce44e3",
+      "selectorDecimal": 298730723
+    },
+    {
+      "signature": "SenderNotSolventAfterTransfer()",
+      "selectorHex": "0xf0ee386c",
+      "selectorDecimal": 4042143852
+    },
+    {
+      "signature": "SiloInitialized()",
+      "selectorHex": "0x709d0298",
+      "selectorDecimal": 1889338008
+    },
+    {
+      "signature": "STokenNotSupported()",
+      "selectorHex": "0xa46d4c72",
+      "selectorDecimal": 2758626418
+    },
+    {
+      "signature": "Swap()",
+      "selectorHex": "0x3ebfdaaf",
+      "selectorDecimal": 1052760751
+    },
+    {
+      "signature": "SwapCallFailed()",
+      "selectorHex": "0x03a40bc4",
+      "selectorDecimal": 61082564
+    },
+    {
+      "signature": "SwapDidNotCoverObligations()",
+      "selectorHex": "0xf538c007",
+      "selectorDecimal": 4114137095
+    },
+    {
+      "signature": "TokenDecimalsTooLarge()",
+      "selectorHex": "0xa7617b45",
+      "selectorDecimal": 2808183621
+    },
+    {
+      "signature": "TokenIsNotAContract()",
+      "selectorHex": "0x73d39f9d",
+      "selectorDecimal": 1943248797
+    },
+    {
+      "signature": "TokensAreTheSame()",
+      "selectorHex": "0x7a99f98a",
+      "selectorDecimal": 2056911242
+    },
+    {
+      "signature": "TooLongProgramName()",
+      "selectorHex": "0x10b47cc3",
+      "selectorDecimal": 280263875
+    },
+    {
+      "signature": "TransitionProtectedCollateralNotAllowed()",
+      "selectorHex": "0x0ec5399c",
+      "selectorDecimal": 247806364
+    },
+    {
+      "signature": "TwoWayMarketNotAllowed()",
+      "selectorHex": "0xa717c374",
+      "selectorDecimal": 2803352436
+    },
+    {
+      "signature": "UnableToRepayFlashloan()",
+      "selectorHex": "0x602e56ef",
+      "selectorDecimal": 1613649647
+    },
+    {
+      "signature": "UnexpectedCollateralToken()",
+      "selectorHex": "0x155a4b5c",
+      "selectorDecimal": 358239068
+    },
+    {
+      "signature": "UnexpectedDebtToken()",
+      "selectorHex": "0x4a782034",
+      "selectorDecimal": 1249386548
+    },
+    {
+      "signature": "UnknownAction()",
+      "selectorHex": "0x846fe7bc",
+      "selectorDecimal": 2221926332
+    },
+    {
+      "signature": "UnknownRatio()",
+      "selectorHex": "0xcb18f7fe",
+      "selectorDecimal": 3407411198
+    },
+    {
+      "signature": "UnsupportedFlashloanToken()",
+      "selectorHex": "0xd7df47b5",
+      "selectorDecimal": 3621734325
+    },
+    {
+      "signature": "UserIsSolvent()",
+      "selectorHex": "0x5e26aa2a",
+      "selectorDecimal": 1579592234
+    },
+    {
+      "signature": "UserSolvent()",
+      "selectorHex": "0xabe8ece2",
+      "selectorDecimal": 2884168930
+    },
+    {
+      "signature": "WrongGaugeShareToken()",
+      "selectorHex": "0x60a0aaf0",
+      "selectorDecimal": 1621142256
+    },
+    {
+      "signature": "WrongSilo()",
+      "selectorHex": "0x49d73a27",
+      "selectorDecimal": 1238841895
+    },
+    {
+      "signature": "WrongSiloConfig()",
+      "selectorHex": "0x0e8a9285",
+      "selectorDecimal": 243962501
+    },
+    {
+      "signature": "XOverflow()",
+      "selectorHex": "0x6690fb73",
+      "selectorDecimal": 1720777587
+    },
+    {
+      "signature": "ZeroAddress()",
+      "selectorHex": "0xd92e233d",
+      "selectorDecimal": 3643679549
+    },
+    {
+      "signature": "ZeroAmount()",
+      "selectorHex": "0x1f2a2005",
+      "selectorDecimal": 522854405
+    },
+    {
+      "signature": "ZeroAmountOut()",
+      "selectorHex": "0x4497be84",
+      "selectorDecimal": 1150795396
+    },
+    {
+      "signature": "ZeroPrice()",
+      "selectorHex": "0x4dfba023",
+      "selectorDecimal": 1308336163
+    },
+    {
+      "signature": "ZeroQuote()",
+      "selectorHex": "0x69f8a2c0",
+      "selectorDecimal": 1777902272
+    },
+    {
+      "signature": "ZeroTransfer()",
+      "selectorHex": "0x10cadee3",
+      "selectorDecimal": 281730787
+    }
+  ]
+}
