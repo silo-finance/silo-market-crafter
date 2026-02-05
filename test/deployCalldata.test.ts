@@ -41,6 +41,29 @@ function irmEncodedBytesToConfigObject(encoded: string): { [key: string]: string
   return obj
 }
 
+const KINK_CONFIG_TYPES = [
+  'tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256)',
+  'tuple(uint32,int96)',
+  'address'
+]
+const KINK_CONFIG_KEYS = ['ulow', 'u1', 'u2', 'ucrit', 'rmin', 'kmin', 'kmax', 'alpha', 'cminus', 'cplus', 'c1', 'c2', 'dmax']
+
+function kinkEncodedBytesToConfigObject(encoded: string): { [key: string]: string | number } {
+  if (!encoded || encoded === '0x') return {}
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder()
+  const decoded = abiCoder.decode(KINK_CONFIG_TYPES, encoded) as [unknown[], [number, bigint], string]
+  const [configTuple, immutableTuple] = decoded
+  const arr = configTuple as unknown[]
+  const obj: { [key: string]: string | number } = {}
+  KINK_CONFIG_KEYS.forEach((key, i) => {
+    const v = arr[i]
+    obj[key] = typeof v === 'bigint' ? String(v) : String(v ?? 0)
+  })
+  obj.timelock = immutableTuple[0]
+  obj.rcompCap = String(immutableTuple[1])
+  return obj
+}
+
 describe('deploy calldata from step-9 JSON', () => {
   it('produces the same calldata as the fixture when using only UI functions', () => {
     const jsonString = fs.readFileSync(JSON_FIXTURE, 'utf-8')
@@ -111,6 +134,8 @@ describe('deploy calldata from step-9 JSON', () => {
       solvencyOracle0: { deployed: string; factory: string; txInput: string }
       [k: string]: unknown
     }
+    const _irmConfigData0 = args[1] as string
+    const _irmConfigData1 = args[2] as string
     const _clonableHookReceiver = args[3] as { implementation: string; initializationData: string }
     const _siloInitData = args[4] as {
       token0: string
@@ -128,6 +153,9 @@ describe('deploy calldata from step-9 JSON', () => {
       return decodedInit[0] as string
     })()
 
+    const kinkConfig0 = kinkEncodedBytesToConfigObject(_irmConfigData0)
+    const kinkConfig1 = kinkEncodedBytesToConfigObject(_irmConfigData1)
+
     const wizardData: WizardData = parseJSONConfigToWizardData(jsonString)
     wizardData.token0 = wizardData.token0
       ? { ...wizardData.token0, address: _siloInitData.token0 }
@@ -136,6 +164,21 @@ describe('deploy calldata from step-9 JSON', () => {
       ? { ...wizardData.token1, address: _siloInitData.token1 }
       : { address: _siloInitData.token1, symbol: '', decimals: 18, name: '' }
     wizardData.hookOwnerAddress = hookOwnerAddress
+    if (wizardData.selectedIRM0) wizardData.selectedIRM0.config = kinkConfig0
+    if (wizardData.selectedIRM1) wizardData.selectedIRM1.config = kinkConfig1
+
+    const rawConfig = JSON.parse(jsonString) as { chainlinkOracle0?: { baseToken: string; primaryAggregator: string; secondaryAggregator?: string; normalizationDivider: string; normalizationMultiplier: string; invertSecondPrice: boolean } }
+    if (rawConfig.chainlinkOracle0 && wizardData.oracleConfiguration?.token0) {
+      wizardData.oracleConfiguration.token0.type = 'chainlink'
+      wizardData.oracleConfiguration.token0.chainlinkOracle = {
+        baseToken: rawConfig.chainlinkOracle0.baseToken,
+        primaryAggregator: rawConfig.chainlinkOracle0.primaryAggregator,
+        secondaryAggregator: rawConfig.chainlinkOracle0.secondaryAggregator ?? '',
+        normalizationDivider: rawConfig.chainlinkOracle0.normalizationDivider,
+        normalizationMultiplier: rawConfig.chainlinkOracle0.normalizationMultiplier,
+        invertSecondPrice: rawConfig.chainlinkOracle0.invertSecondPrice ?? false
+      }
+    }
 
     const siloCoreDeployments: SiloCoreDeployments = {
       'DynamicKinkModelFactory.sol': _siloInitData.interestRateModel0,
