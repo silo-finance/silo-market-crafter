@@ -268,6 +268,8 @@ export default function Step4IRMSelection() {
       }
     }
     fetchVersion()
+    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kinkFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // ----- Fetch IRM V2 factory version via Silo Lens (cached per chainId+address) -----
@@ -295,6 +297,8 @@ export default function Step4IRMSelection() {
       }
     }
     fetchVersion()
+    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [irmV2Factory?.address, irmV2SiloLensAddress, wizardData.networkInfo?.chainId])
 
   // ----- Kink filters -----

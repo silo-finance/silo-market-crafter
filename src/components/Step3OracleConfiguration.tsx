@@ -533,6 +533,8 @@ export default function Step3OracleConfiguration() {
       const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator1(hasSecondary)
     }
+    // Intentionally narrow: sync only when saved chainlink config refs change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleConfiguration?.token0?.chainlinkOracle, wizardData.oracleConfiguration?.token1?.chainlinkOracle])
 
   // Find and validate scaler oracles for each token
