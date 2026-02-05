@@ -77,44 +77,6 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               <TreeNode label="silo0" address={config.silo0.silo} explorerUrl={explorerUrl} />
               <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
             </TreeNode>
-            <TreeNode label="Config Silo 0" explorerUrl={explorerUrl}>
-              <TreeNode label="silo" address={config.silo0.silo} explorerUrl={explorerUrl} />
-              <TreeNode label="token" address={config.silo0.token} explorerUrl={explorerUrl} />
-              <TreeNode label="protectedShareToken" address={config.silo0.protectedShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="collateralShareToken" address={config.silo0.collateralShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="debtShareToken" address={config.silo0.debtShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="solvencyOracle" address={config.silo0.solvencyOracle.address} explorerUrl={explorerUrl} />
-              <TreeNode label="maxLtvOracle" address={config.silo0.maxLtvOracle.address} explorerUrl={explorerUrl} />
-              <TreeNode label="interestRateModel" address={config.silo0.interestRateModel.address} explorerUrl={explorerUrl} />
-              <TreeNode label="maxLtv" value={config.silo0.maxLtv} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="lt" value={config.silo0.lt} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="liquidationTargetLtv" value={config.silo0.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="liquidationFee" value={config.silo0.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="flashloanFee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="daoFee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="deployerFee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="hookReceiver" address={config.silo0.hookReceiver} explorerUrl={explorerUrl} />
-              <TreeNode label="callBeforeQuote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
-            </TreeNode>
-            <TreeNode label="Config Silo 1" explorerUrl={explorerUrl}>
-              <TreeNode label="silo" address={config.silo1.silo} explorerUrl={explorerUrl} />
-              <TreeNode label="token" address={config.silo1.token} explorerUrl={explorerUrl} />
-              <TreeNode label="protectedShareToken" address={config.silo1.protectedShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="collateralShareToken" address={config.silo1.collateralShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="debtShareToken" address={config.silo1.debtShareToken} explorerUrl={explorerUrl} />
-              <TreeNode label="solvencyOracle" address={config.silo1.solvencyOracle.address} explorerUrl={explorerUrl} />
-              <TreeNode label="maxLtvOracle" address={config.silo1.maxLtvOracle.address} explorerUrl={explorerUrl} />
-              <TreeNode label="interestRateModel" address={config.silo1.interestRateModel.address} explorerUrl={explorerUrl} />
-              <TreeNode label="maxLtv" value={config.silo1.maxLtv} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="lt" value={config.silo1.lt} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="liquidationTargetLtv" value={config.silo1.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="liquidationFee" value={config.silo1.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="flashloanFee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="daoFee" value={config.silo1.daoFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="deployerFee" value={config.silo1.deployerFee} explorerUrl={explorerUrl} isPercentage />
-              <TreeNode label="hookReceiver" address={config.silo1.hookReceiver} explorerUrl={explorerUrl} />
-              <TreeNode label="callBeforeQuote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
-            </TreeNode>
           </TreeNode>
         </TreeNode>
 
