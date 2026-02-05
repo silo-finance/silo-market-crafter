@@ -10,18 +10,25 @@ interface MarketConfigTreeProps {
   explorerUrl: string
 }
 
+interface TokenMeta {
+  symbol?: string
+  decimals?: number
+}
+
 interface TreeNodeProps {
   label: string
   value?: string | bigint | boolean | null
   address?: string
+  tokenMeta?: TokenMeta
   children?: React.ReactNode
   explorerUrl: string
   isPercentage?: boolean
 }
 
-function TreeNode({ label, value, address, children, explorerUrl, isPercentage }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, children, explorerUrl, isPercentage }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
+  const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
 
   return (
     <li className="tree-item">
@@ -40,6 +47,12 @@ function TreeNode({ label, value, address, children, explorerUrl, isPercentage }
               {formatAddress(address)}
             </a>
             <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+            {hasTokenMeta && (
+              <span className="text-gray-400 text-sm ml-1">
+                {' '}
+                ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
+              </span>
+            )}
           </>
         )}
         {hasValue && (
@@ -81,11 +94,11 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
         </TreeNode>
 
         <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo0.token} explorerUrl={explorerUrl} />
+          <TreeNode label="Token" address={config.silo0.token} tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} explorerUrl={explorerUrl} />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} explorerUrl={explorerUrl} />
-            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} explorerUrl={explorerUrl} />
-            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} explorerUrl={explorerUrl} />
+            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
           </TreeNode>
           <TreeNode label="Solvency Oracle" address={config.silo0.solvencyOracle.address} explorerUrl={explorerUrl}>
             {config.silo0.solvencyOracle.type && (
@@ -140,11 +153,11 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
         </TreeNode>
 
         <TreeNode label="Silo 1" address={config.silo1.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo1.token} explorerUrl={explorerUrl} />
+          <TreeNode label="Token" address={config.silo1.token} tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} explorerUrl={explorerUrl} />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} explorerUrl={explorerUrl} />
-            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} explorerUrl={explorerUrl} />
-            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} explorerUrl={explorerUrl} />
+            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
+            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
           </TreeNode>
           <TreeNode label="Solvency Oracle" address={config.silo1.solvencyOracle.address} explorerUrl={explorerUrl}>
             {config.silo1.solvencyOracle.type && (

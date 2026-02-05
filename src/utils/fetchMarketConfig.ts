@@ -3,6 +3,7 @@ import siloConfigAbi from '@/abis/silo/ISiloConfig.json'
 import dynamicKinkModelAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
+import erc20Abi from '@/abis/IERC20.json'
 
 const BP2DP_NORMALIZATION = BigInt(10 ** 14) // basis points to 18 decimals
 
@@ -13,12 +14,25 @@ export interface MarketConfig {
   silo1: SiloConfig
 }
 
+export interface TokenMeta {
+  symbol?: string
+  decimals?: number
+}
+
 export interface SiloConfig {
   silo: string
   token: string
+  tokenSymbol?: string
+  tokenDecimals?: number
   protectedShareToken: string
+  protectedShareTokenSymbol?: string
+  protectedShareTokenDecimals?: number
   collateralShareToken: string
+  collateralShareTokenSymbol?: string
+  collateralShareTokenDecimals?: number
   debtShareToken: string
+  debtShareTokenSymbol?: string
+  debtShareTokenDecimals?: number
   solvencyOracle: OracleInfo
   maxLtvOracle: OracleInfo
   interestRateModel: IRMInfo
@@ -94,12 +108,42 @@ async function fetchSiloConfig(
   // Fetch IRM info
   const interestRateModel = await fetchIRMInfo(provider, config.interestRateModel)
 
+  // Fetch symbol and decimals for token and share tokens (ERC20)
+  const fetchSymbolDecimals = async (address: string): Promise<{ symbol?: string; decimals?: number }> => {
+    if (!address || address === ethers.ZeroAddress) return {}
+    try {
+      const contract = new ethers.Contract(address, erc20Abi.abi as ethers.InterfaceAbi, provider)
+      const [sym, dec] = await Promise.all([contract.symbol(), contract.decimals()])
+      return {
+        symbol: typeof sym === 'string' ? sym : String(sym),
+        decimals: typeof dec === 'number' ? dec : Number(dec)
+      }
+    } catch {
+      return {}
+    }
+  }
+
+  const [tokenMeta, protectedMeta, collateralMeta, debtMeta] = await Promise.all([
+    fetchSymbolDecimals(config.token),
+    fetchSymbolDecimals(config.protectedShareToken),
+    fetchSymbolDecimals(config.collateralShareToken),
+    fetchSymbolDecimals(config.debtShareToken)
+  ])
+
   return {
     silo: siloAddress,
     token: config.token,
+    tokenSymbol: tokenMeta.symbol,
+    tokenDecimals: tokenMeta.decimals,
     protectedShareToken: config.protectedShareToken,
+    protectedShareTokenSymbol: protectedMeta.symbol,
+    protectedShareTokenDecimals: protectedMeta.decimals,
     collateralShareToken: config.collateralShareToken,
+    collateralShareTokenSymbol: collateralMeta.symbol,
+    collateralShareTokenDecimals: collateralMeta.decimals,
     debtShareToken: config.debtShareToken,
+    debtShareTokenSymbol: debtMeta.symbol,
+    debtShareTokenDecimals: debtMeta.decimals,
     solvencyOracle,
     maxLtvOracle,
     interestRateModel,
