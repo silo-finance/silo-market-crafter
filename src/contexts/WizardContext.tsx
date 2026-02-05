@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
 
 declare global {
   interface Window {
@@ -151,6 +151,8 @@ export interface WizardData {
   lastDeployTxHash: string | null
   /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
   lastDeployArgsHash: string | null
+  /** On step 11: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
+  verificationFromWizard?: boolean
 }
 
 export enum StepStatus {
@@ -180,6 +182,7 @@ interface WizardContextType {
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
   setLastDeployTxHash: (txHash: string | null, argsHash?: string | null) => void
+  setVerificationFromWizard: (value: boolean) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -212,7 +215,8 @@ const initialWizardData: WizardData = {
   selectedHook: null,
   hookOwnerAddress: null,
   lastDeployTxHash: null,
-  lastDeployArgsHash: null
+  lastDeployArgsHash: null,
+  verificationFromWizard: false
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -227,7 +231,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (saved) {
       try {
         const parsedData = JSON.parse(saved) as WizardData
-        setWizardData({ ...parsedData, networkInfo: null })
+        setWizardData({ ...parsedData, networkInfo: null, verificationFromWizard: false })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }
@@ -235,10 +239,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Save wizard data to localStorage whenever it changes (client-side only).
-  // Do not persist networkInfo so the app always follows the wallet network on next load.
+  // Do not persist networkInfo or verificationFromWizard (UI-only for step 11).
   useEffect(() => {
     if (isClient) {
       const toSave = { ...wizardData, networkInfo: null }
+      delete (toSave as Record<string, unknown>).verificationFromWizard
       localStorage.setItem('silo-wizard-data', JSON.stringify(toSave))
     }
   }, [wizardData, isClient])
@@ -566,6 +571,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(initialWizardData)
   }
 
+  const setVerificationFromWizard = useCallback((value: boolean) => {
+    setWizardData(prev => ({ ...prev, verificationFromWizard: value }))
+  }, [])
+
   return (
     <WizardContext.Provider
       value={{
@@ -589,6 +598,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         generateJSONConfig,
         parseJSONConfig,
         setLastDeployTxHash,
+        setVerificationFromWizard,
         resetWizard,
         resetWizardWithCache
       }}

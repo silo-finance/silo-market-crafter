@@ -34,6 +34,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
+  const isStep11Standalone = wizardData.currentStep === 11 && !wizardData.verificationFromWizard
+
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
     return (
@@ -43,11 +45,13 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     )
   }
 
+  const showSummarySidebar = !isStep11Standalone && isSummaryOpen
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="flex">
         {/* Main Content */}
-        <div className={`transition-all duration-300 ${isSummaryOpen ? 'w-2/3' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
           <div className="p-8">
             {/* Header with Navigation and Reset Button */}
             <div className="flex justify-between items-center mb-6">
@@ -73,8 +77,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
           </div>
         </div>
 
-        {/* Summary Sidebar */}
-        <div className={`${isSummaryOpen ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
+        {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
+        <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div className="bg-gray-900 border-l border-gray-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Configuration Summary</h2>
