@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { useWizard, OracleConfiguration, ScalerOracle } from '@/contexts/WizardContext'
+import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
+const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -33,6 +35,54 @@ const formatScaleFactor = (scaleFactor: bigint): string => {
   const cleanMantissa = parseFloat(mantissa).toString()
   
   return `${cleanMantissa}e${exponent}`
+}
+
+/** Format 10^n as 1e{n} for display; raw number for small n. */
+function formatPowerOfTen(value: string): string {
+  if (value === '0') return '0'
+  const n = BigInt(value)
+  const zero = BigInt(0)
+  const one = BigInt(1)
+  const ten = BigInt(10)
+  if (n <= zero) return value
+  let exponent = 0
+  let x = n
+  while (x % ten === zero && x > zero) {
+    exponent++
+    x /= ten
+  }
+  if (x === one) return exponent <= 3 ? value : `1e${exponent}`
+  return value
+}
+
+/**
+ * Normalization so oracle output is 18 decimals.
+ * Equation: base decimals + aggregator decimals ± normalization = 18.
+ * Only base and aggregator decimals are used (quote/target is always 18).
+ * exponent = 18 - baseDecimals - aggregatorDecimals:
+ * - exponent ≥ 0 → normalizationMultiplier = 10^exponent, normalizationDivider = 0
+ * - exponent < 0 → normalizationDivider = 10^(-exponent), normalizationMultiplier = 0
+ */
+function computeChainlinkNormalization(
+  baseDecimals: number,
+  _quoteDecimals: number,
+  aggregatorDecimals: number
+): { divider: string; multiplier: string; mathLineMultiplier: string; mathLineDivider: string } {
+  const targetDecimals = 18
+  const exponent = targetDecimals - baseDecimals - aggregatorDecimals
+  let divider = '0'
+  let multiplier = '0'
+  let mathLineMultiplier = ''
+  let mathLineDivider = ''
+  if (exponent >= 0) {
+    multiplier = String(10 ** exponent)
+    mathLineMultiplier = `base ${baseDecimals} + aggregator ${aggregatorDecimals} + normalization ${exponent} = ${targetDecimals} (QUOTE)`
+  } else {
+    const divExp = -exponent
+    divider = String(10 ** divExp)
+    mathLineDivider = `base ${baseDecimals} + aggregator ${aggregatorDecimals} − normalization ${divExp} = ${targetDecimals} (QUOTE)`
+  }
+  return { divider, multiplier, mathLineMultiplier, mathLineDivider }
 }
 
 // Helper function to validate if scaler can be used with token decimals
@@ -68,11 +118,42 @@ export default function Step3OracleConfiguration() {
     token0: ScalerOracle | null
     token1: ScalerOracle | null
   }>({ token0: null, token1: null })
+  const [chainlink0, setChainlink0] = useState<Partial<ChainlinkOracleConfig> & {
+    primaryAggregatorDecimals?: number
+    mathLineMultiplier?: string
+    mathLineDivider?: string
+    aggregatorDescription?: string
+    aggregatorLatestAnswer?: string
+  }>({
+    baseToken: 'token0',
+    primaryAggregator: '',
+    secondaryAggregator: '',
+    normalizationDivider: '0',
+    normalizationMultiplier: '0',
+    invertSecondPrice: false
+  })
+  const [chainlink1, setChainlink1] = useState<Partial<ChainlinkOracleConfig> & {
+    primaryAggregatorDecimals?: number
+    mathLineMultiplier?: string
+    mathLineDivider?: string
+    aggregatorDescription?: string
+    aggregatorLatestAnswer?: string
+  }>({
+    baseToken: 'token0',
+    primaryAggregator: '',
+    secondaryAggregator: '',
+    normalizationDivider: '0',
+    normalizationMultiplier: '0',
+    invertSecondPrice: false
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [loadingOracles, setLoadingOracles] = useState(true)
   const [oracleScalerFactory, setOracleScalerFactory] = useState<{ address: string; version: string } | null>(null)
+  const [chainlinkV3OracleFactory, setChainlinkV3OracleFactory] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
+  const [useSecondaryAggregator0, setUseSecondaryAggregator0] = useState(false)
+  const [useSecondaryAggregator1, setUseSecondaryAggregator1] = useState(false)
 
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
@@ -91,7 +172,7 @@ export default function Step3OracleConfiguration() {
   useEffect(() => {
     const fetchOracleDeployments = async () => {
       try {
-        const response = await fetch('https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/silo-oracles/deploy/_oraclesDeployments.json')
+        const response = await fetch('https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deploy/_oraclesDeployments.json')
         if (!response.ok) {
           throw new Error('Failed to fetch oracle deployments')
         }
@@ -129,6 +210,29 @@ export default function Step3OracleConfiguration() {
       }
     }
     fetchScalerFactory()
+  }, [wizardData.networkInfo?.chainId])
+
+  // Fetch ChainlinkV3OracleFactory address for current chain (master only)
+  useEffect(() => {
+    const fetchChainlinkFactory = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ChainlinkV3OracleFactory.sol.json`
+        )
+        if (!response.ok) {
+          setChainlinkV3OracleFactory(null)
+          return
+        }
+        const data = await response.json()
+        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        setChainlinkV3OracleFactory(address ? { address, version: '' } : null)
+      } catch {
+        setChainlinkV3OracleFactory(null)
+      }
+    }
+    fetchChainlinkFactory()
   }, [wizardData.networkInfo?.chainId])
 
   // Fetch SiloLens address for current chain (same pattern as Step10)
@@ -181,6 +285,33 @@ export default function Step3OracleConfiguration() {
     fetchFactoryVersion()
   }, [oracleScalerFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
+  // Fetch ChainlinkV3OracleFactory version via Silo Lens (cached per chainId+address)
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainlinkV3OracleFactory?.address || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, chainlinkV3OracleFactory.address)
+    if (cached != null) {
+      setChainlinkV3OracleFactory(prev => prev ? { ...prev, version: cached } : null)
+      return
+    }
+    const fetchFactoryVersion = async () => {
+      if (!window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = String(await lensContract.getVersion(chainlinkV3OracleFactory!.address))
+        setCachedVersion(chainId, chainlinkV3OracleFactory!.address, version)
+        setChainlinkV3OracleFactory(prev => prev ? { ...prev, version } : null)
+      } catch (err) {
+        console.warn('Failed to fetch ChainlinkV3OracleFactory version from Silo Lens:', err)
+        const fallback = '—'
+        setCachedVersion(chainId, chainlinkV3OracleFactory!.address, fallback)
+        setChainlinkV3OracleFactory(prev => prev ? { ...prev, version: fallback } : null)
+      }
+    }
+    fetchFactoryVersion()
+  }, [chainlinkV3OracleFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
   useEffect(() => {
     if (
@@ -230,6 +361,166 @@ export default function Step3OracleConfiguration() {
       })
     }
   }, [wizardData.oracleType1?.type, availableScalers.token1.length, oracleScalerFactory, wizardData.token1?.address])
+
+  // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token0)
+  useEffect(() => {
+    if (wizardData.oracleType0?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
+    const token0 = wizardData.token0
+    const token1 = wizardData.token1
+    const addr = chainlink0.primaryAggregator?.trim()
+    if (!addr || !ethers.isAddress(addr)) {
+      setChainlink0(prev => ({
+        ...prev,
+        primaryAggregatorDecimals: undefined,
+        mathLineMultiplier: undefined,
+        mathLineDivider: undefined,
+        normalizationDivider: '0',
+        normalizationMultiplier: '0',
+        aggregatorDescription: undefined,
+        aggregatorLatestAnswer: undefined
+      }))
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        if (!window.ethereum) return
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const agg = new ethers.Contract(addr, aggregatorV3Abi, provider)
+        const [description, roundData, dec] = await Promise.all([
+          agg.description(),
+          agg.latestRoundData(),
+          agg.decimals()
+        ])
+        const aggregatorDecimals = Number(dec)
+        if (cancelled) return
+        const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
+        const base = token0.decimals
+        const quote = token1.decimals
+        const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
+        if (cancelled) return
+        setChainlink0(prev => ({
+          ...prev,
+          primaryAggregatorDecimals: aggregatorDecimals,
+          mathLineMultiplier,
+          mathLineDivider,
+          normalizationDivider: divider,
+          normalizationMultiplier: multiplier,
+          aggregatorDescription: String(description ?? ''),
+          aggregatorLatestAnswer: answerFormatted
+        }))
+      } catch {
+        if (!cancelled) setChainlink0(prev => ({
+          ...prev,
+          primaryAggregatorDecimals: undefined,
+          mathLineMultiplier: undefined,
+          mathLineDivider: undefined,
+          normalizationDivider: '0',
+          normalizationMultiplier: '0',
+          aggregatorDescription: undefined,
+          aggregatorLatestAnswer: undefined
+        }))
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator])
+
+  // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token1)
+  useEffect(() => {
+    if (wizardData.oracleType1?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
+    const token0 = wizardData.token0
+    const token1 = wizardData.token1
+    const addr = chainlink1.primaryAggregator?.trim()
+    if (!addr || !ethers.isAddress(addr)) {
+      setChainlink1(prev => ({
+        ...prev,
+        primaryAggregatorDecimals: undefined,
+        mathLineMultiplier: undefined,
+        mathLineDivider: undefined,
+        normalizationDivider: '0',
+        normalizationMultiplier: '0',
+        aggregatorDescription: undefined,
+        aggregatorLatestAnswer: undefined
+      }))
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        if (!window.ethereum) return
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const agg = new ethers.Contract(addr, aggregatorV3Abi, provider)
+        const [description, roundData, dec] = await Promise.all([
+          agg.description(),
+          agg.latestRoundData(),
+          agg.decimals()
+        ])
+        const aggregatorDecimals = Number(dec)
+        if (cancelled) return
+        const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
+        const base = token1.decimals
+        const quote = token0.decimals
+        const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
+        if (cancelled) return
+        setChainlink1(prev => ({
+          ...prev,
+          primaryAggregatorDecimals: aggregatorDecimals,
+          mathLineMultiplier,
+          mathLineDivider,
+          normalizationDivider: divider,
+          normalizationMultiplier: multiplier,
+          aggregatorDescription: String(description ?? ''),
+          aggregatorLatestAnswer: answerFormatted
+        }))
+      } catch {
+        if (!cancelled) setChainlink1(prev => ({
+          ...prev,
+          primaryAggregatorDecimals: undefined,
+          mathLineMultiplier: undefined,
+          mathLineDivider: undefined,
+          normalizationDivider: '0',
+          normalizationMultiplier: '0',
+          aggregatorDescription: undefined,
+          aggregatorLatestAnswer: undefined
+        }))
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator])
+
+  // Sync chainlink state from wizard when returning to step
+  useEffect(() => {
+    const c0 = wizardData.oracleConfiguration?.token0?.chainlinkOracle
+    if (c0) {
+      setChainlink0(prev => ({
+        ...prev,
+        baseToken: c0.baseToken,
+        primaryAggregator: c0.primaryAggregator,
+        secondaryAggregator: c0.secondaryAggregator || '',
+        normalizationDivider: c0.normalizationDivider,
+        normalizationMultiplier: c0.normalizationMultiplier,
+        invertSecondPrice: c0.invertSecondPrice
+      }))
+      const hasSecondary = !!(c0.secondaryAggregator && c0.secondaryAggregator !== ethers.ZeroAddress && c0.secondaryAggregator.trim() !== '')
+      setUseSecondaryAggregator0(hasSecondary)
+    }
+    const c1 = wizardData.oracleConfiguration?.token1?.chainlinkOracle
+    if (c1) {
+      setChainlink1(prev => ({
+        ...prev,
+        baseToken: c1.baseToken,
+        primaryAggregator: c1.primaryAggregator,
+        secondaryAggregator: c1.secondaryAggregator || '',
+        normalizationDivider: c1.normalizationDivider,
+        normalizationMultiplier: c1.normalizationMultiplier,
+        invertSecondPrice: c1.invertSecondPrice
+      }))
+      const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
+      setUseSecondaryAggregator1(hasSecondary)
+    }
+  }, [wizardData.oracleConfiguration?.token0?.chainlinkOracle, wizardData.oracleConfiguration?.token1?.chainlinkOracle])
 
   // Find and validate scaler oracles for each token
   useEffect(() => {
@@ -359,16 +650,48 @@ export default function Step3OracleConfiguration() {
       if (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
         throw new Error('Please select or configure a scaler oracle for Token 1')
       }
+      if (wizardData.oracleType0.type === 'chainlink') {
+        if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
+          throw new Error('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
+        }
+        if (!chainlink0.normalizationDivider || !chainlink0.normalizationMultiplier) {
+          throw new Error('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
+        }
+      }
+      if (wizardData.oracleType1.type === 'chainlink') {
+        if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
+          throw new Error('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
+        }
+        if (!chainlink1.normalizationDivider || !chainlink1.normalizationMultiplier) {
+          throw new Error('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
+        }
+      }
 
       // Create oracle configuration
       const config: OracleConfiguration = {
         token0: {
           type: wizardData.oracleType0.type,
-          scalerOracle: wizardData.oracleType0.type === 'scaler' ? selectedScalers.token0! : undefined
+          scalerOracle: wizardData.oracleType0.type === 'scaler' ? selectedScalers.token0! : undefined,
+          chainlinkOracle: wizardData.oracleType0.type === 'chainlink' ? {
+            baseToken: 'token0',
+            primaryAggregator: chainlink0.primaryAggregator!.trim(),
+            secondaryAggregator: chainlink0.secondaryAggregator?.trim() || ethers.ZeroAddress,
+            normalizationDivider: chainlink0.normalizationDivider ?? '0',
+            normalizationMultiplier: chainlink0.normalizationMultiplier ?? '0',
+            invertSecondPrice: chainlink0.invertSecondPrice ?? false
+          } : undefined
         },
         token1: {
           type: wizardData.oracleType1.type,
-          scalerOracle: wizardData.oracleType1.type === 'scaler' ? selectedScalers.token1! : undefined
+          scalerOracle: wizardData.oracleType1.type === 'scaler' ? selectedScalers.token1! : undefined,
+          chainlinkOracle: wizardData.oracleType1.type === 'chainlink' ? {
+            baseToken: 'token1',
+            primaryAggregator: chainlink1.primaryAggregator!.trim(),
+            secondaryAggregator: chainlink1.secondaryAggregator?.trim() || ethers.ZeroAddress,
+            normalizationDivider: chainlink1.normalizationDivider ?? '0',
+            normalizationMultiplier: chainlink1.normalizationMultiplier ?? '0',
+            invertSecondPrice: chainlink1.invertSecondPrice ?? false
+          } : undefined
         }
       }
 
@@ -452,7 +775,7 @@ export default function Step3OracleConfiguration() {
             {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+            Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token0.decimals}
@@ -469,6 +792,110 @@ export default function Step3OracleConfiguration() {
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
               </p>
+            </div>
+          ) : wizardData.oracleType0.type === 'chainlink' ? (
+            <div className="space-y-4">
+              {chainlinkV3OracleFactory ? (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
+                  <a
+                    href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                  >
+                    {chainlinkV3OracleFactory.address}
+                  </a>
+                  <p className="text-xs text-gray-500 mb-1">Version</p>
+                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
+              )}
+              <p className="text-sm text-gray-400">
+                Base token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
+                {' · '}
+                Quote token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
+                <input
+                  type="text"
+                  value={chainlink0.primaryAggregator}
+                  onChange={(e) => setChainlink0(prev => ({ ...prev, primaryAggregator: e.target.value }))}
+                  placeholder="0x..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+                />
+                {(chainlink0.aggregatorDescription != null || chainlink0.aggregatorLatestAnswer != null || chainlink0.primaryAggregatorDecimals != null) && (
+                  <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
+                    {chainlink0.aggregatorDescription != null && (
+                      <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink0.aggregatorDescription || '—'}</span></p>
+                    )}
+                    {chainlink0.primaryAggregatorDecimals != null && (
+                      <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink0.primaryAggregatorDecimals}</span></p>
+                    )}
+                    {chainlink0.aggregatorLatestAnswer != null && (
+                      <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink0.aggregatorLatestAnswer}</span></p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    id="useSecondary0"
+                    checked={useSecondaryAggregator0}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setUseSecondaryAggregator0(checked)
+                      if (!checked) setChainlink0(prev => ({ ...prev, secondaryAggregator: '', invertSecondPrice: false }))
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="useSecondary0" className="text-sm font-medium text-gray-300">Secondary aggregator (optional)</label>
+                </div>
+                {useSecondaryAggregator0 && (
+                  <input
+                    type="text"
+                    value={chainlink0.secondaryAggregator}
+                    onChange={(e) => setChainlink0(prev => ({ ...prev, secondaryAggregator: e.target.value }))}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+                  />
+                )}
+              </div>
+              {useSecondaryAggregator0 && chainlink0.secondaryAggregator?.trim() && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="invert0"
+                    checked={chainlink0.invertSecondPrice}
+                    onChange={(e) => setChainlink0(prev => ({ ...prev, invertSecondPrice: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <label htmlFor="invert0" className="text-sm text-gray-300">Invert second price</label>
+                </div>
+              )}
+              {(chainlink0.normalizationDivider !== '0' || chainlink0.normalizationMultiplier !== '0') && (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+                  <div className={chainlink0.normalizationMultiplier === '0' ? 'opacity-60' : ''}>
+                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink0.normalizationMultiplier === '0' ? 'line-through' : ''}`}>normalizationMultiplier</p>
+                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink0.normalizationMultiplier ?? '0')}</p>
+                    {chainlink0.normalizationMultiplier !== '0' && chainlink0.mathLineMultiplier && (
+                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink0.mathLineMultiplier}</p>
+                    )}
+                  </div>
+                  <div className={chainlink0.normalizationDivider === '0' ? 'opacity-60' : ''}>
+                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink0.normalizationDivider === '0' ? 'line-through' : ''}`}>normalizationDivider</p>
+                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink0.normalizationDivider ?? '0')}</p>
+                    {chainlink0.normalizationDivider !== '0' && chainlink0.mathLineDivider && (
+                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink0.mathLineDivider}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -590,7 +1017,7 @@ export default function Step3OracleConfiguration() {
             {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+            Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token1.decimals}
@@ -607,6 +1034,110 @@ export default function Step3OracleConfiguration() {
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
               </p>
+            </div>
+          ) : wizardData.oracleType1.type === 'chainlink' ? (
+            <div className="space-y-4">
+              {chainlinkV3OracleFactory ? (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
+                  <a
+                    href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                  >
+                    {chainlinkV3OracleFactory.address}
+                  </a>
+                  <p className="text-xs text-gray-500 mb-1">Version</p>
+                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
+              )}
+              <p className="text-sm text-gray-400">
+                Base token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
+                {' · '}
+                Quote token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
+                <input
+                  type="text"
+                  value={chainlink1.primaryAggregator}
+                  onChange={(e) => setChainlink1(prev => ({ ...prev, primaryAggregator: e.target.value }))}
+                  placeholder="0x..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+                />
+                {(chainlink1.aggregatorDescription != null || chainlink1.aggregatorLatestAnswer != null || chainlink1.primaryAggregatorDecimals != null) && (
+                  <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
+                    {chainlink1.aggregatorDescription != null && (
+                      <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink1.aggregatorDescription || '—'}</span></p>
+                    )}
+                    {chainlink1.primaryAggregatorDecimals != null && (
+                      <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink1.primaryAggregatorDecimals}</span></p>
+                    )}
+                    {chainlink1.aggregatorLatestAnswer != null && (
+                      <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink1.aggregatorLatestAnswer}</span></p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    id="useSecondary1"
+                    checked={useSecondaryAggregator1}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setUseSecondaryAggregator1(checked)
+                      if (!checked) setChainlink1(prev => ({ ...prev, secondaryAggregator: '', invertSecondPrice: false }))
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="useSecondary1" className="text-sm font-medium text-gray-300">Secondary aggregator (optional)</label>
+                </div>
+                {useSecondaryAggregator1 && (
+                  <input
+                    type="text"
+                    value={chainlink1.secondaryAggregator}
+                    onChange={(e) => setChainlink1(prev => ({ ...prev, secondaryAggregator: e.target.value }))}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+                  />
+                )}
+              </div>
+              {useSecondaryAggregator1 && chainlink1.secondaryAggregator?.trim() && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="invert1"
+                    checked={chainlink1.invertSecondPrice}
+                    onChange={(e) => setChainlink1(prev => ({ ...prev, invertSecondPrice: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <label htmlFor="invert1" className="text-sm text-gray-300">Invert second price</label>
+                </div>
+              )}
+              {(chainlink1.normalizationDivider !== '0' || chainlink1.normalizationMultiplier !== '0') && (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+                  <div className={chainlink1.normalizationMultiplier === '0' ? 'opacity-60' : ''}>
+                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink1.normalizationMultiplier === '0' ? 'line-through' : ''}`}>normalizationMultiplier</p>
+                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink1.normalizationMultiplier ?? '0')}</p>
+                    {chainlink1.normalizationMultiplier !== '0' && chainlink1.mathLineMultiplier && (
+                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink1.mathLineMultiplier}</p>
+                    )}
+                  </div>
+                  <div className={chainlink1.normalizationDivider === '0' ? 'opacity-60' : ''}>
+                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink1.normalizationDivider === '0' ? 'line-through' : ''}`}>normalizationDivider</p>
+                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink1.normalizationDivider ?? '0')}</p>
+                    {chainlink1.normalizationDivider !== '0' && chainlink1.mathLineDivider && (
+                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink1.mathLineDivider}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -746,7 +1277,9 @@ export default function Step3OracleConfiguration() {
             type="submit"
             disabled={loading || 
               (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) || 
-              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid)))}
+              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) ||
+              (wizardData.oracleType0.type === 'chainlink' && (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0'))) ||
+              (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')))}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

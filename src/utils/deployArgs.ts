@@ -1,8 +1,9 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
+import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
@@ -11,6 +12,8 @@ const deployerAbi = (deployerArtifact as FoundryArtifact).abi
 const irmV2Abi = (irmV2Artifact as FoundryArtifact).abi
 const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
 const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
+const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).abi
+const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -79,13 +82,18 @@ export interface DeployArgs {
   }
 }
 
+export interface OracleDeployments {
+  chainlinkV3OracleFactory?: string
+}
+
 /**
  * Prepare deploy arguments from wizard data (matching Solidity script logic)
- * This function extracts the logic from Step10Deployment component for reuse in tests
+ * oracleDeployments: optional ChainlinkV3OracleFactory address (from silo-oracles deployments)
  */
 export function prepareDeployArgs(
   wizardData: WizardData,
-  siloCoreDeployments: SiloCoreDeployments
+  siloCoreDeployments: SiloCoreDeployments,
+  oracleDeployments?: OracleDeployments
 ): DeployArgs {
   if (!wizardData.token0 || !wizardData.token1) {
     throw new Error('Both token0 and token1 must be set')
@@ -127,7 +135,34 @@ export function prepareDeployArgs(
     }
   }
 
-  const getSolvencyOracleTxData = (scaler: ScalerOracle | null | undefined) => {
+  const getSolvencyOracleTxData = (
+    scaler: ScalerOracle | null | undefined,
+    chainlink: ChainlinkOracleConfig | null | undefined
+  ) => {
+    if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
+      const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
+      const quoteToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+      const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator.trim() !== '' && chainlink.secondaryAggregator !== ethers.ZeroAddress ? ethers.getAddress(chainlink.secondaryAggregator) : ethers.ZeroAddress
+      const primaryAggregator = ethers.getAddress(chainlink.primaryAggregator)
+      // Encode config as single tuple (array form) so ethers does not expand it into multiple args; ABI order: baseToken, quoteToken, primaryAggregator, primaryHeartbeat, secondaryAggregator, secondaryHeartbeat, normalizationDivider, normalizationMultiplier, invertSecondPrice
+      const configTuple = [
+        baseToken,
+        quoteToken,
+        primaryAggregator,
+        0, // primaryHeartbeat uint32
+        secondaryAgg,
+        0, // secondaryHeartbeat uint32
+        BigInt(chainlink.normalizationDivider),
+        BigInt(chainlink.normalizationMultiplier),
+        chainlink.invertSecondPrice
+      ]
+      const txInput = chainlinkV3FactoryInterface.encodeFunctionData('create', [configTuple, ethers.ZeroHash])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.chainlinkV3OracleFactory,
+        txInput
+      }
+    }
     if (!scaler) return getOracleTxData(undefined)
     if (scaler.customCreate) {
       const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
@@ -144,9 +179,15 @@ export function prepareDeployArgs(
   }
 
   const _oracles = {
-    solvencyOracle0: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token0?.scalerOracle),
+    solvencyOracle0: getSolvencyOracleTxData(
+      wizardData.oracleConfiguration?.token0?.scalerOracle,
+      wizardData.oracleConfiguration?.token0?.chainlinkOracle
+    ),
     maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
-    solvencyOracle1: getSolvencyOracleTxData(wizardData.oracleConfiguration?.token1?.scalerOracle),
+    solvencyOracle1: getSolvencyOracleTxData(
+      wizardData.oracleConfiguration?.token1?.scalerOracle,
+      wizardData.oracleConfiguration?.token1?.chainlinkOracle
+    ),
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 
@@ -188,10 +229,13 @@ export function prepareDeployArgs(
     const immutableArgsTuple = [timelock, rcompCap]
     const initialOwner = ethers.ZeroAddress
     const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-    return abiCoder.encode(
-      ['tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256),tuple(uint32,int96),address'],
-      [configTuple, immutableArgsTuple, initialOwner]
-    )
+    // Pass 3 separate types so AbiCoder expects 3 values (not 1 type string and 3 values)
+    const types = [
+      'tuple(int256,int256,int256,int256,int256,int96,int96,int256,int256,int256,int256,int256,int256)',
+      'tuple(uint32,int96)',
+      'address'
+    ]
+    return abiCoder.encode(types, [configTuple, immutableArgsTuple, initialOwner])
   }
 
   // Prepare IRM config data as bytes
@@ -294,11 +338,12 @@ export function prepareDeployArgs(
     return BigInt(Math.round(bp * 100)) * BP2DP_NORMALIZATION
   }
 
+  // Order of fields must match ISiloConfig.InitData ABI: deployer, hookReceiver, deployerFee, daoFee, ...
   const _siloInitData = {
     deployer: ethers.ZeroAddress, // Can be set by user or left as zero
     hookReceiver: ethers.ZeroAddress, // CLONE_IMPLEMENTATION means zero, will use implementation
-    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0),
     deployerFee: to18Decimals(wizardData.feesConfiguration?.deployerFee || 0),
+    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0),
     token0: wizardData.token0.address,
     solvencyOracle0: _oracles.solvencyOracle0.deployed,
     maxLtvOracle0: ethers.ZeroAddress,

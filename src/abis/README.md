@@ -2,7 +2,7 @@
 
 Pliki JSON to **artefakty Foundry** skopiowane z repozytorium:
 
-**https://github.com/silo-finance/silo-contracts-v2** (branch: `develop`)
+**https://github.com/silo-finance/silo-contracts-v2** (branch: `master`)
 
 W kodzie używany jest **wyłącznie klucz `abi`** z każdego pliku. ABI nie jest nigdzie modyfikowane – używane jest tak, jak w artefakcie (żeby uniknąć błędów przy wysyłaniu transakcji).
 

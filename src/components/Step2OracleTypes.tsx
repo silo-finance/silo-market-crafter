@@ -8,8 +8,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,7 +19,7 @@ export default function Step2OracleTypes() {
     : false
 
   // Calculate oracle type availability based on token decimals
-  const getOracleTypes = (tokenDecimals: number): { type: 'none' | 'scaler', enabled: boolean, reason: string }[] => {
+  const getOracleTypes = (tokenDecimals: number): { type: 'none' | 'scaler' | 'chainlink', enabled: boolean, reason: string }[] => {
     const noneEnabled = tokenDecimals === 18 || tokensHaveSameDecimals
     let noneReason = ''
     if (tokenDecimals === 18 && tokensHaveSameDecimals) {
@@ -44,6 +44,11 @@ export default function Step2OracleTypes() {
         reason: tokenDecimals !== 18 
           ? 'Required for non-18-decimal tokens' 
           : 'Not needed for 18-decimal tokens'
+      },
+      {
+        type: 'chainlink',
+        enabled: true,
+        reason: ''
       }
     ]
   }
@@ -113,10 +118,10 @@ export default function Step2OracleTypes() {
       }
       
       // Validate selections are valid strings
-      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler') {
+      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink') {
         throw new Error('Invalid oracle type selected for Token 0')
       }
-      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler') {
+      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink') {
         throw new Error('Invalid oracle type selected for Token 1')
       }
 
@@ -237,14 +242,14 @@ export default function Step2OracleTypes() {
                   name="oracle0"
                   value={oracleType.type}
                   checked={selectedOracle0 === oracleType.type}
-                  onChange={(e) => setSelectedOracle0(e.target.value as 'none' | 'scaler')}
+                  onChange={(e) => setSelectedOracle0(e.target.value as 'none' | 'scaler' | 'chainlink')}
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="text-green-400 text-sm">✓ Available</span>
@@ -252,9 +257,11 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {oracleType.reason}
-                  </p>
+                  {oracleType.type !== 'chainlink' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      {oracleType.reason}
+                    </p>
+                  )}
                 </div>
               </label>
             ))}
@@ -287,14 +294,14 @@ export default function Step2OracleTypes() {
                   name="oracle1"
                   value={oracleType.type}
                   checked={selectedOracle1 === oracleType.type}
-                  onChange={(e) => setSelectedOracle1(e.target.value as 'none' | 'scaler')}
+                  onChange={(e) => setSelectedOracle1(e.target.value as 'none' | 'scaler' | 'chainlink')}
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : 'Scaler Oracle'}
+                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="text-green-400 text-sm">✓ Available</span>
@@ -302,9 +309,11 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {oracleType.reason}
-                  </p>
+                  {oracleType.type !== 'chainlink' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      {oracleType.reason}
+                    </p>
+                  )}
                 </div>
               </label>
             ))}
