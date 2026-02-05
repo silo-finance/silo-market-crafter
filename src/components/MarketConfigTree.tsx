@@ -5,6 +5,57 @@ import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Deci
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 
+/** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
+function formatFactorToE(value: string): string {
+  const s = value.trim()
+  if (!s || s === '0') return s
+  try {
+    const n = BigInt(s)
+    if (n === BigInt(0)) return '0'
+    const str = n.toString()
+    if (str.length <= 4) return str
+    const exp = str.length - 1
+    if (str[0] === '1' && /^0*$/.test(str.slice(1))) return `1e${exp}`
+    const frac = str.slice(1, 5).replace(/0+$/, '')
+    const mantissa = frac ? `${str[0]}.${frac}` : str[0]
+    return `${mantissa}e${exp}`
+  } catch {
+    return value
+  }
+}
+
+function buildOracleBullets(
+  quotePrice: string | undefined,
+  quoteTokenSymbol: string | undefined,
+  type: string | undefined,
+  config: Record<string, unknown> | undefined
+): string[] {
+  const bullets: string[] = []
+  if (quotePrice != null && quotePrice !== '') {
+    const priceStr = formatQuotePriceAs18Decimals(quotePrice)
+    const withSymbol = quoteTokenSymbol ? `${priceStr} ${quoteTokenSymbol}` : priceStr
+    bullets.push(`Price (1 token): ${withSymbol}`)
+  }
+  if (type) {
+    bullets.push(`Type: ${type}`)
+  }
+  if (config && typeof config === 'object') {
+    for (const [key, val] of Object.entries(config)) {
+      if (/quoteToken/i.test(key)) continue
+      const raw = typeof val === 'string' ? val : String(val)
+      const isFactor = /scaleFactor|factor/i.test(key)
+      const display = isFactor && /^\d+$/.test(raw) ? formatFactorToE(raw) : raw
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
+      if (raw.startsWith('0x') && raw.length === 42) {
+        bullets.push(`${label}: ${formatAddress(raw)}`)
+      } else {
+        bullets.push(`${label}: ${display}`)
+      }
+    }
+  }
+  return bullets
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
@@ -164,22 +215,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Solvency Oracle"
             address={config.silo0.solvencyOracle.address}
             suffixText={config.silo0.solvencyOracle.version}
-            bulletItems={config.silo0.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.solvencyOracle.quotePrice)}`] : undefined}
+            bulletItems={buildOracleBullets(config.silo0.solvencyOracle.quotePrice, config.silo0.solvencyOracle.quoteTokenSymbol, config.silo0.solvencyOracle.type, config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)}
             explorerUrl={explorerUrl}
-          >
-            {config.silo0.solvencyOracle.type && (
-              <TreeNode label="Type" value={config.silo0.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
-            )}
-            {config.silo0.solvencyOracle.config && Object.entries(config.silo0.solvencyOracle.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
+          />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
             <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
           ) : config.silo0.maxLtvOracle.address.toLowerCase() === config.silo0.solvencyOracle.address.toLowerCase() ? (
@@ -189,22 +227,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               label="Max LTV Oracle"
               address={config.silo0.maxLtvOracle.address}
               suffixText={config.silo0.maxLtvOracle.version}
-              bulletItems={config.silo0.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.maxLtvOracle.quotePrice)}`] : undefined}
+              bulletItems={buildOracleBullets(config.silo0.maxLtvOracle.quotePrice, config.silo0.maxLtvOracle.quoteTokenSymbol, config.silo0.maxLtvOracle.type, config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)}
               explorerUrl={explorerUrl}
-            >
-              {config.silo0.maxLtvOracle.type && (
-                <TreeNode label="Type" value={config.silo0.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
-              )}
-              {config.silo0.maxLtvOracle.config && Object.entries(config.silo0.maxLtvOracle.config).map(([key, val]) => (
-                <TreeNode
-                  key={key}
-                  label={key}
-                  value={typeof val === 'string' ? val : String(val)}
-                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                  explorerUrl={explorerUrl}
-                />
-              ))}
-            </TreeNode>
+            />
           )}
           <TreeNode
             label="Interest Rate Model"
@@ -253,22 +278,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Solvency Oracle"
             address={config.silo1.solvencyOracle.address}
             suffixText={config.silo1.solvencyOracle.version}
-            bulletItems={config.silo1.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.solvencyOracle.quotePrice)}`] : undefined}
+            bulletItems={buildOracleBullets(config.silo1.solvencyOracle.quotePrice, config.silo1.solvencyOracle.quoteTokenSymbol, config.silo1.solvencyOracle.type, config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)}
             explorerUrl={explorerUrl}
-          >
-            {config.silo1.solvencyOracle.type && (
-              <TreeNode label="Type" value={config.silo1.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
-            )}
-            {config.silo1.solvencyOracle.config && Object.entries(config.silo1.solvencyOracle.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
+          />
           {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
             <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
           ) : config.silo1.maxLtvOracle.address.toLowerCase() === config.silo1.solvencyOracle.address.toLowerCase() ? (
@@ -278,22 +290,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               label="Max LTV Oracle"
               address={config.silo1.maxLtvOracle.address}
               suffixText={config.silo1.maxLtvOracle.version}
-              bulletItems={config.silo1.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.maxLtvOracle.quotePrice)}`] : undefined}
+              bulletItems={buildOracleBullets(config.silo1.maxLtvOracle.quotePrice, config.silo1.maxLtvOracle.quoteTokenSymbol, config.silo1.maxLtvOracle.type, config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)}
               explorerUrl={explorerUrl}
-            >
-              {config.silo1.maxLtvOracle.type && (
-                <TreeNode label="Type" value={config.silo1.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
-              )}
-              {config.silo1.maxLtvOracle.config && Object.entries(config.silo1.maxLtvOracle.config).map(([key, val]) => (
-                <TreeNode
-                  key={key}
-                  label={key}
-                  value={typeof val === 'string' ? val : String(val)}
-                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                  explorerUrl={explorerUrl}
-                />
-              ))}
-            </TreeNode>
+            />
           )}
           <TreeNode
             label="Interest Rate Model"

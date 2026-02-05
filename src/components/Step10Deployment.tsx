@@ -350,20 +350,32 @@ export default function Step10Deployment() {
     const fetchOracleDeployments = async () => {
       if (!wizardData.networkInfo?.chainId) return
       const chainName = getChainName(wizardData.networkInfo.chainId)
+      const result: OracleDeployments = {}
       try {
-        const response = await fetch(
+        const chainlinkRes = await fetch(
           `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ChainlinkV3OracleFactory.sol.json`
         )
-        if (response.ok) {
-          const data = await response.json()
+        if (chainlinkRes.ok) {
+          const data = await chainlinkRes.json()
           const address = data.address || ''
-          if (address && ethers.isAddress(address)) {
-            setOracleDeployments({ chainlinkV3OracleFactory: address })
-          }
+          if (address && ethers.isAddress(address)) result.chainlinkV3OracleFactory = address
         }
       } catch (err) {
         console.warn('Failed to fetch ChainlinkV3OracleFactory:', err)
       }
+      try {
+        const ptLinearRes = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/PTLinearOracleFactory.sol.json`
+        )
+        if (ptLinearRes.ok) {
+          const data = await ptLinearRes.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) result.ptLinearOracleFactory = address
+        }
+      } catch (err) {
+        console.warn('Failed to fetch PTLinearOracleFactory:', err)
+      }
+      setOracleDeployments(result)
     }
 
     if (wizardData.networkInfo?.chainId) {

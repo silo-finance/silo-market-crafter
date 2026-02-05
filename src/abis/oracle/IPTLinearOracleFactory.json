@@ -1,0 +1,613 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "create",
+            "inputs": [
+                {
+                    "name": "_config",
+                    "type": "tuple",
+                    "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                    "components": [
+                        {
+                            "name": "ptToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxYield",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hardcodedQuoteToken",
+                            "type": "address",
+                            "internalType": "address"
+                        }
+                    ]
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "oracle",
+                    "type": "address",
+                    "internalType": "contract IPTLinearOracle"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "createAndVerifyOracleConfig",
+            "inputs": [
+                {
+                    "name": "_deploymentConfig",
+                    "type": "tuple",
+                    "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                    "components": [
+                        {
+                            "name": "ptToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxYield",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hardcodedQuoteToken",
+                            "type": "address",
+                            "internalType": "address"
+                        }
+                    ]
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "oracleConfig",
+                    "type": "tuple",
+                    "internalType": "struct IPTLinearOracleConfig.OracleConfig",
+                    "components": [
+                        {
+                            "name": "linearOracle",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "ptToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "hardcodedQuoteToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "normalizationDivider",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "hashConfig",
+            "inputs": [
+                {
+                    "name": "_deploymentConfig",
+                    "type": "tuple",
+                    "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                    "components": [
+                        {
+                            "name": "ptToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxYield",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hardcodedQuoteToken",
+                            "type": "address",
+                            "internalType": "address"
+                        }
+                    ]
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "configId",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "predictAddress",
+            "inputs": [
+                {
+                    "name": "_deploymentConfig",
+                    "type": "tuple",
+                    "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                    "components": [
+                        {
+                            "name": "ptToken",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "maxYield",
+                            "type": "uint256",
+                            "internalType": "uint256"
+                        },
+                        {
+                            "name": "hardcodedQuoteToken",
+                            "type": "address",
+                            "internalType": "address"
+                        }
+                    ]
+                },
+                {
+                    "name": "_deployer",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "predictedAddress",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "resolveExistingOracle",
+            "inputs": [
+                {
+                    "name": "_configId",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "oracle",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "error",
+            "name": "AddressZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "DeployerCannotBeZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "InvalidMaxYield",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "LinearOracleCannotBeZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "MaturityDateInvalid",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "MaturityDateIsInThePast",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "NormalizationDividerTooLarge",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "create((address,uint256,address),bytes32)": "c5f87334",
+        "createAndVerifyOracleConfig((address,uint256,address))": "4a666cd3",
+        "hashConfig((address,uint256,address))": "60936614",
+        "predictAddress((address,uint256,address),address,bytes32)": "eda5f11c",
+        "resolveExistingOracle(bytes32)": "5f4ec941"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"AddressZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DeployerCannotBeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidMaxYield\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LinearOracleCannotBeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaturityDateInvalid\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaturityDateIsInThePast\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NormalizationDividerTooLarge\",\"type\":\"error\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"ptToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxYield\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hardcodedQuoteToken\",\"type\":\"address\"}],\"internalType\":\"struct IPTLinearOracleFactory.DeploymentConfig\",\"name\":\"_config\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"create\",\"outputs\":[{\"internalType\":\"contract IPTLinearOracle\",\"name\":\"oracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"ptToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxYield\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hardcodedQuoteToken\",\"type\":\"address\"}],\"internalType\":\"struct IPTLinearOracleFactory.DeploymentConfig\",\"name\":\"_deploymentConfig\",\"type\":\"tuple\"}],\"name\":\"createAndVerifyOracleConfig\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"linearOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ptToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"hardcodedQuoteToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"normalizationDivider\",\"type\":\"uint256\"}],\"internalType\":\"struct IPTLinearOracleConfig.OracleConfig\",\"name\":\"oracleConfig\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"ptToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxYield\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hardcodedQuoteToken\",\"type\":\"address\"}],\"internalType\":\"struct IPTLinearOracleFactory.DeploymentConfig\",\"name\":\"_deploymentConfig\",\"type\":\"tuple\"}],\"name\":\"hashConfig\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"configId\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"ptToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxYield\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"hardcodedQuoteToken\",\"type\":\"address\"}],\"internalType\":\"struct IPTLinearOracleFactory.DeploymentConfig\",\"name\":\"_deploymentConfig\",\"type\":\"tuple\"},{\"internalType\":\"address\",\"name\":\"_deployer\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"predictAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"predictedAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_configId\",\"type\":\"bytes32\"}],\"name\":\"resolveExistingOracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"oracle\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"This interface is used to create and verify PTLinearOracle.\",\"kind\":\"dev\",\"methods\":{\"create((address,uint256,address),bytes32)\":{\"details\":\"Use this method to create oracle for PT token\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"createAndVerifyOracleConfig((address,uint256,address))\":{\"notice\":\"this is only helper method, should not be used directly\"}},\"notice\":\"PT markets are not deterministic, so there is no guarantee that this code will work for all markets.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol\":\"IPTLinearOracleFactory\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7\",\"dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2\"]},\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-oracles/contracts/interfaces/IPTLinearOracle.sol\":{\"keccak256\":\"0x4eeaa1798560cc36a155d5fab8d29ff1467d7561dfe206949ac0bf3eece3ca91\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c850876c3df4618802ddbe2a12f4192c69dd5ff4ee90890466634ae5f2b52cff\",\"dweb:/ipfs/QmTJjaysDaZpgKKDx1wcfEiJUNS1dTcRf1V7gPa3VZfsTU\"]},\"silo-oracles/contracts/interfaces/IPTLinearOracleConfig.sol\":{\"keccak256\":\"0x48a45fc5c9a5c98a1308774f57f9f4ea8d68abdd31a3d256512087f111005bca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f8650ca15540b687fdde73de9e33793e70aeb62444cf9a3d3fea27497a01fc9\",\"dweb:/ipfs/QmSu9FMYnVzcpFnTdvmWjcUtohywHvrq3q5ic5N4Fuum15\"]},\"silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol\":{\"keccak256\":\"0xc90b7fe17d236a7fc4652fb14acd6a8037eb9ab2de61bc1b74a3471c4f3f8e0f\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7ad51fb96fe22d1b3ed19b9c0eae64d11fb88a039ee395607fce98d68a329285\",\"dweb:/ipfs/QmbyrnYrhRQpSvpbgwQqjTZZXn5AnfCBtxKed9RrY6Phjq\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "AddressZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "DeployerCannotBeZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "InvalidMaxYield"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "LinearOracleCannotBeZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "MaturityDateInvalid"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "MaturityDateIsInThePast"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "NormalizationDividerTooLarge"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                            "name": "_config",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "ptToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxYield",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hardcodedQuoteToken",
+                                    "type": "address"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "create",
+                    "outputs": [
+                        {
+                            "internalType": "contract IPTLinearOracle",
+                            "name": "oracle",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                            "name": "_deploymentConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "ptToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxYield",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hardcodedQuoteToken",
+                                    "type": "address"
+                                }
+                            ]
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "createAndVerifyOracleConfig",
+                    "outputs": [
+                        {
+                            "internalType": "struct IPTLinearOracleConfig.OracleConfig",
+                            "name": "oracleConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "linearOracle",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "ptToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hardcodedQuoteToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "normalizationDivider",
+                                    "type": "uint256"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                            "name": "_deploymentConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "ptToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxYield",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hardcodedQuoteToken",
+                                    "type": "address"
+                                }
+                            ]
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "hashConfig",
+                    "outputs": [
+                        {
+                            "internalType": "bytes32",
+                            "name": "configId",
+                            "type": "bytes32"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "struct IPTLinearOracleFactory.DeploymentConfig",
+                            "name": "_deploymentConfig",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "ptToken",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "maxYield",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "hardcodedQuoteToken",
+                                    "type": "address"
+                                }
+                            ]
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_deployer",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "predictAddress",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "predictedAddress",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "bytes32",
+                            "name": "_configId",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "resolveExistingOracle",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "oracle",
+                            "type": "address"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "create((address,uint256,address),bytes32)": {
+                        "details": "Use this method to create oracle for PT token"
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "createAndVerifyOracleConfig((address,uint256,address))": {
+                        "notice": "this is only helper method, should not be used directly"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol": "IPTLinearOracleFactory"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "gitmodules/chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+                "keccak256": "0xfe4e8bb4861bb3860ba890ab91a3b818ec66e5a8f544fb608cfcb73f433472cd",
+                "urls": [
+                    "bzz-raw://644cff84052e1e82b5bb502b2a46e8f142a62b0db4cd9b38200798ba8373c6f7",
+                    "dweb:/ipfs/QmTa99QHrJBn3SXDizquPBUiTxVCNKQrHgaWJhuds5Sce2"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IPTLinearOracle.sol": {
+                "keccak256": "0x4eeaa1798560cc36a155d5fab8d29ff1467d7561dfe206949ac0bf3eece3ca91",
+                "urls": [
+                    "bzz-raw://c850876c3df4618802ddbe2a12f4192c69dd5ff4ee90890466634ae5f2b52cff",
+                    "dweb:/ipfs/QmTJjaysDaZpgKKDx1wcfEiJUNS1dTcRf1V7gPa3VZfsTU"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IPTLinearOracleConfig.sol": {
+                "keccak256": "0x48a45fc5c9a5c98a1308774f57f9f4ea8d68abdd31a3d256512087f111005bca",
+                "urls": [
+                    "bzz-raw://2f8650ca15540b687fdde73de9e33793e70aeb62444cf9a3d3fea27497a01fc9",
+                    "dweb:/ipfs/QmSu9FMYnVzcpFnTdvmWjcUtohywHvrq3q5ic5N4Fuum15"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IPTLinearOracleFactory.sol": {
+                "keccak256": "0xc90b7fe17d236a7fc4652fb14acd6a8037eb9ab2de61bc1b74a3471c4f3f8e0f",
+                "urls": [
+                    "bzz-raw://7ad51fb96fe22d1b3ed19b9c0eae64d11fb88a039ee395607fce98d68a329285",
+                    "dweb:/ipfs/QmbyrnYrhRQpSvpbgwQqjTZZXn5AnfCBtxKed9RrY6Phjq"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 73
+}

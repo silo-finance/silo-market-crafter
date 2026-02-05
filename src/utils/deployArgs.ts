@@ -1,9 +1,10 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle, ChainlinkOracleConfig } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
+import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
@@ -14,6 +15,8 @@ const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
 const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
 const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).abi
 const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
+const ptLinearFactoryAbi = (ptLinearOracleFactoryAbi as FoundryArtifact).abi
+const ptLinearFactoryInterface = new ethers.Interface(ptLinearFactoryAbi)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -84,6 +87,7 @@ export interface DeployArgs {
 
 export interface OracleDeployments {
   chainlinkV3OracleFactory?: string
+  ptLinearOracleFactory?: string
 }
 
 /**
@@ -137,7 +141,8 @@ export function prepareDeployArgs(
 
   const getSolvencyOracleTxData = (
     scaler: ScalerOracle | null | undefined,
-    chainlink: ChainlinkOracleConfig | null | undefined
+    chainlink: ChainlinkOracleConfig | null | undefined,
+    ptLinear: PTLinearOracleConfig | null | undefined
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
@@ -163,6 +168,24 @@ export function prepareDeployArgs(
         txInput
       }
     }
+    if (ptLinear && oracleDeployments?.ptLinearOracleFactory) {
+      // PT-Linear: ptToken = base token (token0 or token1 for this oracle), hardcodedQuoteToken = quote address (other token or user-provided)
+      const ptToken = ethers.getAddress(
+        wizardData.oracleConfiguration?.token0?.ptLinearOracle === ptLinear
+          ? wizardData.token0!.address
+          : wizardData.token1!.address
+      )
+      const hardcodedQuoteToken = ethers.getAddress(ptLinear.hardcodedQuoteTokenAddress?.trim() || ethers.ZeroAddress)
+      // maxYield: percent as 18-decimal (e.g. 5% = 5e16)
+      const maxYield = BigInt(Math.round(Number(ptLinear.maxYieldPercent) || 0)) * BigInt(1e16)
+      const configTuple = [ptToken, maxYield, hardcodedQuoteToken]
+      const txInput = ptLinearFactoryInterface.encodeFunctionData('create', [configTuple, ethers.ZeroHash])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.ptLinearOracleFactory,
+        txInput
+      }
+    }
     if (!scaler) return getOracleTxData(undefined)
     if (scaler.customCreate) {
       const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
@@ -181,12 +204,14 @@ export function prepareDeployArgs(
   const _oracles = {
     solvencyOracle0: getSolvencyOracleTxData(
       wizardData.oracleConfiguration?.token0?.scalerOracle,
-      wizardData.oracleConfiguration?.token0?.chainlinkOracle
+      wizardData.oracleConfiguration?.token0?.chainlinkOracle,
+      wizardData.oracleConfiguration?.token0?.ptLinearOracle
     ),
     maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
     solvencyOracle1: getSolvencyOracleTxData(
       wizardData.oracleConfiguration?.token1?.scalerOracle,
-      wizardData.oracleConfiguration?.token1?.chainlinkOracle
+      wizardData.oracleConfiguration?.token1?.chainlinkOracle,
+      wizardData.oracleConfiguration?.token1?.ptLinearOracle
     ),
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }

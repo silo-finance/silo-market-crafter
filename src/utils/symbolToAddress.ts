@@ -53,3 +53,29 @@ export function getAddressesJsonUrl(chainId: string): string {
   const chainName = getChainNameForAddresses(chainId)
   return `${ADDRESSES_JSON_BASE}/${chainName}.json`
 }
+
+/**
+ * Resolve address to name/key from Silo repo addresses JSON (reverse lookup).
+ * Returns the exact key from JSON if this address is present, otherwise null.
+ */
+export async function resolveAddressToName(
+  chainId: string,
+  address: string
+): Promise<string | null> {
+  const normalized = address?.trim()
+  if (!normalized || !normalized.startsWith('0x')) return null
+  const chainName = getChainNameForAddresses(chainId)
+  const url = `${ADDRESSES_JSON_BASE}/${chainName}.json`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = (await res.json()) as Record<string, string>
+    const addrLower = normalized.toLowerCase()
+    const found = Object.entries(data).find(
+      ([, addr]) => typeof addr === 'string' && addr.toLowerCase() === addrLower
+    )
+    return found ? found[0] : null
+  } catch {
+    return null
+  }
+}

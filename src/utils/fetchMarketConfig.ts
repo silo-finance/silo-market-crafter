@@ -3,6 +3,7 @@ import siloConfigAbi from '@/abis/silo/ISiloConfig.json'
 import dynamicKinkModelAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
+import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
 import erc20Abi from '@/abis/IERC20.json'
 import siloLensAbi from '@/abis/silo/ISiloLens.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
@@ -110,6 +111,8 @@ export interface OracleInfo {
   version?: string
   /** quote(1 base token, baseToken) result as raw string (display as 18 decimals) */
   quotePrice?: string
+  /** Symbol of the token in which quote price is denominated (when available, e.g. from QUOTE_TOKEN) */
+  quoteTokenSymbol?: string
 }
 
 export interface IRMInfo {
@@ -350,6 +353,45 @@ async function fetchSiloConfig(
   if (solvencyQuote != null) solvencyOracle.quotePrice = solvencyQuote
   if (maxLtvQuote != null) maxLtvOracle.quotePrice = maxLtvQuote
 
+  // Every oracle implements ISiloOracle.quoteToken() – fetch quote token address and resolve symbol
+  const oracleAddresses = [
+    solvencyOracle.address,
+    maxLtvOracle.address && maxLtvOracle.address !== ethers.ZeroAddress && maxLtvOracle.address.toLowerCase() !== solvencyOracle.address?.toLowerCase()
+      ? maxLtvOracle.address
+      : null
+  ].filter((a): a is string => !!a && a !== ethers.ZeroAddress)
+  const quoteTokenByOracle = new Map<string, string>()
+  await Promise.all(Array.from(new Set(oracleAddresses)).map(async (oracleAddr) => {
+    try {
+      const oracleContract = new ethers.Contract(oracleAddr, siloOracleAbi.abi as ethers.InterfaceAbi, provider)
+      const qt = await oracleContract.quoteToken()
+      const addr = typeof qt === 'string' ? qt : qt?.toString?.() ?? ''
+      if (addr && addr !== ethers.ZeroAddress) quoteTokenByOracle.set(oracleAddr.toLowerCase(), addr.toLowerCase())
+    } catch {
+      // ignore
+    }
+  }))
+  const quoteTokenAddresses = new Set(quoteTokenByOracle.values())
+  const quoteSymbolByAddress = new Map<string, string>()
+  await Promise.all(Array.from(quoteTokenAddresses).map(async (addr) => {
+    try {
+      const contract = new ethers.Contract(addr, erc20Abi.abi as ethers.InterfaceAbi, provider)
+      const sym = await contract.symbol()
+      quoteSymbolByAddress.set(addr, typeof sym === 'string' ? sym : String(sym))
+    } catch {
+      // ignore
+    }
+  }))
+  for (const oracle of [solvencyOracle, maxLtvOracle]) {
+    const addr = oracle.address?.toLowerCase()
+    if (!addr) continue
+    const qtAddr = quoteTokenByOracle.get(addr)
+    if (qtAddr) {
+      const sym = quoteSymbolByAddress.get(qtAddr)
+      if (sym) oracle.quoteTokenSymbol = sym
+    }
+  }
+
   return {
     silo: siloAddress,
     token: config.token,
@@ -427,6 +469,21 @@ async function fetchOracleInfo(
     }
   } catch {
     // Not Oracle Scaler
+  }
+
+  if (!info.type) {
+    // Try PT-Linear Oracle (has baseDiscountPerYear)
+    const ptLinearAbi = [
+      { type: 'function' as const, name: 'baseDiscountPerYear', inputs: [], outputs: [{ type: 'uint256', internalType: 'uint256' }], stateMutability: 'view' as const }
+    ]
+    try {
+      const ptContract = new ethers.Contract(oracleAddress, ptLinearAbi as ethers.InterfaceAbi, provider)
+      const baseDiscountPerYear = await ptContract.baseDiscountPerYear()
+      info.type = 'PTLinear'
+      info.config = { baseDiscountPerYear: baseDiscountPerYear.toString() }
+    } catch {
+      // Not PT-Linear
+    }
   }
 
   return info

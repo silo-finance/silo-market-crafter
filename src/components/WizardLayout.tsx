@@ -160,8 +160,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 2: Oracle Types */}
-              {wizardData.oracleType0 && (
+              {/* Step 2: Oracle Types – not shown on step 11 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 11 && wizardData.oracleType0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Types</h3>
                   <div className="space-y-2">
@@ -179,8 +179,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 3: Oracle Configuration */}
-              {wizardData.oracleConfiguration && (
+              {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 11 && wizardData.oracleConfiguration && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
                   <div className="space-y-2">
@@ -235,29 +235,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0</div>
                       <div className="text-xs text-gray-400">
-                        {wizardData.borrowConfiguration.token0.nonBorrowable ? (
+                        {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
-                        ) : (
-                          <>
-                            LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
-                            Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
-                            Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
-                          </>
                         )}
+                        {wizardData.borrowConfiguration.token0.nonBorrowable && <br />}
+                        LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
+                        Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
+                        Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 1</div>
                       <div className="text-xs text-gray-400">
-                        {wizardData.borrowConfiguration.token1.nonBorrowable ? (
+                        {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
-                        ) : (
-                          <>
-                            LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
-                            Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
-                            Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
-                          </>
                         )}
+                        {wizardData.borrowConfiguration.token1.nonBorrowable && <br />}
+                        LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
+                        Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
+                        Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
                       </div>
                     </div>
                   </div>

@@ -8,8 +8,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -18,8 +18,12 @@ export default function Step2OracleTypes() {
     ? wizardData.token0.decimals === wizardData.token1.decimals 
     : false
 
-  // Calculate oracle type availability based on token decimals
-  const getOracleTypes = (tokenDecimals: number): { type: 'none' | 'scaler' | 'chainlink', enabled: boolean, reason: string }[] => {
+  // PT-Linear is only available when token symbol starts with two uppercase letters "PT"
+  const isPTToken = (symbol: string) =>
+    symbol.length >= 2 && symbol[0] === 'P' && symbol[1] === 'T'
+
+  // Calculate oracle type availability based on token decimals and symbol
+  const getOracleTypes = (tokenDecimals: number, tokenSymbol: string): { type: 'none' | 'scaler' | 'chainlink' | 'ptLinear', enabled: boolean, reason: string }[] => {
     const noneEnabled = tokenDecimals === 18 || tokensHaveSameDecimals
     let noneReason = ''
     if (tokenDecimals === 18 && tokensHaveSameDecimals) {
@@ -31,7 +35,9 @@ export default function Step2OracleTypes() {
     } else {
       noneReason = 'Only available for 18-decimal tokens or when both tokens have the same decimals'
     }
-    
+
+    const ptLinearEnabled = isPTToken(tokenSymbol)
+
     return [
       {
         type: 'none',
@@ -49,12 +55,17 @@ export default function Step2OracleTypes() {
         type: 'chainlink',
         enabled: true,
         reason: ''
+      },
+      {
+        type: 'ptLinear',
+        enabled: ptLinearEnabled,
+        reason: ptLinearEnabled ? 'Available for PT tokens (symbol must start with PT)' : 'Only available when token symbol starts with two uppercase letters PT'
       }
     ]
   }
 
-  const oracleTypes0 = wizardData.token0 ? getOracleTypes(wizardData.token0.decimals) : []
-  const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals) : []
+  const oracleTypes0 = wizardData.token0 ? getOracleTypes(wizardData.token0.decimals, wizardData.token0.symbol) : []
+  const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals, wizardData.token1.symbol) : []
 
   // Track token addresses to detect changes and reset selections
   const token0AddressRef = React.useRef<string | undefined>()
@@ -118,10 +129,10 @@ export default function Step2OracleTypes() {
       }
       
       // Validate selections are valid strings
-      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink') {
+      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink' && selectedOracle0 !== 'ptLinear') {
         throw new Error('Invalid oracle type selected for Token 0')
       }
-      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink') {
+      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink' && selectedOracle1 !== 'ptLinear') {
         throw new Error('Invalid oracle type selected for Token 1')
       }
 
@@ -242,14 +253,14 @@ export default function Step2OracleTypes() {
                   name="oracle0"
                   value={oracleType.type}
                   checked={selectedOracle0 === oracleType.type}
-                  onChange={(e) => setSelectedOracle0(e.target.value as 'none' | 'scaler' | 'chainlink')}
+                  onChange={(e) => setSelectedOracle0(e.target.value as 'none' | 'scaler' | 'chainlink' | 'ptLinear')}
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
+                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="text-green-400 text-sm">✓ Available</span>
@@ -299,14 +310,14 @@ export default function Step2OracleTypes() {
                   name="oracle1"
                   value={oracleType.type}
                   checked={selectedOracle1 === oracleType.type}
-                  onChange={(e) => setSelectedOracle1(e.target.value as 'none' | 'scaler' | 'chainlink')}
+                  onChange={(e) => setSelectedOracle1(e.target.value as 'none' | 'scaler' | 'chainlink' | 'ptLinear')}
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
+                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="text-green-400 text-sm">✓ Available</span>
