@@ -151,8 +151,8 @@ export interface WizardData {
   lastDeployTxHash: string | null
   /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
   lastDeployArgsHash: string | null
-  /** On step 11: true when verifying the wizard deployment (show summary sidebar), false when standalone verification (hide sidebar). */
-  verificationFromWizard: boolean
+  /** On step 11: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
+  verificationFromWizard?: boolean
 }
 
 export enum StepStatus {
@@ -242,8 +242,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   // Do not persist networkInfo or verificationFromWizard (UI-only for step 11).
   useEffect(() => {
     if (isClient) {
-      const { verificationFromWizard: _, ...rest } = wizardData
-      const toSave = { ...rest, networkInfo: null }
+      const toSave = { ...wizardData, networkInfo: null }
+      delete (toSave as Record<string, unknown>).verificationFromWizard
       localStorage.setItem('silo-wizard-data', JSON.stringify(toSave))
     }
   }, [wizardData, isClient])
