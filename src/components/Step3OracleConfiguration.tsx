@@ -41,14 +41,17 @@ const formatScaleFactor = (scaleFactor: bigint): string => {
 function formatPowerOfTen(value: string): string {
   if (value === '0') return '0'
   const n = BigInt(value)
-  if (n <= 0n) return value
+  const zero = BigInt(0)
+  const one = BigInt(1)
+  const ten = BigInt(10)
+  if (n <= zero) return value
   let exponent = 0
   let x = n
-  while (x % 10n === 0n && x > 0n) {
+  while (x % ten === zero && x > zero) {
     exponent++
-    x /= 10n
+    x /= ten
   }
-  if (x === 1n) return exponent <= 3 ? value : `1e${exponent}`
+  if (x === one) return exponent <= 3 ? value : `1e${exponent}`
   return value
 }
 
@@ -362,6 +365,8 @@ export default function Step3OracleConfiguration() {
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token0)
   useEffect(() => {
     if (wizardData.oracleType0?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
+    const token0 = wizardData.token0
+    const token1 = wizardData.token1
     const addr = chainlink0.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink0(prev => ({
@@ -390,8 +395,8 @@ export default function Step3OracleConfiguration() {
         const aggregatorDecimals = Number(dec)
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
-        const base = wizardData.token0.decimals
-        const quote = wizardData.token1.decimals
+        const base = token0.decimals
+        const quote = token1.decimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink0(prev => ({
@@ -424,6 +429,8 @@ export default function Step3OracleConfiguration() {
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token1)
   useEffect(() => {
     if (wizardData.oracleType1?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
+    const token0 = wizardData.token0
+    const token1 = wizardData.token1
     const addr = chainlink1.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink1(prev => ({
@@ -452,8 +459,8 @@ export default function Step3OracleConfiguration() {
         const aggregatorDecimals = Number(dec)
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
-        const base = wizardData.token1.decimals
-        const quote = wizardData.token0.decimals
+        const base = token1.decimals
+        const quote = token0.decimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink1(prev => ({
