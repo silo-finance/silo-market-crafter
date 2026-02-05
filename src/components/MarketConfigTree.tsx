@@ -35,12 +35,6 @@ interface TreeNodeProps {
   valueMuted?: boolean
 }
 
-const ExternalLinkIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-  </svg>
-)
-
 function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
@@ -56,15 +50,6 @@ function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; expl
         {formatAddress(address)}
       </a>
       <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
-      <a
-        href={`${explorerUrl}/address/${address}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-gray-400 hover:text-white inline-flex"
-        title="Open in block explorer"
-      >
-        <ExternalLinkIcon className="w-3.5 h-3.5" />
-      </a>
       {isContract !== undefined && (
         <span className="text-gray-500 text-xs font-medium px-1.5 py-0.5 rounded bg-gray-800">
           {isContract ? 'Contract' : 'EOA'}

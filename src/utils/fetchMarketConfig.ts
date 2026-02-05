@@ -221,12 +221,17 @@ export async function fetchMarketConfig(
   config0.interestRateModel.owner = getIrmOwner(config0.interestRateModel.address, config0.interestRateModel.version)
   config1.interestRateModel.owner = getIrmOwner(config1.interestRateModel.address, config1.interestRateModel.version)
 
-  // Owner meta: isContract (getCode) + name from addresses JSON (per chain)
+  // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
+  // Deduplicate by owner address so we only fetch once when hook and IRM share the same owner.
   const allOwnerAddresses = new Set<string>()
-  if (config0.hookReceiverOwner && config0.hookReceiverOwner !== ethers.ZeroAddress) allOwnerAddresses.add(config0.hookReceiverOwner.toLowerCase())
-  if (config1.hookReceiverOwner && config1.hookReceiverOwner !== ethers.ZeroAddress) allOwnerAddresses.add(config1.hookReceiverOwner.toLowerCase())
-  if (config0.interestRateModel.owner && config0.interestRateModel.owner !== ethers.ZeroAddress) allOwnerAddresses.add(config0.interestRateModel.owner.toLowerCase())
-  if (config1.interestRateModel.owner && config1.interestRateModel.owner !== ethers.ZeroAddress) allOwnerAddresses.add(config1.interestRateModel.owner.toLowerCase())
+  for (const owner of [
+    config0.hookReceiverOwner,
+    config1.hookReceiverOwner,
+    config0.interestRateModel.owner,
+    config1.interestRateModel.owner
+  ]) {
+    if (owner && owner !== ethers.ZeroAddress) allOwnerAddresses.add(owner.toLowerCase())
+  }
   const addressToName = new Map<string, string>()
   try {
     const chainNameForAddresses = getChainNameForAddresses(chainId)
