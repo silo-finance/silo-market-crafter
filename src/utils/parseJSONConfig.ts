@@ -50,42 +50,66 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     name: config.token1 || ''
   }
   
-  // Parse oracle configuration
+  // Parse oracle configuration (match WizardContext: none | scaler | chainlink)
+  const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : 'scaler'
+  const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : 'scaler'
+  const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
+    ? {
+        baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        primaryAggregator: String(config.chainlinkOracle0.primaryAggregator ?? ''),
+        secondaryAggregator: String(config.chainlinkOracle0.secondaryAggregator ?? ''),
+        normalizationDivider: String(config.chainlinkOracle0.normalizationDivider ?? '0'),
+        normalizationMultiplier: String(config.chainlinkOracle0.normalizationMultiplier ?? '0'),
+        invertSecondPrice: Boolean(config.chainlinkOracle0.invertSecondPrice)
+      }
+    : undefined
+  const chainlink1 = config.chainlinkOracle1 && oracleType1 === 'chainlink'
+    ? {
+        baseToken: (config.chainlinkOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        primaryAggregator: String(config.chainlinkOracle1.primaryAggregator ?? ''),
+        secondaryAggregator: String(config.chainlinkOracle1.secondaryAggregator ?? ''),
+        normalizationDivider: String(config.chainlinkOracle1.normalizationDivider ?? '0'),
+        normalizationMultiplier: String(config.chainlinkOracle1.normalizationMultiplier ?? '0'),
+        invertSecondPrice: Boolean(config.chainlinkOracle1.invertSecondPrice)
+      }
+    : undefined
   const oracleConfig: OracleConfiguration = {
     token0: {
-      type: config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : 'scaler',
-      scalerOracle: config.solvencyOracle0 !== 'NO_ORACLE' ? {
+      type: oracleType0,
+      scalerOracle: oracleType0 === 'scaler' ? {
         name: config.solvencyOracle0,
-        address: '', // Will be resolved
+        address: '',
         valid: true,
         resultDecimals: 18,
-        scaleFactor: '1' // Default scale factor
-      } : undefined
+        scaleFactor: '1'
+      } : undefined,
+      chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined
     },
     token1: {
-      type: config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : 'scaler',
-      scalerOracle: config.solvencyOracle1 !== 'NO_ORACLE' ? {
+      type: oracleType1,
+      scalerOracle: oracleType1 === 'scaler' ? {
         name: config.solvencyOracle1,
-        address: '', // Will be resolved
+        address: '',
         valid: true,
         resultDecimals: 18,
-        scaleFactor: '1' // Default scale factor
-      } : undefined
+        scaleFactor: '1'
+      } : undefined,
+      chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined
     }
   }
-  
+
   // Parse IRM model type from factory name in config
   const irmModelType = config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
 
-  // Parse IRM configuration
+  // Parse IRM configuration; optional irmConfig0/irmConfig1 allow full config in JSON (e.g. for tests)
   const irm0: IRMConfig = {
     name: config.interestRateModelConfig0 || '',
-    config: {} // Will be fetched from the IRM configs
+    config: typeof config.irmConfig0 === 'object' && config.irmConfig0 !== null ? config.irmConfig0 as Record<string, string | number | boolean> : {}
   }
-  
+
   const irm1: IRMConfig = {
     name: config.interestRateModelConfig1 || '',
-    config: {} // Will be fetched from the IRM configs
+    config: typeof config.irmConfig1 === 'object' && config.irmConfig1 !== null ? config.irmConfig1 as Record<string, string | number | boolean> : {}
   }
   
   // Parse borrow configuration
