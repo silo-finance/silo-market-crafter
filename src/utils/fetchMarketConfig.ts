@@ -7,8 +7,6 @@ import erc20Abi from '@/abis/IERC20.json'
 import siloLensAbi from '@/abis/silo/ISiloLens.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 
-const BP2DP_NORMALIZATION = BigInt(10 ** 14) // basis points to 18 decimals
-
 const CHAIN_ID_TO_NAME: Record<string, string> = {
   '1': 'mainnet',
   '137': 'polygon',

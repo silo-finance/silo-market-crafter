@@ -81,7 +81,7 @@ export default function Step11Verification() {
     } finally {
       setLoading(false)
     }
-  }, [chainId])
+  }, [])
 
   // Extract hash from URL if present
   useEffect(() => {
@@ -229,7 +229,7 @@ export default function Step11Verification() {
       <div className="flex justify-between mt-8">
         <button
           type="button"
-          onClick={() => router.push('/wizard?step=10')}
+          onClick={goToDeployment}
           className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           <span>Back to Deployment</span>
