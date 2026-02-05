@@ -45,6 +45,12 @@ jobs:
       - name: Disable Next.js telemetry
         run: npx next telemetry disable
 
+      - name: Run linter (fails on errors and warnings)
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
       - name: Build static site
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
@@ -61,3 +67,18 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Show deployment URL
+        run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}"
+
+      - name: Write deployment summary
+        run: |
+          URL="${{ steps.deployment.outputs.page_url }}"
+          echo "# GitHub Pages Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Deployment finished**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 URL" >> $GITHUB_STEP_SUMMARY
+          echo "$URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Direct URL: \`$URL\`" >> $GITHUB_STEP_SUMMARY
