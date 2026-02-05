@@ -227,7 +227,10 @@ export function prepareDeployArgs(
     const timelock = Number(c.timelock) ?? 0
     const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
     const immutableArgsTuple = [timelock, rcompCap]
-    const initialOwner = ethers.ZeroAddress
+    const initialOwner =
+      wizardData.hookOwnerAddress && wizardData.hookOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.hookOwnerAddress)
+        ? ethers.getAddress(wizardData.hookOwnerAddress)
+        : ethers.ZeroAddress
     const abiCoder = ethers.AbiCoder.defaultAbiCoder()
     // Pass 3 separate types so AbiCoder expects 3 values (not 1 type string and 3 values)
     const types = [
