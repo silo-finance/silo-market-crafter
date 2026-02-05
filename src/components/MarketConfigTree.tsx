@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
+import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 
@@ -44,7 +44,15 @@ function buildOracleBullets(
       if (/quoteToken/i.test(key)) continue
       const raw = typeof val === 'string' ? val : String(val)
       const isFactor = /scaleFactor|factor/i.test(key)
-      const display = isFactor && /^\d+$/.test(raw) ? formatFactorToE(raw) : raw
+      const isBaseDiscount = /baseDiscount/i.test(key)
+      let display: string
+      if (isBaseDiscount && /^\d+$/.test(raw)) {
+        display = formatRate18AsPercent(raw)
+      } else if (isFactor && /^\d+$/.test(raw)) {
+        display = formatFactorToE(raw)
+      } else {
+        display = raw
+      }
       const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
       if (raw.startsWith('0x') && raw.length === 42) {
         bullets.push(`${label}: ${formatAddress(raw)}`)
@@ -202,6 +210,15 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
             </TreeNode>
           </TreeNode>
+          <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode
+            label="Hook Receiver"
+            address={config.silo0.hookReceiver}
+            suffixText={config.silo0.hookReceiverVersion}
+            ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
+            explorerUrl={explorerUrl}
+          />
         </TreeNode>
 
         <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl}>
@@ -255,15 +272,6 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Liquidation Target LTV" value={config.silo0.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Liquidation Fee" value={config.silo0.liquidationFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode
-            label="Hook Receiver"
-            address={config.silo0.hookReceiver}
-            suffixText={config.silo0.hookReceiverVersion}
-            ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
-            explorerUrl={explorerUrl}
-          />
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
 
@@ -318,15 +326,6 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Liquidation Target LTV" value={config.silo1.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Liquidation Fee" value={config.silo1.liquidationFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="DAO Fee" value={config.silo1.daoFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Deployer Fee" value={config.silo1.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode
-            label="Hook Receiver"
-            address={config.silo1.hookReceiver}
-            suffixText={config.silo1.hookReceiverVersion}
-            ownerBullets={config.silo1.hookReceiverOwner ? [{ address: config.silo1.hookReceiverOwner, isContract: config.silo1.hookReceiverOwnerIsContract, name: config.silo1.hookReceiverOwnerName }] : undefined}
-            explorerUrl={explorerUrl}
-          />
           <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
       </ol>

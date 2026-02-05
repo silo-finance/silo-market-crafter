@@ -35,7 +35,8 @@ const InputComponent = React.memo(({
           type="number"
           min="0"
           max={max}
-          step="1"
+          step="0.01"
+          inputMode="decimal"
           value={value === 0 ? '' : value}
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
@@ -166,7 +167,9 @@ export default function Step5BorrowSetup() {
   }
 
   const handleInputChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => {
-    const numValue = parseInt(value) || 0
+    const normalized = value.replace(',', '.')
+    const parsed = parseFloat(normalized)
+    const numValue = Number.isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100
     
     setBorrowConfig(prevConfig => {
       const newConfig = { ...prevConfig }
