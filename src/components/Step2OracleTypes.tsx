@@ -262,6 +262,11 @@ export default function Step2OracleTypes() {
                       {oracleType.reason}
                     </p>
                   )}
+                  {oracleType.type === 'chainlink' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
+                    </p>
+                  )}
                 </div>
               </label>
             ))}
@@ -313,6 +318,11 @@ export default function Step2OracleTypes() {
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
+                  )}
+                  {oracleType.type === 'chainlink' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
+                      </p>
                   )}
                 </div>
               </label>
