@@ -5,6 +5,7 @@ import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import erc20Abi from '@/abis/IERC20.json'
 import siloLensAbi from '@/abis/silo/ISiloLens.json'
+import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 
 const BP2DP_NORMALIZATION = BigInt(10 ** 14) // basis points to 18 decimals
 
@@ -98,6 +99,9 @@ export interface SiloConfig {
   deployerFee: bigint
   hookReceiver: string
   hookReceiverVersion?: string
+  hookReceiverOwner?: string
+  hookReceiverOwnerIsContract?: boolean
+  hookReceiverOwnerName?: string
   callBeforeQuote: boolean
 }
 
@@ -115,6 +119,10 @@ export interface IRMInfo {
   type?: string
   config?: Record<string, unknown>
   version?: string
+  /** Set only for DynamicKinkModel (kink) when contract has owner() */
+  owner?: string
+  ownerIsContract?: boolean
+  ownerName?: string
 }
 
 export async function fetchMarketConfig(
@@ -170,6 +178,95 @@ export async function fetchMarketConfig(
     config1.maxLtvOracle.version = getVersion(config1.maxLtvOracle.address)
     config1.interestRateModel.version = getVersion(config1.interestRateModel.address)
     config1.hookReceiverVersion = getVersion(config1.hookReceiver)
+  }
+
+  // Fetch hook owners (deduplicate: same hook address can be used in both silos)
+  const ownerAbi = [
+    { type: 'function' as const, name: 'owner', inputs: [], outputs: [{ name: '', type: 'address', internalType: 'address' }], stateMutability: 'view' as const }
+  ]
+  const uniqueHooks = new Set<string>()
+  for (const c of [config0, config1]) {
+    if (c.hookReceiver && c.hookReceiver !== ethers.ZeroAddress) uniqueHooks.add(c.hookReceiver.toLowerCase())
+  }
+  const hookOwnerByAddress = new Map<string, string>()
+  await Promise.all([...uniqueHooks].map(async (addr) => {
+    try {
+      const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
+      const owner = await contract.owner()
+      if (owner && owner !== ethers.ZeroAddress) hookOwnerByAddress.set(addr, typeof owner === 'string' ? owner : owner.toString())
+    } catch {
+      // hook may not implement Ownable
+    }
+  }))
+  const getHookOwner = (address: string) => address ? hookOwnerByAddress.get(address.toLowerCase()) : undefined
+  config0.hookReceiverOwner = getHookOwner(config0.hookReceiver)
+  config1.hookReceiverOwner = getHookOwner(config1.hookReceiver)
+
+  // IRM owner only for kink models, determined by version (no try/catch, no extra RPC unless we know it's kink)
+  const isKinkByVersion = (v: string | undefined) => v != null && v !== '' && v.toLowerCase().includes('kink')
+  const uniqueKinkIrms = new Set<string>()
+  for (const c of [config0, config1]) {
+    if (c.interestRateModel.address && c.interestRateModel.address !== ethers.ZeroAddress && isKinkByVersion(c.interestRateModel.version)) {
+      uniqueKinkIrms.add(c.interestRateModel.address.toLowerCase())
+    }
+  }
+  const irmOwnerByAddress = new Map<string, string>()
+  await Promise.all([...uniqueKinkIrms].map(async (addr) => {
+    const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
+    const owner = await contract.owner()
+    if (owner && owner !== ethers.ZeroAddress) irmOwnerByAddress.set(addr, typeof owner === 'string' ? owner : owner.toString())
+  }))
+  const getIrmOwner = (address: string, version: string | undefined) =>
+    address && isKinkByVersion(version) ? irmOwnerByAddress.get(address.toLowerCase()) : undefined
+  config0.interestRateModel.owner = getIrmOwner(config0.interestRateModel.address, config0.interestRateModel.version)
+  config1.interestRateModel.owner = getIrmOwner(config1.interestRateModel.address, config1.interestRateModel.version)
+
+  // Owner meta: isContract (getCode) + name from addresses JSON (per chain)
+  const allOwnerAddresses = new Set<string>()
+  if (config0.hookReceiverOwner && config0.hookReceiverOwner !== ethers.ZeroAddress) allOwnerAddresses.add(config0.hookReceiverOwner.toLowerCase())
+  if (config1.hookReceiverOwner && config1.hookReceiverOwner !== ethers.ZeroAddress) allOwnerAddresses.add(config1.hookReceiverOwner.toLowerCase())
+  if (config0.interestRateModel.owner && config0.interestRateModel.owner !== ethers.ZeroAddress) allOwnerAddresses.add(config0.interestRateModel.owner.toLowerCase())
+  if (config1.interestRateModel.owner && config1.interestRateModel.owner !== ethers.ZeroAddress) allOwnerAddresses.add(config1.interestRateModel.owner.toLowerCase())
+  const addressToName = new Map<string, string>()
+  try {
+    const chainNameForAddresses = getChainNameForAddresses(chainId)
+    const res = await fetch(`${ADDRESSES_JSON_BASE}/${chainNameForAddresses}.json`)
+    if (res.ok) {
+      const data = (await res.json()) as Record<string, string>
+      for (const [name, addr] of Object.entries(data)) {
+        if (typeof addr === 'string' && addr.startsWith('0x')) addressToName.set(addr.toLowerCase(), name)
+      }
+    }
+  } catch {
+    // ignore
+  }
+  const ownerMetaByAddress = new Map<string, { isContract: boolean; name?: string }>()
+  await Promise.all([...allOwnerAddresses].map(async (addr) => {
+    const code = await provider.getCode(addr)
+    const isContract = code !== '0x' && code !== '0x0'
+    const name = addressToName.get(addr)
+    ownerMetaByAddress.set(addr, { isContract, name })
+  }))
+  const getOwnerMeta = (address: string) => address ? ownerMetaByAddress.get(address.toLowerCase()) : undefined
+  const m0 = getOwnerMeta(config0.hookReceiverOwner ?? '')
+  if (m0) {
+    config0.hookReceiverOwnerIsContract = m0.isContract
+    config0.hookReceiverOwnerName = m0.name
+  }
+  const m1 = getOwnerMeta(config1.hookReceiverOwner ?? '')
+  if (m1) {
+    config1.hookReceiverOwnerIsContract = m1.isContract
+    config1.hookReceiverOwnerName = m1.name
+  }
+  const irm0 = getOwnerMeta(config0.interestRateModel.owner ?? '')
+  if (irm0) {
+    config0.interestRateModel.ownerIsContract = irm0.isContract
+    config0.interestRateModel.ownerName = irm0.name
+  }
+  const irm1 = getOwnerMeta(config1.interestRateModel.owner ?? '')
+  if (irm1) {
+    config1.interestRateModel.ownerIsContract = irm1.isContract
+    config1.interestRateModel.ownerName = irm1.name
   }
 
   return {

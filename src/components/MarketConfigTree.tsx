@@ -15,6 +15,12 @@ interface TokenMeta {
   decimals?: number
 }
 
+export interface OwnerBulletItem {
+  address: string
+  isContract?: boolean
+  name?: string
+}
+
 interface TreeNodeProps {
   label: string
   value?: string | bigint | boolean | null
@@ -22,13 +28,56 @@ interface TreeNodeProps {
   tokenMeta?: TokenMeta
   suffixText?: string
   bulletItems?: string[]
+  ownerBullets?: OwnerBulletItem[]
   children?: React.ReactNode
   explorerUrl: string
   isPercentage?: boolean
   valueMuted?: boolean
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
+const ExternalLinkIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+  </svg>
+)
+
+function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
+  const { address, isContract, name } = item
+  if (!address || address === ethers.ZeroAddress) return null
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+      <span className="text-gray-400 text-sm">Owner:</span>
+      <a
+        href={`${explorerUrl}/address/${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:text-blue-300 font-mono text-sm"
+      >
+        {formatAddress(address)}
+      </a>
+      <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+      <a
+        href={`${explorerUrl}/address/${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-gray-400 hover:text-white inline-flex"
+        title="Open in block explorer"
+      >
+        <ExternalLinkIcon className="w-3.5 h-3.5" />
+      </a>
+      {isContract !== undefined && (
+        <span className="text-gray-500 text-xs font-medium px-1.5 py-0.5 rounded bg-gray-800">
+          {isContract ? 'Contract' : 'EOA'}
+        </span>
+      )}
+      {name != null && name !== '' && (
+        <span className="text-gray-400 text-sm">({name})</span>
+      )}
+    </span>
+  )
+}
+
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -84,6 +133,15 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, c
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {bulletItems.map((item, i) => (
             <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
+      {ownerBullets && ownerBullets.length > 0 && (
+        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+          {ownerBullets.map((item, i) => (
+            <li key={i}>
+              <OwnerBulletContent item={item} explorerUrl={explorerUrl} />
+            </li>
           ))}
         </ul>
       )}
@@ -167,6 +225,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Interest Rate Model"
             address={config.silo0.interestRateModel.address}
             suffixText={config.silo0.interestRateModel.version}
+            ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
           >
             {config.silo0.interestRateModel.type && (
@@ -188,7 +247,13 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Hook Receiver" address={config.silo0.hookReceiver} suffixText={config.silo0.hookReceiverVersion} explorerUrl={explorerUrl} />
+          <TreeNode
+            label="Hook Receiver"
+            address={config.silo0.hookReceiver}
+            suffixText={config.silo0.hookReceiverVersion}
+            ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
+            explorerUrl={explorerUrl}
+          />
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
 
@@ -249,6 +314,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Interest Rate Model"
             address={config.silo1.interestRateModel.address}
             suffixText={config.silo1.interestRateModel.version}
+            ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
           >
             {config.silo1.interestRateModel.type && (
@@ -270,7 +336,13 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="DAO Fee" value={config.silo1.daoFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Deployer Fee" value={config.silo1.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Hook Receiver" address={config.silo1.hookReceiver} suffixText={config.silo1.hookReceiverVersion} explorerUrl={explorerUrl} />
+          <TreeNode
+            label="Hook Receiver"
+            address={config.silo1.hookReceiver}
+            suffixText={config.silo1.hookReceiverVersion}
+            ownerBullets={config.silo1.hookReceiverOwner ? [{ address: config.silo1.hookReceiverOwner, isContract: config.silo1.hookReceiverOwnerIsContract, name: config.silo1.hookReceiverOwnerName }] : undefined}
+            explorerUrl={explorerUrl}
+          />
           <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
       </ol>
