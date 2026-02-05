@@ -108,8 +108,14 @@ export default function Step10Deployment() {
         // Don't clear warnings here - they should persist
         
         if (!wizardData.networkInfo?.chainId) {
-          throw new Error('Network information not available')
+          throw new Error(
+            'Chain ID is missing — deployment addresses for SiloDeployer and SiloLens could not be loaded. ' +
+            'Connect a wallet and ensure a network is selected in Step 1 (e.g. Ethereum, Polygon, Arbitrum).'
+          )
         }
+
+        // Clear stale "Chain ID missing" warning from an earlier run (e.g. before wallet returned chainId)
+        setWarnings(prev => prev.filter(w => !w.includes('Chain ID is missing') && !w.includes('deployment data')))
 
         const chainName = getChainName(wizardData.networkInfo.chainId)
         
@@ -230,8 +236,14 @@ export default function Step10Deployment() {
 
       } catch (err) {
         console.error('Error fetching deployment data:', err)
-        // Set warning but don't prevent argument preparation
-        setWarnings(prev => [...prev.filter(w => !w.includes('deployment data')), `${err instanceof Error ? err.message : 'Failed to load some deployment data'}. Arguments will still be displayed.`])
+        const message = err instanceof Error ? err.message : 'Failed to load some deployment data.'
+        const suffix = ' Arguments (e.g. init data) will still be displayed; you may need to enter SiloDeployer/SiloLens addresses manually if deployment fails.'
+        const fullWarning = `${message} ${suffix}`
+        setWarnings(prev => {
+          const withoutNetwork = prev.filter(w => !w.includes('deployment data') && !w.includes('Chain ID is missing'))
+          if (withoutNetwork.some(w => w === fullWarning)) return withoutNetwork
+          return [...withoutNetwork, fullWarning]
+        })
       } finally {
         setLoading(false)
       }
