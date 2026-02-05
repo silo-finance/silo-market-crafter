@@ -52,10 +52,17 @@ export default function Step11Verification() {
       let siloConfigAddress: string
 
       if (isTxHash) {
-        // Extract silo config from transaction
+        // Check that the transaction exists on the current network first
         const receipt = await provider.getTransactionReceipt(value.trim())
-        if (!receipt || receipt.status !== 1) {
-          throw new Error(receipt ? 'Transaction failed or not yet confirmed.' : 'Transaction not found.')
+        if (!receipt) {
+          setError(
+            'Transaction not found on the current network. You might be connected to the wrong network, or the transaction hash is invalid.'
+          )
+          setShowForm(true)
+          return
+        }
+        if (receipt.status !== 1) {
+          throw new Error('Transaction failed or not yet confirmed.')
         }
         const parsed = parseDeployTxReceipt(receipt)
         if (!parsed.siloConfig) {
@@ -64,11 +71,20 @@ export default function Step11Verification() {
         siloConfigAddress = parsed.siloConfig
         setTxHash(value.trim())
       } else {
-        // Validate address
+        // Validate address format
         if (!ethers.isAddress(value.trim())) {
           throw new Error('Invalid address format')
         }
         siloConfigAddress = ethers.getAddress(value.trim())
+        // Check that the address is a contract on the current network before calling it
+        const code = await provider.getCode(siloConfigAddress)
+        if (!code || code === '0x' || code === '0x0') {
+          setError(
+            'This address is not a contract on the current network. You might be connected to the wrong network, or the address is invalid.'
+          )
+          setShowForm(true)
+          return
+        }
         setTxHash(null)
       }
 
