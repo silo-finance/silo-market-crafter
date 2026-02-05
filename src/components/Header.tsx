@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
+import packageJson from '../../package.json'
 
 declare global {
   interface Window {
@@ -235,8 +236,8 @@ export default function Header() {
     <header className="bg-black/90 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex-shrink-0">
+          {/* Logo + Market Crafter version */}
+          <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
               <Image 
                 src="https://cdn.prod.website-files.com/684669826f2b6c83c65f3f7c/684669826f2b6c83c65f3f86_Frame%2010169.svg" 
@@ -247,6 +248,9 @@ export default function Header() {
                 style={{ width: 'auto' }}
               />
             </Link>
+            <span className="text-gray-300 text-sm font-medium">
+              Market Crafter v{packageJson.version}
+            </span>
           </div>
 
           {/* Navigation Menu */}
