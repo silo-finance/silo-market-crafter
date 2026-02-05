@@ -16,6 +16,7 @@ interface TokenFeeInputProps {
   field: 'liquidationFee' | 'flashloanFee'
   label: string
   value: number
+  disabled?: boolean
   onChange: (tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => void
 }
 
@@ -56,11 +57,12 @@ const TokenFeeInput = React.memo(({
   field, 
   label, 
   value, 
+  disabled = false,
   onChange
 }: TokenFeeInputProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-white">
+      <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
         {label}
       </label>
       <div className="relative w-20">
@@ -70,8 +72,13 @@ const TokenFeeInput = React.memo(({
           max="20"
           step="0.01"
           value={value === 0 ? '' : value}
+          disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            disabled
+              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+              : 'bg-gray-700 border border-gray-600 text-white'
+          }`}
           placeholder="0"
         />
         <div className="absolute right-2 top-2 text-gray-400 text-sm">
@@ -101,12 +108,20 @@ export default function Step6Fees() {
     }
   })
 
-  // Load existing configuration if available
+  // Load existing configuration; when one token is non-borrowable, the other token's fees must be 0
   useEffect(() => {
-    if (wizardData.feesConfiguration) {
-      setFeesConfig(wizardData.feesConfiguration)
+    const borrow = wizardData.borrowConfiguration
+    const fees = wizardData.feesConfiguration
+    if (!fees) return
+    let next = { ...fees }
+    if (borrow?.token0.nonBorrowable) {
+      next = { ...next, token1: { liquidationFee: 0, flashloanFee: 0 } }
     }
-  }, [wizardData.feesConfiguration])
+    if (borrow?.token1.nonBorrowable) {
+      next = { ...next, token0: { liquidationFee: 0, flashloanFee: 0 } }
+    }
+    setFeesConfig(next)
+  }, [wizardData.borrowConfiguration, wizardData.feesConfiguration])
 
   const handleGeneralFeeChange = useCallback((field: 'daoFee' | 'deployerFee', value: string) => {
     const numValue = parseFloat(value) || 0
@@ -119,18 +134,17 @@ export default function Step6Fees() {
   }, [])
 
   const handleTokenFeeChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => {
+    const borrow = wizardData.borrowConfiguration
+    const otherNonBorrowable = tokenIndex === 0 ? borrow?.token1.nonBorrowable : borrow?.token0.nonBorrowable
+    if (otherNonBorrowable) return
     const numValue = parseFloat(value) || 0
     const clampedValue = Math.max(0, Math.min(20, numValue))
-    
     setFeesConfig(prevConfig => {
       const newConfig = { ...prevConfig }
-      newConfig[`token${tokenIndex}`] = { 
-        ...newConfig[`token${tokenIndex}`], 
-        [field]: clampedValue
-      }
+      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: clampedValue }
       return newConfig
     })
-  }, [])
+  }, [wizardData.borrowConfiguration])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -195,6 +209,7 @@ export default function Step6Fees() {
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token0.liquidationFee}
+                disabled={wizardData.borrowConfiguration?.token1.nonBorrowable}
                 onChange={handleTokenFeeChange}
               />
               
@@ -203,6 +218,7 @@ export default function Step6Fees() {
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token0.flashloanFee}
+                disabled={wizardData.borrowConfiguration?.token1.nonBorrowable}
                 onChange={handleTokenFeeChange}
               />
             </div>
@@ -220,6 +236,7 @@ export default function Step6Fees() {
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token1.liquidationFee}
+                disabled={wizardData.borrowConfiguration?.token0.nonBorrowable}
                 onChange={handleTokenFeeChange}
               />
               
@@ -228,6 +245,7 @@ export default function Step6Fees() {
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token1.flashloanFee}
+                disabled={wizardData.borrowConfiguration?.token0.nonBorrowable}
                 onChange={handleTokenFeeChange}
               />
             </div>

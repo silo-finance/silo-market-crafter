@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
-import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
 import CopyButton from '@/components/CopyButton'
 
 type OwnerSource = 'wallet' | 'manual'
@@ -34,6 +34,8 @@ export default function Step8HookOwner() {
   const [resolvedOwnerAddress, setResolvedOwnerAddress] = useState<string | null>(null)
   /** When resolved from a name, the exact key from the JSON for display. */
   const [ownerResolvedKey, setOwnerResolvedKey] = useState<string | null>(null)
+  /** When owner was entered as address, name from addresses JSON if found (reverse lookup). */
+  const [ownerNameFromJson, setOwnerNameFromJson] = useState<string | null>(null)
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean
     isContract: boolean | null
@@ -104,6 +106,7 @@ export default function Step8HookOwner() {
     if (ownerSource !== 'manual' || !manualAddress.trim()) {
       setResolvedOwnerAddress(null)
       setOwnerResolvedKey(null)
+      setOwnerNameFromJson(null)
       setAddressValidation({ isValid: false, isContract: null, error: null })
       setValidatingAddress(false)
       return
@@ -172,6 +175,7 @@ export default function Step8HookOwner() {
 
       setResolvedOwnerAddress(result.address)
       setOwnerResolvedKey(result.exactSymbol)
+      setOwnerNameFromJson(null)
       setManualAddress(result.exactSymbol)
       setAddressValidation({ isValid: true, isContract: null, error: null })
 
@@ -190,6 +194,34 @@ export default function Step8HookOwner() {
     const timeoutId = setTimeout(run, 500)
     return () => clearTimeout(timeoutId)
   }, [manualAddress, ownerSource])
+
+  // When owner was entered as address (hex), try to resolve address to name from addresses JSON
+  useEffect(() => {
+    if (!resolvedOwnerAddress || ownerResolvedKey != null) {
+      setOwnerNameFromJson(null)
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      let chainId = wizardData.networkInfo?.chainId
+      if (!chainId && typeof window !== 'undefined' && window.ethereum) {
+        try {
+          const hex = (await window.ethereum.request({ method: 'eth_chainId' })) as string
+          chainId = parseInt(hex, 16).toString()
+        } catch {
+          chainId = undefined
+        }
+      }
+      if (!chainId) {
+        if (!cancelled) setOwnerNameFromJson(null)
+        return
+      }
+      const name = await resolveAddressToName(chainId, resolvedOwnerAddress)
+      if (!cancelled) setOwnerNameFromJson(name)
+    }
+    run()
+    return () => { cancelled = true }
+  }, [resolvedOwnerAddress, ownerResolvedKey, wizardData.networkInfo?.chainId])
 
   // Fetch native balance when we have a resolved address
   useEffect(() => {
@@ -395,6 +427,11 @@ export default function Step8HookOwner() {
                       {ownerResolvedKey && (
                         <div className="text-sm text-gray-400">
                           Matched name: <span className="font-mono text-gray-300">{ownerResolvedKey}</span>
+                        </div>
+                      )}
+                      {!ownerResolvedKey && ownerNameFromJson && (
+                        <div className="text-sm text-gray-400">
+                          Name (from addresses): <span className="font-mono text-gray-300">{ownerNameFromJson}</span>
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">

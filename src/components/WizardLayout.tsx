@@ -34,6 +34,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
+  const isStep11Standalone = wizardData.currentStep === 11 && !wizardData.verificationFromWizard
+
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
     return (
@@ -43,11 +45,13 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     )
   }
 
+  const showSummarySidebar = !isStep11Standalone && isSummaryOpen
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="flex">
         {/* Main Content */}
-        <div className={`transition-all duration-300 ${isSummaryOpen ? 'w-2/3' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
           <div className="p-8">
             {/* Header with Navigation and Reset Button */}
             <div className="flex justify-between items-center mb-6">
@@ -73,8 +77,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
           </div>
         </div>
 
-        {/* Summary Sidebar */}
-        <div className={`${isSummaryOpen ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
+        {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
+        <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div className="bg-gray-900 border-l border-gray-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Configuration Summary</h2>
@@ -156,8 +160,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 2: Oracle Types */}
-              {wizardData.oracleType0 && (
+              {/* Step 2: Oracle Types – not shown on step 11 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 11 && wizardData.oracleType0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Types</h3>
                   <div className="space-y-2">
@@ -175,8 +179,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 3: Oracle Configuration */}
-              {wizardData.oracleConfiguration && (
+              {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 11 && wizardData.oracleConfiguration && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
                   <div className="space-y-2">
@@ -231,29 +235,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0</div>
                       <div className="text-xs text-gray-400">
-                        {wizardData.borrowConfiguration.token0.nonBorrowable ? (
+                        {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
-                        ) : (
-                          <>
-                            LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
-                            Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
-                            Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
-                          </>
                         )}
+                        {wizardData.borrowConfiguration.token0.nonBorrowable && <br />}
+                        LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
+                        Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
+                        Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 1</div>
                       <div className="text-xs text-gray-400">
-                        {wizardData.borrowConfiguration.token1.nonBorrowable ? (
+                        {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
-                        ) : (
-                          <>
-                            LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
-                            Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
-                            Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
-                          </>
                         )}
+                        {wizardData.borrowConfiguration.token1.nonBorrowable && <br />}
+                        LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
+                        Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
+                        Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
                       </div>
                     </div>
                   </div>
