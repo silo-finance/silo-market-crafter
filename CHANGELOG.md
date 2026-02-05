@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.3.0 - 2026-02-05
+### Added
+- pendle linear oracle support
+
+### Fixed
+- non-borrowable setup
+
 ## 0.2.1 - 2026-02-05
 ### Fixed
 - improve error handling for invalid network on market verification
