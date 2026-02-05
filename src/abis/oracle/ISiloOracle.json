@@ -1,0 +1,225 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "beforeQuote",
+            "inputs": [
+                {
+                    "name": "_baseToken",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "quote",
+            "inputs": [
+                {
+                    "name": "_baseAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_baseToken",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "quoteAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "quoteToken",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "beforeQuote(address)": "f9fa619a",
+        "quote(uint256,address)": "13b0be33",
+        "quoteToken()": "217a4b70"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_baseToken\",\"type\":\"address\"}],\"name\":\"beforeQuote\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_baseAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_baseToken\",\"type\":\"address\"}],\"name\":\"quote\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"quoteAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"quoteToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"beforeQuote(address)\":{\"details\":\"This hook function can be used to change state right before the price is read. For example it can be used      for curve read only reentrancy protection. In majority of implementations this will be an empty function.      WARNING: reverts are propagated to Silo so if `beforeQuote` reverts, Silo reverts as well.\",\"params\":{\"_baseToken\":\"Address of priced token\"}},\"quote(uint256,address)\":{\"params\":{\"_baseAmount\":\"Amount of priced token\",\"_baseToken\":\"Address of priced token\"},\"returns\":{\"quoteAmount\":\"Returns quote price for _baseAmount of _baseToken\"}},\"quoteToken()\":{\"returns\":{\"_0\":\"address of token in which quote (price) is denominated\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"beforeQuote(address)\":{\"notice\":\"Hook function to call before `quote` function reads price\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/ISiloOracle.sol\":\"ISiloOracle\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_baseToken",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "beforeQuote"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "_baseAmount",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_baseToken",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "quote",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "quoteAmount",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "quoteToken",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "beforeQuote(address)": {
+                        "details": "This hook function can be used to change state right before the price is read. For example it can be used      for curve read only reentrancy protection. In majority of implementations this will be an empty function.      WARNING: reverts are propagated to Silo so if `beforeQuote` reverts, Silo reverts as well.",
+                        "params": {
+                            "_baseToken": "Address of priced token"
+                        }
+                    },
+                    "quote(uint256,address)": {
+                        "params": {
+                            "_baseAmount": "Amount of priced token",
+                            "_baseToken": "Address of priced token"
+                        },
+                        "returns": {
+                            "quoteAmount": "Returns quote price for _baseAmount of _baseToken"
+                        }
+                    },
+                    "quoteToken()": {
+                        "returns": {
+                            "_0": "address of token in which quote (price) is denominated"
+                        }
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "beforeQuote(address)": {
+                        "notice": "Hook function to call before `quote` function reads price"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-core/contracts/interfaces/ISiloOracle.sol": "ISiloOracle"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 209
+}

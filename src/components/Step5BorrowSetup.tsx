@@ -35,7 +35,8 @@ const InputComponent = React.memo(({
           type="number"
           min="0"
           max={max}
-          step="1"
+          step="0.01"
+          inputMode="decimal"
           value={value === 0 ? '' : value}
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
@@ -100,10 +101,16 @@ export default function Step5BorrowSetup() {
     token1: {}
   })
 
-  // Load existing configuration if available and run validation (e.g. LT > 0 when borrowable)
+  // Load existing configuration if available; when one token is non-borrowable, the other's LTV must be 0
   useEffect(() => {
     if (wizardData.borrowConfiguration) {
-      const config = wizardData.borrowConfiguration
+      const config = { ...wizardData.borrowConfiguration }
+      if (config.token0.nonBorrowable) {
+        config.token1 = { ...config.token1, liquidationThreshold: 0, maxLTV: 0, liquidationTargetLTV: 0 }
+      }
+      if (config.token1.nonBorrowable) {
+        config.token0 = { ...config.token0, liquidationThreshold: 0, maxLTV: 0, liquidationTargetLTV: 0 }
+      }
       setBorrowConfig(config)
       setValidationErrors(prev => ({
         ...prev,
@@ -131,8 +138,10 @@ export default function Step5BorrowSetup() {
       errors.push('Value must be between 0 and 100')
     }
 
-    // When token is borrowable, LT / Max LTV / Liquidation Target LTV must all be greater than 0
-    if (!tokenConfig.nonBorrowable && value === 0) {
+    // When token's LTV is editable (neither token is non-borrowable), require > 0 for borrowable token
+    const otherTokenConfig = config[tokenIndex === 0 ? 'token1' : 'token0']
+    const thisTokenLtvEditable = !tokenConfig.nonBorrowable && !otherTokenConfig.nonBorrowable
+    if (thisTokenLtvEditable && value === 0) {
       errors.push('Must be greater than 0 when token is borrowable')
     }
 
@@ -158,7 +167,9 @@ export default function Step5BorrowSetup() {
   }
 
   const handleInputChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => {
-    const numValue = parseInt(value) || 0
+    const normalized = value.replace(',', '.')
+    const parsed = parseFloat(normalized)
+    const numValue = Number.isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100
     
     setBorrowConfig(prevConfig => {
       const newConfig = { ...prevConfig }
@@ -185,31 +196,31 @@ export default function Step5BorrowSetup() {
   const handleNonBorrowableChange = useCallback((tokenIndex: 0 | 1, checked: boolean) => {
     setBorrowConfig(prevConfig => {
       const newConfig = { ...prevConfig }
-      
+      const otherTokenIndex = tokenIndex === 0 ? 1 : 0
+
       if (checked) {
-        // If this token is being marked as non-borrowable, unmark the other token
-        const otherTokenIndex = tokenIndex === 0 ? 1 : 0
+        // This token is non-borrowable → only the OTHER token's LTV is zeroed and form is disabled
         newConfig[`token${otherTokenIndex}`] = {
           ...newConfig[`token${otherTokenIndex}`],
-          nonBorrowable: false
+          nonBorrowable: false,
+          liquidationThreshold: 0,
+          maxLTV: 0,
+          liquidationTargetLTV: 0
         }
       }
-      
-      newConfig[`token${tokenIndex}`] = { 
-        ...newConfig[`token${tokenIndex}`], 
-        nonBorrowable: checked,
-        // Set all values to 0 when non-borrowable is checked, leave empty when unchecked
-        liquidationThreshold: checked ? 0 : 0,
-        maxLTV: checked ? 0 : 0,
-        liquidationTargetLTV: checked ? 0 : 0
+
+      // Only toggle nonBorrowable on this token; zero LTV only for the other token (above), not for this one
+      newConfig[`token${tokenIndex}`] = {
+        ...newConfig[`token${tokenIndex}`],
+        nonBorrowable: checked
       }
       return newConfig
     })
 
-    // Clear validation errors when toggling non-borrowable
     setValidationErrors(prevErrors => ({
       ...prevErrors,
-      [`token${tokenIndex}`]: {}
+      token0: {},
+      token1: {}
     }))
   }, [])
 
@@ -217,18 +228,19 @@ export default function Step5BorrowSetup() {
     e.preventDefault()
 
     const msg = 'Must be greater than 0 when token is borrowable'
-    const token0Borrowable = !borrowConfig.token0.nonBorrowable
-    const token1Borrowable = !borrowConfig.token1.nonBorrowable
+    // When one token is non-borrowable, the other's LTV are forced to 0 and disabled — no LTV validation for that other token
+    const token0LtvEditable = !borrowConfig.token0.nonBorrowable && !borrowConfig.token1.nonBorrowable
+    const token1LtvEditable = !borrowConfig.token1.nonBorrowable && !borrowConfig.token0.nonBorrowable
 
     const token0Errors = {
-      liquidationThreshold: token0Borrowable && borrowConfig.token0.liquidationThreshold === 0 ? msg : undefined,
-      maxLTV: token0Borrowable && borrowConfig.token0.maxLTV === 0 ? msg : undefined,
-      liquidationTargetLTV: token0Borrowable && borrowConfig.token0.liquidationTargetLTV === 0 ? msg : undefined
+      liquidationThreshold: token0LtvEditable && borrowConfig.token0.liquidationThreshold === 0 ? msg : undefined,
+      maxLTV: token0LtvEditable && borrowConfig.token0.maxLTV === 0 ? msg : undefined,
+      liquidationTargetLTV: token0LtvEditable && borrowConfig.token0.liquidationTargetLTV === 0 ? msg : undefined
     }
     const token1Errors = {
-      liquidationThreshold: token1Borrowable && borrowConfig.token1.liquidationThreshold === 0 ? msg : undefined,
-      maxLTV: token1Borrowable && borrowConfig.token1.maxLTV === 0 ? msg : undefined,
-      liquidationTargetLTV: token1Borrowable && borrowConfig.token1.liquidationTargetLTV === 0 ? msg : undefined
+      liquidationThreshold: token1LtvEditable && borrowConfig.token1.liquidationThreshold === 0 ? msg : undefined,
+      maxLTV: token1LtvEditable && borrowConfig.token1.maxLTV === 0 ? msg : undefined,
+      liquidationTargetLTV: token1LtvEditable && borrowConfig.token1.liquidationTargetLTV === 0 ? msg : undefined
     }
 
     const hasErrors = Object.values(token0Errors).some(Boolean) || Object.values(token1Errors).some(Boolean)
@@ -267,7 +279,7 @@ export default function Step5BorrowSetup() {
           {/* Token 0 Configuration */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Borrow Configuration for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+              Collateral Configuration for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -289,7 +301,7 @@ export default function Step5BorrowSetup() {
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token0.liquidationThreshold}
-                disabled={borrowConfig.token0.nonBorrowable}
+                disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.liquidationThreshold}
                 onChange={handleInputChange}
               />
@@ -300,7 +312,7 @@ export default function Step5BorrowSetup() {
                 label="Max LTV"
                 value={borrowConfig.token0.maxLTV}
                 max={borrowConfig.token0.liquidationThreshold || 100}
-                disabled={borrowConfig.token0.nonBorrowable}
+                disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.maxLTV}
                 onChange={handleInputChange}
               />
@@ -311,7 +323,7 @@ export default function Step5BorrowSetup() {
                 label="Liquidation Target LTV"
                 value={borrowConfig.token0.liquidationTargetLTV}
                 max={Math.max(0, (borrowConfig.token0.liquidationThreshold || 100) - 1)}
-                disabled={borrowConfig.token0.nonBorrowable}
+                disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.liquidationTargetLTV}
                 onChange={handleInputChange}
               />
@@ -321,7 +333,7 @@ export default function Step5BorrowSetup() {
           {/* Token 1 Configuration */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Borrow Configuration for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+              Collateral Configuration for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -343,7 +355,7 @@ export default function Step5BorrowSetup() {
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token1.liquidationThreshold}
-                disabled={borrowConfig.token1.nonBorrowable}
+                disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.liquidationThreshold}
                 onChange={handleInputChange}
               />
@@ -354,7 +366,7 @@ export default function Step5BorrowSetup() {
                 label="Max LTV"
                 value={borrowConfig.token1.maxLTV}
                 max={borrowConfig.token1.liquidationThreshold || 100}
-                disabled={borrowConfig.token1.nonBorrowable}
+                disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.maxLTV}
                 onChange={handleInputChange}
               />
@@ -365,7 +377,7 @@ export default function Step5BorrowSetup() {
                 label="Liquidation Target LTV"
                 value={borrowConfig.token1.liquidationTargetLTV}
                 max={Math.max(0, (borrowConfig.token1.liquidationThreshold || 100) - 1)}
-                disabled={borrowConfig.token1.nonBorrowable}
+                disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.liquidationTargetLTV}
                 onChange={handleInputChange}
               />

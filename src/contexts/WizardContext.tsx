@@ -48,7 +48,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
   enabled: boolean
   reason?: string
 }
@@ -61,6 +61,16 @@ export interface ChainlinkOracleConfig {
   normalizationDivider: string
   normalizationMultiplier: string
   invertSecondPrice: boolean
+}
+
+/** PT-Linear oracle deployment config. Only available when token symbol starts with "PT". */
+export interface PTLinearOracleConfig {
+  /** ptToken is the base token (token0 or token1 for which we create the oracle). */
+  maxYieldPercent: number
+  /** If true, use the other market token as quote; otherwise use hardcodedQuoteTokenAddress. */
+  useSecondTokenAsQuote: boolean
+  /** When useSecondTokenAsQuote is false, user-provided quote token address (or resolved from symbol). */
+  hardcodedQuoteTokenAddress: string
 }
 
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
@@ -81,14 +91,16 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
+    ptLinearOracle?: PTLinearOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
+    ptLinearOracle?: PTLinearOracleConfig
   }
 }
 
@@ -355,6 +367,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       solvencyOracle0: (() => {
         const t = wizardData.oracleConfiguration?.token0?.type
         if (t === 'chainlink') return 'Chainlink'
+        if (t === 'ptLinear') return 'PT-Linear'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -379,10 +392,20 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'ptLinear' && wizardData.oracleConfiguration?.token0?.ptLinearOracle
+        ? {
+            ptLinearOracle0: {
+              maxYieldPercent: wizardData.oracleConfiguration.token0.ptLinearOracle.maxYieldPercent,
+              useSecondTokenAsQuote: wizardData.oracleConfiguration.token0.ptLinearOracle.useSecondTokenAsQuote,
+              hardcodedQuoteTokenAddress: wizardData.oracleConfiguration.token0.ptLinearOracle.hardcodedQuoteTokenAddress
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
         const t = wizardData.oracleConfiguration?.token1?.type
         if (t === 'chainlink') return 'Chainlink'
+        if (t === 'ptLinear') return 'PT-Linear'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -404,6 +427,15 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               normalizationDivider: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationDivider,
               normalizationMultiplier: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationMultiplier,
               invertSecondPrice: wizardData.oracleConfiguration.token1.chainlinkOracle.invertSecondPrice
+            }
+          }
+        : {}),
+      ...(wizardData.oracleConfiguration?.token1?.type === 'ptLinear' && wizardData.oracleConfiguration?.token1?.ptLinearOracle
+        ? {
+            ptLinearOracle1: {
+              maxYieldPercent: wizardData.oracleConfiguration.token1.ptLinearOracle.maxYieldPercent,
+              useSecondTokenAsQuote: wizardData.oracleConfiguration.token1.ptLinearOracle.useSecondTokenAsQuote,
+              hardcodedQuoteTokenAddress: wizardData.oracleConfiguration.token1.ptLinearOracle.hardcodedQuoteTokenAddress
             }
           }
         : {})
@@ -431,8 +463,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       }
       
       // Parse oracle configuration
-      const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : 'scaler'
-      const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : 'scaler'
+      const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : config.solvencyOracle0 === 'PT-Linear' ? 'ptLinear' : 'scaler'
+      const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : config.solvencyOracle1 === 'PT-Linear' ? 'ptLinear' : 'scaler'
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
@@ -453,6 +485,20 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             invertSecondPrice: Boolean(config.chainlinkOracle1.invertSecondPrice)
           }
         : undefined
+      const ptLinear0 = config.ptLinearOracle0 && oracleType0 === 'ptLinear'
+        ? {
+            maxYieldPercent: Number(config.ptLinearOracle0.maxYieldPercent ?? 0),
+            useSecondTokenAsQuote: Boolean(config.ptLinearOracle0.useSecondTokenAsQuote),
+            hardcodedQuoteTokenAddress: String(config.ptLinearOracle0.hardcodedQuoteTokenAddress ?? '')
+          }
+        : undefined
+      const ptLinear1 = config.ptLinearOracle1 && oracleType1 === 'ptLinear'
+        ? {
+            maxYieldPercent: Number(config.ptLinearOracle1.maxYieldPercent ?? 0),
+            useSecondTokenAsQuote: Boolean(config.ptLinearOracle1.useSecondTokenAsQuote),
+            hardcodedQuoteTokenAddress: String(config.ptLinearOracle1.hardcodedQuoteTokenAddress ?? '')
+          }
+        : undefined
       const oracleConfig: OracleConfiguration = {
         token0: {
           type: oracleType0,
@@ -463,7 +509,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             resultDecimals: 18,
             scaleFactor: '1'
           } : undefined,
-          chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined
+          chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
+          ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined
         },
         token1: {
           type: oracleType1,
@@ -474,7 +521,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             resultDecimals: 18,
             scaleFactor: '1'
           } : undefined,
-          chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined
+          chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
+          ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined
         }
       }
       

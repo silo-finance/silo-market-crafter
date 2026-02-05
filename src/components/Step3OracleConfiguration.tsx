@@ -3,17 +3,21 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig } from '@/contexts/WizardContext'
+import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
+import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
+import erc20Artifact from '@/abis/IERC20.json'
 import CopyButton from '@/components/CopyButton'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
+const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -156,6 +160,26 @@ export default function Step3OracleConfiguration() {
   const [useSecondaryAggregator0, setUseSecondaryAggregator0] = useState(false)
   const [useSecondaryAggregator1, setUseSecondaryAggregator1] = useState(false)
 
+  const [ptLinear0, setPTLinear0] = useState<Partial<PTLinearOracleConfig>>({
+    maxYieldPercent: 0,
+    useSecondTokenAsQuote: true,
+    hardcodedQuoteTokenAddress: ''
+  })
+  const [ptLinear1, setPTLinear1] = useState<Partial<PTLinearOracleConfig>>({
+    maxYieldPercent: 0,
+    useSecondTokenAsQuote: true,
+    hardcodedQuoteTokenAddress: ''
+  })
+  const [ptLinearFactory, setPTLinearFactory] = useState<{ address: string; version: string } | null>(null)
+  const [pt0QuoteInput, setPT0QuoteInput] = useState('')
+  const [pt0QuoteMetadata, setPT0QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
+  const [pt0QuoteLoading, setPT0QuoteLoading] = useState(false)
+  const [pt0QuoteError, setPT0QuoteError] = useState('')
+  const [pt1QuoteInput, setPT1QuoteInput] = useState('')
+  const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
+  const [pt1QuoteLoading, setPT1QuoteLoading] = useState(false)
+  const [pt1QuoteError, setPT1QuoteError] = useState('')
+
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
     const chainMap: { [key: string]: string } = {
@@ -234,6 +258,29 @@ export default function Step3OracleConfiguration() {
       }
     }
     fetchChainlinkFactory()
+  }, [wizardData.networkInfo?.chainId])
+
+  // Fetch PTLinearOracleFactory address for current chain
+  useEffect(() => {
+    const fetchPTLinearFactory = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/PTLinearOracleFactory.sol.json`
+        )
+        if (!response.ok) {
+          setPTLinearFactory(null)
+          return
+        }
+        const data = await response.json()
+        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        setPTLinearFactory(address ? { address, version: '' } : null)
+      } catch {
+        setPTLinearFactory(null)
+      }
+    }
+    fetchPTLinearFactory()
   }, [wizardData.networkInfo?.chainId])
 
   // Fetch SiloLens address for current chain (same pattern as Step10)
@@ -316,6 +363,126 @@ export default function Step3OracleConfiguration() {
     // Intentionally narrow deps: only re-fetch when factory address or chain changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chainlinkV3OracleFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+
+  // Fetch PTLinearOracleFactory version via Silo Lens (cached per chainId+address)
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!ptLinearFactory?.address || !siloLensAddress || !chainId) return
+    const cached = getCachedVersion(chainId, ptLinearFactory.address)
+    if (cached != null) {
+      setPTLinearFactory(prev => prev ? { ...prev, version: cached } : null)
+      return
+    }
+    const fetchFactoryVersion = async () => {
+      if (!window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = String(await lensContract.getVersion(ptLinearFactory!.address))
+        setCachedVersion(chainId, ptLinearFactory!.address, version)
+        setPTLinearFactory(prev => prev ? { ...prev, version } : null)
+      } catch (err) {
+        console.warn('Failed to fetch PTLinearOracleFactory version from Silo Lens:', err)
+        const fallback = '—'
+        setCachedVersion(chainId, ptLinearFactory!.address, fallback)
+        setPTLinearFactory(prev => prev ? { ...prev, version: fallback } : null)
+      }
+    }
+    fetchFactoryVersion()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ptLinearFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+
+  // Sync PT-Linear state from wizard when returning to step
+  useEffect(() => {
+    const p0 = wizardData.oracleConfiguration?.token0?.ptLinearOracle
+    if (p0) {
+      setPTLinear0({
+        maxYieldPercent: p0.maxYieldPercent,
+        useSecondTokenAsQuote: p0.useSecondTokenAsQuote,
+        hardcodedQuoteTokenAddress: p0.hardcodedQuoteTokenAddress
+      })
+      if (!p0.useSecondTokenAsQuote && p0.hardcodedQuoteTokenAddress) {
+        setPT0QuoteInput(p0.hardcodedQuoteTokenAddress)
+      }
+    }
+    const p1 = wizardData.oracleConfiguration?.token1?.ptLinearOracle
+    if (p1) {
+      setPTLinear1({
+        maxYieldPercent: p1.maxYieldPercent,
+        useSecondTokenAsQuote: p1.useSecondTokenAsQuote,
+        hardcodedQuoteTokenAddress: p1.hardcodedQuoteTokenAddress
+      })
+      if (!p1.useSecondTokenAsQuote && p1.hardcodedQuoteTokenAddress) {
+        setPT1QuoteInput(p1.hardcodedQuoteTokenAddress)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle])
+
+  // Resolve PT hardcoded quote token (address or symbol) and fetch metadata
+  const resolvePTQuoteToken = async (input: string, tokenIndex: 0 | 1) => {
+    const chainId = wizardData.networkInfo?.chainId
+    const setLoading = tokenIndex === 0 ? setPT0QuoteLoading : setPT1QuoteLoading
+    const setMeta = tokenIndex === 0 ? setPT0QuoteMetadata : setPT1QuoteMetadata
+    const setErr = tokenIndex === 0 ? setPT0QuoteError : setPT1QuoteError
+    const setConfig = tokenIndex === 0 ? setPTLinear0 : setPTLinear1
+
+    setLoading(true)
+    setErr('')
+    setMeta(null)
+
+    const trimmed = input?.trim() ?? ''
+    if (!trimmed) {
+      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+      setLoading(false)
+      return
+    }
+
+    if (!chainId) {
+      setErr('Network not set')
+      setLoading(false)
+      return
+    }
+
+    try {
+      let address: string
+      if (isHexAddress(trimmed)) {
+        address = normalizeAddress(trimmed) ?? trimmed
+      } else {
+        const result = await resolveSymbolToAddress(chainId, trimmed)
+        if (!result) {
+          setErr('Unknown symbol. Enter token address manually.')
+          setLoading(false)
+          return
+        }
+        address = result.address
+      }
+
+      if (!window.ethereum) {
+        setErr('Wallet not available')
+        setLoading(false)
+        return
+      }
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const contract = new ethers.Contract(address, erc20Abi, provider)
+      const [symbol, decimals, name] = await Promise.all([
+        contract.symbol(),
+        contract.decimals(),
+        contract.name()
+      ])
+      setMeta({
+        symbol: String(symbol),
+        decimals: Number(decimals),
+        name: String(name)
+      })
+      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'Failed to resolve token')
+      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
   useEffect(() => {
@@ -682,6 +849,41 @@ export default function Step3OracleConfiguration() {
         }
       }
 
+      if (wizardData.oracleType0.type === 'ptLinear') {
+        const max0 = Number(ptLinear0.maxYieldPercent)
+        if (Number.isNaN(max0) || max0 <= 0) {
+          throw new Error('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
+        }
+        if (!ptLinear0.useSecondTokenAsQuote) {
+          const addr0 = ptLinear0.hardcodedQuoteTokenAddress?.trim()
+          if (!addr0 || !ethers.isAddress(addr0)) {
+            throw new Error('Please enter or resolve a valid quote token address for Token 0 PT-Linear oracle')
+          }
+        }
+      }
+      if (wizardData.oracleType1.type === 'ptLinear') {
+        const max1 = Number(ptLinear1.maxYieldPercent)
+        if (Number.isNaN(max1) || max1 <= 0) {
+          throw new Error('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
+        }
+        if (!ptLinear1.useSecondTokenAsQuote) {
+          const addr1 = ptLinear1.hardcodedQuoteTokenAddress?.trim()
+          if (!addr1 || !ethers.isAddress(addr1)) {
+            throw new Error('Please enter or resolve a valid quote token address for Token 1 PT-Linear oracle')
+          }
+        }
+      }
+
+      // Resolve quote address for PT-Linear when using second token
+      const pt0QuoteAddress =
+        wizardData.oracleType0.type === 'ptLinear'
+          ? (ptLinear0.useSecondTokenAsQuote ? wizardData.token1!.address : ptLinear0.hardcodedQuoteTokenAddress!)
+          : ''
+      const pt1QuoteAddress =
+        wizardData.oracleType1.type === 'ptLinear'
+          ? (ptLinear1.useSecondTokenAsQuote ? wizardData.token0!.address : ptLinear1.hardcodedQuoteTokenAddress!)
+          : ''
+
       // Create oracle configuration
       const config: OracleConfiguration = {
         token0: {
@@ -694,6 +896,11 @@ export default function Step3OracleConfiguration() {
             normalizationDivider: chainlink0.normalizationDivider ?? '0',
             normalizationMultiplier: chainlink0.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink0.invertSecondPrice ?? false
+          } : undefined,
+          ptLinearOracle: wizardData.oracleType0.type === 'ptLinear' ? {
+            maxYieldPercent: Number(ptLinear0.maxYieldPercent) || 0,
+            useSecondTokenAsQuote: ptLinear0.useSecondTokenAsQuote ?? true,
+            hardcodedQuoteTokenAddress: pt0QuoteAddress
           } : undefined
         },
         token1: {
@@ -706,6 +913,11 @@ export default function Step3OracleConfiguration() {
             normalizationDivider: chainlink1.normalizationDivider ?? '0',
             normalizationMultiplier: chainlink1.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink1.invertSecondPrice ?? false
+          } : undefined,
+          ptLinearOracle: wizardData.oracleType1.type === 'ptLinear' ? {
+            maxYieldPercent: Number(ptLinear1.maxYieldPercent) || 0,
+            useSecondTokenAsQuote: ptLinear1.useSecondTokenAsQuote ?? true,
+            hardcodedQuoteTokenAddress: pt1QuoteAddress
           } : undefined
         }
       }
@@ -790,7 +1002,7 @@ export default function Step3OracleConfiguration() {
             {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
+            Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token0.decimals}
@@ -807,6 +1019,85 @@ export default function Step3OracleConfiguration() {
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
               </p>
+            </div>
+          ) : wizardData.oracleType0.type === 'ptLinear' ? (
+            <div className="space-y-4">
+              {ptLinearFactory ? (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={getBlockExplorerUrl(ptLinearFactory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                    >
+                      {ptLinearFactory.address}
+                    </a>
+                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
+                  </div>
+                  <p className="text-xs text-gray-500 mb-1">Version</p>
+                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Max yield (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                  value={ptLinear0.maxYieldPercent === 0 ? '' : ptLinear0.maxYieldPercent}
+                  onChange={(e) => setPTLinear0(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
+                  placeholder="e.g. 5"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pt0-use-second"
+                  checked={ptLinear0.useSecondTokenAsQuote}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: checked }))
+                    if (checked) {
+                      setPT0QuoteInput('')
+                      setPT0QuoteMetadata(null)
+                      setPT0QuoteError('')
+                    }
+                  }}
+                  className="rounded border-gray-600"
+                />
+                <label htmlFor="pt0-use-second" className="text-sm text-gray-300">
+                  Use second token ({wizardData.token1?.symbol}) as quote
+                </label>
+              </div>
+              {!ptLinear0.useSecondTokenAsQuote && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
+                  <input
+                    type="text"
+                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt0QuoteError ? 'border-red-500' : pt0QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
+                    value={pt0QuoteInput}
+                    onChange={(e) => setPT0QuoteInput(e.target.value)}
+                    onBlur={() => pt0QuoteInput.trim() && resolvePTQuoteToken(pt0QuoteInput, 0)}
+                    placeholder="0x… or symbol from addresses JSON"
+                  />
+                  {pt0QuoteLoading && (
+                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
+                  )}
+                  {pt0QuoteError && (
+                    <p className="text-sm text-red-400 mt-1">{pt0QuoteError}</p>
+                  )}
+                  {pt0QuoteMetadata && (
+                    <p className="text-sm text-green-400 mt-1">
+                      ✓ {pt0QuoteMetadata.name} ({pt0QuoteMetadata.symbol}) – {pt0QuoteMetadata.decimals} decimals
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : wizardData.oracleType0.type === 'chainlink' ? (
             <div className="space-y-4">
@@ -1043,7 +1334,7 @@ export default function Step3OracleConfiguration() {
             {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : 'Chainlink'}
+            Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token1.decimals}
@@ -1060,6 +1351,85 @@ export default function Step3OracleConfiguration() {
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
               </p>
+            </div>
+          ) : wizardData.oracleType1.type === 'ptLinear' ? (
+            <div className="space-y-4">
+              {ptLinearFactory ? (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={getBlockExplorerUrl(ptLinearFactory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                    >
+                      {ptLinearFactory.address}
+                    </a>
+                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
+                  </div>
+                  <p className="text-xs text-gray-500 mb-1">Version</p>
+                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Max yield (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                  value={ptLinear1.maxYieldPercent === 0 ? '' : ptLinear1.maxYieldPercent}
+                  onChange={(e) => setPTLinear1(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
+                  placeholder="e.g. 5"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pt1-use-second"
+                  checked={ptLinear1.useSecondTokenAsQuote}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: checked }))
+                    if (checked) {
+                      setPT1QuoteInput('')
+                      setPT1QuoteMetadata(null)
+                      setPT1QuoteError('')
+                    }
+                  }}
+                  className="rounded border-gray-600"
+                />
+                <label htmlFor="pt1-use-second" className="text-sm text-gray-300">
+                  Use second token ({wizardData.token0?.symbol}) as quote
+                </label>
+              </div>
+              {!ptLinear1.useSecondTokenAsQuote && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
+                  <input
+                    type="text"
+                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt1QuoteError ? 'border-red-500' : pt1QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
+                    value={pt1QuoteInput}
+                    onChange={(e) => setPT1QuoteInput(e.target.value)}
+                    onBlur={() => pt1QuoteInput.trim() && resolvePTQuoteToken(pt1QuoteInput, 1)}
+                    placeholder="0x… or symbol from addresses JSON"
+                  />
+                  {pt1QuoteLoading && (
+                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
+                  )}
+                  {pt1QuoteError && (
+                    <p className="text-sm text-red-400 mt-1">{pt1QuoteError}</p>
+                  )}
+                  {pt1QuoteMetadata && (
+                    <p className="text-sm text-green-400 mt-1">
+                      ✓ {pt1QuoteMetadata.name} ({pt1QuoteMetadata.symbol}) – {pt1QuoteMetadata.decimals} decimals
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : wizardData.oracleType1.type === 'chainlink' ? (
             <div className="space-y-4">
@@ -1312,11 +1682,13 @@ export default function Step3OracleConfiguration() {
           </button>
           <button
             type="submit"
-            disabled={loading || 
-              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) || 
+            disabled={loading ||
+              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) ||
               (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) ||
               (wizardData.oracleType0.type === 'chainlink' && (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0'))) ||
-              (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')))}
+              (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0'))) ||
+              (wizardData.oracleType0.type === 'ptLinear' && (Number(ptLinear0.maxYieldPercent) <= 0 || (!ptLinear0.useSecondTokenAsQuote && (!ptLinear0.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear0.hardcodedQuoteTokenAddress))))) ||
+              (wizardData.oracleType1.type === 'ptLinear' && (Number(ptLinear1.maxYieldPercent) <= 0 || (!ptLinear1.useSecondTokenAsQuote && (!ptLinear1.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear1.hardcodedQuoteTokenAddress)))))}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
