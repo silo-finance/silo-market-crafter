@@ -193,18 +193,19 @@ export default function Step8HookOwner() {
 
   // Fetch native balance when we have a resolved address
   useEffect(() => {
-    if (!resolvedOwnerAddress || !window.ethereum) {
+    const ethereum = window.ethereum
+    if (!resolvedOwnerAddress || !ethereum) {
       setNativeBalance(null)
       return
     }
     let cancelled = false
     const run = async () => {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
+        const provider = new ethers.BrowserProvider(ethereum)
         const balance = await provider.getBalance(resolvedOwnerAddress)
         if (cancelled) return
         setNativeBalance(ethers.formatEther(balance))
-        const hex = (await window.ethereum.request({ method: 'eth_chainId' })) as string
+        const hex = (await ethereum.request({ method: 'eth_chainId' })) as string
         const chainId = parseInt(hex, 16).toString()
         setNativeBalanceSymbol(getNativeTokenSymbol(chainId))
       } catch {

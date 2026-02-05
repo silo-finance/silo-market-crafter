@@ -284,6 +284,8 @@ export default function Step3OracleConfiguration() {
       }
     }
     fetchFactoryVersion()
+    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oracleScalerFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Fetch ChainlinkV3OracleFactory version via Silo Lens (cached per chainId+address)
@@ -311,6 +313,8 @@ export default function Step3OracleConfiguration() {
       }
     }
     fetchFactoryVersion()
+    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chainlinkV3OracleFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
@@ -336,6 +340,8 @@ export default function Step3OracleConfiguration() {
         }
       })
     }
+    // Intentionally narrow: only react to type, list length, factory and token0 address
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleType0?.type, availableScalers.token0.length, oracleScalerFactory, wizardData.token0?.address])
 
   // When no pre-deployed scalers for token1 but we have factory, set custom scaler (quote = token1)
@@ -361,6 +367,8 @@ export default function Step3OracleConfiguration() {
         }
       })
     }
+    // Intentionally narrow: only react to type, list length, factory and token1 address
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleType1?.type, availableScalers.token1.length, oracleScalerFactory, wizardData.token1?.address])
 
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token0)
@@ -425,6 +433,8 @@ export default function Step3OracleConfiguration() {
     }
     run()
     return () => { cancelled = true }
+    // Intentionally narrow: avoid re-running on every wizardData reference change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator])
 
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token1)
@@ -489,6 +499,8 @@ export default function Step3OracleConfiguration() {
     }
     run()
     return () => { cancelled = true }
+    // Intentionally narrow: avoid re-running on every wizardData reference change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator])
 
   // Sync chainlink state from wizard when returning to step
@@ -521,6 +533,8 @@ export default function Step3OracleConfiguration() {
       const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator1(hasSecondary)
     }
+    // Intentionally narrow: sync only when saved chainlink config refs change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleConfiguration?.token0?.chainlinkOracle, wizardData.oracleConfiguration?.token1?.chainlinkOracle])
 
   // Find and validate scaler oracles for each token

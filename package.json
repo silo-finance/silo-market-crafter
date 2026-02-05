@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --max-warnings 0",
+    "lint:node20": "bash -c 'source ~/.nvm/nvm.sh 2>/dev/null; nvm use 20 2>/dev/null; next lint --max-warnings 0'",
     "type-check": "tsc --noEmit",
     "test": "npx jest",
     "build:errors": "node scripts/buildCustomErrorsSelectors.mjs"

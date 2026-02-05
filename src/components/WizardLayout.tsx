@@ -1,8 +1,30 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
+import CopyButton from '@/components/CopyButton'
+import { normalizeAddress } from '@/utils/addressValidation'
+
+const EXPLORER_MAP: { [key: number]: string } = {
+  1: 'https://etherscan.io', 137: 'https://polygonscan.com', 10: 'https://optimistic.etherscan.io',
+  42161: 'https://arbiscan.io', 43114: 'https://snowtrace.io', 146: 'https://sonicscan.org'
+}
+
+function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
+  const addr = normalizeAddress(address) ?? address
+  const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  const base = EXPLORER_MAP[chainId] || 'https://etherscan.io'
+  return (
+    <div className="flex items-center gap-1.5 mt-1">
+      <span className="text-xs text-gray-400 font-mono">{short}</span>
+      <a href={`${base}/address/${addr}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white p-0.5 rounded" title="Check on Explorer" aria-label="Check on Explorer">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+      </a>
+      <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+    </div>
+  )
+}
 
 interface WizardLayoutProps {
   children: React.ReactNode
@@ -11,21 +33,6 @@ interface WizardLayoutProps {
 export default function WizardLayout({ children }: WizardLayoutProps) {
   const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
-  const summaryRef = useRef<HTMLDivElement>(null)
-
-  // Auto-scroll to bottom when wizard data changes
-  useEffect(() => {
-    if (summaryRef.current && isSummaryOpen) {
-      // Small delay to ensure content is rendered
-      setTimeout(() => {
-        summaryRef.current?.scrollTo({
-          top: summaryRef.current.scrollHeight,
-          behavior: 'smooth'
-        })
-      }, 100)
-    }
-  }, [wizardData, isSummaryOpen])
-
 
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
@@ -68,7 +75,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar */}
         <div className={`${isSummaryOpen ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div ref={summaryRef} className="bg-gray-900 border-l border-gray-800 h-screen p-6 overflow-y-auto">
+          <div className="bg-gray-900 border-l border-gray-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Configuration Summary</h2>
               <button
@@ -282,6 +289,29 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   </div>
                 </div>
               )}
+
+              {/* Owners: Hook Owner + IRM Owner (Kink only) */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-300 mb-3">Owners</h3>
+                <div className="space-y-2">
+                  <div className="bg-gray-800 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-white">Hook Owner</div>
+                    {wizardData.hookOwnerAddress ? (
+                      <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
+                    ) : (
+                      <div className="text-xs text-gray-500 mt-1">—</div>
+                    )}
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-white">IRM Owner</div>
+                    {wizardData.irmModelType === 'kink' && wizardData.hookOwnerAddress ? (
+                      <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
+                    ) : (
+                      <div className="text-xs text-gray-500 mt-1">not available</div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

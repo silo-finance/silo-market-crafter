@@ -25,7 +25,7 @@ jobs:
     - name: Disable Next.js telemetry
       run: npx next telemetry disable
     
-    - name: Run linter
+    - name: Run linter (fails on errors and warnings)
       run: npm run lint
     
     - name: Type check
