@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import CopyButton from '@/components/CopyButton'
 import erc20Artifact from '@/abis/IERC20.json'
 
 function getExplorerAddressUrl(chainId: string, address: string): string {
@@ -689,8 +690,8 @@ export default function Step1Assets() {
                 )}
               </div>
               {token0ResolvedAddress && token0Address.trim() !== token0ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
-                  Matched address:{' '}
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
+                  <span>Matched address:</span>
                   {wizardData.networkInfo?.chainId ? (
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token0ResolvedAddress)}
@@ -703,6 +704,7 @@ export default function Step1Assets() {
                   ) : (
                     <span>{normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}</span>
                   )}
+                  <CopyButton value={normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               )}
               {token0Error && (
@@ -770,8 +772,8 @@ export default function Step1Assets() {
                 )}
               </div>
               {token1ResolvedAddress && token1Address.trim() !== token1ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
-                  Matched address:{' '}
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
+                  <span>Matched address:</span>
                   {wizardData.networkInfo?.chainId ? (
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token1ResolvedAddress)}
@@ -784,6 +786,7 @@ export default function Step1Assets() {
                   ) : (
                     <span>{normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}</span>
                   )}
+                  <CopyButton value={normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               )}
               {token1Error && (

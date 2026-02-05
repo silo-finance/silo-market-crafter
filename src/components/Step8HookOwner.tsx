@@ -6,6 +6,7 @@ import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import CopyButton from '@/components/CopyButton'
 
 type OwnerSource = 'wallet' | 'manual'
 
@@ -305,8 +306,9 @@ export default function Step8HookOwner() {
                 Use Connected Wallet
               </div>
               {connectedWalletAddress ? (
-                <div className="text-sm text-gray-400 mt-1 font-mono">
-                  {connectedWalletAddress}
+                <div className="text-sm text-gray-400 mt-1 font-mono flex items-center gap-2">
+                  <span>{connectedWalletAddress}</span>
+                  <CopyButton value={connectedWalletAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               ) : (
                 <div className="text-sm text-yellow-400 mt-1">
@@ -399,6 +401,7 @@ export default function Step8HookOwner() {
                         <span className="font-mono text-gray-300 break-all">
                           {resolvedOwnerAddress}
                         </span>
+                        <CopyButton value={resolvedOwnerAddress} iconClassName="w-3.5 h-3.5" />
                         <a
                           href={getBlockExplorerUrl(resolvedOwnerAddress)}
                           target="_blank"

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
 import packageJson from '../../package.json'
+import CopyButton from '@/components/CopyButton'
 
 declare global {
   interface Window {
@@ -277,16 +278,17 @@ export default function Header() {
           <div className="flex items-center">
             {isConnected ? (
               <div className="flex items-center space-x-4">
-                <div className="text-right">
+                <div className="text-right flex items-center gap-2 justify-end">
                   <div
                     className="text-sm text-gray-300 font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {networkName} ({networkId})
-                  </div>
+                  <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
+                </div>
+                <div className="text-xs text-gray-400">
+                  {networkName} ({networkId})
                 </div>
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <button
