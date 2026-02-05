@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
@@ -108,12 +108,12 @@ export default function Step1Assets() {
     }
   }, [CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_ADDRESS, CACHE_KEYS.TOKEN1_METADATA])
 
-  // Cache utility functions
-  const saveToCache = (key: string, value: string) => {
+  // Cache utility functions (stable for hook deps)
+  const saveToCache = useCallback((key: string, value: string) => {
     if (isClient) {
       localStorage.setItem(key, value)
     }
-  }
+  }, [isClient])
 
   const saveMetadataToCache = useCallback((key: string, metadata: TokenMetadata | null) => {
     if (isClient) {
@@ -491,25 +491,26 @@ export default function Step1Assets() {
     setResolved(result.address)
     await validateAndFetchToken(result.address, tokenType, { skipUpdateInput: true })
     setLoading(false)
-  }, [validateAndFetchToken, resolveSymbolToAddress, saveMetadataToCache, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN1_ADDRESS])
+  }, [validateAndFetchToken, resolveSymbolToAddress, saveMetadataToCache, saveToCache, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN1_ADDRESS])
 
-  // Debounced: resolve (symbol or hex) and fetch metadata
-  const debouncedValidateToken0 = debounce((value: string) => {
-    processTokenInput(value, 'token0')
-  }, 500)
-
-  const debouncedValidateToken1 = debounce((value: string) => {
-    processTokenInput(value, 'token1')
-  }, 500)
+  // Debounced: resolve (symbol or hex) and fetch metadata (stable refs so effect deps are valid)
+  const debouncedValidateToken0 = useMemo(
+    () => debounce((value: string) => processTokenInput(value, 'token0'), 500),
+    [processTokenInput]
+  )
+  const debouncedValidateToken1 = useMemo(
+    () => debounce((value: string) => processTokenInput(value, 'token1'), 500),
+    [processTokenInput]
+  )
 
   // When token input or network is set (e.g. from cache), run validation so symbol lookup runs
   useEffect(() => {
     if (isClient && token0Address) debouncedValidateToken0(token0Address)
-  }, [isClient, token0Address, wizardData.networkInfo?.chainId])
+  }, [isClient, token0Address, wizardData.networkInfo?.chainId, debouncedValidateToken0])
 
   useEffect(() => {
     if (isClient && token1Address) debouncedValidateToken1(token1Address)
-  }, [isClient, token1Address, wizardData.networkInfo?.chainId])
+  }, [isClient, token1Address, wizardData.networkInfo?.chainId, debouncedValidateToken1])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
