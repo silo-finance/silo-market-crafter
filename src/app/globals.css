@@ -33,3 +33,30 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Standardowa lista numerowana drzewa */
+.tree {
+  list-style-type: decimal;
+  padding-left: 1rem;
+  margin: 0.15rem 0 0.05rem 0;
+}
+.tree .tree {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.05rem;
+}
+.tree-item {
+  display: list-item;
+  padding: 0.05rem 0;
+  margin-left: 0;
+}
+/* Numery listy – mniejsza, przytłumiona czcionka (nadpisuje bazowe style) */
+.tree .tree-item::marker {
+  font-size: 0.75em !important;
+  font-weight: 500 !important;
+  color: #9ca3af !important; /* gray-400 */
+}
+.tree-item .tree-item-content {
+  display: inline;
+}
