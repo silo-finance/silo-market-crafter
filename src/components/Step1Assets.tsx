@@ -491,7 +491,7 @@ export default function Step1Assets() {
     setResolved(result.address)
     await validateAndFetchToken(result.address, tokenType, { skipUpdateInput: true })
     setLoading(false)
-  }, [validateAndFetchToken, resolveSymbolToAddress, saveMetadataToCache, saveToCache, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN1_ADDRESS])
+  }, [validateAndFetchToken, saveMetadataToCache, saveToCache, CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, CACHE_KEYS.TOKEN0_ADDRESS, CACHE_KEYS.TOKEN1_ADDRESS])
 
   // Debounced: resolve (symbol or hex) and fetch metadata (stable refs so effect deps are valid)
   const debouncedValidateToken0 = useMemo(
