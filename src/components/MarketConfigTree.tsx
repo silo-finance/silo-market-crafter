@@ -20,15 +20,18 @@ interface TreeNodeProps {
   value?: string | bigint | boolean | null
   address?: string
   tokenMeta?: TokenMeta
+  suffixText?: string
   children?: React.ReactNode
   explorerUrl: string
   isPercentage?: boolean
+  valueMuted?: boolean
 }
 
-function TreeNode({ label, value, address, tokenMeta, children, explorerUrl, isPercentage }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
+  const hasSuffix = suffixText != null && suffixText !== ''
 
   return (
     <li className="tree-item">
@@ -53,10 +56,16 @@ function TreeNode({ label, value, address, tokenMeta, children, explorerUrl, isP
                 ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
               </span>
             )}
+            {hasSuffix && (
+              <span className="text-gray-400 text-sm ml-1">
+                {' '}
+                ({suffixText})
+              </span>
+            )}
           </>
         )}
         {hasValue && (
-          <span className="text-white text-sm font-mono">
+          <span className={valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'}>
             {typeof value === 'boolean'
               ? (value ? 'Yes' : 'No')
               : isPercentage && typeof value === 'bigint'
@@ -100,9 +109,14 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
           </TreeNode>
-          <TreeNode label="Solvency Oracle" address={config.silo0.solvencyOracle.address} explorerUrl={explorerUrl}>
+          <TreeNode
+            label="Solvency Oracle"
+            address={config.silo0.solvencyOracle.address}
+            suffixText={config.silo0.solvencyOracle.version}
+            explorerUrl={explorerUrl}
+          >
             {config.silo0.solvencyOracle.type && (
-              <TreeNode label="Type" value={config.silo0.solvencyOracle.type} explorerUrl={explorerUrl} />
+              <TreeNode label="Type" value={config.silo0.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
             )}
             {config.silo0.solvencyOracle.config && Object.entries(config.silo0.solvencyOracle.config).map(([key, val]) => (
               <TreeNode
@@ -114,23 +128,39 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV Oracle" address={config.silo0.maxLtvOracle.address} explorerUrl={explorerUrl}>
-            {config.silo0.maxLtvOracle.type && (
-              <TreeNode label="Type" value={config.silo0.maxLtvOracle.type} explorerUrl={explorerUrl} />
-            )}
-            {config.silo0.maxLtvOracle.config && Object.entries(config.silo0.maxLtvOracle.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
-          <TreeNode label="Interest Rate Model" address={config.silo0.interestRateModel.address} explorerUrl={explorerUrl}>
+          {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
+            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
+          ) : config.silo0.maxLtvOracle.address.toLowerCase() === config.silo0.solvencyOracle.address.toLowerCase() ? (
+            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+          ) : (
+            <TreeNode
+              label="Max LTV Oracle"
+              address={config.silo0.maxLtvOracle.address}
+              suffixText={config.silo0.maxLtvOracle.version}
+              explorerUrl={explorerUrl}
+            >
+              {config.silo0.maxLtvOracle.type && (
+                <TreeNode label="Type" value={config.silo0.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
+              )}
+              {config.silo0.maxLtvOracle.config && Object.entries(config.silo0.maxLtvOracle.config).map(([key, val]) => (
+                <TreeNode
+                  key={key}
+                  label={key}
+                  value={typeof val === 'string' ? val : String(val)}
+                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                  explorerUrl={explorerUrl}
+                />
+              ))}
+            </TreeNode>
+          )}
+          <TreeNode
+            label="Interest Rate Model"
+            address={config.silo0.interestRateModel.address}
+            suffixText={config.silo0.interestRateModel.version}
+            explorerUrl={explorerUrl}
+          >
             {config.silo0.interestRateModel.type && (
-              <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} />
+              <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
             )}
             {config.silo0.interestRateModel.config && Object.entries(config.silo0.interestRateModel.config).map(([key, val]) => (
               <TreeNode
@@ -148,7 +178,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Hook Receiver" address={config.silo0.hookReceiver} explorerUrl={explorerUrl} />
+          <TreeNode label="Hook Receiver" address={config.silo0.hookReceiver} suffixText={config.silo0.hookReceiverVersion} explorerUrl={explorerUrl} />
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
 
@@ -159,9 +189,14 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} />
           </TreeNode>
-          <TreeNode label="Solvency Oracle" address={config.silo1.solvencyOracle.address} explorerUrl={explorerUrl}>
+          <TreeNode
+            label="Solvency Oracle"
+            address={config.silo1.solvencyOracle.address}
+            suffixText={config.silo1.solvencyOracle.version}
+            explorerUrl={explorerUrl}
+          >
             {config.silo1.solvencyOracle.type && (
-              <TreeNode label="Type" value={config.silo1.solvencyOracle.type} explorerUrl={explorerUrl} />
+              <TreeNode label="Type" value={config.silo1.solvencyOracle.type} explorerUrl={explorerUrl} valueMuted />
             )}
             {config.silo1.solvencyOracle.config && Object.entries(config.silo1.solvencyOracle.config).map(([key, val]) => (
               <TreeNode
@@ -173,23 +208,39 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV Oracle" address={config.silo1.maxLtvOracle.address} explorerUrl={explorerUrl}>
-            {config.silo1.maxLtvOracle.type && (
-              <TreeNode label="Type" value={config.silo1.maxLtvOracle.type} explorerUrl={explorerUrl} />
-            )}
-            {config.silo1.maxLtvOracle.config && Object.entries(config.silo1.maxLtvOracle.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
-          <TreeNode label="Interest Rate Model" address={config.silo1.interestRateModel.address} explorerUrl={explorerUrl}>
+          {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
+            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} />
+          ) : config.silo1.maxLtvOracle.address.toLowerCase() === config.silo1.solvencyOracle.address.toLowerCase() ? (
+            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+          ) : (
+            <TreeNode
+              label="Max LTV Oracle"
+              address={config.silo1.maxLtvOracle.address}
+              suffixText={config.silo1.maxLtvOracle.version}
+              explorerUrl={explorerUrl}
+            >
+              {config.silo1.maxLtvOracle.type && (
+                <TreeNode label="Type" value={config.silo1.maxLtvOracle.type} explorerUrl={explorerUrl} valueMuted />
+              )}
+              {config.silo1.maxLtvOracle.config && Object.entries(config.silo1.maxLtvOracle.config).map(([key, val]) => (
+                <TreeNode
+                  key={key}
+                  label={key}
+                  value={typeof val === 'string' ? val : String(val)}
+                  address={typeof val === 'string' && val.startsWith('0x') ? val : undefined}
+                  explorerUrl={explorerUrl}
+                />
+              ))}
+            </TreeNode>
+          )}
+          <TreeNode
+            label="Interest Rate Model"
+            address={config.silo1.interestRateModel.address}
+            suffixText={config.silo1.interestRateModel.version}
+            explorerUrl={explorerUrl}
+          >
             {config.silo1.interestRateModel.type && (
-              <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} />
+              <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
             )}
             {config.silo1.interestRateModel.config && Object.entries(config.silo1.interestRateModel.config).map(([key, val]) => (
               <TreeNode
@@ -207,7 +258,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
           <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="DAO Fee" value={config.silo1.daoFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode label="Deployer Fee" value={config.silo1.deployerFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Hook Receiver" address={config.silo1.hookReceiver} explorerUrl={explorerUrl} />
+          <TreeNode label="Hook Receiver" address={config.silo1.hookReceiver} suffixText={config.silo1.hookReceiverVersion} explorerUrl={explorerUrl} />
           <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
       </ol>

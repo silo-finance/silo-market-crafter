@@ -4,8 +4,61 @@ import dynamicKinkModelAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import erc20Abi from '@/abis/IERC20.json'
+import siloLensAbi from '@/abis/silo/ISiloLens.json'
 
 const BP2DP_NORMALIZATION = BigInt(10 ** 14) // basis points to 18 decimals
+
+const CHAIN_ID_TO_NAME: Record<string, string> = {
+  '1': 'mainnet',
+  '137': 'polygon',
+  '10': 'optimism',
+  '42161': 'arbitrum_one',
+  '43114': 'avalanche',
+  '146': 'sonic'
+}
+
+async function fetchSiloLensAddress(chainName: string): Promise<string | null> {
+  const lensContractName = 'SiloLens.sol'
+  try {
+    const response = await fetch(
+      `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${lensContractName}.json`
+    )
+    if (response.ok) {
+      const data = await response.json()
+      const address = data.address || ''
+      if (address && ethers.isAddress(address)) return address
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    const response = await fetch(
+      `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
+    )
+    if (response.ok) {
+      const data = await response.json()
+      if (typeof data === 'object' && data !== null) {
+        let address = data[lensContractName] || data['SiloLens'] || data.SiloLens || ''
+        if (!address || !ethers.isAddress(address)) {
+          for (const key in data) {
+            if (key.includes('SiloLens') && typeof data[key] === 'string' && ethers.isAddress(data[key])) {
+              address = data[key]
+              break
+            }
+            if (typeof data[key] === 'object' && data[key]?.address && ethers.isAddress(data[key].address)) {
+              address = data[key].address
+              break
+            }
+          }
+        }
+        if (address && ethers.isAddress(address)) return address
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
 
 export interface MarketConfig {
   siloConfig: string
@@ -44,6 +97,7 @@ export interface SiloConfig {
   daoFee: bigint
   deployerFee: bigint
   hookReceiver: string
+  hookReceiverVersion?: string
   callBeforeQuote: boolean
 }
 
@@ -51,12 +105,14 @@ export interface OracleInfo {
   address: string
   type?: string
   config?: Record<string, unknown>
+  version?: string
 }
 
 export interface IRMInfo {
   address: string
   type?: string
   config?: Record<string, unknown>
+  version?: string
 }
 
 export async function fetchMarketConfig(
@@ -85,6 +141,34 @@ export async function fetchMarketConfig(
     fetchSiloConfig(provider, siloConfigContract, silo0Address),
     fetchSiloConfig(provider, siloConfigContract, silo1Address)
   ])
+
+  // Fetch versions for oracles and IRMs via SiloLens (bulk: one getVersion per unique address)
+  const chainId = (await provider.getNetwork()).chainId.toString()
+  const chainName = CHAIN_ID_TO_NAME[chainId] ?? 'mainnet'
+  const siloLensAddress = await fetchSiloLensAddress(chainName)
+  if (siloLensAddress) {
+    const uniqueAddresses = new Set<string>()
+    for (const c of [config0, config1]) {
+      if (c.solvencyOracle.address && c.solvencyOracle.address !== ethers.ZeroAddress) uniqueAddresses.add(c.solvencyOracle.address.toLowerCase())
+      if (c.maxLtvOracle.address && c.maxLtvOracle.address !== ethers.ZeroAddress) uniqueAddresses.add(c.maxLtvOracle.address.toLowerCase())
+      if (c.interestRateModel.address && c.interestRateModel.address !== ethers.ZeroAddress) uniqueAddresses.add(c.interestRateModel.address.toLowerCase())
+      if (c.hookReceiver && c.hookReceiver !== ethers.ZeroAddress) uniqueAddresses.add(c.hookReceiver.toLowerCase())
+    }
+    const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi.abi as ethers.InterfaceAbi, provider)
+    const addresses = [...uniqueAddresses]
+    const versions = await Promise.all(addresses.map(addr => lensContract.getVersion(addr)))
+    const versionByAddress = new Map<string, string>()
+    addresses.forEach((addr, i) => versionByAddress.set(addr, String(versions[i] ?? '')))
+    const getVersion = (address: string) => versionByAddress.get(address.toLowerCase()) ?? undefined
+    config0.solvencyOracle.version = getVersion(config0.solvencyOracle.address)
+    config0.maxLtvOracle.version = getVersion(config0.maxLtvOracle.address)
+    config0.interestRateModel.version = getVersion(config0.interestRateModel.address)
+    config0.hookReceiverVersion = getVersion(config0.hookReceiver)
+    config1.solvencyOracle.version = getVersion(config1.solvencyOracle.address)
+    config1.maxLtvOracle.version = getVersion(config1.maxLtvOracle.address)
+    config1.interestRateModel.version = getVersion(config1.interestRateModel.address)
+    config1.hookReceiverVersion = getVersion(config1.hookReceiver)
+  }
 
   return {
     siloConfig: siloConfigAddress,
