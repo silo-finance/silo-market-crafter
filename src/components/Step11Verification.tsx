@@ -12,7 +12,7 @@ import CopyButton from '@/components/CopyButton'
 export default function Step11Verification() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { wizardData } = useWizard()
+  const { wizardData, setVerificationFromWizard } = useWizard()
   const [input, setInput] = useState<string>('')
   const [txHash, setTxHash] = useState<string | null>(null)
   const [config, setConfig] = useState<MarketConfig | null>(null)
@@ -99,6 +99,18 @@ export default function Step11Verification() {
     }
   }, [])
 
+  // Whether we're verifying the wizard's deployment (show summary) or standalone (hide summary)
+  useEffect(() => {
+    const fromWizard =
+      wizardData.lastDeployTxHash != null &&
+      wizardData.lastDeployTxHash !== '' &&
+      txHash != null &&
+      txHash.toLowerCase() === wizardData.lastDeployTxHash.toLowerCase()
+    if (wizardData.verificationFromWizard !== fromWizard) {
+      setVerificationFromWizard(fromWizard)
+    }
+  }, [txHash, wizardData.lastDeployTxHash, wizardData.verificationFromWizard, setVerificationFromWizard])
+
   // Extract hash from URL if present
   useEffect(() => {
     const urlHash = searchParams.get('tx')
@@ -113,9 +125,10 @@ export default function Step11Verification() {
         handleVerify(savedHash, true)
       } else {
         setShowForm(true)
+        setVerificationFromWizard(false)
       }
     }
-  }, [searchParams, wizardData.lastDeployTxHash, handleVerify])
+  }, [searchParams, wizardData.lastDeployTxHash, handleVerify, setVerificationFromWizard])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,6 +167,7 @@ export default function Step11Verification() {
   }
 
   const goToDeployment = () => router.push('/wizard?step=10')
+  const goToNewMarket = () => router.push('/wizard?step=0')
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -243,13 +257,23 @@ export default function Step11Verification() {
       )}
 
       <div className="flex justify-between mt-8">
-        <button
-          type="button"
-          onClick={goToDeployment}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
-          <span>Back to Deployment</span>
-        </button>
+        {wizardData.verificationFromWizard ? (
+          <button
+            type="button"
+            onClick={goToDeployment}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          >
+            <span>Back to Deployment</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={goToNewMarket}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          >
+            <span>Deploy New Market</span>
+          </button>
+        )}
       </div>
     </div>
   )
