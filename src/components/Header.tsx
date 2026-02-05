@@ -257,6 +257,12 @@ export default function Header() {
           {/* Navigation Menu */}
           <nav className="hidden md:flex space-x-8">
             <Link 
+              href="/wizard?step=11"
+              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+            >
+              Verify Market
+            </Link>
+            <Link 
               href="https://silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
