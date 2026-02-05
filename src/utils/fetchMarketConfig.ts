@@ -106,6 +106,8 @@ export interface OracleInfo {
   type?: string
   config?: Record<string, unknown>
   version?: string
+  /** quote(1 base token, baseToken) result as raw string (display as 18 decimals) */
+  quotePrice?: string
 }
 
 export interface IRMInfo {
@@ -213,6 +215,40 @@ async function fetchSiloConfig(
     fetchSymbolDecimals(config.collateralShareToken),
     fetchSymbolDecimals(config.debtShareToken)
   ])
+
+  // ISiloOracle.quote(_baseAmount, _baseToken) - fetch price for 1 token
+  const decimals = tokenMeta.decimals ?? 18
+  const oneBaseAmount = BigInt(10 ** decimals)
+  const quoteAbi = [
+    {
+      type: 'function',
+      name: 'quote',
+      inputs: [
+        { name: '_baseAmount', type: 'uint256', internalType: 'uint256' },
+        { name: '_baseToken', type: 'address', internalType: 'address' }
+      ],
+      outputs: [{ name: 'quoteAmount', type: 'uint256', internalType: 'uint256' }],
+      stateMutability: 'view'
+    }
+  ] as const
+  const fetchQuote = async (oracleAddress: string): Promise<string | undefined> => {
+    if (!oracleAddress || oracleAddress === ethers.ZeroAddress) return undefined
+    try {
+      const oracle = new ethers.Contract(oracleAddress, quoteAbi as ethers.InterfaceAbi, provider)
+      const quoteAmount = await oracle.quote(oneBaseAmount, config.token)
+      return quoteAmount != null ? String(quoteAmount) : undefined
+    } catch {
+      return undefined
+    }
+  }
+  const [solvencyQuote, maxLtvQuote] = await Promise.all([
+    fetchQuote(config.solvencyOracle),
+    config.maxLtvOracle && config.maxLtvOracle !== ethers.ZeroAddress && config.maxLtvOracle.toLowerCase() !== config.solvencyOracle?.toLowerCase()
+      ? fetchQuote(config.maxLtvOracle)
+      : Promise.resolve(undefined)
+  ])
+  if (solvencyQuote != null) solvencyOracle.quotePrice = solvencyQuote
+  if (maxLtvQuote != null) maxLtvOracle.quotePrice = maxLtvQuote
 
   return {
     silo: siloAddress,
@@ -354,4 +390,13 @@ export function formatPercentage(value: bigint): string {
 export function formatAddress(address: string): string {
   if (!address || address === ethers.ZeroAddress) return 'Zero Address'
   return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
+
+/** Format raw quote amount as string with 18 decimal places */
+export function formatQuotePriceAs18Decimals(quotePriceRaw: string): string {
+  const v = BigInt(quotePriceRaw)
+  const div = BigInt(10 ** 18)
+  const intPart = v / div
+  const fracPart = (v % div).toString().padStart(18, '0').replace(/0+$/, '') || '0'
+  return fracPart ? `${intPart}.${fracPart}` : String(intPart)
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { MarketConfig, formatPercentage, formatAddress } from '@/utils/fetchMarketConfig'
+import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 
@@ -21,13 +21,14 @@ interface TreeNodeProps {
   address?: string
   tokenMeta?: TokenMeta
   suffixText?: string
+  bulletItems?: string[]
   children?: React.ReactNode
   explorerUrl: string
   isPercentage?: boolean
   valueMuted?: boolean
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -79,6 +80,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, children, expl
           <span className="text-gray-500 text-sm italic">Zero Address</span>
         )}
       </span>
+      {bulletItems && bulletItems.length > 0 && (
+        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+          {bulletItems.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
       {children && <ol className="tree">{children}</ol>}
     </li>
   )
@@ -113,6 +121,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Solvency Oracle"
             address={config.silo0.solvencyOracle.address}
             suffixText={config.silo0.solvencyOracle.version}
+            bulletItems={config.silo0.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.solvencyOracle.quotePrice)}`] : undefined}
             explorerUrl={explorerUrl}
           >
             {config.silo0.solvencyOracle.type && (
@@ -137,6 +146,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               label="Max LTV Oracle"
               address={config.silo0.maxLtvOracle.address}
               suffixText={config.silo0.maxLtvOracle.version}
+              bulletItems={config.silo0.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo0.maxLtvOracle.quotePrice)}`] : undefined}
               explorerUrl={explorerUrl}
             >
               {config.silo0.maxLtvOracle.type && (
@@ -193,6 +203,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             label="Solvency Oracle"
             address={config.silo1.solvencyOracle.address}
             suffixText={config.silo1.solvencyOracle.version}
+            bulletItems={config.silo1.solvencyOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.solvencyOracle.quotePrice)}`] : undefined}
             explorerUrl={explorerUrl}
           >
             {config.silo1.solvencyOracle.type && (
@@ -217,6 +228,7 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               label="Max LTV Oracle"
               address={config.silo1.maxLtvOracle.address}
               suffixText={config.silo1.maxLtvOracle.version}
+              bulletItems={config.silo1.maxLtvOracle.quotePrice ? [`Price (1 token): ${formatQuotePriceAs18Decimals(config.silo1.maxLtvOracle.quotePrice)}`] : undefined}
               explorerUrl={explorerUrl}
             >
               {config.silo1.maxLtvOracle.type && (
