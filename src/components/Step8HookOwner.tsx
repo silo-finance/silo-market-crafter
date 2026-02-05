@@ -4,9 +4,25 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
-import { normalizeAddress } from '@/utils/addressValidation'
+import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
+import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import CopyButton from '@/components/CopyButton'
 
 type OwnerSource = 'wallet' | 'manual'
+
+function getNativeTokenSymbol(chainId: string): string {
+  const map: { [key: string]: string } = {
+    '1': 'ETH',
+    '137': 'MATIC',
+    '10': 'ETH',
+    '42161': 'ETH',
+    '43114': 'AVAX',
+    '8453': 'ETH',
+    '146': 'S',
+    '653': 'S'
+  }
+  return map[chainId] || 'ETH'
+}
 
 export default function Step8HookOwner() {
   const router = useRouter()
@@ -14,6 +30,10 @@ export default function Step8HookOwner() {
   
   const [ownerSource, setOwnerSource] = useState<OwnerSource>('wallet')
   const [manualAddress, setManualAddress] = useState<string>('')
+  /** When user enters a name (key), this is the resolved address we use and display. */
+  const [resolvedOwnerAddress, setResolvedOwnerAddress] = useState<string | null>(null)
+  /** When resolved from a name, the exact key from the JSON for display. */
+  const [ownerResolvedKey, setOwnerResolvedKey] = useState<string | null>(null)
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean
     isContract: boolean | null
@@ -23,6 +43,8 @@ export default function Step8HookOwner() {
   const [connectedWalletAddress, setConnectedWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [nativeBalance, setNativeBalance] = useState<string | null>(null)
+  const [nativeBalanceSymbol, setNativeBalanceSymbol] = useState<string>('ETH')
 
   // Get connected wallet address
   useEffect(() => {
@@ -44,112 +66,154 @@ export default function Step8HookOwner() {
   }, [])
 
   // Load existing owner address when wizardData changes
-  // This ensures that when user returns to this step, their selection is restored
   useEffect(() => {
     if (wizardData.hookOwnerAddress) {
       if (connectedWalletAddress) {
-        // Compare addresses (case-insensitive)
         if (wizardData.hookOwnerAddress.toLowerCase() === connectedWalletAddress.toLowerCase()) {
           setOwnerSource('wallet')
           setManualAddress('')
+          setResolvedOwnerAddress(null)
+          setOwnerResolvedKey(null)
         } else {
-          // It's a manual address
           setOwnerSource('manual')
           setManualAddress(wizardData.hookOwnerAddress)
+          const norm = normalizeAddress(wizardData.hookOwnerAddress)
+          setResolvedOwnerAddress(norm)
+          setOwnerResolvedKey(null)
         }
       } else {
-        // Wallet not connected yet, but we have a saved address - assume it's manual
         setOwnerSource('manual')
         setManualAddress(wizardData.hookOwnerAddress)
+        const norm = normalizeAddress(wizardData.hookOwnerAddress)
+        setResolvedOwnerAddress(norm)
+        setOwnerResolvedKey(null)
       }
     } else {
-      // Reset to default when hookOwnerAddress is cleared (e.g., after form reset)
-      if (connectedWalletAddress) {
-        setOwnerSource('wallet')
-      } else {
-        setOwnerSource('wallet') // Default to wallet even if not connected yet
-      }
+      if (connectedWalletAddress) setOwnerSource('wallet')
+      else setOwnerSource('wallet')
       setManualAddress('')
+      setResolvedOwnerAddress(null)
+      setOwnerResolvedKey(null)
       setAddressValidation({ isValid: false, isContract: null, error: null })
       setError('')
     }
   }, [wizardData.hookOwnerAddress, connectedWalletAddress])
 
-  // Validate and check address when manual address changes
+  // Resolve manual input: hex address or name/key from addresses JSON
   useEffect(() => {
     if (ownerSource !== 'manual' || !manualAddress.trim()) {
+      setResolvedOwnerAddress(null)
+      setOwnerResolvedKey(null)
       setAddressValidation({ isValid: false, isContract: null, error: null })
       setValidatingAddress(false)
       return
     }
 
-    const validateAddress = async () => {
+    const run = async () => {
       setValidatingAddress(true)
-      
-      // Step 1: Validate address format FIRST (using shared utility)
-      const normalizedAddress = normalizeAddress(manualAddress)
-      
-      if (!normalizedAddress) {
-        // Invalid format - show error immediately, don't fetch additional data
-        setAddressValidation({
-          isValid: false,
-          isContract: null,
-          error: 'Invalid address format'
-        })
+      const trimmed = manualAddress.trim()
+
+      if (isHexAddress(trimmed)) {
+        const normalizedAddress = normalizeAddress(trimmed)
+        if (!normalizedAddress) {
+        setResolvedOwnerAddress(null)
+        setOwnerResolvedKey(null)
+        setAddressValidation({ isValid: false, isContract: null, error: 'Invalid address format' })
+          setValidatingAddress(false)
+          return
+        }
+        setResolvedOwnerAddress(normalizedAddress)
+        setOwnerResolvedKey(null)
+        setAddressValidation({ isValid: true, isContract: null, error: null })
+
+        if (window.ethereum) {
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum)
+            const code = await provider.getCode(normalizedAddress)
+            const isContract = code !== '0x' && code !== '0x0'
+            setAddressValidation({ isValid: true, isContract, error: null })
+          } catch (err) {
+            console.error('Error checking contract:', err)
+            setAddressValidation({ isValid: true, isContract: null, error: null })
+          }
+        }
         setValidatingAddress(false)
         return
       }
 
-      // Address format is valid - show green checkmark
-      // Now fetch additional data (contract check) only if format is valid
-      setAddressValidation({
-        isValid: true,
-        isContract: null,
-        error: null
-      })
-
-      // Step 2: Only if address is valid, check if it's a contract or wallet (EOA)
-      // Use MetaMask provider if available, otherwise skip contract check
-      if (!window.ethereum) {
-        // Valid address but can't check contract info (no MetaMask)
-        setAddressValidation({
-          isValid: true,
-          isContract: null,
-          error: null
-        })
+      // Symbol path: need chainId
+      let chainId: string
+      try {
+        if (!window.ethereum) {
+          setResolvedOwnerAddress(null)
+          setOwnerResolvedKey(null)
+          setAddressValidation({ isValid: false, isContract: null, error: 'Connect your wallet to look up by name.' })
+          setValidatingAddress(false)
+          return
+        }
+        const hex = (await window.ethereum.request({ method: 'eth_chainId' })) as string
+        chainId = parseInt(hex, 16).toString()
+      } catch {
+        setResolvedOwnerAddress(null)
+        setOwnerResolvedKey(null)
+        setAddressValidation({ isValid: false, isContract: null, error: 'Could not read network. Enter address manually.' })
         setValidatingAddress(false)
         return
       }
+
+      const result = await resolveSymbolToAddress(chainId, trimmed)
+      if (!result) {
+        setResolvedOwnerAddress(null)
+        setOwnerResolvedKey(null)
+        setAddressValidation({ isValid: false, isContract: null, error: 'Name not found. Enter address manually or use a name from the supported list below.' })
+        setValidatingAddress(false)
+        return
+      }
+
+      setResolvedOwnerAddress(result.address)
+      setOwnerResolvedKey(result.exactSymbol)
+      setManualAddress(result.exactSymbol)
+      setAddressValidation({ isValid: true, isContract: null, error: null })
 
       try {
-        // Use MetaMask provider to check if address is a contract
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const code = await provider.getCode(normalizedAddress)
+        const code = await provider.getCode(result.address)
         const isContract = code !== '0x' && code !== '0x0'
-
-        // Show if it's a contract or wallet (EOA)
-        setAddressValidation({
-          isValid: true,
-          isContract,
-          error: null
-        })
+        setAddressValidation({ isValid: true, isContract, error: null })
       } catch (err) {
         console.error('Error checking contract:', err)
-        // Address is still valid, just couldn't check contract info
-        setAddressValidation({
-          isValid: true,
-          isContract: null,
-          error: null
-        })
-      } finally {
-        setValidatingAddress(false)
+        setAddressValidation({ isValid: true, isContract: null, error: null })
       }
+      setValidatingAddress(false)
     }
 
-    // Debounce validation
-    const timeoutId = setTimeout(validateAddress, 500)
+    const timeoutId = setTimeout(run, 500)
     return () => clearTimeout(timeoutId)
   }, [manualAddress, ownerSource])
+
+  // Fetch native balance when we have a resolved address
+  useEffect(() => {
+    if (!resolvedOwnerAddress || !window.ethereum) {
+      setNativeBalance(null)
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const balance = await provider.getBalance(resolvedOwnerAddress)
+        if (cancelled) return
+        setNativeBalance(ethers.formatEther(balance))
+        const hex = (await window.ethereum.request({ method: 'eth_chainId' })) as string
+        const chainId = parseInt(hex, 16).toString()
+        setNativeBalanceSymbol(getNativeTokenSymbol(chainId))
+      } catch {
+        if (!cancelled) setNativeBalance(null)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [resolvedOwnerAddress])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,16 +230,12 @@ export default function Step8HookOwner() {
         ownerAddress = connectedWalletAddress
       } else {
         if (!manualAddress.trim()) {
-          throw new Error('Please enter an owner address')
+          throw new Error('Please enter an owner address or a name from the supported list')
         }
-        const normalized = normalizeAddress(manualAddress)
-        if (!normalized) {
-          throw new Error('Invalid address format')
+        if (!addressValidation.isValid || !resolvedOwnerAddress) {
+          throw new Error(addressValidation.error || 'Enter a valid address or a name from the supported list')
         }
-        if (!addressValidation.isValid) {
-          throw new Error('Address validation failed')
-        }
-        ownerAddress = normalized
+        ownerAddress = resolvedOwnerAddress
       }
 
       updateHookOwnerAddress(ownerAddress)
@@ -246,8 +306,9 @@ export default function Step8HookOwner() {
                 Use Connected Wallet
               </div>
               {connectedWalletAddress ? (
-                <div className="text-sm text-gray-400 mt-1 font-mono">
-                  {connectedWalletAddress}
+                <div className="text-sm text-gray-400 mt-1 font-mono flex items-center gap-2">
+                  <span>{connectedWalletAddress}</span>
+                  <CopyButton value={connectedWalletAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               ) : (
                 <div className="text-sm text-yellow-400 mt-1">
@@ -275,13 +336,31 @@ export default function Step8HookOwner() {
             />
             <div className="flex-1">
               <div className="font-semibold text-white text-lg mb-2">
-                Enter Address Manually
+                Enter address or name
               </div>
+              <p className="text-gray-400 text-sm mb-2">
+                Supported names (keys) can be viewed{' '}
+                <a
+                  href={
+                    wizardData.networkInfo?.chainId
+                      ? getAddressesJsonUrl(wizardData.networkInfo.chainId)
+                      : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  {wizardData.networkInfo?.chainId
+                    ? `in this JSON file (${wizardData.networkInfo.networkName})`
+                    : 'in the repository (connect wallet for network-specific list)'}
+                </a>
+                .
+              </p>
               <input
                 type="text"
                 value={manualAddress}
                 onChange={(e) => setManualAddress(e.target.value)}
-                placeholder="0x..."
+                placeholder="0x... or name (e.g. WETH)"
                 className={`w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none font-mono text-sm ${
                   ownerSource === 'manual' && manualAddress
                     ? validatingAddress
@@ -296,52 +375,55 @@ export default function Step8HookOwner() {
                 disabled={ownerSource !== 'manual'}
               />
               
-              {/* Validation Status */}
               {ownerSource === 'manual' && manualAddress && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-1">
                   {validatingAddress ? (
                     <div className="text-sm text-gray-400 flex items-center space-x-2">
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>Validating address...</span>
+                      <span>Resolving...</span>
                     </div>
                   ) : addressValidation.error ? (
                     <div className="text-sm text-red-400">
                       ✗ {addressValidation.error}
                     </div>
-                  ) : addressValidation.isValid ? (
+                  ) : addressValidation.isValid && resolvedOwnerAddress ? (
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-green-400">
-                          ✓ Valid address
-                        </span>
-                        {normalizeAddress(manualAddress) && (
-                          <a
-                            href={getBlockExplorerUrl(normalizeAddress(manualAddress)!)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-400 hover:text-blue-300 underline flex items-center space-x-1"
-                          >
-                            <span>View on Explorer</span>
-                            <svg className="w-2.5 h-2.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
-                        )}
-                      </div>
-                      {addressValidation.isContract !== null ? (
+                      {ownerResolvedKey && (
                         <div className="text-sm text-gray-400">
-                          {addressValidation.isContract ? (
-                            'Type: Contract'
-                          ) : (
-                            'Type: Wallet (EOA)'
-                          )}
+                          Matched name: <span className="font-mono text-gray-300">{ownerResolvedKey}</span>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">
-                          Type: Checking...
+                      )}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        <span className="text-green-400">✓ Address</span>
+                        <span className="font-mono text-gray-300 break-all">
+                          {resolvedOwnerAddress}
+                        </span>
+                        <CopyButton value={resolvedOwnerAddress} iconClassName="w-3.5 h-3.5" />
+                        <a
+                          href={getBlockExplorerUrl(resolvedOwnerAddress)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline flex items-center space-x-1 shrink-0"
+                        >
+                          <span>View on block explorer</span>
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {addressValidation.isContract === null
+                          ? 'Type: Checking…'
+                          : addressValidation.isContract
+                            ? 'Type: Contract'
+                            : 'Type: Wallet (EOA)'}
+                      </div>
+                      {nativeBalance !== null && (
+                        <div className="text-sm text-gray-400">
+                          Native balance: <span className="text-gray-300 font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
                         </div>
                       )}
                     </div>
@@ -376,7 +458,7 @@ export default function Step8HookOwner() {
             disabled={
               loading || 
               (ownerSource === 'wallet' && !connectedWalletAddress) || 
-              (ownerSource === 'manual' && (!addressValidation.isValid || !manualAddress.trim()))
+              (ownerSource === 'manual' && (!addressValidation.isValid || !resolvedOwnerAddress || !manualAddress.trim()))
             }
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >

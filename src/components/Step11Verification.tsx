@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { parseDeployTxReceipt, type DeployTxParsed } from '@/utils/parseDeployTxEvents'
+import CopyButton from '@/components/CopyButton'
 
 function AddressLine({ label, address, explorerUrl }: { label: string; address: string; explorerUrl: string }) {
   if (!address) return null
@@ -19,6 +20,7 @@ function AddressLine({ label, address, explorerUrl }: { label: string; address: 
       >
         {address}
       </a>
+      <CopyButton value={address} title="Copy address" />
     </div>
   )
 }
@@ -98,14 +100,17 @@ export default function Step11Verification() {
       {txHash && (
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Transaction</h3>
-          <a
-            href={explorerUrl ? `${explorerUrl}/tx/${txHash}` : '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 font-mono text-sm break-all"
-          >
-            {txHash}
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={explorerUrl ? `${explorerUrl}/tx/${txHash}` : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 font-mono text-sm break-all"
+            >
+              {txHash}
+            </a>
+            <CopyButton value={txHash} title="Copy transaction hash" />
+          </div>
         </div>
       )}
 

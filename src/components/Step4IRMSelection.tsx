@@ -7,6 +7,7 @@ import { useWizard, IRMConfig, IRMModelType } from '@/contexts/WizardContext'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 import { normalizeAddress } from '@/utils/addressValidation'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import CopyButton from '@/components/CopyButton'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -446,7 +447,7 @@ export default function Step4IRMSelection() {
               <p className="text-lg font-semibold text-white">{KINK_FACTORY_NAME}</p>
               {kinkFactory?.address && wizardData.networkInfo?.chainId && (
                 <>
-                  <p className="mt-2 text-sm">
+                  <p className="mt-2 text-sm flex flex-wrap items-center gap-2">
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, kinkFactory.address)}
                       target="_blank"
@@ -455,6 +456,7 @@ export default function Step4IRMSelection() {
                     >
                       {normalizeAddress(kinkFactory.address) ?? kinkFactory.address}
                     </a>
+                    <CopyButton value={kinkFactory.address} title="Copy address" />
                   </p>
                   <p className="mt-1 text-sm text-gray-400">
                     Version: {kinkFactory.version === '' ? 'Loading…' : kinkFactory.version}
@@ -631,7 +633,7 @@ export default function Step4IRMSelection() {
               <p className="text-lg font-semibold text-white">{IRM_V2_FACTORY_NAME}</p>
               {irmV2Factory?.address && wizardData.networkInfo?.chainId && (
                 <>
-                  <p className="mt-2 text-sm">
+                  <p className="mt-2 text-sm flex flex-wrap items-center gap-2">
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, irmV2Factory.address)}
                       target="_blank"
@@ -640,6 +642,7 @@ export default function Step4IRMSelection() {
                     >
                       {normalizeAddress(irmV2Factory.address) ?? irmV2Factory.address}
                     </a>
+                    <CopyButton value={irmV2Factory.address} title="Copy address" />
                   </p>
                   <p className="mt-1 text-sm text-gray-400">
                     Version: {irmV2Factory.version === '' ? 'Loading…' : irmV2Factory.version}

@@ -5,26 +5,9 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
+import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import CopyButton from '@/components/CopyButton'
 import erc20Artifact from '@/abis/IERC20.json'
-
-/** Base URL for per-chain token addresses (symbol -> address). Branch: master. */
-const ADDRESSES_JSON_BASE = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/common/addresses'
-
-const getChainNameForAddresses = (chainId: string): string => {
-  const map: { [key: string]: string } = {
-    '1': 'mainnet',
-    '137': 'polygon',
-    '42161': 'arbitrum_one',
-    '43114': 'avalanche',
-    '8453': 'base',
-    '11155111': 'sepolia',
-    '10': 'optimism',
-    '31337': 'anvil',
-    '146': 'sonic',
-    '653': 'sonic_testnet'
-  }
-  return map[chainId] || `chain_${chainId}`
-}
 
 function getExplorerAddressUrl(chainId: string, address: string): string {
   const id = parseInt(chainId, 10)
@@ -443,28 +426,6 @@ export default function Step1Assets() {
     }
   }, [CACHE_KEYS.TOKEN0_METADATA, CACHE_KEYS.TOKEN1_METADATA, saveMetadataToCache])
 
-  /** Resolve symbol to address from Silo repo addresses JSON (case-insensitive full match). Returns address and exact symbol (key from JSON) for input display. */
-  const resolveSymbolToAddress = useCallback(async (
-    chainId: string,
-    symbol: string
-  ): Promise<{ address: string; exactSymbol: string } | null> => {
-    const chainName = getChainNameForAddresses(chainId)
-    const url = `${ADDRESSES_JSON_BASE}/${chainName}.json`
-    try {
-      const res = await fetch(url)
-      if (!res.ok) return null
-      const data = (await res.json()) as Record<string, string>
-      const key = symbol.trim()
-      const found = Object.keys(data).find(k => k.toLowerCase() === key.toLowerCase())
-      if (!found) return null
-      const addr = data[found]
-      if (typeof addr !== 'string' || !addr.startsWith('0x')) return null
-      return { address: addr, exactSymbol: found }
-    } catch {
-      return null
-    }
-  }, [])
-
   /**
    * Process input: if hex address -> normalize and fetch metadata.
    * If not hex -> treat as symbol, lookup in addresses JSON (case-insensitive); if found use that address and fetch metadata; if not show "Please enter the token address manually."
@@ -672,7 +633,7 @@ export default function Step1Assets() {
           <a
             href={
               wizardData.networkInfo?.chainId
-                ? `${ADDRESSES_JSON_BASE}/${getChainNameForAddresses(wizardData.networkInfo.chainId)}.json`
+                ? getAddressesJsonUrl(wizardData.networkInfo.chainId)
                 : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'
             }
             target="_blank"
@@ -729,8 +690,8 @@ export default function Step1Assets() {
                 )}
               </div>
               {token0ResolvedAddress && token0Address.trim() !== token0ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
-                  Matched address:{' '}
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
+                  <span>Matched address:</span>
                   {wizardData.networkInfo?.chainId ? (
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token0ResolvedAddress)}
@@ -743,6 +704,7 @@ export default function Step1Assets() {
                   ) : (
                     <span>{normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}</span>
                   )}
+                  <CopyButton value={normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               )}
               {token0Error && (
@@ -810,8 +772,8 @@ export default function Step1Assets() {
                 )}
               </div>
               {token1ResolvedAddress && token1Address.trim() !== token1ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all">
-                  Matched address:{' '}
+                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
+                  <span>Matched address:</span>
                   {wizardData.networkInfo?.chainId ? (
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token1ResolvedAddress)}
@@ -824,6 +786,7 @@ export default function Step1Assets() {
                   ) : (
                     <span>{normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}</span>
                   )}
+                  <CopyButton value={normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress} iconClassName="w-3.5 h-3.5" />
                 </div>
               )}
               {token1Error && (

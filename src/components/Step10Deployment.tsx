@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
-import { prepareDeployArgs, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
+import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
+import CopyButton from '@/components/CopyButton'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -77,6 +78,23 @@ export default function Step10Deployment() {
   const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
+
+  // Hash of current deploy arguments; used to allow re-deploy when config changes after a previous deploy
+  const currentArgsHash = useMemo(() => {
+    if (!deployArgs || !deployerAddress) return null
+    try {
+      const calldata = generateDeployCalldata(deployerAddress, deployArgs)
+      return ethers.keccak256(calldata as `0x${string}`)
+    } catch {
+      return null
+    }
+  }, [deployArgs, deployerAddress])
+
+  const configUnchangedAfterDeploy =
+    !!txHash &&
+    !!wizardData.lastDeployArgsHash &&
+    !!currentArgsHash &&
+    currentArgsHash === wizardData.lastDeployArgsHash
 
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
@@ -656,7 +674,11 @@ export default function Step10Deployment() {
       await tx.wait()
 
       markStepCompleted(10)
-      setLastDeployTxHash(tx.hash)
+      const argsHash =
+        deployArgs && deployerAddress
+          ? ethers.keccak256(generateDeployCalldata(deployerAddress, deployArgs) as `0x${string}`)
+          : null
+      setLastDeployTxHash(tx.hash, argsHash)
       setError('')
     } catch (err: unknown) {
       console.error('Deployment error:', err)
@@ -735,6 +757,7 @@ export default function Step10Deployment() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
+                <CopyButton value={deployerAddress} iconClassName="w-3.5 h-3.5" title="Copy address" />
                 {deployerVersion && (
                   <span className="text-gray-400 text-sm">
                     version: {deployerVersion}
@@ -764,7 +787,7 @@ export default function Step10Deployment() {
         <button
           onClick={handleDeploy}
           disabled={
-            !!txHash ||
+            configUnchangedAfterDeploy ||
             deploying ||
             !deployerAddress ||
             !deployArgs ||
@@ -786,7 +809,7 @@ export default function Step10Deployment() {
               </svg>
               <span>Deploying...</span>
             </>
-          ) : txHash ? (
+          ) : configUnchangedAfterDeploy ? (
             <span>Market deployed</span>
           ) : (
             <>
@@ -821,19 +844,22 @@ export default function Step10Deployment() {
         </div>
       )}
 
-      {txHash && (
+      {configUnchangedAfterDeploy && txHash && (
         <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
           <div className="text-green-400 text-sm mb-2">
             ✓ Transaction submitted successfully!
           </div>
-          <a
-            href={getBlockExplorerUrl(txHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 text-sm underline block mb-3"
-          >
-            View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
-          </a>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <a
+              href={getBlockExplorerUrl(txHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 text-sm underline"
+            >
+              View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+            </a>
+            <CopyButton value={txHash} iconClassName="w-3.5 h-3.5" title="Copy transaction hash" />
+          </div>
           <button
             type="button"
             onClick={() => router.push(`/wizard?step=11&tx=${txHash}`)}

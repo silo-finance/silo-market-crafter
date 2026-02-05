@@ -149,6 +149,8 @@ export interface WizardData {
   selectedHook: HookType | null
   hookOwnerAddress: string | null
   lastDeployTxHash: string | null
+  /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
+  lastDeployArgsHash: string | null
 }
 
 export enum StepStatus {
@@ -177,7 +179,7 @@ interface WizardContextType {
   updateHookOwnerAddress: (address: string | null) => void
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
-  setLastDeployTxHash: (txHash: string | null) => void
+  setLastDeployTxHash: (txHash: string | null, argsHash?: string | null) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -209,7 +211,8 @@ const initialWizardData: WizardData = {
   feesConfiguration: null,
   selectedHook: null,
   hookOwnerAddress: null,
-  lastDeployTxHash: null
+  lastDeployTxHash: null,
+  lastDeployArgsHash: null
 }
 
 export function WizardProvider({ children }: { children: ReactNode }) {
@@ -544,8 +547,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const setLastDeployTxHash = (txHash: string | null) => {
-    setWizardData(prev => ({ ...prev, lastDeployTxHash: txHash }))
+  const setLastDeployTxHash = (txHash: string | null, argsHash?: string | null) => {
+    setWizardData(prev => ({
+      ...prev,
+      lastDeployTxHash: txHash,
+      lastDeployArgsHash: txHash == null ? null : (argsHash ?? null)
+    }))
   }
 
   const resetWizard = () => {

@@ -8,6 +8,7 @@ import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
+import CopyButton from '@/components/CopyButton'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -798,14 +799,17 @@ export default function Step3OracleConfiguration() {
               {chainlinkV3OracleFactory ? (
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
                   <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <a
-                    href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                  >
-                    {chainlinkV3OracleFactory.address}
-                  </a>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                    >
+                      {chainlinkV3OracleFactory.address}
+                    </a>
+                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
+                  </div>
                   <p className="text-xs text-gray-500 mb-1">Version</p>
                   <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
                 </div>
@@ -916,14 +920,17 @@ export default function Step3OracleConfiguration() {
                     <>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <a
-                          href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                        >
-                          {oracleScalerFactory.address}
-                        </a>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                          >
+                            {oracleScalerFactory.address}
+                          </a>
+                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
+                        </div>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Version</p>
@@ -984,14 +991,19 @@ export default function Step3OracleConfiguration() {
                             )}
                           </div>
                         </div>
-                        <a 
-                          href={getBlockExplorerUrl(oracle.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm"
-                        >
-                          {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={getBlockExplorerUrl(oracle.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
+                          </a>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <CopyButton value={oracle.address} title="Copy address" />
+                          </span>
+                        </div>
                         {!oracle.valid && oracle.resultDecimals && (
                           <div className="mt-2 text-xs text-red-400">
                             This scaler will provide price in {Math.round(oracle.resultDecimals)} decimals, but price must be in 18 decimals.
@@ -1040,14 +1052,17 @@ export default function Step3OracleConfiguration() {
               {chainlinkV3OracleFactory ? (
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
                   <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <a
-                    href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                  >
-                    {chainlinkV3OracleFactory.address}
-                  </a>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                    >
+                      {chainlinkV3OracleFactory.address}
+                    </a>
+                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
+                  </div>
                   <p className="text-xs text-gray-500 mb-1">Version</p>
                   <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
                 </div>
@@ -1158,14 +1173,17 @@ export default function Step3OracleConfiguration() {
                     <>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <a
-                          href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                        >
-                          {oracleScalerFactory.address}
-                        </a>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
+                          >
+                            {oracleScalerFactory.address}
+                          </a>
+                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
+                        </div>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Version</p>
@@ -1226,14 +1244,19 @@ export default function Step3OracleConfiguration() {
                             )}
                           </div>
                         </div>
-                        <a 
-                          href={getBlockExplorerUrl(oracle.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm"
-                        >
-                          {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={getBlockExplorerUrl(oracle.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
+                          </a>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <CopyButton value={oracle.address} title="Copy address" />
+                          </span>
+                        </div>
                         {!oracle.valid && oracle.resultDecimals && (
                           <div className="mt-2 text-xs text-red-400">
                             This scaler will provide price in {Math.round(oracle.resultDecimals)} decimals, but price must be in 18 decimals.

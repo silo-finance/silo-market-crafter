@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
+import packageJson from '../../package.json'
+import CopyButton from '@/components/CopyButton'
 
 declare global {
   interface Window {
@@ -235,8 +237,8 @@ export default function Header() {
     <header className="bg-black/90 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex-shrink-0">
+          {/* Logo + Market Crafter version */}
+          <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
               <Image 
                 src="https://cdn.prod.website-files.com/684669826f2b6c83c65f3f7c/684669826f2b6c83c65f3f86_Frame%2010169.svg" 
@@ -247,6 +249,9 @@ export default function Header() {
                 style={{ width: 'auto' }}
               />
             </Link>
+            <span className="text-gray-300 text-sm font-medium">
+              Market Crafter v{packageJson.version}
+            </span>
           </div>
 
           {/* Navigation Menu */}
@@ -273,16 +278,17 @@ export default function Header() {
           <div className="flex items-center">
             {isConnected ? (
               <div className="flex items-center space-x-4">
-                <div className="text-right">
+                <div className="text-right flex items-center gap-2 justify-end">
                   <div
                     className="text-sm text-gray-300 font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {networkName} ({networkId})
-                  </div>
+                  <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
+                </div>
+                <div className="text-xs text-gray-400">
+                  {networkName} ({networkId})
                 </div>
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <button

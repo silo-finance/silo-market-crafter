@@ -24,7 +24,8 @@ const initialWizardData: WizardData = {
   feesConfiguration: null,
   selectedHook: null,
   hookOwnerAddress: null,
-  lastDeployTxHash: null
+  lastDeployTxHash: null,
+  lastDeployArgsHash: null
 }
 
 /**
