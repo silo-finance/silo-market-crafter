@@ -163,7 +163,7 @@ export async function fetchMarketConfig(
       if (c.hookReceiver && c.hookReceiver !== ethers.ZeroAddress) uniqueAddresses.add(c.hookReceiver.toLowerCase())
     }
     const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi.abi as ethers.InterfaceAbi, provider)
-    const addresses = [...uniqueAddresses]
+    const addresses = Array.from(uniqueAddresses)
     const versions = await Promise.all(addresses.map(addr => lensContract.getVersion(addr)))
     const versionByAddress = new Map<string, string>()
     addresses.forEach((addr, i) => versionByAddress.set(addr, String(versions[i] ?? '')))
@@ -187,7 +187,7 @@ export async function fetchMarketConfig(
     if (c.hookReceiver && c.hookReceiver !== ethers.ZeroAddress) uniqueHooks.add(c.hookReceiver.toLowerCase())
   }
   const hookOwnerByAddress = new Map<string, string>()
-  await Promise.all([...uniqueHooks].map(async (addr) => {
+  await Promise.all(Array.from(uniqueHooks).map(async (addr) => {
     try {
       const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
       const owner = await contract.owner()
@@ -209,7 +209,7 @@ export async function fetchMarketConfig(
     }
   }
   const irmOwnerByAddress = new Map<string, string>()
-  await Promise.all([...uniqueKinkIrms].map(async (addr) => {
+  await Promise.all(Array.from(uniqueKinkIrms).map(async (addr) => {
     const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
     const owner = await contract.owner()
     if (owner && owner !== ethers.ZeroAddress) irmOwnerByAddress.set(addr, typeof owner === 'string' ? owner : owner.toString())
@@ -244,7 +244,7 @@ export async function fetchMarketConfig(
     // ignore
   }
   const ownerMetaByAddress = new Map<string, { isContract: boolean; name?: string }>()
-  await Promise.all([...allOwnerAddresses].map(async (addr) => {
+  await Promise.all(Array.from(allOwnerAddresses).map(async (addr) => {
     const code = await provider.getCode(addr)
     const isContract = code !== '0x' && code !== '0x0'
     const name = addressToName.get(addr)
