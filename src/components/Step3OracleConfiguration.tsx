@@ -5,12 +5,11 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import { resolveSymbolToAddress, getChainNameForAddresses } from '@/utils/symbolToAddress'
+import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
-import ptLinearOracleFactoryArtifact from '@/abis/oracle/IPTLinearOracleFactory.json'
 import erc20Artifact from '@/abis/IERC20.json'
 import CopyButton from '@/components/CopyButton'
 
@@ -18,7 +17,6 @@ import CopyButton from '@/components/CopyButton'
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
-const ptLinearFactoryAbi = (ptLinearOracleFactoryArtifact as { abi: ethers.InterfaceAbi }).abi
 const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 

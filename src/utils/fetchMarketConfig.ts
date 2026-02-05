@@ -562,7 +562,7 @@ export function formatQuotePriceAs18Decimals(quotePriceRaw: string): string {
 export function formatRate18AsPercent(raw: string): string {
   const v = BigInt(raw)
   const e18 = BigInt(10 ** 18)
-  const scaled = v * 100n
+  const scaled = v * BigInt(100)
   const intPart = scaled / e18
   const fracPart = (scaled % e18).toString().padStart(18, '0')
   const decimalStr = `${intPart}.${fracPart}`
