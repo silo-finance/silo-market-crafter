@@ -4,7 +4,7 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
-import { isValueHigh5, isPriceUnexpectedlyLow, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
+import { isValueHigh5, isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
@@ -362,6 +362,10 @@ interface TreeNodeProps {
   addressInJsonVerification?: Map<string, boolean>
   /** When true, show yellow warning icon at end of price line (possible decimals error) */
   priceLowWarning?: boolean
+  /** When true, show yellow warning icon (arrow up) at end of price line — price unexpectedly high */
+  priceHighWarning?: boolean
+  /** When true, show red 18-decimals warning icon at end of price line */
+  priceDecimalsWarning?: boolean
 }
 
 function PriceLowWarningIcon() {
@@ -374,7 +378,39 @@ function PriceLowWarningIcon() {
           </svg>
         </div>
         <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Possible decimals error. Price is unexpectedly low — it should be verified.
+          Price is unexpectedly low — it should be verified.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceHighWarningIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Price is unexpectedly high — it should be verified.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceDecimalsWarningIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center text-white text-[10px] font-bold leading-none">
+          18
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Check the price for 18 decimals.
         </div>
       </div>
     </span>
@@ -565,7 +601,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, priceLowWarning }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, priceLowWarning, priceHighWarning, priceDecimalsWarning }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -649,9 +685,11 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       {bulletItems && bulletItems.length > 0 && (
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {bulletItems.map((item, i) => (
-            <li key={i} className={i === 0 && priceLowWarning ? 'inline-flex items-center flex-wrap gap-0' : ''}>
+            <li key={i} className={i === 0 && (priceLowWarning || priceHighWarning || priceDecimalsWarning) ? 'inline-flex items-center flex-wrap gap-0' : ''}>
               {item}
               {i === 0 && priceLowWarning && <PriceLowWarningIcon />}
+              {i === 0 && priceHighWarning && <PriceHighWarningIcon />}
+              {i === 0 && priceDecimalsWarning && <PriceDecimalsWarningIcon />}
             </li>
           ))}
         </ul>
@@ -774,6 +812,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
             suffixText={config.silo0.solvencyOracle.version}
             bulletItems={buildOracleBullets(config.silo0.solvencyOracle.quotePrice, config.silo0.solvencyOracle.quoteTokenSymbol, config.silo0.solvencyOracle.type, config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
+            priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.solvencyOracle.quotePrice)}
+            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.solvencyOracle.quotePrice)}
             explorerUrl={explorerUrl}
           />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
@@ -787,6 +827,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
               suffixText={config.silo0.maxLtvOracle.version}
               bulletItems={buildOracleBullets(config.silo0.maxLtvOracle.quotePrice, config.silo0.maxLtvOracle.quoteTokenSymbol, config.silo0.maxLtvOracle.type, config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo0.maxLtvOracle.quotePrice)}
+              priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.maxLtvOracle.quotePrice)}
+              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.maxLtvOracle.quotePrice)}
               explorerUrl={explorerUrl}
             />
           )}
@@ -870,6 +912,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
             suffixText={config.silo1.solvencyOracle.version}
             bulletItems={buildOracleBullets(config.silo1.solvencyOracle.quotePrice, config.silo1.solvencyOracle.quoteTokenSymbol, config.silo1.solvencyOracle.type, config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
+            priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
+            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
             explorerUrl={explorerUrl}
           />
           {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
@@ -883,6 +927,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
               suffixText={config.silo1.maxLtvOracle.version}
               bulletItems={buildOracleBullets(config.silo1.maxLtvOracle.quotePrice, config.silo1.maxLtvOracle.quoteTokenSymbol, config.silo1.maxLtvOracle.type, config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo1.maxLtvOracle.quotePrice)}
+              priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.maxLtvOracle.quotePrice)}
+              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.maxLtvOracle.quotePrice)}
               explorerUrl={explorerUrl}
             />
           )}
