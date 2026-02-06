@@ -1,11 +1,18 @@
 /**
  * Normalization Constants and Utilities
- * 
- * This file contains shared constants and functions for normalizing numeric values
- * between wizard format (0-1, e.g., 0.04 for 4%) and on-chain format (18 decimals).
- * 
- * All verification functions should use these constants to ensure consistency.
+ *
+ * Single place for all display ↔ on-chain (BigInt) conversion. The UI, wizard context,
+ * deploy args, and verification must use only:
+ * - displayNumberToBigint(percentage)  — value from form/display → BigInt
+ * - bigintToDisplayNumber(bigintValue) — BigInt → value for display
+ *
+ * Do not use any other conversion for these numbers; implementation (e.g. ethers) is internal.
  */
+
+import { ethers } from 'ethers'
+
+/** On-chain scale: percentage * 10^16 */
+const DISPLAY_DECIMALS = 16
 
 /**
  * Normalization factor for converting percentage values to on-chain format.
@@ -68,39 +75,28 @@ export function convert18DecimalsToWizard(onChainValue: bigint): bigint {
 }
 
 /**
- * Convert BigInt value (on-chain format: percentage * 10^16) to Number for display.
- * 
+ * BigInt → display value. Use this everywhere (UI, summary, JSON) instead of ad-hoc conversion.
+ *
  * @param bigintValue - Value in on-chain format (bigint: percentage * 10^16)
- * @returns Percentage as Number (e.g., 4.0 for 4%, 4.001 for 4.001%)
- * 
- * @example
- * ```typescript
- * bigintToDisplayNumber(40000000000000000n) // Returns 4.0 (4%)
- * bigintToDisplayNumber(40010000000000000n) // Returns 4.001 (4.001%)
- * bigintToDisplayNumber(50000000000000000n) // Returns 5.0 (5%)
- * ```
+ * @returns Percentage as Number for display (e.g., 4.0 for 4%, 92.9876543219)
  */
 export function bigintToDisplayNumber(bigintValue: bigint): number {
-  // Convert from on-chain format (percentage * 10^16) to percentage number
-  // Divide by 10^16 to get percentage
-  return Number(bigintValue) / Number(BigInt(10 ** 16))
+  const str = ethers.formatUnits(bigintValue, DISPLAY_DECIMALS)
+  return Number(str)
 }
 
 /**
- * Convert Number percentage to BigInt (on-chain format: percentage * 10^16).
- * 
- * @param percentage - Percentage as Number (e.g., 4.0 for 4%, 4.001 for 4.001%)
+ * Display value → BigInt. Use this everywhere (form submit, JSON parse, wizard state) instead of ad-hoc conversion.
+ *
+ * @param percentage - Percentage as Number or string (e.g. 4.0, "4.001", "92.9876543219")
  * @returns Value in on-chain format (bigint: percentage * 10^16)
- * 
- * @example
- * ```typescript
- * displayNumberToBigint(4.0) // Returns 40000000000000000n (4%)
- * displayNumberToBigint(4.001) // Returns 40010000000000000n (4.001%)
- * displayNumberToBigint(5.0) // Returns 50000000000000000n (5%)
- * ```
  */
-export function displayNumberToBigint(percentage: number): bigint {
-  // Convert from percentage number to on-chain format (percentage * 10^16)
-  // Use Math.trunc to avoid rounding - blockchain requires exact precision
-  return BigInt(Math.trunc(percentage * (10 ** 16)))
+export function displayNumberToBigint(percentage: number | string): bigint {
+  const s = typeof percentage === 'string' ? percentage.trim() : Number(percentage).toFixed(10)
+  if (s === '' || s === 'NaN' || s === 'Infinity' || s === '-Infinity') return BigInt(0)
+  try {
+    return ethers.parseUnits(s, DISPLAY_DECIMALS)
+  } catch {
+    return BigInt(0)
+  }
 }

@@ -1,7 +1,12 @@
 /**
- * Unit tests for normalization utilities
- * Tests conversion between wizard format (BigInt: percentage * 10^16) and on-chain format (BigInt: percentage * 10^16)
- * Wizard now stores values directly as BigInt in on-chain format
+ * Unit tests for the app's normalization API (display ↔ BigInt).
+ *
+ * We test only the same methods used in the UI and across the app:
+ * - displayNumberToBigint (form/display value → BigInt)
+ * - bigintToDisplayNumber (BigInt → display value)
+ *
+ * We do not test any external library; we test the single conversion API
+ * from @/utils/verification/normalization that the UI and other code use.
  */
 
 import { convertWizardTo18Decimals, convert18DecimalsToWizard, bigintToDisplayNumber, displayNumberToBigint, BP2DP_NORMALIZATION } from '@/utils/verification/normalization'
@@ -238,7 +243,7 @@ describe('convert18DecimalsToWizard', () => {
   })
 })
 
-describe('bigintToDisplayNumber', () => {
+describe('bigintToDisplayNumber (app conversion API: BigInt → display, same as used in UI)', () => {
   describe('basic conversions', () => {
     it('converts 0 correctly', () => {
       const result = bigintToDisplayNumber(BigInt(0))
@@ -289,7 +294,7 @@ describe('bigintToDisplayNumber', () => {
   })
 })
 
-describe('displayNumberToBigint', () => {
+describe('displayNumberToBigint (app conversion API: display → BigInt, same as used in UI)', () => {
   describe('basic conversions', () => {
     it('converts 0 correctly', () => {
       const result = displayNumberToBigint(0)
@@ -350,6 +355,33 @@ describe('displayNumberToBigint', () => {
       const result = displayNumberToBigint(4.99999)
       // Math.trunc(4.99999 * 10^16) = Math.trunc(49999900000000000) = 49999900000000000
       expect(result).toBe(BigInt('49999900000000000'))
+    })
+  })
+
+  describe('exact conversion for 10 decimal places (no float precision loss)', () => {
+    const FORM_VALUE = '92.9876543219'
+    const EXPECTED_BIGINT = BigInt('929876543219000000')
+
+    it('converts form value 92.9876543219 to exact BigInt 929876543219000000', () => {
+      const result = displayNumberToBigint(FORM_VALUE)
+      expect(result).toBe(EXPECTED_BIGINT)
+    })
+
+    it('converts form value 92.9876543219 as number to exact BigInt (string-based path)', () => {
+      const result = displayNumberToBigint(92.9876543219)
+      expect(result).toBe(EXPECTED_BIGINT)
+    })
+
+    it('round-trip: BigInt 929876543219000000 back to display number 92.9876543219', () => {
+      const result = bigintToDisplayNumber(EXPECTED_BIGINT)
+      expect(result).toBe(92.9876543219)
+    })
+
+    it('full round-trip: form value -> BigInt -> display number equals original', () => {
+      const big = displayNumberToBigint(FORM_VALUE)
+      expect(big).toBe(EXPECTED_BIGINT)
+      const back = bigintToDisplayNumber(big)
+      expect(back).toBe(92.9876543219)
     })
   })
 })

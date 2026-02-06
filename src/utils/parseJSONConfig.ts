@@ -114,33 +114,33 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     config: typeof config.irmConfig1 === 'object' && config.irmConfig1 !== null ? config.irmConfig1 as Record<string, string | number | boolean> : {}
   }
   
-  // Parse borrow configuration (JSON has percentage numbers e.g. 75 for 75%)
+  // Step 9 JSON stores values as percentage * 100 (e.g. 9500 = 95%). Convert to percentage then to BigInt.
+  const toPercentage = (v: number) => v / 100
   const borrowConfig: BorrowConfiguration = {
     token0: {
       nonBorrowable: config.maxLtv0 === 0 && config.lt0 === 0,
-      liquidationThreshold: config.lt0 != null ? displayNumberToBigint(config.lt0) : BigInt(0),
-      maxLTV: config.maxLtv0 != null ? displayNumberToBigint(config.maxLtv0) : BigInt(0),
-      liquidationTargetLTV: config.liquidationTargetLtv0 != null ? displayNumberToBigint(config.liquidationTargetLtv0) : BigInt(0)
+      liquidationThreshold: config.lt0 != null ? displayNumberToBigint(toPercentage(config.lt0)) : BigInt(0),
+      maxLTV: config.maxLtv0 != null ? displayNumberToBigint(toPercentage(config.maxLtv0)) : BigInt(0),
+      liquidationTargetLTV: config.liquidationTargetLtv0 != null ? displayNumberToBigint(toPercentage(config.liquidationTargetLtv0)) : BigInt(0)
     },
     token1: {
       nonBorrowable: config.maxLtv1 === 0 && config.lt1 === 0,
-      liquidationThreshold: config.lt1 != null ? displayNumberToBigint(config.lt1) : BigInt(0),
-      maxLTV: config.maxLtv1 != null ? displayNumberToBigint(config.maxLtv1) : BigInt(0),
-      liquidationTargetLTV: config.liquidationTargetLtv1 != null ? displayNumberToBigint(config.liquidationTargetLtv1) : BigInt(0)
+      liquidationThreshold: config.lt1 != null ? displayNumberToBigint(toPercentage(config.lt1)) : BigInt(0),
+      maxLTV: config.maxLtv1 != null ? displayNumberToBigint(toPercentage(config.maxLtv1)) : BigInt(0),
+      liquidationTargetLTV: config.liquidationTargetLtv1 != null ? displayNumberToBigint(toPercentage(config.liquidationTargetLtv1)) : BigInt(0)
     }
   }
-  
-  // Parse fees configuration (JSON has percentage numbers)
+
   const feesConfig: FeesConfiguration = {
-    daoFee: config.daoFee != null ? displayNumberToBigint(config.daoFee) : BigInt(0),
-    deployerFee: config.deployerFee != null ? displayNumberToBigint(config.deployerFee) : BigInt(0),
+    daoFee: config.daoFee != null ? displayNumberToBigint(toPercentage(config.daoFee)) : BigInt(0),
+    deployerFee: config.deployerFee != null ? displayNumberToBigint(toPercentage(config.deployerFee)) : BigInt(0),
     token0: {
-      liquidationFee: config.liquidationFee0 != null ? displayNumberToBigint(config.liquidationFee0) : BigInt(0),
-      flashloanFee: config.flashloanFee0 != null ? displayNumberToBigint(config.flashloanFee0) : BigInt(0)
+      liquidationFee: config.liquidationFee0 != null ? displayNumberToBigint(toPercentage(config.liquidationFee0)) : BigInt(0),
+      flashloanFee: config.flashloanFee0 != null ? displayNumberToBigint(toPercentage(config.flashloanFee0)) : BigInt(0)
     },
     token1: {
-      liquidationFee: config.liquidationFee1 != null ? displayNumberToBigint(config.liquidationFee1) : BigInt(0),
-      flashloanFee: config.flashloanFee1 != null ? displayNumberToBigint(config.flashloanFee1) : BigInt(0)
+      liquidationFee: config.liquidationFee1 != null ? displayNumberToBigint(toPercentage(config.liquidationFee1)) : BigInt(0),
+      flashloanFee: config.flashloanFee1 != null ? displayNumberToBigint(toPercentage(config.flashloanFee1)) : BigInt(0)
     }
   }
   
