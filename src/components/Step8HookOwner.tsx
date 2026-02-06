@@ -326,11 +326,10 @@ export default function Step8HookOwner() {
                 Use Connected Wallet
               </div>
               {connectedWalletAddress ? (
-                <div className="text-sm text-gray-400 mt-1">
+                <div className="text-sm mt-1">
                   <AddressDisplayLong
                     address={connectedWalletAddress}
                     chainId={wizardData.networkInfo?.chainId}
-                    linkClassName="text-gray-400"
                   />
                 </div>
               ) : (
@@ -430,7 +429,6 @@ export default function Step8HookOwner() {
                           address={resolvedOwnerAddress}
                           chainId={wizardData.networkInfo?.chainId}
                           className="break-all"
-                          linkClassName="text-gray-300"
                         />
                       </div>
                       <div className="text-sm text-gray-400">
