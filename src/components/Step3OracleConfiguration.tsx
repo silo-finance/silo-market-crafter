@@ -494,7 +494,11 @@ export default function Step3OracleConfiguration() {
     ) {
       const quoteToken = wizardData.token0.address
       setSelectedScalers(prev => {
+        // Don't override if we already have a scaler from context (even if it's customCreate)
         if (prev.token0?.customCreate && prev.token0.customCreate.factoryAddress === oracleScalerFactory.address && prev.token0.customCreate.quoteToken === quoteToken) return prev
+        // Don't override if we have a saved scaler from context that doesn't match available scalers
+        const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
+        if (savedScaler0 && savedScaler0.customCreate) return prev
         return {
           ...prev,
           token0: {
@@ -521,7 +525,11 @@ export default function Step3OracleConfiguration() {
     ) {
       const quoteToken = wizardData.token1.address
       setSelectedScalers(prev => {
+        // Don't override if we already have a scaler from context (even if it's customCreate)
         if (prev.token1?.customCreate && prev.token1.customCreate.factoryAddress === oracleScalerFactory.address && prev.token1.customCreate.quoteToken === quoteToken) return prev
+        // Don't override if we have a saved scaler from context that doesn't match available scalers
+        const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
+        if (savedScaler1 && savedScaler1.customCreate) return prev
         return {
           ...prev,
           token1: {
@@ -778,21 +786,45 @@ export default function Step3OracleConfiguration() {
         token1: token1Oracles
       })
 
-      // Update selected scalers with new validation results
+      // Update selected scalers with new validation results and load from context
       setSelectedScalers(prev => {
         const updated = { ...prev }
         
-        // Update token0 if it's selected and we have a matching oracle with new validation
-        if (prev.token0) {
-          const updatedOracle = token0Oracles.find(o => o.address === prev.token0?.address)
+        // Load from context - always check if saved config matches available scalers
+        const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
+        const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
+        
+        // Update token0: prioritize saved config from context if it matches available scalers
+        if (savedScaler0 && token0Oracles.length > 0) {
+          const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
+          if (matchedScaler0) {
+            // Always use matched scaler from available list (has latest validation)
+            updated.token0 = matchedScaler0
+          } else if (savedScaler0.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token0 = savedScaler0
+          }
+        } else if (updated.token0 && token0Oracles.length > 0) {
+          // Update existing selection with new validation results
+          const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === updated.token0?.address.toLowerCase())
           if (updatedOracle) {
             updated.token0 = updatedOracle
           }
         }
         
-        // Update token1 if it's selected and we have a matching oracle with new validation
-        if (prev.token1) {
-          const updatedOracle = token1Oracles.find(o => o.address === prev.token1?.address)
+        // Update token1: prioritize saved config from context if it matches available scalers
+        if (savedScaler1 && token1Oracles.length > 0) {
+          const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
+          if (matchedScaler1) {
+            // Always use matched scaler from available list (has latest validation)
+            updated.token1 = matchedScaler1
+          } else if (savedScaler1.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token1 = savedScaler1
+          }
+        } else if (updated.token1 && token1Oracles.length > 0) {
+          // Update existing selection with new validation results
+          const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === updated.token1?.address.toLowerCase())
           if (updatedOracle) {
             updated.token1 = updatedOracle
           }
@@ -803,17 +835,56 @@ export default function Step3OracleConfiguration() {
     }
 
     findScalerOracles()
-  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1])
+  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1, wizardData.oracleConfiguration])
 
-  // Load existing selections if available
+  // Load existing selections from context when availableScalers are loaded
+  // This is a fallback in case the main useEffect didn't set it (e.g., if config was loaded after scalers)
   useEffect(() => {
-    if (wizardData.oracleConfiguration) {
-      setSelectedScalers({
-        token0: wizardData.oracleConfiguration.token0.scalerOracle || null,
-        token1: wizardData.oracleConfiguration.token1.scalerOracle || null
+    if (!wizardData.oracleConfiguration) return
+    
+    const savedScaler0 = wizardData.oracleConfiguration.token0.scalerOracle
+    const savedScaler1 = wizardData.oracleConfiguration.token1.scalerOracle
+    
+    // Only set if we have available scalers loaded
+    if (availableScalers.token0.length > 0 || availableScalers.token1.length > 0) {
+      setSelectedScalers(prev => {
+        const updated = { ...prev }
+        let changed = false
+        
+        // Match token0 scaler from saved config with available scalers
+        if (savedScaler0 && availableScalers.token0.length > 0) {
+          const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
+          if (matchedScaler0) {
+            // Only update if different (to avoid unnecessary re-renders)
+            if (!updated.token0 || updated.token0.address.toLowerCase() !== matchedScaler0.address.toLowerCase()) {
+              updated.token0 = matchedScaler0
+              changed = true
+            }
+          } else if (savedScaler0.customCreate && (!updated.token0 || !updated.token0.customCreate)) {
+            updated.token0 = savedScaler0
+            changed = true
+          }
+        }
+        
+        // Match token1 scaler from saved config with available scalers
+        if (savedScaler1 && availableScalers.token1.length > 0) {
+          const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
+          if (matchedScaler1) {
+            // Only update if different (to avoid unnecessary re-renders)
+            if (!updated.token1 || updated.token1.address.toLowerCase() !== matchedScaler1.address.toLowerCase()) {
+              updated.token1 = matchedScaler1
+              changed = true
+            }
+          } else if (savedScaler1.customCreate && (!updated.token1 || !updated.token1.customCreate)) {
+            updated.token1 = savedScaler1
+            changed = true
+          }
+        }
+        
+        return changed ? updated : prev
       })
     }
-  }, [wizardData.oracleConfiguration])
+  }, [wizardData.oracleConfiguration, availableScalers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1259,7 +1330,7 @@ export default function Step3OracleConfiguration() {
                       className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
                         !oracle.valid
                           ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
-                          : selectedScalers.token0?.address === oracle.address
+                          : selectedScalers.token0?.address?.toLowerCase() === oracle.address.toLowerCase()
                           ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
                           : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                       }`}
@@ -1268,7 +1339,7 @@ export default function Step3OracleConfiguration() {
                         type="radio"
                         name="scaler0"
                         value={oracle.address}
-                        checked={selectedScalers.token0?.address === oracle.address}
+                        checked={selectedScalers.token0?.address?.toLowerCase() === oracle.address.toLowerCase()}
                         onChange={() => setSelectedScalers(prev => ({ ...prev, token0: oracle }))}
                         disabled={!oracle.valid}
                         className="mt-1"
@@ -1591,7 +1662,7 @@ export default function Step3OracleConfiguration() {
                       className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
                         !oracle.valid
                           ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
-                          : selectedScalers.token1?.address === oracle.address
+                          : selectedScalers.token1?.address?.toLowerCase() === oracle.address.toLowerCase()
                           ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
                           : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                       }`}
@@ -1600,7 +1671,7 @@ export default function Step3OracleConfiguration() {
                         type="radio"
                         name="scaler1"
                         value={oracle.address}
-                        checked={selectedScalers.token1?.address === oracle.address}
+                        checked={selectedScalers.token1?.address?.toLowerCase() === oracle.address.toLowerCase()}
                         onChange={() => setSelectedScalers(prev => ({ ...prev, token1: oracle }))}
                         disabled={!oracle.valid}
                         className="mt-1"
