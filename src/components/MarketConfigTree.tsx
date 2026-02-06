@@ -105,10 +105,17 @@ function buildOracleBullets(
   return bullets
 }
 
+interface SiloVerification {
+  silo0: boolean | null
+  silo1: boolean | null
+  error: string | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
   wizardDaoFee?: number | null
+  siloVerification?: SiloVerification
 }
 
 interface TokenMeta {
@@ -135,6 +142,7 @@ interface TreeNodeProps {
   isPercentage?: boolean
   valueMuted?: boolean
   verificationIcon?: React.ReactNode
+  addressVerificationIcon?: React.ReactNode
 }
 
 function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
@@ -164,7 +172,7 @@ function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; expl
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -187,6 +195,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               {formatAddress(address)}
             </a>
             <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+            {addressVerificationIcon && <span className="ml-1">{addressVerificationIcon}</span>}
             {hasTokenMeta && (
               <span className="text-gray-400 text-sm ml-1">
                 {' '}
@@ -238,7 +247,34 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee }: MarketConfigTreeProps) {
+function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
+  if (verified === null) return null
+
+  return (
+    <div className="relative group inline-block">
+      {verified ? (
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ) : (
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      )}
+      {verified && (
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Silo address verified and exists in Silo Factory
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -250,8 +286,18 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee }: 
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
             )}
             <TreeNode label="Silos" explorerUrl={explorerUrl}>
-              <TreeNode label="silo0" address={config.silo0.silo} explorerUrl={explorerUrl} />
-              <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
+              <TreeNode 
+                label="silo0" 
+                address={config.silo0.silo} 
+                explorerUrl={explorerUrl}
+                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo0} /> : undefined}
+              />
+              <TreeNode 
+                label="silo1" 
+                address={config.silo1.silo} 
+                explorerUrl={explorerUrl}
+                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo1} /> : undefined}
+              />
             </TreeNode>
           </TreeNode>
           <TreeNode 

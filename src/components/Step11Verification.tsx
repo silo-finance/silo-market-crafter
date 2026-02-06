@@ -11,8 +11,10 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+import siloFactoryArtifact from '@/abis/silo/ISiloFactory.json'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
+const siloFactoryAbi = (siloFactoryArtifact as { abi: ethers.InterfaceAbi }).abi
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -26,6 +28,11 @@ export default function Step11Verification() {
   const [showForm, setShowForm] = useState(false)
   const [siloFactory, setSiloFactory] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
+  const [siloVerification, setSiloVerification] = useState<{ silo0: boolean | null; silo1: boolean | null; error: string | null }>({
+    silo0: null,
+    silo1: null,
+    error: null
+  })
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -127,6 +134,41 @@ export default function Step11Verification() {
     // Intentionally narrow deps: only re-fetch when factory address or chain changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siloFactory?.address, siloLensAddress, chainId])
+
+  // Verify silo addresses using Silo Factory isSilo method
+  useEffect(() => {
+    if (!siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) return
+
+    const verifySilos = async () => {
+      try {
+        const ethereum = window.ethereum
+        if (!ethereum) return
+        const provider = new ethers.BrowserProvider(ethereum)
+        const factoryContract = new ethers.Contract(siloFactory.address, siloFactoryAbi, provider)
+        
+        const [isSilo0, isSilo1] = await Promise.all([
+          factoryContract.isSilo(config.silo0.silo),
+          factoryContract.isSilo(config.silo1.silo)
+        ])
+
+        setSiloVerification({
+          silo0: Boolean(isSilo0),
+          silo1: Boolean(isSilo1),
+          error: null
+        })
+      } catch (err) {
+        console.error('Failed to verify silo addresses:', err)
+        setSiloVerification({
+          silo0: null,
+          silo1: null,
+          error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
+        })
+      }
+    }
+
+    verifySilos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siloFactory?.address, config])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -336,6 +378,12 @@ export default function Step11Verification() {
         </div>
       )}
 
+      {siloVerification.error && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+          <p className="text-red-400">Silo verification error: {siloVerification.error}</p>
+        </div>
+      )}
+
       {loading && (
         <div className="flex items-center justify-center py-12 text-gray-400">
           <svg className="animate-spin h-8 w-8 mr-2" fill="none" viewBox="0 0 24 24">
@@ -366,6 +414,7 @@ export default function Step11Verification() {
           config={config} 
           explorerUrl={explorerUrl}
           wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
+          siloVerification={siloVerification}
         />
       )}
 
