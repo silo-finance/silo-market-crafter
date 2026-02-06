@@ -5,6 +5,7 @@ import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Deci
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 import { verifyDaoFee } from '@/utils/verification/daoFeeVerification'
+import { verifyDeployerFee, isDeployerFeeHigh } from '@/utils/verification/deployerFeeVerification'
 import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
 import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
 import { verifyToken } from '@/utils/verification/tokenVerification'
@@ -50,6 +51,68 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
         </div>
       )}
     </div>
+  )
+}
+
+interface DeployerFeeVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: number
+}
+
+function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeVerificationIconProps) {
+  // Use centralized verification function from src/utils/verification/deployerFeeVerification.ts
+  // onChainValue: Deployer fee from on-chain contract (in 18 decimals format)
+  // wizardValue: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
+  const isMatch = verifyDeployerFee(onChainValue, wizardValue)
+  const isHigh = isDeployerFeeHigh(onChainValue)
+  
+  // Calculate wizard value in 18 decimals for error message display
+  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {/* Verification icon - green checkmark or red cross */}
+      <div className="relative group inline-block">
+        {isMatch ? (
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Value verified: on-chain value matches Wizard value
+          </div>
+        )}
+        {!isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+          </div>
+        )}
+      </div>
+      
+      {/* Warning icon if fee is unexpectedly high (> 15%) */}
+      {isHigh && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 20H4.47L12 5.99zM11 16v-4h2v4h-2zm0 2v2h2v-2h-2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            This is an unexpectedly high value (greater than 5%)
+          </div>
+        </div>
+      )}
+    </span>
   )
 }
 
@@ -139,6 +202,7 @@ interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
   wizardDaoFee?: number | null
+  wizardDeployerFee?: number | null
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
@@ -480,7 +544,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -513,7 +577,13 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             isPercentage 
             verificationIcon={wizardDaoFee != null ? <DAOFeeVerificationIcon onChainValue={config.silo0.daoFee} wizardValue={wizardDaoFee} /> : undefined}
           />
-          <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode 
+            label="Deployer Fee" 
+            value={config.silo0.deployerFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            verificationIcon={wizardDeployerFee != null ? <DeployerFeeVerificationIcon onChainValue={config.silo0.deployerFee} wizardValue={wizardDeployerFee} /> : undefined}
+          />
           <TreeNode
             label="Hook Receiver"
             address={config.silo0.hookReceiver}

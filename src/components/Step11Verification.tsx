@@ -728,6 +728,7 @@ export default function Step11Verification() {
           config={config} 
           explorerUrl={explorerUrl}
           wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
+          wizardDeployerFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null}
           siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
           hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
           irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
