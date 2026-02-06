@@ -10,7 +10,7 @@
  * @returns true if price is less than 0.01, false otherwise
  */
 // 0.01 in 18 decimals = 10^16
-const LOW_PRICE_THRESHOLD_E18 = BigInt(10 ** 19)
+const LOW_PRICE_THRESHOLD_E18 = BigInt(10 ** 17)
 
 export function isPriceUnexpectedlyLow(quotePriceRaw: string | undefined): boolean {
   if (quotePriceRaw == null || quotePriceRaw === '') return false
