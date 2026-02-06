@@ -237,27 +237,42 @@ function formatBigIntToE18(value: bigint): string {
   return `${padded[0]}.${padded.slice(1)}e18`
 }
 
+/** Stable keys for oracle bullet items — use these for verification wiring, not display text */
+export const ORACLE_BULLET_KEYS = {
+  PRICE: 'oracle.price',
+  TYPE: 'oracle.type',
+  /** PT-Linear: baseDiscountPerYear from config */
+  BASE_DISCOUNT_PER_YEAR: 'baseDiscountPerYear',
+  /** Prefix for other config entries: key = config key as-is (e.g. scaleFactor, ulow, ucrit) */
+  CONFIG: (configKey: string) => `oracle.config.${configKey}`
+} as const
+
+export interface OracleBulletItem {
+  key: string
+  text: string
+}
+
 function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
   type: string | undefined,
   config: Record<string, unknown> | undefined
-): string[] {
-  const bullets: string[] = []
+): OracleBulletItem[] {
+  const bullets: OracleBulletItem[] = []
   if (quotePrice != null && quotePrice !== '') {
     const priceStr = formatQuotePriceAs18Decimals(quotePrice)
     const withSymbol = quoteTokenSymbol ? `${priceStr} ${quoteTokenSymbol}` : priceStr
-    bullets.push(`Price (1 token): ${withSymbol}`)
+    bullets.push({ key: ORACLE_BULLET_KEYS.PRICE, text: `Price (1 token): ${withSymbol}` })
   }
   if (type) {
-    bullets.push(`Type: ${type}`)
+    bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
   }
   if (config && typeof config === 'object') {
-    for (const [key, val] of Object.entries(config)) {
-      if (/quoteToken/i.test(key)) continue
+    for (const [configKey, val] of Object.entries(config)) {
+      if (/quoteToken/i.test(configKey)) continue
       const raw = typeof val === 'string' ? val : String(val)
-      const isFactor = /scaleFactor|factor/i.test(key)
-      const isBaseDiscount = /baseDiscount/i.test(key)
+      const isFactor = /scaleFactor|factor/i.test(configKey)
+      const isBaseDiscount = /baseDiscount/i.test(configKey)
       let display: string
       if (isBaseDiscount && /^\d+$/.test(raw)) {
         display = formatRate18AsPercent(raw)
@@ -266,12 +281,12 @@ function buildOracleBullets(
       } else {
         display = raw
       }
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
-      if (raw.startsWith('0x') && raw.length === 42) {
-        bullets.push(`${label}: ${formatAddress(raw)}`)
-      } else {
-        bullets.push(`${label}: ${display}`)
-      }
+      const label = configKey.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
+      const text = raw.startsWith('0x') && raw.length === 42
+        ? `${label}: ${formatAddress(raw)}`
+        : `${label}: ${display}`
+      const bulletKey = isBaseDiscount ? ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR : ORACLE_BULLET_KEYS.CONFIG(configKey)
+      bullets.push({ key: bulletKey, text })
     }
   }
   return bullets
@@ -360,7 +375,7 @@ interface TreeNodeProps {
   address?: string
   tokenMeta?: TokenMeta
   suffixText?: string
-  bulletItems?: string[]
+  bulletItems?: OracleBulletItem[]
   ownerBullets?: OwnerBulletItem[]
   children?: React.ReactNode
   explorerUrl: string
@@ -428,6 +443,23 @@ function PriceDecimalsWarningIcon() {
         </div>
         <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
           Check the price for 18 decimals.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceVerifiedIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Price verified (range and decimals OK).
         </div>
       </div>
     </span>
@@ -772,16 +804,26 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       {bulletItems && bulletItems.length > 0 && (
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {bulletItems.map((item, i) => {
-            const isPriceLine = item.startsWith('Price (1 token):')
-            const isBaseDiscountBullet = baseDiscountVerification && (item.startsWith('Base Discount Per Year:') || item.toLowerCase().includes('base discount per year:'))
-            const showPriceIcons = isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning)
+            const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
+            const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
+            const hasPriceWarning = isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning)
+            const hasPriceVerified = isPriceLine && !priceLowWarning && !priceHighWarning && !priceDecimalsWarning
+            const showPriceIcons = hasPriceWarning || hasPriceVerified
+            const withIcons = showPriceIcons || isBaseDiscountBullet
             return (
-              <li key={i} className={showPriceIcons || isBaseDiscountBullet ? 'inline-flex items-center flex-wrap gap-0' : ''}>
-                {item}
-                {isPriceLine && priceLowWarning && <PriceLowWarningIcon />}
-                {isPriceLine && priceHighWarning && <PriceHighWarningIcon />}
-                {isPriceLine && priceDecimalsWarning && <PriceDecimalsWarningIcon />}
-                {isBaseDiscountBullet && baseDiscountVerification && <BaseDiscountVerificationIcons onChain={baseDiscountVerification.onChain} wizard={baseDiscountVerification.wizard} />}
+              <li key={i}>
+                {withIcons ? (
+                  <span className="inline-flex items-center flex-wrap gap-0">
+                    {item.text}
+                    {isPriceLine && priceLowWarning && <PriceLowWarningIcon />}
+                    {isPriceLine && priceHighWarning && <PriceHighWarningIcon />}
+                    {isPriceLine && priceDecimalsWarning && <PriceDecimalsWarningIcon />}
+                    {hasPriceVerified && <PriceVerifiedIcon />}
+                    {isBaseDiscountBullet && baseDiscountVerification && <BaseDiscountVerificationIcons onChain={baseDiscountVerification.onChain} wizard={baseDiscountVerification.wizard} />}
+                  </span>
+                ) : (
+                  item.text
+                )}
               </li>
             )
           })}

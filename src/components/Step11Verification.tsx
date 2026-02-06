@@ -15,8 +15,39 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
+import { buildVerificationChecks, type VerificationCheckItem } from '@/utils/verification/buildVerificationChecks'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
+
+/** Green checkmark outline only (no background) for passed checks in the summary list */
+function VerificationCheckMark() {
+  return (
+    <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Values match">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+  )
+}
+
+function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] }) {
+  if (checks.length === 0) return null
+  return (
+    <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 py-4 mt-6">
+      <h3 className="text-lg font-semibold text-white mb-3">Verification checks</h3>
+      <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
+        {checks.map((item, i) => (
+          <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-medium text-gray-200">{item.label}</span>
+            <span>on-chain: <span className="text-gray-400">{item.onChainDisplay}</span></span>
+            <span>wizard: <span className="text-gray-400">{item.wizardDisplay}</span></span>
+            {item.passed && <VerificationCheckMark />}
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -775,39 +806,52 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {config && !loading && (
-        <MarketConfigTree 
-          config={config} 
-          explorerUrl={explorerUrl}
-          wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
-          wizardDeployerFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null}
-          siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
-          hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
-          irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
-          tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
-          numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
-          addressInJsonVerification={addressInJsonVerification}
-          ptOracleBaseDiscountVerification={{
-            silo0: config.silo0.solvencyOracle.type === 'PT-Linear' && config.silo0.solvencyOracle.config && typeof (config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
-              ? {
-                  onChain: BigInt(String((config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
-                  wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token0?.ptLinearOracle?.maxYieldPercent != null
-                    ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token0.ptLinearOracle.maxYieldPercent))
-                    : null
-                }
-              : undefined,
-            silo1: config.silo1.solvencyOracle.type === 'PT-Linear' && config.silo1.solvencyOracle.config && typeof (config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
-              ? {
-                  onChain: BigInt(String((config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
-                  wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token1?.ptLinearOracle?.maxYieldPercent != null
-                    ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token1.ptLinearOracle.maxYieldPercent))
-                    : null
-                }
-              : undefined
-          }}
-          callBeforeQuoteVerification={wizardData.verificationFromWizard ? { silo0: { wizard: false }, silo1: { wizard: false } } : undefined}
-        />
-      )}
+      {config && !loading && (() => {
+        const ptOracleBaseDiscountVerification = {
+          silo0: (config.silo0.solvencyOracle.type === 'PT-Linear' || config.silo0.solvencyOracle.type === 'PTLinear') && config.silo0.solvencyOracle.config && typeof (config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
+            ? {
+                onChain: BigInt(String((config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
+                wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token0?.ptLinearOracle?.maxYieldPercent != null
+                  ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token0.ptLinearOracle.maxYieldPercent))
+                  : null
+              }
+            : undefined,
+          silo1: (config.silo1.solvencyOracle.type === 'PT-Linear' || config.silo1.solvencyOracle.type === 'PTLinear') && config.silo1.solvencyOracle.config && typeof (config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
+            ? {
+                onChain: BigInt(String((config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
+                wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token1?.ptLinearOracle?.maxYieldPercent != null
+                  ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token1.ptLinearOracle.maxYieldPercent))
+                  : null
+              }
+            : undefined
+        }
+        return (
+          <>
+            <MarketConfigTree 
+              config={config} 
+              explorerUrl={explorerUrl}
+              wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
+              wizardDeployerFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null}
+              siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
+              hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
+              irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
+              tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
+              numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
+              addressInJsonVerification={addressInJsonVerification}
+              ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
+              callBeforeQuoteVerification={wizardData.verificationFromWizard ? { silo0: { wizard: false }, silo1: { wizard: false } } : undefined}
+            />
+            <VerificationChecksList
+              checks={buildVerificationChecks(config, {
+                wizardDaoFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null,
+                wizardDeployerFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null,
+                numericWizard: numericValueVerification ?? { silo0: null, silo1: null },
+                ptOracleBaseDiscount: ptOracleBaseDiscountVerification
+              })}
+            />
+          </>
+        )
+      })()}
 
       <div className="flex justify-between mt-8">
         {wizardData.verificationFromWizard ? (

@@ -12,10 +12,10 @@
  * @returns true if value is greater than 5%, false otherwise
  */
 // 5% in on-chain format (percentage * 10^16) = 50000000000000000
-const FIVE_PERCENT_E16 = BigInt(5) * BigInt(10 ** 16)
+const TEN_PERCENT_E16 = BigInt(10) * BigInt(10 ** 16)
 
 export function isValueHigh5(
   onChainValue: bigint
 ): boolean {
-  return onChainValue > FIVE_PERCENT_E16
+  return onChainValue > TEN_PERCENT_E16
 }
