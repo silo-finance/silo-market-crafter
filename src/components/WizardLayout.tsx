@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import CopyButton from '@/components/CopyButton'
@@ -31,8 +32,16 @@ interface WizardLayoutProps {
 }
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
+  const router = useRouter()
   const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
+
+  const handleStepClick = (step: number) => {
+    // Only allow navigation to completed steps (steps that are before current step)
+    if (wizardData.currentStep > step) {
+      router.push(`/wizard?step=${step}`)
+    }
+  }
 
   const isStep11Standalone = wizardData.currentStep === 11 && !wizardData.verificationFromWizard
 
@@ -105,35 +114,45 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   { step: 5, title: 'Borrow Setup', description: 'Configure borrowing parameters' },
                   { step: 6, title: 'Fees', description: 'Set fee parameters' },
                   { step: 7, title: 'JSON Config', description: 'Generate and download configuration' }
-                ].map((item) => (
-                  <div
-                    key={item.step}
-                    className={`flex items-center space-x-3 p-2 rounded-lg ${
-                      wizardData.currentStep >= item.step
-                        ? 'bg-blue-900/30 border border-blue-700'
-                        : 'bg-gray-800 border border-gray-700'
-                    }`}
-                  >
+                ].map((item) => {
+                  const isCompleted = wizardData.currentStep > item.step
+                  const isCurrent = wizardData.currentStep === item.step
+                  const isClickable = isCompleted
+                  
+                  return (
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                        wizardData.currentStep > item.step
-                          ? 'bg-green-600 text-white'
-                          : wizardData.currentStep === item.step
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-600 text-gray-400'
+                      key={item.step}
+                      onClick={() => isClickable && handleStepClick(item.step)}
+                      className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${
+                        wizardData.currentStep >= item.step
+                          ? 'bg-blue-900/30 border border-blue-700'
+                          : 'bg-gray-800 border border-gray-700'
+                      } ${
+                        isClickable ? 'cursor-pointer hover:bg-blue-800/40' : 'cursor-default'
                       }`}
                     >
-                      {wizardData.currentStep > item.step ? '✓' : item.step}
-                    </div>
-                    <div>
-                      <div className={`text-sm font-medium ${
-                        wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
-                      }`}>
-                        {item.title}
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                          isCompleted
+                            ? 'bg-green-600 text-white'
+                            : isCurrent
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-600 text-gray-400'
+                        }`}
+                      >
+                        {isCompleted ? '✓' : item.step}
+                      </div>
+                      <div className="flex-1">
+                        <div className={`text-sm font-medium ${
+                          wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
+                        }`}>
+                          {item.title}
+                        </div>
+                        <div className="text-xs text-gray-500">{item.description}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
