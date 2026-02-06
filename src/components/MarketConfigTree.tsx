@@ -111,11 +111,18 @@ interface SiloVerification {
   error: string | null
 }
 
+interface HookOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
   wizardDaoFee?: number | null
   siloVerification?: SiloVerification
+  hookOwnerVerification?: HookOwnerVerification
 }
 
 interface TokenMeta {
@@ -143,11 +150,50 @@ interface TreeNodeProps {
   valueMuted?: boolean
   verificationIcon?: React.ReactNode
   addressVerificationIcon?: React.ReactNode
+  hookOwnerVerification?: HookOwnerVerification
 }
 
-function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
+function HookOwnerVerificationIcons({ verified, isInJson }: { verified: boolean | null; isInJson: boolean | null }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {verified === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Hook owner verified: matches Wizard value
+          </div>
+        </div>
+      )}
+      {isInJson === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Address found in addresses JSON
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
+  
+  const normalizedAddress = ethers.getAddress(address).toLowerCase()
+  const isVerified = hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner
+    ? ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase() === normalizedAddress &&
+      ethers.getAddress(hookOwnerVerification.wizardOwner).toLowerCase() === normalizedAddress
+    : null
+  
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <span className="text-gray-400 text-sm">Owner:</span>
@@ -168,11 +214,17 @@ function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; expl
       {name != null && name !== '' && (
         <span className="text-gray-400 text-sm">({name})</span>
       )}
+      {hookOwnerVerification && (
+        <HookOwnerVerificationIcons 
+          verified={isVerified} 
+          isInJson={hookOwnerVerification.isInAddressesJson}
+        />
+      )}
     </span>
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification }: TreeNodeProps & { hookOwnerVerification?: HookOwnerVerification }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -237,7 +289,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {ownerBullets.map((item, i) => (
             <li key={i}>
-              <OwnerBulletContent item={item} explorerUrl={explorerUrl} />
+              <OwnerBulletContent item={item} explorerUrl={explorerUrl} hookOwnerVerification={hookOwnerVerification} />
             </li>
           ))}
         </ul>
@@ -274,7 +326,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -314,6 +366,7 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             suffixText={config.silo0.hookReceiverVersion}
             ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={hookOwnerVerification}
           />
         </TreeNode>
 

@@ -12,6 +12,7 @@ import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import siloFactoryArtifact from '@/abis/silo/ISiloFactory.json'
+import { resolveAddressToName, getChainNameForAddresses } from '@/utils/symbolToAddress'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloFactoryAbi = (siloFactoryArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -36,6 +37,11 @@ export default function Step11Verification() {
   const [implementationFromEvent, setImplementationFromEvent] = useState<string | null>(null)
   const [implementationFromRepo, setImplementationFromRepo] = useState<{ address: string; version: string; description?: string } | null>(null)
   const [implementationVerified, setImplementationVerified] = useState<boolean | null>(null)
+  const [hookOwnerVerification, setHookOwnerVerification] = useState<{ onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null }>({
+    onChainOwner: null,
+    wizardOwner: null,
+    isInAddressesJson: null
+  })
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -317,6 +323,33 @@ export default function Step11Verification() {
       // Fetch market configuration
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       setConfig(marketConfig)
+      
+      // Verify hook owner if we have wizard data
+      if (wizardData.verificationFromWizard && wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
+        const onChainOwner = marketConfig.silo0.hookReceiverOwner
+        const wizardOwner = wizardData.hookOwnerAddress
+        const normalizedOnChain = ethers.getAddress(onChainOwner).toLowerCase()
+        const normalizedWizard = ethers.getAddress(wizardOwner).toLowerCase()
+        const verified = normalizedOnChain === normalizedWizard
+        
+        // Check if address is in addresses JSON
+        const chainId = wizardData.networkInfo?.chainId
+        let isInJson: boolean | null = null
+        if (chainId) {
+          try {
+            const name = await resolveAddressToName(chainId, onChainOwner)
+            isInJson = name !== null
+          } catch (err) {
+            console.warn('Failed to check address in JSON:', err)
+          }
+        }
+        
+        setHookOwnerVerification({
+          onChainOwner,
+          wizardOwner,
+          isInAddressesJson: isInJson
+        })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch market configuration')
       setShowForm(true)
@@ -538,6 +571,7 @@ export default function Step11Verification() {
           explorerUrl={explorerUrl}
           wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
           siloVerification={siloVerification}
+          hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
         />
       )}
 
