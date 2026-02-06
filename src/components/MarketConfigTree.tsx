@@ -136,6 +136,7 @@ interface MarketConfigTreeProps {
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  addressInJsonVerification?: Map<string, boolean> // Always available, regardless of wizard data
 }
 
 interface TokenMeta {
@@ -165,12 +166,15 @@ interface TreeNodeProps {
   addressVerificationIcon?: React.ReactNode
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  addressInJsonVerification?: Map<string, boolean>
 }
 
 function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { verified: boolean | null; isInJson: boolean | null; isIRM?: boolean }) {
   const label = isIRM ? 'IRM owner' : 'Hook owner'
   return (
     <span className="inline-flex items-center gap-1">
+      {/* Green checkmark - verification that on-chain address matches wizard value */}
+      {/* This is independent check: on-chain owner === wizard owner */}
       {verified === true && (
         <div className="relative group inline-block">
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
@@ -183,15 +187,18 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
           </div>
         </div>
       )}
+      
+      {/* Address in JSON verification - Solid Star in standard green */}
+      {/* This is independent check: address exists in addresses JSON file */}
       {isInJson === true && (
         <div className="relative group inline-block">
-          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
           </div>
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Address found in addresses JSON
+            Address found in silo-finance repository list
           </div>
         </div>
       )}
@@ -199,24 +206,68 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification }) {
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
+  
+  // Normalize the address from item
+  const normalizedItemAddress = ethers.getAddress(address).toLowerCase()
   
   // Determine which verification to use (hook takes precedence if both exist)
   const verification = hookOwnerVerification ? hookOwnerVerification : irmOwnerVerification
   
+  // Debug logging
+  console.log('OwnerBulletContent - hookOwnerVerification:', hookOwnerVerification)
+  console.log('OwnerBulletContent - irmOwnerVerification:', irmOwnerVerification)
+  console.log('OwnerBulletContent - item.address:', address)
+  console.log('OwnerBulletContent - normalizedItemAddress:', normalizedItemAddress)
+  
   // Use centralized verification functions from src/utils/verification/
+  // Check 1: Verify that on-chain owner matches wizard owner (independent check)
+  // This check compares: onChainOwner === wizardOwner
   let isVerified: boolean | null = null
   if (hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner) {
-    // Verify hook owner: compare on-chain owner with wizard owner
-    isVerified = verifyHookOwner(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner) &&
-                 ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase() === ethers.getAddress(address).toLowerCase()
+    // Normalize addresses for comparison
+    const normalizedOnChain = ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+    
+    console.log('OwnerBulletContent - hook verification check:')
+    console.log('  normalizedOnChain:', normalizedOnChain)
+    console.log('  normalizedItem:', normalizedItem)
+    console.log('  addresses match:', normalizedOnChain === normalizedItem)
+    
+    // Only verify if the displayed address matches the on-chain owner address
+    if (normalizedOnChain === normalizedItem) {
+      // Verify that on-chain owner matches wizard owner using centralized function
+      // This is the independent check: onChainOwner === wizardOwner
+      isVerified = verifyHookOwner(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyHookOwner result:', isVerified)
+    }
   } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
-    // Verify IRM owner: compare on-chain owner with wizard owner
-    isVerified = verifyIrmOwner(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner) &&
-                 ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase() === ethers.getAddress(address).toLowerCase()
+    // Normalize addresses for comparison
+    const normalizedOnChain = ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+    
+    console.log('OwnerBulletContent - IRM verification check:')
+    console.log('  normalizedOnChain:', normalizedOnChain)
+    console.log('  normalizedItem:', normalizedItem)
+    console.log('  addresses match:', normalizedOnChain === normalizedItem)
+    
+    // Only verify if the displayed address matches the on-chain owner address
+    if (normalizedOnChain === normalizedItem) {
+      // Verify that on-chain owner matches wizard owner using centralized function
+      // This is the independent check: onChainOwner === wizardOwner
+      isVerified = verifyIrmOwner(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyIrmOwner result:', isVerified)
+    }
   }
+  
+  // Get JSON verification result - always available regardless of wizard data
+  const isInJson = addressInJsonVerification?.get(normalizedItemAddress) ?? null
+  
+  console.log('OwnerBulletContent - final values:')
+  console.log('  isVerified:', isVerified)
+  console.log('  isInJson:', isInJson)
   
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -238,18 +289,19 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       {name != null && name !== '' && (
         <span className="text-gray-400 text-sm">({name})</span>
       )}
-      {verification && (
-        <HookOwnerVerificationIcons 
-          verified={isVerified} 
-          isInJson={verification.isInAddressesJson}
-          isIRM={!!irmOwnerVerification}
-        />
-      )}
+      {/* Show verification icons independently:
+          - Green checkmark: if we have wizard data AND on-chain owner matches wizard owner
+          - Green star: if address exists in JSON (always checked, regardless of wizard data) */}
+      <HookOwnerVerificationIcons 
+        verified={isVerified} 
+        isInJson={isInJson}
+        isIRM={!!irmOwnerVerification}
+      />
     </span>
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification }: TreeNodeProps & { hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -319,6 +371,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 explorerUrl={explorerUrl} 
                 hookOwnerVerification={hookOwnerVerification}
                 irmOwnerVerification={irmOwnerVerification}
+                addressInJsonVerification={addressInJsonVerification}
               />
             </li>
           ))}
@@ -356,7 +409,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -397,6 +450,7 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
             explorerUrl={explorerUrl}
             hookOwnerVerification={hookOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           />
         </TreeNode>
 
@@ -435,6 +489,7 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             explorerUrl={explorerUrl}
             hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
             irmOwnerVerification={irmOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           >
             {config.silo0.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
@@ -491,6 +546,7 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             explorerUrl={explorerUrl}
             hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
             irmOwnerVerification={irmOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           >
             {config.silo1.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />

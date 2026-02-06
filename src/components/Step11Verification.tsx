@@ -11,11 +11,12 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
-import { resolveAddressToName, getChainNameForAddresses } from '@/utils/symbolToAddress'
+import { getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
 import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
+import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
@@ -49,6 +50,8 @@ export default function Step11Verification() {
     wizardOwner: null,
     isInAddressesJson: null
   })
+  // Address in JSON verification - always performed regardless of wizard data
+  const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -375,71 +378,83 @@ export default function Step11Verification() {
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       setConfig(marketConfig)
       
-      // Verify hook owner - only if we have wizard data
-      // Reset verification state if we don't have wizard data
-      if (!wizardData.verificationFromWizard) {
-        setHookOwnerVerification({
-          onChainOwner: null,
-          wizardOwner: null,
-          isInAddressesJson: null
-        })
-      } else if (wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
+      // Get chain ID - use wizard data if available, otherwise get from provider
+      const chainIdForVerification = wizardData.networkInfo?.chainId || (await provider.getNetwork()).chainId.toString()
+      
+      // Verify addresses in JSON - ALWAYS performed regardless of wizard data
+      // This verification is independent and can be done for any address
+      const addressesToCheck: string[] = []
+      
+      // Collect all owner addresses to check
+      if (marketConfig.silo0.hookReceiverOwner) {
+        addressesToCheck.push(marketConfig.silo0.hookReceiverOwner)
+      }
+      if (marketConfig.silo0.interestRateModel.owner) {
+        addressesToCheck.push(marketConfig.silo0.interestRateModel.owner)
+      }
+      if (marketConfig.silo1.interestRateModel.owner) {
+        addressesToCheck.push(marketConfig.silo1.interestRateModel.owner)
+      }
+      
+      // Check all addresses using centralized verification function from src/utils/verification/addressInJsonVerification.ts
+      const jsonVerificationMap = new Map<string, boolean>()
+      for (const address of addressesToCheck) {
+        const isInJson = await verifyAddressInJson(address, chainIdForVerification)
+        jsonVerificationMap.set(address.toLowerCase(), isInJson)
+      }
+      setAddressInJsonVerification(jsonVerificationMap)
+      
+      // Verify hook owner - check if we have wizard data (hookOwnerAddress exists)
+      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
+      // verificationFromWizard might be set asynchronously after handleVerify completes
+      if (wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
         const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
         const wizardOwner = wizardData.hookOwnerAddress // Hook owner address from wizard state (wizardData.hookOwnerAddress)
         
         // Verification is performed in MarketConfigTree component using verifyHookOwner()
         // from src/utils/verification/hookOwnerVerification.ts
         
-        // Check if address is in addresses JSON
-        const chainId = wizardData.networkInfo?.chainId
-        let isInJson: boolean | null = null
-        if (chainId) {
-          try {
-            const name = await resolveAddressToName(chainId, onChainOwner)
-            isInJson = name !== null
-          } catch (err) {
-            console.warn('Failed to check address in JSON:', err)
-          }
-        }
+        // Get JSON verification result from the map (already checked above)
+        const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
         
         setHookOwnerVerification({
           onChainOwner,
           wizardOwner,
           isInAddressesJson: isInJson
         })
-      }
-
-      // Verify IRM owner - only if we have wizard data and IRM has owner (only for kink models)
-      // Reset verification state if we don't have wizard data
-      if (!wizardData.verificationFromWizard) {
-        setIrmOwnerVerification({
+      } else {
+        // Reset verification state if we don't have wizard data
+        setHookOwnerVerification({
           onChainOwner: null,
           wizardOwner: null,
           isInAddressesJson: null
         })
-      } else if (wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
+      }
+
+      // Verify IRM owner - check if we have wizard data (hookOwnerAddress exists) and IRM has owner (only for kink models)
+      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
+      // verificationFromWizard might be set asynchronously after handleVerify completes
+      if (wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
         const wizardOwner = wizardData.hookOwnerAddress // IRM owner address from wizard state (wizardData.hookOwnerAddress)
         
         // Verification is performed in MarketConfigTree component using verifyIrmOwner()
         // from src/utils/verification/irmOwnerVerification.ts
         
-        // Check if address is in addresses JSON
-        const chainId = wizardData.networkInfo?.chainId
-        let isInJson: boolean | null = null
-        if (chainId) {
-          try {
-            const name = await resolveAddressToName(chainId, onChainOwner)
-            isInJson = name !== null
-          } catch (err) {
-            console.warn('Failed to check IRM owner address in JSON:', err)
-          }
-        }
+        // Get JSON verification result from the map (already checked above)
+        const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
         
         setIrmOwnerVerification({
           onChainOwner,
           wizardOwner,
           isInAddressesJson: isInJson
+        })
+      } else {
+        // Reset verification state if we don't have wizard data
+        setIrmOwnerVerification({
+          onChainOwner: null,
+          wizardOwner: null,
+          isInAddressesJson: null
         })
       }
     } catch (e) {
@@ -662,9 +677,10 @@ export default function Step11Verification() {
           config={config} 
           explorerUrl={explorerUrl}
           wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
-          siloVerification={siloVerification}
+          siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
           hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
           irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
+          addressInJsonVerification={addressInJsonVerification} // Always passed, regardless of wizard data
         />
       )}
 

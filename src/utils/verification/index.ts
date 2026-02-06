@@ -15,5 +15,6 @@ export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
 export { verifyHookOwner } from './hookOwnerVerification'
 export { verifyIrmOwner } from './irmOwnerVerification'
+export { verifyAddressInJson } from './addressInJsonVerification'
 
-// Note: verifySiloAddress is async and requires a provider parameter
+// Note: verifySiloAddress and verifyAddressInJson are async and require additional parameters

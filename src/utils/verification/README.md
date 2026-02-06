@@ -84,6 +84,17 @@ Verifies that the on-chain IRM owner address matches the value set in the wizard
 - `wizardOwner`: IRM owner address from wizard state
   - Source: `wizardData.hookOwnerAddress` (IRM owner is the same as hook owner)
 
+### `verifyAddressInJson(address: string, chainId: string): Promise<boolean>`
+
+Verifies whether an address exists in the addresses JSON file for the given chain.
+**This verification is independent of wizard data and is always performed.**
+
+- `address`: Address to check (from on-chain config or any source)
+  - Source: Any address (e.g., `marketConfig.silo0.hookReceiverOwner`, `marketConfig.silo0.interestRateModel.owner`)
+- `chainId`: Chain ID as string (e.g., "1" for mainnet, "137" for polygon)
+  - Source: `wizardData.networkInfo?.chainId` or `provider.getNetwork().chainId.toString()`
+- Returns: `Promise<boolean>` - true if address is found in addresses JSON, false otherwise
+
 ## Where Verification Functions Are Called
 
 - `src/components/Step11Verification.tsx` - Main verification step component
