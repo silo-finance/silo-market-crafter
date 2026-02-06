@@ -20,19 +20,3 @@ export function verifyDeployerFee(
   
   return onChainValue === wizardValueIn18Decimals
 }
-
-/**
- * Check if Deployer Fee is unexpectedly high (> 5%)
- * 
- * @param onChainValue - Deployer fee value from on-chain contract (in 18 decimals format)
- * @returns true if fee is greater than 5%, false otherwise
- */
-export function isDeployerFeeHigh(
-  onChainValue: bigint
-): boolean {
-  // 5% in 18 decimals format: 0.05 * 100 * 10^14 = 5 * 10^14
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const fivePercent = BigInt(5) * BP2DP_NORMALIZATION
-  
-  return onChainValue > fivePercent
-}

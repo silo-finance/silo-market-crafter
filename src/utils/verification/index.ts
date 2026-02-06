@@ -11,7 +11,8 @@
  */
 
 export { verifyDaoFee } from './daoFeeVerification'
-export { verifyDeployerFee, isDeployerFeeHigh } from './deployerFeeVerification'
+export { verifyDeployerFee } from './deployerFeeVerification'
+export { isValueHigh } from './highValueVerification'
 export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
 export { verifyHookOwner } from './hookOwnerVerification'

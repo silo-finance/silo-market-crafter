@@ -95,6 +95,34 @@ Verifies whether an address exists in the addresses JSON file for the given chai
   - Source: `wizardData.networkInfo?.chainId` or `provider.getNetwork().chainId.toString()`
 - Returns: `Promise<boolean>` - true if address is found in addresses JSON, false otherwise
 
+### `verifyDeployerFee(onChainValue: bigint, wizardValue: number): boolean`
+
+Verifies that the on-chain Deployer fee value matches the value set in the wizard.
+
+- `onChainValue`: Deployer fee from on-chain contract (in 18 decimals format)
+  - Source: `config.silo0.deployerFee` (from `fetchMarketConfig`)
+- `wizardValue`: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
+  - Source: `wizardData.feesConfiguration.deployerFee`
+
+### `isValueHigh(onChainValue: bigint, thresholdPercent?: number): boolean`
+
+**Global verification function** - Checks if a value in 18 decimals format is unexpectedly high.
+Can be used for any percentage-based value (DAO Fee, Deployer Fee, Max LTV, etc.).
+
+- `onChainValue`: Value from on-chain contract (in 18 decimals format)
+  - Source: Any on-chain value (e.g., `config.silo0.deployerFee`, `config.silo0.daoFee`)
+- `thresholdPercent`: Threshold percentage (default: 5, meaning 5%)
+- Returns: `true` if value is greater than threshold, `false` otherwise
+
+### `verifyToken(onChainToken: string, wizardToken: string | null | undefined): boolean`
+
+Verifies that the on-chain token address matches the value set in the wizard.
+
+- `onChainToken`: Token address from on-chain contract
+  - Source: `config.silo0.token` or `config.silo1.token` (from `fetchMarketConfig`)
+- `wizardToken`: Token address from wizard state
+  - Source: `wizardData.token0.address` or `wizardData.token1.address`
+
 ## Where Verification Functions Are Called
 
 - `src/components/Step11Verification.tsx` - Main verification step component
