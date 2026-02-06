@@ -10,7 +10,7 @@
  * searching through component files.
  */
 
-export { isValueHigh } from './highValueVerification'
+export { isValueHigh5 } from './highValueVerification'
 export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
 export { verifyAddress } from './addressVerification'

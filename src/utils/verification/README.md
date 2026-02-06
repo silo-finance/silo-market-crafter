@@ -32,7 +32,7 @@ import {
   verifySiloAddress, 
   verifySiloImplementation,
   verifyAddressInJson,
-  isValueHigh
+  isValueHigh5
 } from '@/utils/verification'
 ```
 
@@ -103,15 +103,16 @@ Verifies whether an address exists in the addresses JSON file for the given chai
   - Source: `wizardData.networkInfo?.chainId` or `provider.getNetwork().chainId.toString()`
 - Returns: `Promise<boolean>` - true if address is found in addresses JSON, false otherwise
 
-### `isValueHigh(onChainValue: bigint, thresholdPercent?: number): boolean`
+### `isValueHigh5(onChainValue: bigint): boolean`
 
-**Global verification function** - Checks if a value in 18 decimals format is unexpectedly high.
-Can be used for any percentage-based value (DAO Fee, Deployer Fee, Max LTV, etc.).
+**High value verification function** - Checks if a value in 18 decimals format is unexpectedly high (> 5%).
+Can be used for any percentage-based value (DAO Fee, Deployer Fee, Liquidation Fee, Flashloan Fee, etc.).
 
 - `onChainValue`: Value from on-chain contract (in 18 decimals format)
-  - Source: Any on-chain value (e.g., `config.silo0.deployerFee`, `config.silo0.daoFee`)
-- `thresholdPercent`: Threshold percentage (default: 5, meaning 5%)
-- Returns: `true` if value is greater than threshold, `false` otherwise
+  - Source: Any on-chain value (e.g., `config.silo0.deployerFee`, `config.silo0.daoFee`, `config.silo0.liquidationFee`)
+- Returns: `true` if value is greater than 5%, `false` otherwise
+
+**Note:** The threshold is hardcoded to 5% in this function. If a different threshold is needed (e.g., 10%), create a new function with a different number in the name (e.g., `isValueHigh10`).
 
 ## Where Verification Functions Are Called
 
