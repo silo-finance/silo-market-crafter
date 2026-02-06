@@ -14,6 +14,7 @@ import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
+import { displayNumberToBigint } from '@/utils/verification/normalization'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
@@ -785,7 +786,26 @@ export default function Step11Verification() {
           irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
           tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
           numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
-          addressInJsonVerification={addressInJsonVerification} // Always passed, regardless of wizard data
+          addressInJsonVerification={addressInJsonVerification}
+          ptOracleBaseDiscountVerification={{
+            silo0: config.silo0.solvencyOracle.type === 'PT-Linear' && config.silo0.solvencyOracle.config && typeof (config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
+              ? {
+                  onChain: BigInt(String((config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
+                  wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token0?.ptLinearOracle?.maxYieldPercent != null
+                    ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token0.ptLinearOracle.maxYieldPercent))
+                    : null
+                }
+              : undefined,
+            silo1: config.silo1.solvencyOracle.type === 'PT-Linear' && config.silo1.solvencyOracle.config && typeof (config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
+              ? {
+                  onChain: BigInt(String((config.silo1.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear)),
+                  wizard: wizardData.verificationFromWizard && wizardData.oracleConfiguration?.token1?.ptLinearOracle?.maxYieldPercent != null
+                    ? displayNumberToBigint(Number(wizardData.oracleConfiguration.token1.ptLinearOracle.maxYieldPercent))
+                    : null
+                }
+              : undefined
+          }}
+          callBeforeQuoteVerification={wizardData.verificationFromWizard ? { silo0: { wizard: false }, silo1: { wizard: false } } : undefined}
         />
       )}
 
