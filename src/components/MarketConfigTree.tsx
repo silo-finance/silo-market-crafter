@@ -4,12 +4,9 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
-import { verifyDaoFee } from '@/utils/verification/daoFeeVerification'
-import { verifyDeployerFee } from '@/utils/verification/deployerFeeVerification'
 import { isValueHigh } from '@/utils/verification/highValueVerification'
-import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
-import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
-import { verifyToken } from '@/utils/verification/tokenVerification'
+import { verifyAddress } from '@/utils/verification/addressVerification'
+import { verifyNumericValue } from '@/utils/verification/numericValueVerification'
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
@@ -17,10 +14,10 @@ interface DAOFeeVerificationIconProps {
 }
 
 function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
-  // Use centralized verification function from src/utils/verification/daoFeeVerification.ts
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
   // onChainValue: DAO fee from on-chain contract (in 18 decimals format)
   // wizardValue: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  const isMatch = verifyDaoFee(onChainValue, wizardValue)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
   const isHigh = isValueHigh(onChainValue, 5) // Use global high value verification (threshold: 5%)
   
   // Calculate wizard value in 18 decimals for error message display
@@ -79,10 +76,10 @@ interface DeployerFeeVerificationIconProps {
 }
 
 function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeVerificationIconProps) {
-  // Use centralized verification function from src/utils/verification/deployerFeeVerification.ts
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
   // onChainValue: Deployer fee from on-chain contract (in 18 decimals format)
   // wizardValue: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  const isMatch = verifyDeployerFee(onChainValue, wizardValue)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
   // Use global high value verification function (threshold: 5%)
   const isHigh = isValueHigh(onChainValue, 5)
   
@@ -133,6 +130,56 @@ function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeV
         </div>
       )}
     </span>
+  )
+}
+
+interface NumericValueVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: number | null
+  label: string
+}
+
+function NumericValueVerificationIcon({ onChainValue, wizardValue, label }: NumericValueVerificationIconProps) {
+  // Only show verification if wizard value is provided
+  if (wizardValue === null) {
+    return null
+  }
+
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
+  // onChainValue: Value from on-chain contract (in 18 decimals format)
+  // wizardValue: Value from wizard state (0-1 format, e.g., 0.75 for 75%)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  
+  // Calculate wizard value in 18 decimals for error message display
+  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+
+  return (
+    <div className="relative group inline-block">
+      {isMatch ? (
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ) : (
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      )}
+      {isMatch && (
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          {label} verified: on-chain value matches Wizard value
+        </div>
+      )}
+      {!isMatch && (
+        <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -236,6 +283,23 @@ interface TokenVerification {
   token1: { onChainToken: string | null; wizardToken: string | null } | null
 }
 
+interface NumericValueVerification {
+  silo0: {
+    maxLtv: number | null
+    lt: number | null
+    liquidationTargetLtv: number | null
+    liquidationFee: number | null
+    flashloanFee: number | null
+  } | null
+  silo1: {
+    maxLtv: number | null
+    lt: number | null
+    liquidationTargetLtv: number | null
+    liquidationFee: number | null
+    flashloanFee: number | null
+  } | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
@@ -245,6 +309,7 @@ interface MarketConfigTreeProps {
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
   tokenVerification?: TokenVerification
+  numericValueVerification?: NumericValueVerification
   addressInJsonVerification?: Map<string, boolean> // Always available, regardless of wizard data
 }
 
@@ -276,6 +341,7 @@ interface TreeNodeProps {
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
   tokenVerification?: { onChainToken: string | null; wizardToken: string | null } | null
+  numericValueVerification?: { wizardValue: number | null }
   addressInJsonVerification?: Map<string, boolean>
 }
 
@@ -331,7 +397,7 @@ function TokenVerificationIcons({ address, tokenVerification, addressInJsonVerif
   }
   
   // Verify that on-chain token matches wizard token using centralized function
-  const isVerified = verifyToken(tokenVerification.onChainToken, tokenVerification.wizardToken)
+  const isVerified = verifyAddress(tokenVerification.onChainToken, tokenVerification.wizardToken)
   
   // Get JSON verification result - always available regardless of wizard data
   const isInJson = addressInJsonVerification?.get(normalizedAddress) ?? null
@@ -405,8 +471,8 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
     if (normalizedOnChain === normalizedItem) {
       // Verify that on-chain owner matches wizard owner using centralized function
       // This is the independent check: onChainOwner === wizardOwner
-      isVerified = verifyHookOwner(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyHookOwner result:', isVerified)
+      isVerified = verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyAddress (hook owner) result:', isVerified)
     }
   } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
     // Normalize addresses for comparison
@@ -422,8 +488,8 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
     if (normalizedOnChain === normalizedItem) {
       // Verify that on-chain owner matches wizard owner using centralized function
       // This is the independent check: onChainOwner === wizardOwner
-      isVerified = verifyIrmOwner(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyIrmOwner result:', isVerified)
+      isVerified = verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyAddress (IRM owner) result:', isVerified)
     }
   }
   
@@ -466,11 +532,23 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
   const hasSuffix = suffixText != null && suffixText !== ''
+
+  // Generate numeric value verification icon if applicable
+  let numericVerificationIcon: React.ReactNode = null
+  if (numericValueVerification && isPercentage && typeof value === 'bigint' && numericValueVerification.wizardValue !== null) {
+    numericVerificationIcon = (
+      <NumericValueVerificationIcon
+        onChainValue={value}
+        wizardValue={numericValueVerification.wizardValue}
+        label={label}
+      />
+    )
+  }
 
   return (
     <li className="tree-item">
@@ -527,6 +605,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                   ? value.toString()
                   : String(value)}
             {verificationIcon && verificationIcon}
+            {numericVerificationIcon && <span className="ml-1">{numericVerificationIcon}</span>}
           </span>
         )}
         {address === ethers.ZeroAddress && (
@@ -587,7 +666,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -694,11 +773,41 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV" value={config.silo0.maxLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Threshold (LT)" value={config.silo0.lt} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Target LTV" value={config.silo0.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Fee" value={config.silo0.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode 
+            label="Max LTV" 
+            value={config.silo0.maxLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.maxLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Threshold (LT)" 
+            value={config.silo0.lt} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.lt } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Target LTV" 
+            value={config.silo0.liquidationTargetLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationTargetLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Fee" 
+            value={config.silo0.liquidationFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationFee } : undefined}
+          />
+          <TreeNode 
+            label="Flashloan Fee" 
+            value={config.silo0.flashloanFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.flashloanFee } : undefined}
+          />
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
 
@@ -758,11 +867,41 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV" value={config.silo1.maxLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Threshold (LT)" value={config.silo1.lt} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Target LTV" value={config.silo1.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Fee" value={config.silo1.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode 
+            label="Max LTV" 
+            value={config.silo1.maxLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.maxLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Threshold (LT)" 
+            value={config.silo1.lt} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.lt } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Target LTV" 
+            value={config.silo1.liquidationTargetLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationTargetLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Fee" 
+            value={config.silo1.liquidationFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationFee } : undefined}
+          />
+          <TreeNode 
+            label="Flashloan Fee" 
+            value={config.silo1.flashloanFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.flashloanFee } : undefined}
+          />
           <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
         </TreeNode>
       </ol>

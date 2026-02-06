@@ -10,14 +10,11 @@
  * searching through component files.
  */
 
-export { verifyDaoFee } from './daoFeeVerification'
-export { verifyDeployerFee } from './deployerFeeVerification'
 export { isValueHigh } from './highValueVerification'
 export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
-export { verifyHookOwner } from './hookOwnerVerification'
-export { verifyIrmOwner } from './irmOwnerVerification'
+export { verifyAddress } from './addressVerification'
 export { verifyAddressInJson } from './addressInJsonVerification'
-export { verifyToken } from './tokenVerification'
+export { verifyNumericValue } from './numericValueVerification'
 
 // Note: verifySiloAddress and verifyAddressInJson are async and require additional parameters

@@ -14,11 +14,12 @@ All verification functions are isolated in this directory to make it easy for au
 
 Each verification function is in its own file:
 
-- `daoFeeVerification.ts` - Verifies DAO fee matches wizard configuration
+- `numericValueVerification.ts` - **Base function** for verifying numeric values (used for DAO Fee, Deployer Fee, Max LTV, Liquidation Threshold, Liquidation Target LTV, Liquidation Fee, Flashloan Fee, etc.)
+- `addressVerification.ts` - **Base function** for verifying addresses match wizard configuration (used for Hook Owner, IRM Owner, Token addresses, etc.)
 - `siloAddressVerification.ts` - Verifies silo addresses exist in Silo Factory
 - `siloImplementationVerification.ts` - Verifies implementation address matches repository
-- `hookOwnerVerification.ts` - Verifies hook owner address matches wizard configuration
-- `irmOwnerVerification.ts` - Verifies IRM owner address matches wizard configuration
+- `addressInJsonVerification.ts` - Verifies addresses exist in repository JSON (always performed, independent of wizard data)
+- `highValueVerification.ts` - **Global function** for checking if values are unexpectedly high
 
 ## Usage
 
@@ -26,24 +27,49 @@ All verification functions are exported from `index.ts`:
 
 ```typescript
 import { 
-  verifyDaoFee, 
+  verifyNumericValue,
+  verifyAddress,
   verifySiloAddress, 
   verifySiloImplementation,
-  verifyHookOwner,
-  verifyIrmOwner 
+  verifyAddressInJson,
+  isValueHigh
 } from '@/utils/verification'
 ```
 
 ## Function Signatures
 
-### `verifyDaoFee(onChainValue: bigint, wizardValue: number): boolean`
+### `verifyNumericValue(onChainValue: bigint, wizardValue: number): boolean`
 
-Verifies that the on-chain DAO fee value matches the value set in the wizard.
+**Base verification function** for numeric values. Used for verifying DAO Fee, Deployer Fee, Max LTV, Liquidation Threshold, Liquidation Target LTV, Liquidation Fee, and Flashloan Fee.
 
-- `onChainValue`: DAO fee from on-chain contract (in 18 decimals format)
-  - Source: `config.silo0.daoFee` (from `fetchMarketConfig`)
-- `wizardValue`: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  - Source: `wizardData.feesConfiguration.daoFee`
+- `onChainValue`: Value from on-chain contract (in 18 decimals format)
+  - Source: Any on-chain numeric value (e.g., `config.silo0.daoFee`, `config.silo0.maxLtv`, `config.silo0.lt`)
+- `wizardValue`: Value from wizard state (0-1 format, e.g., 0.75 for 75%)
+  - Source: Any wizard numeric value (e.g., `wizardData.feesConfiguration.daoFee`, `wizardData.borrowConfiguration.token0.maxLTV`)
+
+**Note:** This function performs the conversion from wizard format (0-1) to on-chain format (18 decimals) using the same logic as `deployArgs.ts`: `BigInt(Math.round(wizardValue * 100)) * 10^14`
+
+**Usage examples:**
+- DAO Fee: `verifyNumericValue(config.silo0.daoFee, wizardData.feesConfiguration.daoFee)`
+- Deployer Fee: `verifyNumericValue(config.silo0.deployerFee, wizardData.feesConfiguration.deployerFee)`
+- Max LTV: `verifyNumericValue(config.silo0.maxLtv, wizardData.borrowConfiguration.token0.maxLTV)`
+- Liquidation Threshold: `verifyNumericValue(config.silo0.lt, wizardData.borrowConfiguration.token0.liquidationThreshold)`
+
+### `verifyAddress(onChainAddress: string, wizardAddress: string | null | undefined): boolean`
+
+**Base verification function** for addresses. Used for verifying Hook Owner, IRM Owner, and any other address comparisons.
+
+- `onChainAddress`: Address from on-chain contract
+  - Source: Any on-chain address (e.g., `marketConfig.silo0.hookReceiverOwner`, `marketConfig.silo0.interestRateModel.owner`)
+- `wizardAddress`: Address from wizard state
+  - Source: Any wizard address (e.g., `wizardData.hookOwnerAddress`)
+
+**Note:** This function normalizes addresses to lowercase before comparison.
+
+**Usage examples:**
+- Hook Owner: `verifyAddress(marketConfig.silo0.hookReceiverOwner, wizardData.hookOwnerAddress)`
+- IRM Owner: `verifyAddress(marketConfig.silo0.interestRateModel.owner, wizardData.hookOwnerAddress)`
+- Token: `verifyAddress(config.silo0.token, wizardData.token0.address)`
 
 ### `verifySiloAddress(siloAddress: string, siloFactoryAddress: string, provider: ethers.Provider): Promise<boolean>`
 
@@ -66,24 +92,6 @@ Verifies that the implementation address used for deployment matches the expecte
 - `implementationFromRepo`: Implementation address from repository JSON file
   - Source: `silo-core/deploy/silo/_siloImplementations.json[chainName]`
 
-### `verifyHookOwner(onChainOwner: string, wizardOwner: string | null | undefined): boolean`
-
-Verifies that the on-chain hook owner address matches the value set in the wizard.
-
-- `onChainOwner`: Hook owner address from on-chain contract
-  - Source: `marketConfig.silo0.hookReceiverOwner` (from `fetchMarketConfig`)
-- `wizardOwner`: Hook owner address from wizard state
-  - Source: `wizardData.hookOwnerAddress`
-
-### `verifyIrmOwner(onChainOwner: string, wizardOwner: string | null | undefined): boolean`
-
-Verifies that the on-chain IRM owner address matches the value set in the wizard.
-
-- `onChainOwner`: IRM owner address from on-chain contract
-  - Source: `marketConfig.silo0.interestRateModel.owner` (from `fetchMarketConfig`)
-- `wizardOwner`: IRM owner address from wizard state
-  - Source: `wizardData.hookOwnerAddress` (IRM owner is the same as hook owner)
-
 ### `verifyAddressInJson(address: string, chainId: string): Promise<boolean>`
 
 Verifies whether an address exists in the addresses JSON file for the given chain.
@@ -95,15 +103,6 @@ Verifies whether an address exists in the addresses JSON file for the given chai
   - Source: `wizardData.networkInfo?.chainId` or `provider.getNetwork().chainId.toString()`
 - Returns: `Promise<boolean>` - true if address is found in addresses JSON, false otherwise
 
-### `verifyDeployerFee(onChainValue: bigint, wizardValue: number): boolean`
-
-Verifies that the on-chain Deployer fee value matches the value set in the wizard.
-
-- `onChainValue`: Deployer fee from on-chain contract (in 18 decimals format)
-  - Source: `config.silo0.deployerFee` (from `fetchMarketConfig`)
-- `wizardValue`: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  - Source: `wizardData.feesConfiguration.deployerFee`
-
 ### `isValueHigh(onChainValue: bigint, thresholdPercent?: number): boolean`
 
 **Global verification function** - Checks if a value in 18 decimals format is unexpectedly high.
@@ -113,15 +112,6 @@ Can be used for any percentage-based value (DAO Fee, Deployer Fee, Max LTV, etc.
   - Source: Any on-chain value (e.g., `config.silo0.deployerFee`, `config.silo0.daoFee`)
 - `thresholdPercent`: Threshold percentage (default: 5, meaning 5%)
 - Returns: `true` if value is greater than threshold, `false` otherwise
-
-### `verifyToken(onChainToken: string, wizardToken: string | null | undefined): boolean`
-
-Verifies that the on-chain token address matches the value set in the wizard.
-
-- `onChainToken`: Token address from on-chain contract
-  - Source: `config.silo0.token` or `config.silo1.token` (from `fetchMarketConfig`)
-- `wizardToken`: Token address from wizard state
-  - Source: `wizardData.token0.address` or `wizardData.token1.address`
 
 ## Where Verification Functions Are Called
 

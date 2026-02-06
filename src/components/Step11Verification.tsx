@@ -14,8 +14,7 @@ import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import { getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
-import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
-import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
+import { verifyAddress } from '@/utils/verification/addressVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -56,6 +55,25 @@ export default function Step11Verification() {
   }>({
     token0: null,
     token1: null
+  })
+  const [numericValueVerification, setNumericValueVerification] = useState<{
+    silo0: {
+      maxLtv: number | null
+      lt: number | null
+      liquidationTargetLtv: number | null
+      liquidationFee: number | null
+      flashloanFee: number | null
+    } | null
+    silo1: {
+      maxLtv: number | null
+      lt: number | null
+      liquidationTargetLtv: number | null
+      liquidationFee: number | null
+      flashloanFee: number | null
+    } | null
+  }>({
+    silo0: null,
+    silo1: null
   })
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
@@ -425,8 +443,8 @@ export default function Step11Verification() {
         const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
         const wizardOwner = wizardData.hookOwnerAddress // Hook owner address from wizard state (wizardData.hookOwnerAddress)
         
-        // Verification is performed in MarketConfigTree component using verifyHookOwner()
-        // from src/utils/verification/hookOwnerVerification.ts
+        // Verification is performed in MarketConfigTree component using verifyAddress()
+        // from src/utils/verification/addressVerification.ts
         
         // Get JSON verification result from the map (already checked above)
         const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
@@ -452,8 +470,8 @@ export default function Step11Verification() {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
         const wizardOwner = wizardData.hookOwnerAddress // IRM owner address from wizard state (wizardData.hookOwnerAddress)
         
-        // Verification is performed in MarketConfigTree component using verifyIrmOwner()
-        // from src/utils/verification/irmOwnerVerification.ts
+        // Verification is performed in MarketConfigTree component using verifyAddress()
+        // from src/utils/verification/addressVerification.ts
         
         // Get JSON verification result from the map (already checked above)
         const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
@@ -507,6 +525,34 @@ export default function Step11Verification() {
           ...prev,
           token1: null
         }))
+      }
+
+      // Verify numeric values - check if we have wizard data
+      // Only perform verification if wizard data is available (verificationFromWizard will be set later)
+      if (wizardData.borrowConfiguration && wizardData.feesConfiguration) {
+        // Silo 0 numeric values
+        setNumericValueVerification({
+          silo0: {
+            maxLtv: wizardData.borrowConfiguration.token0?.maxLTV ?? null,
+            lt: wizardData.borrowConfiguration.token0?.liquidationThreshold ?? null,
+            liquidationTargetLtv: wizardData.borrowConfiguration.token0?.liquidationTargetLTV ?? null,
+            liquidationFee: wizardData.feesConfiguration.token0?.liquidationFee ?? null,
+            flashloanFee: wizardData.feesConfiguration.token0?.flashloanFee ?? null
+          },
+          silo1: {
+            maxLtv: wizardData.borrowConfiguration.token1?.maxLTV ?? null,
+            lt: wizardData.borrowConfiguration.token1?.liquidationThreshold ?? null,
+            liquidationTargetLtv: wizardData.borrowConfiguration.token1?.liquidationTargetLTV ?? null,
+            liquidationFee: wizardData.feesConfiguration.token1?.liquidationFee ?? null,
+            flashloanFee: wizardData.feesConfiguration.token1?.flashloanFee ?? null
+          }
+        })
+      } else {
+        // Reset verification state if we don't have wizard data
+        setNumericValueVerification({
+          silo0: null,
+          silo1: null
+        })
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch market configuration')
@@ -733,6 +779,7 @@ export default function Step11Verification() {
           hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
           irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
           tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
+          numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
           addressInJsonVerification={addressInJsonVerification} // Always passed, regardless of wizard data
         />
       )}
