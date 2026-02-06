@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
+import { bigintToDisplayNumber } from '@/utils/verification/normalization'
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
   return (
@@ -277,9 +278,9 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           <span className="text-red-400">Non-borrowable</span>
                         )}
                         {wizardData.borrowConfiguration.token0.nonBorrowable && <br />}
-                        LT: {wizardData.borrowConfiguration.token0.liquidationThreshold}% | 
-                        Max LTV: {wizardData.borrowConfiguration.token0.maxLTV}% | 
-                        Target LTV: {wizardData.borrowConfiguration.token0.liquidationTargetLTV}%
+                        LT: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationThreshold).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Max LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.maxLTV).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Target LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
@@ -289,9 +290,9 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           <span className="text-red-400">Non-borrowable</span>
                         )}
                         {wizardData.borrowConfiguration.token1.nonBorrowable && <br />}
-                        LT: {wizardData.borrowConfiguration.token1.liquidationThreshold}% | 
-                        Max LTV: {wizardData.borrowConfiguration.token1.maxLTV}% | 
-                        Target LTV: {wizardData.borrowConfiguration.token1.liquidationTargetLTV}%
+                        LT: {bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationThreshold).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Max LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token1.maxLTV).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Target LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationTargetLTV).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
                   </div>
@@ -306,22 +307,22 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">General Fees</div>
                       <div className="text-xs text-gray-400">
-                        DAO: {wizardData.feesConfiguration.daoFee}% | 
-                        Deployer: {wizardData.feesConfiguration.deployerFee}%
+                        DAO: {bigintToDisplayNumber(wizardData.feesConfiguration.daoFee).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Deployer: {bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
-                        Liquidation: {wizardData.feesConfiguration.token0.liquidationFee}% | 
-                        Flashloan: {wizardData.feesConfiguration.token0.flashloanFee}%
+                        Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
-                        Liquidation: {wizardData.feesConfiguration.token1.liquidationFee}% | 
-                        Flashloan: {wizardData.feesConfiguration.token1.flashloanFee}%
+                        Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
+                        Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
                   </div>

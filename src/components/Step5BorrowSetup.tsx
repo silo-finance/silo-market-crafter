@@ -3,43 +3,44 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, BorrowConfiguration } from '@/contexts/WizardContext'
+import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 
 interface InputComponentProps {
   tokenIndex: 0 | 1
   field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV'
   label: string
-  value: number
+  value: bigint
+  displayValue: string
   max?: number
   disabled?: boolean
   error?: string
   onChange: (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => void
+  onBlur: (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV') => void
 }
 
 const InputComponent = React.memo(({ 
   tokenIndex, 
   field, 
   label, 
-  value, 
-  max = 100,
+  displayValue,
   disabled = false,
   error,
-  onChange
+  onChange,
+  onBlur
 }: InputComponentProps) => {
   return (
     <div className="space-y-2">
       <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
         {label}
       </label>
-      <div className="relative w-24">
+      <div className="relative w-full">
         <input
-          type="number"
-          min="0"
-          max={max}
-          step="0.01"
+          type="text"
           inputMode="decimal"
-          value={value === 0 ? '' : value}
+          value={displayValue}
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
+          onBlur={() => onBlur(tokenIndex, field)}
           className={`w-full border rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent text-center ${
             disabled 
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed' 
@@ -64,6 +65,13 @@ const InputComponent = React.memo(({
 
 InputComponent.displayName = 'InputComponent'
 
+// Helper function to format number without scientific notation
+function formatNumberForDisplay(value: number): string {
+  if (value === 0) return ''
+  // Use toFixed to avoid scientific notation, then remove trailing zeros
+  return value.toFixed(10).replace(/\.?0+$/, '')
+}
+
 interface ValidationErrors {
   token0: {
     liquidationThreshold?: string
@@ -84,15 +92,15 @@ export default function Step5BorrowSetup() {
   const [borrowConfig, setBorrowConfig] = useState<BorrowConfiguration>({
     token0: {
       nonBorrowable: false,
-      liquidationThreshold: 0,
-      maxLTV: 0,
-      liquidationTargetLTV: 0
+      liquidationThreshold: BigInt(0),
+      maxLTV: BigInt(0),
+      liquidationTargetLTV: BigInt(0)
     },
     token1: {
       nonBorrowable: false,
-      liquidationThreshold: 0,
-      maxLTV: 0,
-      liquidationTargetLTV: 0
+      liquidationThreshold: BigInt(0),
+      maxLTV: BigInt(0),
+      liquidationTargetLTV: BigInt(0)
     }
   })
 
@@ -101,17 +109,41 @@ export default function Step5BorrowSetup() {
     token1: {}
   })
 
+  // Local state for display values (strings) during input
+  const [displayValues, setDisplayValues] = useState<{
+    token0: { liquidationThreshold: string; maxLTV: string; liquidationTargetLTV: string }
+    token1: { liquidationThreshold: string; maxLTV: string; liquidationTargetLTV: string }
+  }>({
+    token0: { liquidationThreshold: '', maxLTV: '', liquidationTargetLTV: '' },
+    token1: { liquidationThreshold: '', maxLTV: '', liquidationTargetLTV: '' }
+  })
+
   // Load existing configuration if available; when one token is non-borrowable, the other's LTV must be 0
   useEffect(() => {
     if (wizardData.borrowConfiguration) {
       const config = { ...wizardData.borrowConfiguration }
       if (config.token0.nonBorrowable) {
-        config.token1 = { ...config.token1, liquidationThreshold: 0, maxLTV: 0, liquidationTargetLTV: 0 }
+        config.token1 = { ...config.token1, liquidationThreshold: BigInt(0), maxLTV: BigInt(0), liquidationTargetLTV: BigInt(0) }
       }
       if (config.token1.nonBorrowable) {
-        config.token0 = { ...config.token0, liquidationThreshold: 0, maxLTV: 0, liquidationTargetLTV: 0 }
+        config.token0 = { ...config.token0, liquidationThreshold: BigInt(0), maxLTV: BigInt(0), liquidationTargetLTV: BigInt(0) }
       }
       setBorrowConfig(config)
+      
+      // Initialize display values from BigInt values
+      setDisplayValues({
+        token0: {
+          liquidationThreshold: formatNumberForDisplay(bigintToDisplayNumber(config.token0.liquidationThreshold)),
+          maxLTV: formatNumberForDisplay(bigintToDisplayNumber(config.token0.maxLTV)),
+          liquidationTargetLTV: formatNumberForDisplay(bigintToDisplayNumber(config.token0.liquidationTargetLTV))
+        },
+        token1: {
+          liquidationThreshold: formatNumberForDisplay(bigintToDisplayNumber(config.token1.liquidationThreshold)),
+          maxLTV: formatNumberForDisplay(bigintToDisplayNumber(config.token1.maxLTV)),
+          liquidationTargetLTV: formatNumberForDisplay(bigintToDisplayNumber(config.token1.liquidationTargetLTV))
+        }
+      })
+      
       setValidationErrors(prev => ({
         ...prev,
         token0: {
@@ -129,19 +161,20 @@ export default function Step5BorrowSetup() {
   }, [wizardData.borrowConfiguration])
 
 
-  const validateValue = (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: number, config: BorrowConfiguration) => {
+  const validateValue = (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: bigint, config: BorrowConfiguration) => {
     const tokenConfig = config[`token${tokenIndex}`]
     const errors: string[] = []
+    const valueAsNumber = bigintToDisplayNumber(value)
 
     // Basic range validation
-    if (value < 0 || value > 100) {
+    if (valueAsNumber < 0 || valueAsNumber > 100) {
       errors.push('Value must be between 0 and 100')
     }
 
     // When token's LTV is editable (neither token is non-borrowable), require > 0 for borrowable token
     const otherTokenConfig = config[tokenIndex === 0 ? 'token1' : 'token0']
     const thisTokenLtvEditable = !tokenConfig.nonBorrowable && !otherTokenConfig.nonBorrowable
-    if (thisTokenLtvEditable && value === 0) {
+    if (thisTokenLtvEditable && value === BigInt(0)) {
       errors.push('Must be greater than 0 when token is borrowable')
     }
 
@@ -167,13 +200,43 @@ export default function Step5BorrowSetup() {
   }
 
   const handleInputChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV', value: string) => {
+    // Normalize comma to dot for decimal separator
     const normalized = value.replace(',', '.')
-    const parsed = parseFloat(normalized)
-    const numValue = Number.isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100
     
+    // Allow empty string, numbers, and partial numbers (e.g., "95.", "95.9")
+    // Only allow digits, one dot, and optionally a minus sign at the start
+    const isValidInput = normalized === '' || /^-?\d*\.?\d*$/.test(normalized)
+    
+    if (!isValidInput) {
+      return // Don't update if invalid input
+    }
+    
+    // Update display value immediately (allows typing dots and partial numbers)
+    setDisplayValues(prev => ({
+      ...prev,
+      [`token${tokenIndex}`]: {
+        ...prev[`token${tokenIndex}`],
+        [field]: normalized
+      }
+    }))
+  }, [])
+
+  const handleInputBlur = useCallback((tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV') => {
+    const displayValue = displayValues[`token${tokenIndex}`][field]
+    
+    // Normalize comma to dot
+    const normalized = displayValue.replace(',', '.')
+    
+    // Parse as number - allow up to 10 decimal places
+    const parsed = parseFloat(normalized)
+    
+    // Convert to BigInt using displayNumberToBigint (no rounding - exact precision)
+    const bigintValue = Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(100, parsed)))
+    
+    // Update BigInt value
     setBorrowConfig(prevConfig => {
       const newConfig = { ...prevConfig }
-      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: numValue }
+      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: bigintValue }
       
       // Validate all fields for this token since they might be interdependent
       const tokenConfig = newConfig[`token${tokenIndex}`]
@@ -191,7 +254,17 @@ export default function Step5BorrowSetup() {
       
       return newConfig
     })
-  }, [])
+    
+    // Update display value to formatted version (without scientific notation)
+    const formattedValue = formatNumberForDisplay(bigintToDisplayNumber(bigintValue))
+    setDisplayValues(prev => ({
+      ...prev,
+      [`token${tokenIndex}`]: {
+        ...prev[`token${tokenIndex}`],
+        [field]: formattedValue
+      }
+    }))
+  }, [displayValues])
 
   const handleNonBorrowableChange = useCallback((tokenIndex: 0 | 1, checked: boolean) => {
     setBorrowConfig(prevConfig => {
@@ -203,10 +276,20 @@ export default function Step5BorrowSetup() {
         newConfig[`token${otherTokenIndex}`] = {
           ...newConfig[`token${otherTokenIndex}`],
           nonBorrowable: false,
-          liquidationThreshold: 0,
-          maxLTV: 0,
-          liquidationTargetLTV: 0
+          liquidationThreshold: BigInt(0),
+          maxLTV: BigInt(0),
+          liquidationTargetLTV: BigInt(0)
         }
+        
+        // Update display values for the other token
+        setDisplayValues(prev => ({
+          ...prev,
+          [`token${otherTokenIndex}`]: {
+            liquidationThreshold: '',
+            maxLTV: '',
+            liquidationTargetLTV: ''
+          }
+        }))
       }
 
       // Only toggle nonBorrowable on this token; zero LTV only for the other token (above), not for this one
@@ -233,14 +316,14 @@ export default function Step5BorrowSetup() {
     const token1LtvEditable = !borrowConfig.token1.nonBorrowable && !borrowConfig.token0.nonBorrowable
 
     const token0Errors = {
-      liquidationThreshold: token0LtvEditable && borrowConfig.token0.liquidationThreshold === 0 ? msg : undefined,
-      maxLTV: token0LtvEditable && borrowConfig.token0.maxLTV === 0 ? msg : undefined,
-      liquidationTargetLTV: token0LtvEditable && borrowConfig.token0.liquidationTargetLTV === 0 ? msg : undefined
+      liquidationThreshold: token0LtvEditable && borrowConfig.token0.liquidationThreshold === BigInt(0) ? msg : undefined,
+      maxLTV: token0LtvEditable && borrowConfig.token0.maxLTV === BigInt(0) ? msg : undefined,
+      liquidationTargetLTV: token0LtvEditable && borrowConfig.token0.liquidationTargetLTV === BigInt(0) ? msg : undefined
     }
     const token1Errors = {
-      liquidationThreshold: token1LtvEditable && borrowConfig.token1.liquidationThreshold === 0 ? msg : undefined,
-      maxLTV: token1LtvEditable && borrowConfig.token1.maxLTV === 0 ? msg : undefined,
-      liquidationTargetLTV: token1LtvEditable && borrowConfig.token1.liquidationTargetLTV === 0 ? msg : undefined
+      liquidationThreshold: token1LtvEditable && borrowConfig.token1.liquidationThreshold === BigInt(0) ? msg : undefined,
+      maxLTV: token1LtvEditable && borrowConfig.token1.maxLTV === BigInt(0) ? msg : undefined,
+      liquidationTargetLTV: token1LtvEditable && borrowConfig.token1.liquidationTargetLTV === BigInt(0) ? msg : undefined
     }
 
     const hasErrors = Object.values(token0Errors).some(Boolean) || Object.values(token1Errors).some(Boolean)
@@ -301,9 +384,11 @@ export default function Step5BorrowSetup() {
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token0.liquidationThreshold}
+                displayValue={displayValues.token0.liquidationThreshold}
                 disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.liquidationThreshold}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
               
               <InputComponent
@@ -311,10 +396,12 @@ export default function Step5BorrowSetup() {
                 field="maxLTV"
                 label="Max LTV"
                 value={borrowConfig.token0.maxLTV}
-                max={borrowConfig.token0.liquidationThreshold || 100}
+                displayValue={displayValues.token0.maxLTV}
+                max={borrowConfig.token0.liquidationThreshold === BigInt(0) ? 100 : bigintToDisplayNumber(borrowConfig.token0.liquidationThreshold)}
                 disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.maxLTV}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
               
               <InputComponent
@@ -322,10 +409,12 @@ export default function Step5BorrowSetup() {
                 field="liquidationTargetLTV"
                 label="Liquidation Target LTV"
                 value={borrowConfig.token0.liquidationTargetLTV}
-                max={Math.max(0, (borrowConfig.token0.liquidationThreshold || 100) - 1)}
+                displayValue={displayValues.token0.liquidationTargetLTV}
+                max={Math.max(0, bigintToDisplayNumber(borrowConfig.token0.liquidationThreshold === BigInt(0) ? BigInt('1000000000000000000') : borrowConfig.token0.liquidationThreshold) - 1)}
                 disabled={borrowConfig.token1.nonBorrowable}
                 error={validationErrors.token0.liquidationTargetLTV}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -355,9 +444,11 @@ export default function Step5BorrowSetup() {
                 field="liquidationThreshold"
                 label="Liquidation Threshold (LT)"
                 value={borrowConfig.token1.liquidationThreshold}
+                displayValue={displayValues.token1.liquidationThreshold}
                 disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.liquidationThreshold}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
               
               <InputComponent
@@ -365,10 +456,12 @@ export default function Step5BorrowSetup() {
                 field="maxLTV"
                 label="Max LTV"
                 value={borrowConfig.token1.maxLTV}
-                max={borrowConfig.token1.liquidationThreshold || 100}
+                displayValue={displayValues.token1.maxLTV}
+                max={borrowConfig.token1.liquidationThreshold === BigInt(0) ? 100 : bigintToDisplayNumber(borrowConfig.token1.liquidationThreshold)}
                 disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.maxLTV}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
               
               <InputComponent
@@ -376,10 +469,12 @@ export default function Step5BorrowSetup() {
                 field="liquidationTargetLTV"
                 label="Liquidation Target LTV"
                 value={borrowConfig.token1.liquidationTargetLTV}
-                max={Math.max(0, (borrowConfig.token1.liquidationThreshold || 100) - 1)}
+                displayValue={displayValues.token1.liquidationTargetLTV}
+                max={Math.max(0, bigintToDisplayNumber(borrowConfig.token1.liquidationThreshold === BigInt(0) ? BigInt('1000000000000000000') : borrowConfig.token1.liquidationThreshold) - 1)}
                 disabled={borrowConfig.token0.nonBorrowable}
                 error={validationErrors.token1.liquidationTargetLTV}
                 onChange={handleInputChange}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>

@@ -12,10 +12,13 @@ const EXPLORER_MAP: { [key: number]: string } = {
   146: 'sonic'
 }
 
-function getSourceUrl(chainId: string | number | undefined, contractName: string, isOracle: boolean = false): string {
+function getSourceUrl(chainId: string | number | undefined, contractName: string, isOracle: boolean = false, isImplementation: boolean = false): string {
   if (!chainId) return ''
   const id = typeof chainId === 'string' ? parseInt(chainId, 10) : chainId
   const chainName = EXPLORER_MAP[id] || 'mainnet'
+  if (isImplementation) {
+    return `https://github.com/silo-finance/silo-contracts-v2/blob/master/silo-core/deploy/silo/_siloImplementations.json`
+  }
   const path = isOracle 
     ? `silo-oracles/deployments/${chainName}/${contractName}.sol.json`
     : `silo-core/deployments/${chainName}/${contractName}.sol.json`
@@ -33,8 +36,12 @@ export interface ContractInfoProps {
   chainId?: string | number
   /** Whether this is an oracle contract (affects source URL path) */
   isOracle?: boolean
+  /** Whether this is an implementation contract (affects source URL) */
+  isImplementation?: boolean
   /** Custom className for the container */
   className?: string
+  /** Verification icon to display next to address */
+  verificationIcon?: React.ReactNode
 }
 
 export default function ContractInfo({
@@ -43,9 +50,11 @@ export default function ContractInfo({
   version,
   chainId,
   isOracle = false,
-  className = ''
+  isImplementation = false,
+  className = '',
+  verificationIcon
 }: ContractInfoProps) {
-  const sourceUrl = getSourceUrl(chainId, contractName, isOracle)
+  const sourceUrl = getSourceUrl(chainId, contractName, isOracle, isImplementation)
 
   return (
     <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2 ${className}`}>
@@ -69,6 +78,7 @@ export default function ContractInfo({
             chainId={chainId}
             linkClassName="text-blue-400 hover:text-blue-300"
           />
+          {verificationIcon && verificationIcon}
         </div>
         <div className="text-sm text-gray-300 whitespace-nowrap">
           version: <span className="text-gray-400">{version || '…'}</span>
