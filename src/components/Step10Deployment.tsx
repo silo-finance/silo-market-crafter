@@ -740,7 +740,7 @@ export default function Step10Deployment() {
       {/* Network Information */}
       <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
         <p className="text-sm font-medium text-gray-300 mb-4">
-          Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">(Chain ID: {wizardData.networkInfo?.chainId || '—'})</span>
+          Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">({wizardData.networkInfo?.chainId || '—'})</span>
         </p>
         {loading && (
           <div className="mb-4 flex items-center space-x-2 text-blue-400">

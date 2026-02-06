@@ -13,7 +13,6 @@ function OwnerAddressRow({ address, chainId }: { address: string; chainId: numbe
         address={address}
         chainId={chainId}
         className="text-xs"
-        linkClassName="text-gray-400 hover:text-white"
       />
     </div>
   )
