@@ -1,0 +1,22 @@
+/**
+ * DAO Fee Verification
+ * 
+ * Verifies that the on-chain DAO fee value matches the value set in the wizard.
+ * 
+ * @param onChainValue - DAO fee value from on-chain contract (in 18 decimals format)
+ *                       Source: config.silo0.daoFee (from fetchMarketConfig)
+ * @param wizardValue - DAO fee value from wizard state (0-1 format, e.g., 0.05 for 5%)
+ *                      Source: wizardData.feesConfiguration.daoFee
+ * @returns true if values match, false otherwise
+ */
+export function verifyDaoFee(
+  onChainValue: bigint,
+  wizardValue: number
+): boolean {
+  // Convert wizard value (0-1, e.g., 0.05 for 5%) to 18 decimals format
+  // Same conversion as in deployArgs.ts: to18Decimals(bp) = BigInt(Math.round(bp * 100)) * 10^14
+  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  
+  return onChainValue === wizardValueIn18Decimals
+}

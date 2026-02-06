@@ -11,11 +11,13 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
-import siloFactoryArtifact from '@/abis/silo/ISiloFactory.json'
 import { resolveAddressToName, getChainNameForAddresses } from '@/utils/symbolToAddress'
+import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
+import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
+import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
+import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
-const siloFactoryAbi = (siloFactoryArtifact as { abi: ethers.InterfaceAbi }).abi
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -72,8 +74,9 @@ export default function Step11Verification() {
   }
 
   // Fetch Silo Factory address and version
+  // Only fetch if we have wizard data (verificationFromWizard is true)
   useEffect(() => {
-    if (!chainId || !config) return
+    if (!wizardData.verificationFromWizard || !chainId || !config) return
 
     const fetchSiloFactory = async () => {
       const chainName = getChainName(chainId)
@@ -113,11 +116,20 @@ export default function Step11Verification() {
     }
 
     fetchSiloFactory()
-  }, [chainId, config])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardData.verificationFromWizard, chainId, config])
 
   // Fetch Silo Implementation addresses from repository (_siloImplementations.json)
+  // Only run verification if we have wizard data (verificationFromWizard is true)
   useEffect(() => {
-    if (!chainId || !implementationFromEvent) return
+    if (!wizardData.verificationFromWizard || !chainId || !implementationFromEvent) {
+      // Reset implementation verification state if we don't have wizard data
+      if (!wizardData.verificationFromWizard) {
+        setImplementationFromRepo(null)
+        setImplementationVerified(null)
+      }
+      return
+    }
 
     const fetchImplementation = async () => {
       const chainName = getChainName(chainId)
@@ -137,34 +149,49 @@ export default function Step11Verification() {
           )
           
           if (matchingImpl) {
+            const repoAddress = matchingImpl.implementation
+            
+            // Use centralized verification function
+            // implementationFromEvent: Implementation address from NewSilo event (on-chain)
+            // repoAddress: Implementation address from repository JSON file
+            const verified = verifySiloImplementation(implementationFromEvent, repoAddress)
+            
             setImplementationFromRepo({ 
-              address: matchingImpl.implementation, 
+              address: repoAddress, 
               version: '',
               description: matchingImpl.description
             })
-            setImplementationVerified(true)
+            setImplementationVerified(verified)
           } else {
             // If not found in repo, still show the event address but mark as not verified
+            // Use centralized verification function (will return false since repoAddress is null)
+            const verified = verifySiloImplementation(implementationFromEvent, null)
+            
             setImplementationFromRepo({ 
               address: implementationFromEvent, 
               version: '',
               description: undefined
             })
-            setImplementationVerified(false)
+            setImplementationVerified(verified)
           }
         }
       } catch (err) {
         console.warn('Failed to fetch Silo Implementation:', err)
-        setImplementationVerified(false)
+        // Only set error state if we have wizard data
+        if (wizardData.verificationFromWizard) {
+          setImplementationVerified(false)
+        }
       }
     }
 
     fetchImplementation()
-  }, [chainId, implementationFromEvent])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardData.verificationFromWizard, chainId, implementationFromEvent])
 
   // Fetch Silo Implementation version via Silo Lens (only if verified)
+  // Only run if we have wizard data (verificationFromWizard is true)
   useEffect(() => {
-    if (!implementationFromRepo?.address || !siloLensAddress || !chainId || implementationVerified !== true) return
+    if (!wizardData.verificationFromWizard || !implementationFromRepo?.address || !siloLensAddress || !chainId || implementationVerified !== true) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const fetchImplementationVersion = async () => {
@@ -193,11 +220,12 @@ export default function Step11Verification() {
 
     fetchImplementationVersion()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
+  }, [wizardData.verificationFromWizard, implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
 
   // Fetch Silo Factory version via Silo Lens
+  // Only fetch if we have wizard data (verificationFromWizard is true)
   useEffect(() => {
-    if (!siloFactory?.address || !siloLensAddress || !chainId) return
+    if (!wizardData.verificationFromWizard || !siloFactory?.address || !siloLensAddress || !chainId) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const fetchFactoryVersion = async () => {
@@ -227,42 +255,60 @@ export default function Step11Verification() {
     fetchFactoryVersion()
     // Intentionally narrow deps: only re-fetch when factory address or chain changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siloFactory?.address, siloLensAddress, chainId])
+  }, [wizardData.verificationFromWizard, siloFactory?.address, siloLensAddress, chainId])
 
   // Verify silo addresses using Silo Factory isSilo method
+  // Only run verification if we have wizard data (verificationFromWizard is true)
   useEffect(() => {
-    if (!siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) return
+    if (!wizardData.verificationFromWizard || !siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) {
+      // Reset verification state if we don't have wizard data
+      if (!wizardData.verificationFromWizard) {
+        setSiloVerification({
+          silo0: null,
+          silo1: null,
+          error: null
+        })
+      }
+      return
+    }
 
     const verifySilos = async () => {
       try {
         const ethereum = window.ethereum
         if (!ethereum) return
         const provider = new ethers.BrowserProvider(ethereum)
-        const factoryContract = new ethers.Contract(siloFactory.address, siloFactoryAbi, provider)
-        
-        const [isSilo0, isSilo1] = await Promise.all([
-          factoryContract.isSilo(config.silo0.silo),
-          factoryContract.isSilo(config.silo1.silo)
+
+        // Use centralized verification function from src/utils/verification/siloAddressVerification.ts
+        // config.silo0.silo: Silo address from on-chain config
+        // config.silo1.silo: Silo address from on-chain config
+        // siloFactory.address: Silo Factory contract address (from repository deployment JSON)
+        // provider: Ethers.js provider for making on-chain contract calls
+        const [silo0Verified, silo1Verified] = await Promise.all([
+          verifySiloAddress(config.silo0.silo, siloFactory.address, provider),
+          verifySiloAddress(config.silo1.silo, siloFactory.address, provider)
         ])
 
         setSiloVerification({
-          silo0: Boolean(isSilo0),
-          silo1: Boolean(isSilo1),
+          silo0: silo0Verified,
+          silo1: silo1Verified,
           error: null
         })
       } catch (err) {
         console.error('Failed to verify silo addresses:', err)
-        setSiloVerification({
-          silo0: null,
-          silo1: null,
-          error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
-        })
+        // Only set error if we have wizard data
+        if (wizardData.verificationFromWizard) {
+          setSiloVerification({
+            silo0: null,
+            silo1: null,
+            error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
+          })
+        }
       }
     }
 
     verifySilos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siloFactory?.address, config])
+  }, [wizardData.verificationFromWizard, siloFactory?.address, config])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -329,13 +375,20 @@ export default function Step11Verification() {
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       setConfig(marketConfig)
       
-      // Verify hook owner if we have wizard data
-      if (wizardData.verificationFromWizard && wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
-        const onChainOwner = marketConfig.silo0.hookReceiverOwner
-        const wizardOwner = wizardData.hookOwnerAddress
-        const normalizedOnChain = ethers.getAddress(onChainOwner).toLowerCase()
-        const normalizedWizard = ethers.getAddress(wizardOwner).toLowerCase()
-        const verified = normalizedOnChain === normalizedWizard
+      // Verify hook owner - only if we have wizard data
+      // Reset verification state if we don't have wizard data
+      if (!wizardData.verificationFromWizard) {
+        setHookOwnerVerification({
+          onChainOwner: null,
+          wizardOwner: null,
+          isInAddressesJson: null
+        })
+      } else if (wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
+        const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
+        const wizardOwner = wizardData.hookOwnerAddress // Hook owner address from wizard state (wizardData.hookOwnerAddress)
+        
+        // Verification is performed in MarketConfigTree component using verifyHookOwner()
+        // from src/utils/verification/hookOwnerVerification.ts
         
         // Check if address is in addresses JSON
         const chainId = wizardData.networkInfo?.chainId
@@ -356,13 +409,20 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify IRM owner if we have wizard data and IRM has owner (only for kink models)
-      if (wizardData.verificationFromWizard && wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
-        const onChainOwner = marketConfig.silo0.interestRateModel.owner
-        const wizardOwner = wizardData.hookOwnerAddress // IRM owner is the same as hook owner
-        const normalizedOnChain = ethers.getAddress(onChainOwner).toLowerCase()
-        const normalizedWizard = ethers.getAddress(wizardOwner).toLowerCase()
-        const verified = normalizedOnChain === normalizedWizard
+      // Verify IRM owner - only if we have wizard data and IRM has owner (only for kink models)
+      // Reset verification state if we don't have wizard data
+      if (!wizardData.verificationFromWizard) {
+        setIrmOwnerVerification({
+          onChainOwner: null,
+          wizardOwner: null,
+          isInAddressesJson: null
+        })
+      } else if (wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
+        const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
+        const wizardOwner = wizardData.hookOwnerAddress // IRM owner address from wizard state (wizardData.hookOwnerAddress)
+        
+        // Verification is performed in MarketConfigTree component using verifyIrmOwner()
+        // from src/utils/verification/irmOwnerVerification.ts
         
         // Check if address is in addresses JSON
         const chainId = wizardData.networkInfo?.chainId
@@ -518,7 +578,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {config && siloFactory && (
+      {wizardData.verificationFromWizard && config && siloFactory && (
         <div className="mb-6">
           <ContractInfo
             contractName="SiloFactory"
@@ -530,7 +590,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {implementationFromRepo && implementationFromEvent && (
+      {wizardData.verificationFromWizard && implementationFromRepo && implementationFromEvent && (
         <div className="mb-6">
           <ContractInfo
             contractName="Silo Implementation"
@@ -566,7 +626,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {siloVerification.error && (
+      {wizardData.verificationFromWizard && siloVerification.error && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
           <p className="text-red-400">Silo verification error: {siloVerification.error}</p>
         </div>

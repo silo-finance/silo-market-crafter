@@ -4,6 +4,9 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
+import { verifyDaoFee } from '@/utils/verification/daoFeeVerification'
+import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
+import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
@@ -11,11 +14,14 @@ interface DAOFeeVerificationIconProps {
 }
 
 function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
-  // Convert wizard value (0-1, e.g., 0.05 for 5%) to 18 decimals format
-  // Same conversion as in deployArgs.ts: to18Decimals(bp) = BigInt(Math.round(bp * 100)) * 10^14
+  // Use centralized verification function from src/utils/verification/daoFeeVerification.ts
+  // onChainValue: DAO fee from on-chain contract (in 18 decimals format)
+  // wizardValue: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%)
+  const isMatch = verifyDaoFee(onChainValue, wizardValue)
+  
+  // Calculate wizard value in 18 decimals for error message display
   const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
   const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
-  const isMatch = onChainValue === wizardValueIn18Decimals
 
   return (
     <div className="relative group inline-block">
@@ -197,23 +203,20 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
-  const normalizedAddress = ethers.getAddress(address).toLowerCase()
-  
-  // Check hook owner verification
-  const hookVerified = hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner
-    ? ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase() === normalizedAddress &&
-      ethers.getAddress(hookOwnerVerification.wizardOwner).toLowerCase() === normalizedAddress
-    : null
-  
-  // Check IRM owner verification
-  const irmVerified = irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner
-    ? ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase() === normalizedAddress &&
-      ethers.getAddress(irmOwnerVerification.wizardOwner).toLowerCase() === normalizedAddress
-    : null
-  
   // Determine which verification to use (hook takes precedence if both exist)
   const verification = hookOwnerVerification ? hookOwnerVerification : irmOwnerVerification
-  const isVerified = hookOwnerVerification ? hookVerified : irmVerified
+  
+  // Use centralized verification functions from src/utils/verification/
+  let isVerified: boolean | null = null
+  if (hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner) {
+    // Verify hook owner: compare on-chain owner with wizard owner
+    isVerified = verifyHookOwner(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner) &&
+                 ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase() === ethers.getAddress(address).toLowerCase()
+  } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
+    // Verify IRM owner: compare on-chain owner with wizard owner
+    isVerified = verifyIrmOwner(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner) &&
+                 ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase() === ethers.getAddress(address).toLowerCase()
+  }
   
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
