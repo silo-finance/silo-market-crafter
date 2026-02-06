@@ -7,6 +7,7 @@ import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
 import CopyButton from '@/components/CopyButton'
+import AddressDisplayLong from '@/components/AddressDisplayLong'
 
 type OwnerSource = 'wallet' | 'manual'
 
@@ -290,20 +291,6 @@ export default function Step8HookOwner() {
     router.push('/wizard?step=7')
   }
 
-  // Get block explorer URL for address
-  const getBlockExplorerUrl = (address: string) => {
-    const chainId = wizardData.networkInfo?.chainId || '1'
-    const networkMap: { [key: string]: string } = {
-      '1': 'https://etherscan.io/address/',
-      '137': 'https://polygonscan.com/address/',
-      '10': 'https://optimistic.etherscan.io/address/',
-      '42161': 'https://arbiscan.io/address/',
-      '43114': 'https://snowtrace.io/address/',
-      '146': 'https://sonicscan.org/address/'
-    }
-    const baseUrl = networkMap[chainId] || 'https://etherscan.io/address/'
-    return `${baseUrl}${address}`
-  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -339,9 +326,12 @@ export default function Step8HookOwner() {
                 Use Connected Wallet
               </div>
               {connectedWalletAddress ? (
-                <div className="text-sm text-gray-400 mt-1 font-mono flex items-center gap-2">
-                  <span>{connectedWalletAddress}</span>
-                  <CopyButton value={connectedWalletAddress} iconClassName="w-3.5 h-3.5" />
+                <div className="text-sm text-gray-400 mt-1">
+                  <AddressDisplayLong
+                    address={connectedWalletAddress}
+                    chainId={wizardData.networkInfo?.chainId}
+                    linkClassName="text-gray-400"
+                  />
                 </div>
               ) : (
                 <div className="text-sm text-yellow-400 mt-1">
@@ -436,21 +426,12 @@ export default function Step8HookOwner() {
                       )}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                         <span className="text-green-400">✓ Address</span>
-                        <span className="font-mono text-gray-300 break-all">
-                          {resolvedOwnerAddress}
-                        </span>
-                        <CopyButton value={resolvedOwnerAddress} iconClassName="w-3.5 h-3.5" />
-                        <a
-                          href={getBlockExplorerUrl(resolvedOwnerAddress)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 underline flex items-center space-x-1 shrink-0"
-                        >
-                          <span>View on block explorer</span>
-                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
+                        <AddressDisplayLong
+                          address={resolvedOwnerAddress}
+                          chainId={wizardData.networkInfo?.chainId}
+                          className="break-all"
+                          linkClassName="text-gray-300"
+                        />
                       </div>
                       <div className="text-sm text-gray-400">
                         {addressValidation.isContract === null

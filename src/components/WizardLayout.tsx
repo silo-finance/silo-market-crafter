@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import CopyButton from '@/components/CopyButton'
+import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { normalizeAddress } from '@/utils/addressValidation'
 
 const EXPLORER_MAP: { [key: number]: string } = {
@@ -13,16 +14,14 @@ const EXPLORER_MAP: { [key: number]: string } = {
 }
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
-  const addr = normalizeAddress(address) ?? address
-  const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  const base = EXPLORER_MAP[chainId] || 'https://etherscan.io'
   return (
-    <div className="flex items-center gap-1.5 mt-1">
-      <span className="text-xs text-gray-400 font-mono">{short}</span>
-      <a href={`${base}/address/${addr}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white p-0.5 rounded" title="Check on Explorer" aria-label="Check on Explorer">
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-      </a>
-      <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+    <div className="mt-1">
+      <AddressDisplayShort
+        address={address}
+        chainId={chainId}
+        className="text-xs"
+        linkClassName="text-gray-400 hover:text-white"
+      />
     </div>
   )
 }
@@ -165,50 +164,26 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      {(() => {
-                        const addr = normalizeAddress(wizardData.token0.address) ?? wizardData.token0.address
-                        const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
-                        const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
-                        const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
-                        return (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <a
-                              href={`${explorerUrl}/address/${addr}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-400 hover:text-blue-300 font-mono"
-                            >
-                              {short}
-                            </a>
-                            <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
-                            <span className="text-xs text-gray-400">{wizardData.token0.symbol}</span>
-                          </div>
-                        )
-                      })()}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <AddressDisplayShort
+                          address={wizardData.token0.address}
+                          chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
+                          className="text-xs"
+                        />
+                        <span className="text-xs text-gray-400">{wizardData.token0.symbol}</span>
+                      </div>
                     </div>
                     {wizardData.token1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
                         <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
-                        {(() => {
-                          const addr = normalizeAddress(wizardData.token1.address) ?? wizardData.token1.address
-                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
-                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
-                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
-                          return (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <a
-                                href={`${explorerUrl}/address/${addr}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-400 hover:text-blue-300 font-mono"
-                              >
-                                {short}
-                              </a>
-                              <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
-                              <span className="text-xs text-gray-400">{wizardData.token1.symbol}</span>
-                            </div>
-                          )
-                        })()}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <AddressDisplayShort
+                            address={wizardData.token1.address}
+                            chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
+                            className="text-xs"
+                          />
+                          <span className="text-xs text-gray-400">{wizardData.token1.symbol}</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -228,23 +203,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                         </div>
                         {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token0.scalerOracle
-                          const addr = normalizeAddress(scaler.address) ?? scaler.address
-                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
-                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
                           return (
                             <>
                               <div className="text-xs text-gray-400">{scaler.name}</div>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <a
-                                  href={`${explorerUrl}/address/${addr}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-400 hover:text-blue-300 font-mono"
-                                >
-                                  {short}
-                                </a>
-                                <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                              <div className="mt-1">
+                                <AddressDisplayShort
+                                  address={scaler.address}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
@@ -262,23 +230,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                         </div>
                         {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token1.scalerOracle
-                          const addr = normalizeAddress(scaler.address) ?? scaler.address
-                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
-                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
                           return (
                             <>
                               <div className="text-xs text-gray-400">{scaler.name}</div>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <a
-                                  href={`${explorerUrl}/address/${addr}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-400 hover:text-blue-300 font-mono"
-                                >
-                                  {short}
-                                </a>
-                                <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                              <div className="mt-1">
+                                <AddressDisplayShort
+                                  address={scaler.address}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
