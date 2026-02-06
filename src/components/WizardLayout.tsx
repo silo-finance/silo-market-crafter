@@ -166,32 +166,49 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0</div>
                       <div className="text-xs text-gray-400">{wizardData.token0.symbol}</div>
-                      <div className="text-xs text-gray-500">{wizardData.token0.address}</div>
+                      {(() => {
+                        const addr = normalizeAddress(wizardData.token0.address) ?? wizardData.token0.address
+                        const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+                        const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                        const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
+                        return (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <a
+                              href={`${explorerUrl}/address/${addr}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-400 hover:text-blue-300 font-mono"
+                            >
+                              {short}
+                            </a>
+                            <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                          </div>
+                        )
+                      })()}
                     </div>
                     {wizardData.token1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
                         <div className="text-sm font-medium text-white">Token 1</div>
                         <div className="text-xs text-gray-400">{wizardData.token1.symbol}</div>
-                        <div className="text-xs text-gray-500">{wizardData.token1.address}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Oracle Types – not shown on step 11 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 11 && wizardData.oracleType0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Types</h3>
-                  <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 Oracle</div>
-                      <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType0.type}</div>
-                    </div>
-                    {wizardData.oracleType1 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Oracle</div>
-                        <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType1.type}</div>
+                        {(() => {
+                          const addr = normalizeAddress(wizardData.token1.address) ?? wizardData.token1.address
+                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
+                          return (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <a
+                                href={`${explorerUrl}/address/${addr}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:text-blue-300 font-mono"
+                              >
+                                {short}
+                              </a>
+                              <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                            </div>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>
@@ -199,28 +216,76 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               )}
 
               {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 11 && wizardData.oracleConfiguration && (
+              {wizardData.currentStep !== 11 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
                   <div className="space-y-2">
-                    {wizardData.oracleConfiguration.token0.scalerOracle && (
+                    {wizardData.oracleType0 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 0 Scaler</div>
-                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token0.scalerOracle.name}</div>
-                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token0.scalerOracle.address}</div>
-                        <div className={`text-xs ${wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
-                          {wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        <div className="text-sm font-medium text-white">Token 0 Oracle</div>
+                        <div className="text-xs text-gray-400 capitalize mb-2">
+                          Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
+                        {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
+                          const scaler = wizardData.oracleConfiguration.token0.scalerOracle
+                          const addr = normalizeAddress(scaler.address) ?? scaler.address
+                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
+                          return (
+                            <>
+                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <a
+                                  href={`${explorerUrl}/address/${addr}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-400 hover:text-blue-300 font-mono"
+                                >
+                                  {short}
+                                </a>
+                                <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                              </div>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {scaler.valid ? 'Valid' : 'Invalid'}
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
-                    {wizardData.oracleConfiguration.token1.scalerOracle && (
+                    {wizardData.oracleType1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Scaler</div>
-                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token1.scalerOracle.name}</div>
-                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token1.scalerOracle.address}</div>
-                        <div className={`text-xs ${wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
-                          {wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        <div className="text-sm font-medium text-white">Token 1 Oracle</div>
+                        <div className="text-xs text-gray-400 capitalize mb-2">
+                          Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
+                        {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
+                          const scaler = wizardData.oracleConfiguration.token1.scalerOracle
+                          const addr = normalizeAddress(scaler.address) ?? scaler.address
+                          const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          const explorerUrl = EXPLORER_MAP[chainId] || 'https://etherscan.io'
+                          return (
+                            <>
+                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <a
+                                  href={`${explorerUrl}/address/${addr}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-400 hover:text-blue-300 font-mono"
+                                >
+                                  {short}
+                                </a>
+                                <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                              </div>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {scaler.valid ? 'Valid' : 'Invalid'}
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>
