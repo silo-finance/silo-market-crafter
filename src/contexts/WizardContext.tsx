@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
+import { bigintToDisplayNumber } from '@/utils/verification/normalization'
 
 declare global {
   interface Window {
@@ -372,8 +373,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       deployer: "",
       hookReceiver: "CLONE_IMPLEMENTATION",
       hookReceiverImplementation: hookImplementation,
-      daoFee: wizardData.feesConfiguration?.daoFee ? Math.trunc(wizardData.feesConfiguration.daoFee * 100) : 0,
-      deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.trunc(wizardData.feesConfiguration.deployerFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100 (e.g. 4.02% → 402)
+      daoFee: wizardData.feesConfiguration?.daoFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.daoFee) * 100) : 0,
+      deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee) * 100) : 0,
       token0: wizardData.token0?.symbol || "",
       solvencyOracle0: (() => {
         const t = wizardData.oracleConfiguration?.token0?.type
@@ -385,11 +387,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       maxLtvOracle0: "NO_ORACLE",
       interestRateModel0: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
-      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.trunc(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
-      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.trunc(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
-      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.trunc(wizardData.borrowConfiguration.token0.liquidationTargetLTV * 100) : 0,
-      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.trunc(wizardData.feesConfiguration.token0.liquidationFee * 100) : 0,
-      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.trunc(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
+      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.maxLTV) * 100) : 0,
+      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationThreshold) * 100) : 0,
+      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV) * 100) : 0,
+      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee) * 100) : 0,
+      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee) * 100) : 0,
       callBeforeQuote0: false,
       ...(wizardData.oracleConfiguration?.token0?.type === 'chainlink' && wizardData.oracleConfiguration?.token0?.chainlinkOracle
         ? {
@@ -423,11 +426,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       maxLtvOracle1: "NO_ORACLE",
       interestRateModel1: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
-      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.trunc(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
-      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.trunc(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
-      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.trunc(wizardData.borrowConfiguration.token1.liquidationTargetLTV * 100) : 0,
-      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.trunc(wizardData.feesConfiguration.token1.liquidationFee * 100) : 0,
-      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.trunc(wizardData.feesConfiguration.token1.flashloanFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
+      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.maxLTV) * 100) : 0,
+      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationThreshold) * 100) : 0,
+      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationTargetLTV) * 100) : 0,
+      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee) * 100) : 0,
+      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token1.flashloanFee) * 100) : 0,
       callBeforeQuote1: false,
       ...(wizardData.oracleConfiguration?.token1?.type === 'chainlink' && wizardData.oracleConfiguration?.token1?.chainlinkOracle
         ? {
