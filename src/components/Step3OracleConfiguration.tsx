@@ -12,6 +12,7 @@ import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import erc20Artifact from '@/abis/IERC20.json'
 import CopyButton from '@/components/CopyButton'
+import TokenAddressInput from '@/components/TokenAddressInput'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -173,12 +174,8 @@ export default function Step3OracleConfiguration() {
   const [ptLinearFactory, setPTLinearFactory] = useState<{ address: string; version: string } | null>(null)
   const [pt0QuoteInput, setPT0QuoteInput] = useState('')
   const [pt0QuoteMetadata, setPT0QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
-  const [pt0QuoteLoading, setPT0QuoteLoading] = useState(false)
-  const [pt0QuoteError, setPT0QuoteError] = useState('')
   const [pt1QuoteInput, setPT1QuoteInput] = useState('')
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
-  const [pt1QuoteLoading, setPT1QuoteLoading] = useState(false)
-  const [pt1QuoteError, setPT1QuoteError] = useState('')
 
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
@@ -419,70 +416,6 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle])
 
-  // Resolve PT hardcoded quote token (address or symbol) and fetch metadata
-  const resolvePTQuoteToken = async (input: string, tokenIndex: 0 | 1) => {
-    const chainId = wizardData.networkInfo?.chainId
-    const setLoading = tokenIndex === 0 ? setPT0QuoteLoading : setPT1QuoteLoading
-    const setMeta = tokenIndex === 0 ? setPT0QuoteMetadata : setPT1QuoteMetadata
-    const setErr = tokenIndex === 0 ? setPT0QuoteError : setPT1QuoteError
-    const setConfig = tokenIndex === 0 ? setPTLinear0 : setPTLinear1
-
-    setLoading(true)
-    setErr('')
-    setMeta(null)
-
-    const trimmed = input?.trim() ?? ''
-    if (!trimmed) {
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-      setLoading(false)
-      return
-    }
-
-    if (!chainId) {
-      setErr('Network not set')
-      setLoading(false)
-      return
-    }
-
-    try {
-      let address: string
-      if (isHexAddress(trimmed)) {
-        address = normalizeAddress(trimmed) ?? trimmed
-      } else {
-        const result = await resolveSymbolToAddress(chainId, trimmed)
-        if (!result) {
-          setErr('Unknown symbol. Enter token address manually.')
-          setLoading(false)
-          return
-        }
-        address = result.address
-      }
-
-      if (!window.ethereum) {
-        setErr('Wallet not available')
-        setLoading(false)
-        return
-      }
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(address, erc20Abi, provider)
-      const [symbol, decimals, name] = await Promise.all([
-        contract.symbol(),
-        contract.decimals(),
-        contract.name()
-      ])
-      setMeta({
-        symbol: String(symbol),
-        decimals: Number(decimals),
-        name: String(name)
-      })
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
-    } catch (err) {
-      setErr(err instanceof Error ? err.message : 'Failed to resolve token')
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
   useEffect(() => {
@@ -1139,7 +1072,6 @@ export default function Step3OracleConfiguration() {
                     if (checked) {
                       setPT0QuoteInput('')
                       setPT0QuoteMetadata(null)
-                      setPT0QuoteError('')
                     }
                   }}
                   className="rounded border-gray-600"
@@ -1149,28 +1081,23 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear0.useSecondTokenAsQuote && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt0QuoteError ? 'border-red-500' : pt0QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
-                    value={pt0QuoteInput}
-                    onChange={(e) => setPT0QuoteInput(e.target.value)}
-                    onBlur={() => pt0QuoteInput.trim() && resolvePTQuoteToken(pt0QuoteInput, 0)}
-                    placeholder="0x… or symbol from addresses JSON"
-                  />
-                  {pt0QuoteLoading && (
-                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
-                  )}
-                  {pt0QuoteError && (
-                    <p className="text-sm text-red-400 mt-1">{pt0QuoteError}</p>
-                  )}
-                  {pt0QuoteMetadata && (
-                    <p className="text-sm text-green-400 mt-1">
-                      ✓ {pt0QuoteMetadata.name} ({pt0QuoteMetadata.symbol}) – {pt0QuoteMetadata.decimals} decimals
-                    </p>
-                  )}
-                </div>
+                <TokenAddressInput
+                  value={pt0QuoteInput}
+                  onChange={(value) => {
+                    setPT0QuoteInput(value)
+                  }}
+                  onResolve={(address, metadata) => {
+                    setPT0QuoteMetadata(metadata)
+                    if (metadata && address) {
+                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                    } else {
+                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token (address or symbol)"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               )}
             </div>
           ) : wizardData.oracleType0.type === 'chainlink' ? (
@@ -1474,7 +1401,6 @@ export default function Step3OracleConfiguration() {
                     if (checked) {
                       setPT1QuoteInput('')
                       setPT1QuoteMetadata(null)
-                      setPT1QuoteError('')
                     }
                   }}
                   className="rounded border-gray-600"
@@ -1484,28 +1410,23 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear1.useSecondTokenAsQuote && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt1QuoteError ? 'border-red-500' : pt1QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
-                    value={pt1QuoteInput}
-                    onChange={(e) => setPT1QuoteInput(e.target.value)}
-                    onBlur={() => pt1QuoteInput.trim() && resolvePTQuoteToken(pt1QuoteInput, 1)}
-                    placeholder="0x… or symbol from addresses JSON"
-                  />
-                  {pt1QuoteLoading && (
-                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
-                  )}
-                  {pt1QuoteError && (
-                    <p className="text-sm text-red-400 mt-1">{pt1QuoteError}</p>
-                  )}
-                  {pt1QuoteMetadata && (
-                    <p className="text-sm text-green-400 mt-1">
-                      ✓ {pt1QuoteMetadata.name} ({pt1QuoteMetadata.symbol}) – {pt1QuoteMetadata.decimals} decimals
-                    </p>
-                  )}
-                </div>
+                <TokenAddressInput
+                  value={pt1QuoteInput}
+                  onChange={(value) => {
+                    setPT1QuoteInput(value)
+                  }}
+                  onResolve={(address, metadata) => {
+                    setPT1QuoteMetadata(metadata)
+                    if (metadata && address) {
+                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                    } else {
+                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token (address or symbol)"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               )}
             </div>
           ) : wizardData.oracleType1.type === 'chainlink' ? (

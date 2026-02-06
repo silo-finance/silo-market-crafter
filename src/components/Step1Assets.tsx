@@ -7,6 +7,7 @@ import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl } from '@/utils/symbolToAddress'
 import CopyButton from '@/components/CopyButton'
+import TokenAddressInput from '@/components/TokenAddressInput'
 import erc20Artifact from '@/abis/IERC20.json'
 
 function getExplorerAddressUrl(chainId: string, address: string): string {
@@ -503,14 +504,7 @@ export default function Step1Assets() {
     [processTokenInput]
   )
 
-  // When token input or network is set (e.g. from cache), run validation so symbol lookup runs
-  useEffect(() => {
-    if (isClient && token0Address) debouncedValidateToken0(token0Address)
-  }, [isClient, token0Address, wizardData.networkInfo?.chainId, debouncedValidateToken0])
-
-  useEffect(() => {
-    if (isClient && token1Address) debouncedValidateToken1(token1Address)
-  }, [isClient, token1Address, wizardData.networkInfo?.chainId, debouncedValidateToken1])
+  // Note: TokenAddressInput handles validation internally, so we don't need to call debouncedValidateToken here
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -652,73 +646,30 @@ export default function Step1Assets() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
           <div className="space-y-4">
-            <div>
-              <label htmlFor="token0" className="block text-sm font-medium text-gray-300 mb-2">
-                Token 0 – address or symbol
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="token0"
-                  value={token0Address}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    setToken0Address(value)
-                    
-                    // Save to cache
-                    saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, value)
-                    
-                    // Clear any existing errors when user starts typing
-                    if (token0Error) {
-                      setToken0Error('')
-                    }
-                    
-                    debouncedValidateToken0(value)
-                  }}
-                  placeholder="0x... or e.g. WETH, USDC"
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    token0Error ? 'border-red-500' : token0Metadata ? 'border-green-500' : 'border-gray-700'
-                  }`}
-                  required
-                />
-                {token0Loading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {token0ResolvedAddress && token0Address.trim() !== token0ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
-                  <span>Matched address:</span>
-                  {wizardData.networkInfo?.chainId ? (
-                    <a
-                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token0ResolvedAddress)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline"
-                    >
-                      {normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}
-                    </a>
-                  ) : (
-                    <span>{normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress}</span>
-                  )}
-                  <CopyButton value={normalizeAddress(token0ResolvedAddress) ?? token0ResolvedAddress} iconClassName="w-3.5 h-3.5" />
-                </div>
-              )}
-              {token0Error && (
-                <div className="mt-2 text-sm text-red-400">
-                  ✗ {token0Error}
-                </div>
-              )}
-              {token0Metadata && (
-                <div className="mt-2 text-sm text-green-400">
-                  ✓ {token0Metadata.name} ({token0Metadata.symbol}) - {token0Metadata.decimals} decimals
-                </div>
-              )}
-            </div>
+            <TokenAddressInput
+              value={token0Address}
+              onChange={(value) => {
+                setToken0Address(value)
+                saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, value)
+              }}
+              onResolve={(address, metadata) => {
+                setToken0ResolvedAddress(address || null)
+                setToken0Metadata(metadata)
+                if (metadata) {
+                  setToken0Error('')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, metadata)
+                }
+              }}
+              onError={(error) => {
+                setToken0Error(error)
+              }}
+              chainId={wizardData.networkInfo?.chainId}
+              label="Token 0 – address or symbol"
+              placeholder="0x... or e.g. WETH, USDC"
+              required
+              initialMetadata={token0Metadata}
+              initialResolvedAddress={token0ResolvedAddress}
+            />
 
             {/* Switch Button */}
             <div className="flex justify-center py-4">
@@ -734,73 +685,30 @@ export default function Step1Assets() {
               </button>
             </div>
 
-            <div>
-              <label htmlFor="token1" className="block text-sm font-medium text-gray-300 mb-2">
-                Token 1 – address or symbol
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="token1"
-                  value={token1Address}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    setToken1Address(value)
-                    
-                    // Save to cache
-                    saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, value)
-                    
-                    // Clear any existing errors when user starts typing
-                    if (token1Error) {
-                      setToken1Error('')
-                    }
-                    
-                    debouncedValidateToken1(value)
-                  }}
-                  placeholder="0x... or e.g. WETH, USDC"
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    token1Error ? 'border-red-500' : token1Metadata ? 'border-green-500' : 'border-gray-700'
-                  }`}
-                  required
-                />
-                {token1Loading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {token1ResolvedAddress && token1Address.trim() !== token1ResolvedAddress && (
-                <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
-                  <span>Matched address:</span>
-                  {wizardData.networkInfo?.chainId ? (
-                    <a
-                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, token1ResolvedAddress)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline"
-                    >
-                      {normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}
-                    </a>
-                  ) : (
-                    <span>{normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress}</span>
-                  )}
-                  <CopyButton value={normalizeAddress(token1ResolvedAddress) ?? token1ResolvedAddress} iconClassName="w-3.5 h-3.5" />
-                </div>
-              )}
-              {token1Error && (
-                <div className="mt-2 text-sm text-red-400">
-                  ✗ {token1Error}
-                </div>
-              )}
-              {token1Metadata && (
-                <div className="mt-2 text-sm text-green-400">
-                  ✓ {token1Metadata.name} ({token1Metadata.symbol}) - {token1Metadata.decimals} decimals
-                </div>
-              )}
-            </div>
+            <TokenAddressInput
+              value={token1Address}
+              onChange={(value) => {
+                setToken1Address(value)
+                saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, value)
+              }}
+              onResolve={(address, metadata) => {
+                setToken1ResolvedAddress(address || null)
+                setToken1Metadata(metadata)
+                if (metadata) {
+                  setToken1Error('')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, metadata)
+                }
+              }}
+              onError={(error) => {
+                setToken1Error(error)
+              }}
+              chainId={wizardData.networkInfo?.chainId}
+              label="Token 1 – address or symbol"
+              placeholder="0x... or e.g. WETH, USDC"
+              required
+              initialMetadata={token1Metadata}
+              initialResolvedAddress={token1ResolvedAddress}
+            />
           </div>
         </div>
 
