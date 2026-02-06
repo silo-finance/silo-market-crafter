@@ -97,15 +97,19 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
             {/* Progress Indicator */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-300 mb-3">Progress</h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {[
-                  { step: 1, title: 'Assets', description: 'Select tokens' },
-                  { step: 2, title: 'Oracle Types', description: 'Choose oracle types' },
-                  { step: 3, title: 'Oracle Config', description: 'Configure oracles' },
-                  { step: 4, title: 'IRM Selection', description: 'Select interest rate models' },
-                  { step: 5, title: 'Borrow Setup', description: 'Configure borrowing parameters' },
-                  { step: 6, title: 'Fees', description: 'Set fee parameters' },
-                  { step: 7, title: 'JSON Config', description: 'Generate and download configuration' }
+                  { step: 1, title: 'Assets' },
+                  { step: 2, title: 'Oracle Types' },
+                  { step: 3, title: 'Oracle Config' },
+                  { step: 4, title: 'IRM Selection' },
+                  { step: 5, title: 'Borrow Setup' },
+                  { step: 6, title: 'Fees' },
+                  { step: 7, title: 'Hook' },
+                  { step: 8, title: 'Hook Owner' },
+                  { step: 9, title: 'JSON Config' },
+                  { step: 10, title: 'Deployment' },
+                  { step: 11, title: 'Verification' }
                 ].map((item) => {
                   const isCompleted = wizardData.currentStep > item.step
                   const isCurrent = wizardData.currentStep === item.step
@@ -115,7 +119,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     <div
                       key={item.step}
                       onClick={() => isClickable && handleStepClick(item.step)}
-                      className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${
+                      className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
                         wizardData.currentStep >= item.step
                           ? 'bg-blue-900/30 border border-blue-700'
                           : 'bg-gray-800 border border-gray-700'
@@ -124,7 +128,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       }`}
                     >
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${
                           isCompleted
                             ? 'bg-green-600 text-white'
                             : isCurrent
@@ -134,13 +138,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       >
                         {isCompleted ? '✓' : item.step}
                       </div>
-                      <div className="flex-1">
-                        <div className={`text-sm font-medium ${
-                          wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
-                        }`}>
-                          {item.title}
-                        </div>
-                        <div className="text-xs text-gray-500">{item.description}</div>
+                      <div className={`text-xs font-medium ${
+                        wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
+                      }`}>
+                        {item.title}
                       </div>
                     </div>
                   )
