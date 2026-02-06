@@ -50,6 +50,13 @@ export default function Step11Verification() {
     wizardOwner: null,
     isInAddressesJson: null
   })
+  const [tokenVerification, setTokenVerification] = useState<{ 
+    token0: { onChainToken: string | null; wizardToken: string | null } | null
+    token1: { onChainToken: string | null; wizardToken: string | null } | null
+  }>({
+    token0: null,
+    token1: null
+  })
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
 
@@ -385,7 +392,7 @@ export default function Step11Verification() {
       // This verification is independent and can be done for any address
       const addressesToCheck: string[] = []
       
-      // Collect all owner addresses to check
+      // Collect all owner addresses and token addresses to check
       if (marketConfig.silo0.hookReceiverOwner) {
         addressesToCheck.push(marketConfig.silo0.hookReceiverOwner)
       }
@@ -394,6 +401,13 @@ export default function Step11Verification() {
       }
       if (marketConfig.silo1.interestRateModel.owner) {
         addressesToCheck.push(marketConfig.silo1.interestRateModel.owner)
+      }
+      // Add token addresses for JSON verification
+      if (marketConfig.silo0.token) {
+        addressesToCheck.push(marketConfig.silo0.token)
+      }
+      if (marketConfig.silo1.token) {
+        addressesToCheck.push(marketConfig.silo1.token)
       }
       
       // Check all addresses using centralized verification function from src/utils/verification/addressInJsonVerification.ts
@@ -456,6 +470,43 @@ export default function Step11Verification() {
           wizardOwner: null,
           isInAddressesJson: null
         })
+      }
+
+      // Verify tokens - check if we have wizard data (token0 and token1 addresses exist)
+      if (wizardData.token0?.address && marketConfig.silo0.token) {
+        const onChainToken0 = marketConfig.silo0.token // Token 0 address from on-chain contract
+        const wizardToken0 = wizardData.token0.address // Token 0 address from wizard state
+        
+        setTokenVerification(prev => ({
+          ...prev,
+          token0: {
+            onChainToken: onChainToken0,
+            wizardToken: wizardToken0
+          }
+        }))
+      } else {
+        setTokenVerification(prev => ({
+          ...prev,
+          token0: null
+        }))
+      }
+
+      if (wizardData.token1?.address && marketConfig.silo1.token) {
+        const onChainToken1 = marketConfig.silo1.token // Token 1 address from on-chain contract
+        const wizardToken1 = wizardData.token1.address // Token 1 address from wizard state
+        
+        setTokenVerification(prev => ({
+          ...prev,
+          token1: {
+            onChainToken: onChainToken1,
+            wizardToken: wizardToken1
+          }
+        }))
+      } else {
+        setTokenVerification(prev => ({
+          ...prev,
+          token1: null
+        }))
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch market configuration')
@@ -680,6 +731,7 @@ export default function Step11Verification() {
           siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
           hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
           irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
+          tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
           addressInJsonVerification={addressInJsonVerification} // Always passed, regardless of wizard data
         />
       )}

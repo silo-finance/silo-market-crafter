@@ -7,6 +7,7 @@ import { ethers } from 'ethers'
 import { verifyDaoFee } from '@/utils/verification/daoFeeVerification'
 import { verifyHookOwner } from '@/utils/verification/hookOwnerVerification'
 import { verifyIrmOwner } from '@/utils/verification/irmOwnerVerification'
+import { verifyToken } from '@/utils/verification/tokenVerification'
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
@@ -129,6 +130,11 @@ interface IRMOwnerVerification {
   isInAddressesJson: boolean | null
 }
 
+interface TokenVerification {
+  token0: { onChainToken: string | null; wizardToken: string | null } | null
+  token1: { onChainToken: string | null; wizardToken: string | null } | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
@@ -136,6 +142,7 @@ interface MarketConfigTreeProps {
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  tokenVerification?: TokenVerification
   addressInJsonVerification?: Map<string, boolean> // Always available, regardless of wizard data
 }
 
@@ -166,6 +173,7 @@ interface TreeNodeProps {
   addressVerificationIcon?: React.ReactNode
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  tokenVerification?: { onChainToken: string | null; wizardToken: string | null } | null
   addressInJsonVerification?: Map<string, boolean>
 }
 
@@ -184,6 +192,61 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
           </div>
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             {label} verified: matches Wizard value
+          </div>
+        </div>
+      )}
+      
+      {/* Address in JSON verification - Solid Star in standard green */}
+      {/* This is independent check: address exists in addresses JSON file */}
+      {isInJson === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Address found in silo-finance repository list
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function TokenVerificationIcons({ address, tokenVerification, addressInJsonVerification }: { address: string; tokenVerification: { onChainToken: string | null; wizardToken: string | null } | null; addressInJsonVerification?: Map<string, boolean> }) {
+  if (!tokenVerification || !tokenVerification.onChainToken || !tokenVerification.wizardToken) {
+    return null
+  }
+  
+  // Normalize addresses for comparison
+  const normalizedAddress = ethers.getAddress(address).toLowerCase()
+  const normalizedOnChain = ethers.getAddress(tokenVerification.onChainToken).toLowerCase()
+  
+  // Check if the displayed address matches the on-chain token address
+  if (normalizedOnChain !== normalizedAddress) {
+    return null
+  }
+  
+  // Verify that on-chain token matches wizard token using centralized function
+  const isVerified = verifyToken(tokenVerification.onChainToken, tokenVerification.wizardToken)
+  
+  // Get JSON verification result - always available regardless of wizard data
+  const isInJson = addressInJsonVerification?.get(normalizedAddress) ?? null
+  
+  return (
+    <span className="inline-flex items-center gap-1 ml-1">
+      {/* Green checkmark - verification that on-chain token matches wizard value */}
+      {/* This is independent check: on-chain token === wizard token */}
+      {isVerified === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Token verified: matches Wizard value
           </div>
         </div>
       )}
@@ -301,7 +364,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -336,6 +399,14 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 {' '}
                 ({suffixText})
               </span>
+            )}
+            {/* Token verification icons - show at the end of the line */}
+            {tokenVerification && address && (
+              <TokenVerificationIcons 
+                address={address}
+                tokenVerification={tokenVerification}
+                addressInJsonVerification={addressInJsonVerification}
+              />
             )}
           </>
         )}
@@ -409,7 +480,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, addressInJsonVerification = new Map() }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -455,7 +526,14 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
         </TreeNode>
 
         <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo0.token} tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Token" 
+            address={config.silo0.token} 
+            tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} 
+            explorerUrl={explorerUrl}
+            tokenVerification={tokenVerification?.token0 || null}
+            addressInJsonVerification={addressInJsonVerification}
+          />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
             <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
@@ -512,7 +590,14 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
         </TreeNode>
 
         <TreeNode label="Silo 1" address={config.silo1.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo1.token} tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Token" 
+            address={config.silo1.token} 
+            tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} 
+            explorerUrl={explorerUrl}
+            tokenVerification={tokenVerification?.token1 || null}
+            addressInJsonVerification={addressInJsonVerification}
+          />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
             <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
