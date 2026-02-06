@@ -33,6 +33,9 @@ export default function Step11Verification() {
     silo1: null,
     error: null
   })
+  const [implementationFromEvent, setImplementationFromEvent] = useState<string | null>(null)
+  const [implementationFromRepo, setImplementationFromRepo] = useState<{ address: string; version: string; description?: string } | null>(null)
+  const [implementationVerified, setImplementationVerified] = useState<boolean | null>(null)
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -100,6 +103,86 @@ export default function Step11Verification() {
 
     fetchSiloFactory()
   }, [chainId, config])
+
+  // Fetch Silo Implementation addresses from repository (_siloImplementations.json)
+  useEffect(() => {
+    if (!chainId || !implementationFromEvent) return
+
+    const fetchImplementation = async () => {
+      const chainName = getChainName(chainId)
+      
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/silo/_siloImplementations.json`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const chainImplementations = data[chainName] || []
+          
+          // Find matching implementation address
+          const normalizedEventAddress = ethers.getAddress(implementationFromEvent).toLowerCase()
+          const matchingImpl = chainImplementations.find((impl: { implementation: string }) => 
+            ethers.getAddress(impl.implementation).toLowerCase() === normalizedEventAddress
+          )
+          
+          if (matchingImpl) {
+            setImplementationFromRepo({ 
+              address: matchingImpl.implementation, 
+              version: '',
+              description: matchingImpl.description
+            })
+            setImplementationVerified(true)
+          } else {
+            // If not found in repo, still show the event address but mark as not verified
+            setImplementationFromRepo({ 
+              address: implementationFromEvent, 
+              version: '',
+              description: undefined
+            })
+            setImplementationVerified(false)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch Silo Implementation:', err)
+        setImplementationVerified(false)
+      }
+    }
+
+    fetchImplementation()
+  }, [chainId, implementationFromEvent])
+
+  // Fetch Silo Implementation version via Silo Lens (only if verified)
+  useEffect(() => {
+    if (!implementationFromRepo?.address || !siloLensAddress || !chainId || implementationVerified !== true) return
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const fetchImplementationVersion = async () => {
+      const implAddress = implementationFromRepo.address
+      const cached = getCachedVersion(chainId, implAddress)
+      if (cached != null) {
+        setImplementationFromRepo(prev => prev ? { ...prev, version: cached } : null)
+        return
+      }
+
+      try {
+        const ethereum = window.ethereum
+        if (!ethereum) return
+        const provider = new ethers.BrowserProvider(ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = String(await lensContract.getVersion(implAddress))
+        setCachedVersion(chainId, implAddress, version)
+        setImplementationFromRepo(prev => prev ? { ...prev, version } : null)
+      } catch (err) {
+        console.warn('Failed to fetch Silo Implementation version:', err)
+        const fallback = '—'
+        setCachedVersion(chainId, implAddress, fallback)
+        setImplementationFromRepo(prev => prev ? { ...prev, version: fallback } : null)
+      }
+    }
+
+    fetchImplementationVersion()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
 
   // Fetch Silo Factory version via Silo Lens
   useEffect(() => {
@@ -209,6 +292,10 @@ export default function Step11Verification() {
         }
         siloConfigAddress = parsed.siloConfig
         setTxHash(value.trim())
+        // Extract implementation address from NewSilo event
+        if (parsed.implementation) {
+          setImplementationFromEvent(parsed.implementation)
+        }
       } else {
         // Validate address format
         if (!ethers.isAddress(value.trim())) {
@@ -374,6 +461,42 @@ export default function Step11Verification() {
             version={siloFactory.version || '…'}
             chainId={chainId}
             isOracle={false}
+          />
+        </div>
+      )}
+
+      {implementationFromRepo && implementationFromEvent && (
+        <div className="mb-6">
+          <ContractInfo
+            contractName="Silo Implementation"
+            address={implementationFromRepo.address}
+            version={implementationFromRepo.version || '…'}
+            chainId={chainId}
+            isOracle={false}
+            isImplementation={true}
+            verificationIcon={implementationVerified === true ? (
+              <div className="relative group inline-block">
+                <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Implementation address verified: matches event from deployment transaction and exists in repository
+                </div>
+              </div>
+            ) : implementationVerified === false ? (
+              <div className="relative group inline-block">
+                <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Implementation address not found in repository: event value {implementationFromEvent} is not listed in _siloImplementations.json
+                </div>
+              </div>
+            ) : undefined}
           />
         </div>
       )}
