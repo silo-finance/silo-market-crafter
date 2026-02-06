@@ -135,6 +135,24 @@ function formatFactorToE(value: string): string {
   }
 }
 
+/** Format bigint value as e18 notation with full precision (e.g. 1000000000000000000 → 1.000000000000000000e18). */
+/** Always shows all 18 decimal places. Exception: 0 → "0" */
+function formatBigIntToE18(value: bigint): string {
+  if (value === BigInt(0)) return '0'
+  
+  const str = value.toString()
+  
+  // Pad to exactly 19 digits (1 integer digit + 18 fractional digits)
+  // This ensures we always show full precision
+  const padded = str.padStart(19, '0')
+  
+  // Format as: first digit, decimal point, remaining 18 digits (always show all), e18
+  // Example: 1000000000000000000 → "1.000000000000000000e18"
+  // Example: 500000000000000000 → "0.500000000000000000e18"
+  // Example: 755000000000000000 → "0.755000000000000000e18"
+  return `${padded[0]}.${padded.slice(1)}e18`
+}
+
 function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
@@ -479,7 +497,12 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             {typeof value === 'boolean'
               ? (value ? 'Yes' : 'No')
               : isPercentage && typeof value === 'bigint'
-                ? formatPercentage(value)
+                ? (
+                    <>
+                      {formatPercentage(value)}
+                      <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(value)})</span>
+                    </>
+                  )
                 : typeof value === 'bigint'
                   ? value.toString()
                   : String(value)}
