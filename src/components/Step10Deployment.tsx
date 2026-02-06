@@ -739,7 +739,9 @@ export default function Step10Deployment() {
 
       {/* Network Information */}
       <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Network Information</h3>
+        <p className="text-sm font-medium text-gray-300 mb-4">
+          Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">(Chain ID: {wizardData.networkInfo?.chainId || '—'})</span>
+        </p>
         {loading && (
           <div className="mb-4 flex items-center space-x-2 text-blue-400">
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -749,28 +751,19 @@ export default function Step10Deployment() {
             <span className="text-sm">Loading deployment data...</span>
           </div>
         )}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-400">Network Name</p>
-            <p className="text-white font-medium">{wizardData.networkInfo?.networkName || 'Unknown'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 mb-2">SiloDeployer Contract Address</p>
-            {loading ? (
-              <p className="text-white font-mono text-sm">Loading...</p>
-            ) : deployerAddress ? (
-              <ContractInfo
-                contractName="SiloDeployer"
-                address={deployerAddress}
-                version={deployerVersion || '…'}
-                chainId={wizardData.networkInfo?.chainId}
-                isOracle={false}
-              />
-            ) : (
-              <p className="text-white font-mono text-sm">Not available</p>
-            )}
-          </div>
-        </div>
+        {loading ? (
+          <p className="text-white font-mono text-sm">Loading...</p>
+        ) : deployerAddress ? (
+          <ContractInfo
+            contractName="SiloDeployer"
+            address={deployerAddress}
+            version={deployerVersion || '…'}
+            chainId={wizardData.networkInfo?.chainId}
+            isOracle={false}
+          />
+        ) : (
+          <p className="text-white font-mono text-sm">Not available</p>
+        )}
       </div>
 
       {/* Navigation */}
