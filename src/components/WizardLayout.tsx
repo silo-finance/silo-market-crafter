@@ -165,7 +165,6 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
                       <div className="text-sm font-medium text-white">Token 0</div>
-                      <div className="text-xs text-gray-400">{wizardData.token0.symbol}</div>
                       {(() => {
                         const addr = normalizeAddress(wizardData.token0.address) ?? wizardData.token0.address
                         const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -182,6 +181,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                               {short}
                             </a>
                             <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                            <span className="text-xs text-gray-400">{wizardData.token0.symbol}</span>
                           </div>
                         )
                       })()}
@@ -189,7 +189,6 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     {wizardData.token1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
                         <div className="text-sm font-medium text-white">Token 1</div>
-                        <div className="text-xs text-gray-400">{wizardData.token1.symbol}</div>
                         {(() => {
                           const addr = normalizeAddress(wizardData.token1.address) ?? wizardData.token1.address
                           const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -206,6 +205,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 {short}
                               </a>
                               <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+                              <span className="text-xs text-gray-400">{wizardData.token1.symbol}</span>
                             </div>
                           )
                         })()}
