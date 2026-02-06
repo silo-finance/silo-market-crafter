@@ -31,7 +31,7 @@ const GeneralFeeInput = React.memo(({
       <label className="text-sm font-medium text-white">
         {label}
       </label>
-      <div className="relative w-20">
+      <div className="relative w-32">
         <input
           type="number"
           min="0"
@@ -65,7 +65,7 @@ const TokenFeeInput = React.memo(({
       <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
         {label}
       </label>
-      <div className="relative w-20">
+      <div className="relative w-32">
         <input
           type="number"
           min="0"

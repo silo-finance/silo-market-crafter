@@ -1,27 +1,19 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
-import CopyButton from '@/components/CopyButton'
-import { normalizeAddress } from '@/utils/addressValidation'
-
-const EXPLORER_MAP: { [key: number]: string } = {
-  1: 'https://etherscan.io', 137: 'https://polygonscan.com', 10: 'https://optimistic.etherscan.io',
-  42161: 'https://arbiscan.io', 43114: 'https://snowtrace.io', 146: 'https://sonicscan.org'
-}
+import AddressDisplayShort from '@/components/AddressDisplayShort'
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
-  const addr = normalizeAddress(address) ?? address
-  const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  const base = EXPLORER_MAP[chainId] || 'https://etherscan.io'
   return (
-    <div className="flex items-center gap-1.5 mt-1">
-      <span className="text-xs text-gray-400 font-mono">{short}</span>
-      <a href={`${base}/address/${addr}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white p-0.5 rounded" title="Check on Explorer" aria-label="Check on Explorer">
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-      </a>
-      <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+    <div className="mt-1">
+      <AddressDisplayShort
+        address={address}
+        chainId={chainId}
+        className="text-xs"
+      />
     </div>
   )
 }
@@ -31,8 +23,16 @@ interface WizardLayoutProps {
 }
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
+  const router = useRouter()
   const { wizardData, updateStep } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
+
+  const handleStepClick = (step: number) => {
+    // Only allow navigation to completed steps (steps that are before current step)
+    if (wizardData.currentStep > step) {
+      router.push(`/wizard?step=${step}`)
+    }
+  }
 
   const isStep11Standalone = wizardData.currentStep === 11 && !wizardData.verificationFromWizard
 
@@ -96,44 +96,55 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
             {/* Progress Indicator */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-300 mb-3">Progress</h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {[
-                  { step: 1, title: 'Assets', description: 'Select tokens' },
-                  { step: 2, title: 'Oracle Types', description: 'Choose oracle types' },
-                  { step: 3, title: 'Oracle Config', description: 'Configure oracles' },
-                  { step: 4, title: 'IRM Selection', description: 'Select interest rate models' },
-                  { step: 5, title: 'Borrow Setup', description: 'Configure borrowing parameters' },
-                  { step: 6, title: 'Fees', description: 'Set fee parameters' },
-                  { step: 7, title: 'JSON Config', description: 'Generate and download configuration' }
-                ].map((item) => (
-                  <div
-                    key={item.step}
-                    className={`flex items-center space-x-3 p-2 rounded-lg ${
-                      wizardData.currentStep >= item.step
-                        ? 'bg-blue-900/30 border border-blue-700'
-                        : 'bg-gray-800 border border-gray-700'
-                    }`}
-                  >
+                  { step: 1, title: 'Assets' },
+                  { step: 2, title: 'Oracle Types' },
+                  { step: 3, title: 'Oracle Config' },
+                  { step: 4, title: 'IRM Selection' },
+                  { step: 5, title: 'Borrow Setup' },
+                  { step: 6, title: 'Fees' },
+                  { step: 7, title: 'Hook' },
+                  { step: 8, title: 'Hook Owner' },
+                  { step: 9, title: 'JSON Config' },
+                  { step: 10, title: 'Deployment' },
+                  { step: 11, title: 'Verification' }
+                ].map((item) => {
+                  const isCompleted = wizardData.currentStep > item.step
+                  const isCurrent = wizardData.currentStep === item.step
+                  const isClickable = isCompleted
+                  
+                  return (
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                        wizardData.currentStep > item.step
-                          ? 'bg-green-600 text-white'
-                          : wizardData.currentStep === item.step
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-600 text-gray-400'
+                      key={item.step}
+                      onClick={() => isClickable && handleStepClick(item.step)}
+                      className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
+                        wizardData.currentStep >= item.step
+                          ? 'bg-blue-900/30 border border-blue-700'
+                          : 'bg-gray-800 border border-gray-700'
+                      } ${
+                        isClickable ? 'cursor-pointer hover:bg-blue-800/40' : 'cursor-default'
                       }`}
                     >
-                      {wizardData.currentStep > item.step ? '✓' : item.step}
-                    </div>
-                    <div>
-                      <div className={`text-sm font-medium ${
+                      <div
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+                          isCompleted
+                            ? 'bg-green-600 text-white'
+                            : isCurrent
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-600 text-gray-400'
+                        }`}
+                      >
+                        {isCompleted ? '✓' : item.step}
+                      </div>
+                      <div className={`text-xs font-medium ${
                         wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
                       }`}>
                         {item.title}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -145,34 +156,27 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Selected Assets</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0</div>
-                      <div className="text-xs text-gray-400">{wizardData.token0.symbol}</div>
-                      <div className="text-xs text-gray-500">{wizardData.token0.address}</div>
+                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <AddressDisplayShort
+                          address={wizardData.token0.address}
+                          chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
+                          className="text-xs"
+                        />
+                        <span className="text-xs text-gray-400">{wizardData.token0.symbol}</span>
+                      </div>
                     </div>
                     {wizardData.token1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1</div>
-                        <div className="text-xs text-gray-400">{wizardData.token1.symbol}</div>
-                        <div className="text-xs text-gray-500">{wizardData.token1.address}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Oracle Types – not shown on step 11 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 11 && wizardData.oracleType0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Types</h3>
-                  <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 Oracle</div>
-                      <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType0.type}</div>
-                    </div>
-                    {wizardData.oracleType1 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Oracle</div>
-                        <div className="text-xs text-gray-400 capitalize">{wizardData.oracleType1.type}</div>
+                        <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <AddressDisplayShort
+                            address={wizardData.token1.address}
+                            chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
+                            className="text-xs"
+                          />
+                          <span className="text-xs text-gray-400">{wizardData.token1.symbol}</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -180,28 +184,62 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               )}
 
               {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 11 && wizardData.oracleConfiguration && (
+              {wizardData.currentStep !== 11 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
                   <div className="space-y-2">
-                    {wizardData.oracleConfiguration.token0.scalerOracle && (
+                    {wizardData.oracleType0 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 0 Scaler</div>
-                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token0.scalerOracle.name}</div>
-                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token0.scalerOracle.address}</div>
-                        <div className={`text-xs ${wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
-                          {wizardData.oracleConfiguration.token0.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        <div className="text-sm font-medium text-white">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
+                        <div className="text-xs text-gray-400 capitalize mb-2">
+                          Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
+                        {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
+                          const scaler = wizardData.oracleConfiguration.token0.scalerOracle
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <>
+                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="mt-1">
+                                <AddressDisplayShort
+                                  address={scaler.address}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                />
+                              </div>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {scaler.valid ? 'Valid' : 'Invalid'}
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
-                    {wizardData.oracleConfiguration.token1.scalerOracle && (
+                    {wizardData.oracleType1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Scaler</div>
-                        <div className="text-xs text-gray-400">{wizardData.oracleConfiguration.token1.scalerOracle.name}</div>
-                        <div className="text-xs text-gray-500">{wizardData.oracleConfiguration.token1.scalerOracle.address}</div>
-                        <div className={`text-xs ${wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'text-green-400' : 'text-red-400'}`}>
-                          {wizardData.oracleConfiguration.token1.scalerOracle.valid ? 'Valid' : 'Invalid'}
+                        <div className="text-sm font-medium text-white">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="text-xs text-gray-400 capitalize mb-2">
+                          Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
+                        {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
+                          const scaler = wizardData.oracleConfiguration.token1.scalerOracle
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <>
+                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="mt-1">
+                                <AddressDisplayShort
+                                  address={scaler.address}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                />
+                              </div>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {scaler.valid ? 'Valid' : 'Invalid'}
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>
@@ -214,12 +252,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Interest Rate Models</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 IRM</div>
+                      <div className="text-sm font-medium text-white">Token 0 IRM{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">{wizardData.selectedIRM0.name}</div>
                     </div>
                     {wizardData.selectedIRM1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 IRM</div>
+                        <div className="text-sm font-medium text-white">Token 1 IRM{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="text-xs text-gray-400">{wizardData.selectedIRM1.name}</div>
                       </div>
                     )}
@@ -233,7 +271,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Borrow Configuration</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0</div>
+                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
@@ -245,7 +283,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1</div>
+                      <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
@@ -273,14 +311,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 Fees</div>
+                      <div className="text-sm font-medium text-white">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         Liquidation: {wizardData.feesConfiguration.token0.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token0.flashloanFee}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1 Fees</div>
+                      <div className="text-sm font-medium text-white">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         Liquidation: {wizardData.feesConfiguration.token1.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token1.flashloanFee}%
