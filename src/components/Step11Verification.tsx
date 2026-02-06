@@ -42,6 +42,11 @@ export default function Step11Verification() {
     wizardOwner: null,
     isInAddressesJson: null
   })
+  const [irmOwnerVerification, setIrmOwnerVerification] = useState<{ onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null }>({
+    onChainOwner: null,
+    wizardOwner: null,
+    isInAddressesJson: null
+  })
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -350,6 +355,33 @@ export default function Step11Verification() {
           isInAddressesJson: isInJson
         })
       }
+
+      // Verify IRM owner if we have wizard data and IRM has owner (only for kink models)
+      if (wizardData.verificationFromWizard && wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
+        const onChainOwner = marketConfig.silo0.interestRateModel.owner
+        const wizardOwner = wizardData.hookOwnerAddress // IRM owner is the same as hook owner
+        const normalizedOnChain = ethers.getAddress(onChainOwner).toLowerCase()
+        const normalizedWizard = ethers.getAddress(wizardOwner).toLowerCase()
+        const verified = normalizedOnChain === normalizedWizard
+        
+        // Check if address is in addresses JSON
+        const chainId = wizardData.networkInfo?.chainId
+        let isInJson: boolean | null = null
+        if (chainId) {
+          try {
+            const name = await resolveAddressToName(chainId, onChainOwner)
+            isInJson = name !== null
+          } catch (err) {
+            console.warn('Failed to check IRM owner address in JSON:', err)
+          }
+        }
+        
+        setIrmOwnerVerification({
+          onChainOwner,
+          wizardOwner,
+          isInAddressesJson: isInJson
+        })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch market configuration')
       setShowForm(true)
@@ -572,6 +604,7 @@ export default function Step11Verification() {
           wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
           siloVerification={siloVerification}
           hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
+          irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
         />
       )}
 

@@ -117,12 +117,19 @@ interface HookOwnerVerification {
   isInAddressesJson: boolean | null
 }
 
+interface IRMOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
   wizardDaoFee?: number | null
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
+  irmOwnerVerification?: IRMOwnerVerification
 }
 
 interface TokenMeta {
@@ -151,9 +158,11 @@ interface TreeNodeProps {
   verificationIcon?: React.ReactNode
   addressVerificationIcon?: React.ReactNode
   hookOwnerVerification?: HookOwnerVerification
+  irmOwnerVerification?: IRMOwnerVerification
 }
 
-function HookOwnerVerificationIcons({ verified, isInJson }: { verified: boolean | null; isInJson: boolean | null }) {
+function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { verified: boolean | null; isInJson: boolean | null; isIRM?: boolean }) {
+  const label = isIRM ? 'IRM owner' : 'Hook owner'
   return (
     <span className="inline-flex items-center gap-1">
       {verified === true && (
@@ -164,7 +173,7 @@ function HookOwnerVerificationIcons({ verified, isInJson }: { verified: boolean 
             </svg>
           </div>
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Hook owner verified: matches Wizard value
+            {label} verified: matches Wizard value
           </div>
         </div>
       )}
@@ -184,15 +193,27 @@ function HookOwnerVerificationIcons({ verified, isInJson }: { verified: boolean 
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification }) {
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
   const normalizedAddress = ethers.getAddress(address).toLowerCase()
-  const isVerified = hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner
+  
+  // Check hook owner verification
+  const hookVerified = hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner
     ? ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase() === normalizedAddress &&
       ethers.getAddress(hookOwnerVerification.wizardOwner).toLowerCase() === normalizedAddress
     : null
+  
+  // Check IRM owner verification
+  const irmVerified = irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner
+    ? ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase() === normalizedAddress &&
+      ethers.getAddress(irmOwnerVerification.wizardOwner).toLowerCase() === normalizedAddress
+    : null
+  
+  // Determine which verification to use (hook takes precedence if both exist)
+  const verification = hookOwnerVerification ? hookOwnerVerification : irmOwnerVerification
+  const isVerified = hookOwnerVerification ? hookVerified : irmVerified
   
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -214,17 +235,18 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification }: { item
       {name != null && name !== '' && (
         <span className="text-gray-400 text-sm">({name})</span>
       )}
-      {hookOwnerVerification && (
+      {verification && (
         <HookOwnerVerificationIcons 
           verified={isVerified} 
-          isInJson={hookOwnerVerification.isInAddressesJson}
+          isInJson={verification.isInAddressesJson}
+          isIRM={!!irmOwnerVerification}
         />
       )}
     </span>
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification }: TreeNodeProps & { hookOwnerVerification?: HookOwnerVerification }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification }: TreeNodeProps & { hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -289,7 +311,12 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {ownerBullets.map((item, i) => (
             <li key={i}>
-              <OwnerBulletContent item={item} explorerUrl={explorerUrl} hookOwnerVerification={hookOwnerVerification} />
+              <OwnerBulletContent 
+                item={item} 
+                explorerUrl={explorerUrl} 
+                hookOwnerVerification={hookOwnerVerification}
+                irmOwnerVerification={irmOwnerVerification}
+              />
             </li>
           ))}
         </ul>
@@ -326,7 +353,7 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, siloVerification, hookOwnerVerification, irmOwnerVerification }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -403,6 +430,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             suffixText={config.silo0.interestRateModel.version}
             ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
+            irmOwnerVerification={irmOwnerVerification}
           >
             {config.silo0.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
@@ -457,6 +486,8 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, si
             suffixText={config.silo1.interestRateModel.version}
             ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
+            irmOwnerVerification={irmOwnerVerification}
           >
             {config.silo1.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
