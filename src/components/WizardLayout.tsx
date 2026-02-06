@@ -164,7 +164,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Selected Assets</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0</div>
+                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       {(() => {
                         const addr = normalizeAddress(wizardData.token0.address) ?? wizardData.token0.address
                         const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -188,7 +188,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     </div>
                     {wizardData.token1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1</div>
+                        <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                         {(() => {
                           const addr = normalizeAddress(wizardData.token1.address) ?? wizardData.token1.address
                           const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -222,7 +222,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 0 Oracle</div>
+                        <div className="text-sm font-medium text-white">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                         <div className="text-xs text-gray-400 capitalize mb-2">
                           Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
@@ -256,7 +256,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     )}
                     {wizardData.oracleType1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Oracle</div>
+                        <div className="text-sm font-medium text-white">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="text-xs text-gray-400 capitalize mb-2">
                           Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
@@ -298,12 +298,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Interest Rate Models</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 IRM</div>
+                      <div className="text-sm font-medium text-white">Token 0 IRM{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">{wizardData.selectedIRM0.name}</div>
                     </div>
                     {wizardData.selectedIRM1 && (
                       <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 IRM</div>
+                        <div className="text-sm font-medium text-white">Token 1 IRM{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="text-xs text-gray-400">{wizardData.selectedIRM1.name}</div>
                       </div>
                     )}
@@ -317,7 +317,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   <h3 className="text-sm font-medium text-gray-300 mb-3">Borrow Configuration</h3>
                   <div className="space-y-2">
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0</div>
+                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
@@ -329,7 +329,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1</div>
+                      <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
@@ -357,14 +357,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 Fees</div>
+                      <div className="text-sm font-medium text-white">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         Liquidation: {wizardData.feesConfiguration.token0.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token0.flashloanFee}%
                       </div>
                     </div>
                     <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1 Fees</div>
+                      <div className="text-sm font-medium text-white">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs text-gray-400">
                         Liquidation: {wizardData.feesConfiguration.token1.liquidationFee}% | 
                         Flashloan: {wizardData.feesConfiguration.token1.flashloanFee}%
