@@ -28,7 +28,6 @@ interface TokenFeeInputProps {
 const GeneralFeeInput = React.memo(({ 
   field, 
   label, 
-  value,
   displayValue,
   onChange,
   onBlur
@@ -62,7 +61,6 @@ const TokenFeeInput = React.memo(({
   tokenIndex, 
   field, 
   label, 
-  value,
   displayValue,
   disabled = false,
   onChange,

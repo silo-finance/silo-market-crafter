@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
-import { bigintToDisplayNumber } from '@/utils/verification/normalization'
+import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 
 declare global {
   interface Window {
@@ -556,33 +556,33 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         config: {} // Will be fetched from the IRM configs
       }
       
-      // Parse borrow configuration
+      // Parse borrow configuration (JSON has percentage numbers e.g. 75 for 75%)
       const borrowConfig: BorrowConfiguration = {
         token0: {
           nonBorrowable: config.maxLtv0 === 0 && config.lt0 === 0,
-          liquidationThreshold: config.lt0 ? config.lt0 / 100 : 0,
-          maxLTV: config.maxLtv0 ? config.maxLtv0 / 100 : 0,
-          liquidationTargetLTV: config.liquidationTargetLtv0 ? config.liquidationTargetLtv0 / 100 : 0
+          liquidationThreshold: config.lt0 != null ? displayNumberToBigint(config.lt0) : BigInt(0),
+          maxLTV: config.maxLtv0 != null ? displayNumberToBigint(config.maxLtv0) : BigInt(0),
+          liquidationTargetLTV: config.liquidationTargetLtv0 != null ? displayNumberToBigint(config.liquidationTargetLtv0) : BigInt(0)
         },
         token1: {
           nonBorrowable: config.maxLtv1 === 0 && config.lt1 === 0,
-          liquidationThreshold: config.lt1 ? config.lt1 / 100 : 0,
-          maxLTV: config.maxLtv1 ? config.maxLtv1 / 100 : 0,
-          liquidationTargetLTV: config.liquidationTargetLtv1 ? config.liquidationTargetLtv1 / 100 : 0
+          liquidationThreshold: config.lt1 != null ? displayNumberToBigint(config.lt1) : BigInt(0),
+          maxLTV: config.maxLtv1 != null ? displayNumberToBigint(config.maxLtv1) : BigInt(0),
+          liquidationTargetLTV: config.liquidationTargetLtv1 != null ? displayNumberToBigint(config.liquidationTargetLtv1) : BigInt(0)
         }
       }
       
-      // Parse fees configuration
+      // Parse fees configuration (JSON has percentage numbers)
       const feesConfig: FeesConfiguration = {
-        daoFee: config.daoFee ? config.daoFee / 100 : 0,
-        deployerFee: config.deployerFee ? config.deployerFee / 100 : 0,
+        daoFee: config.daoFee != null ? displayNumberToBigint(config.daoFee) : BigInt(0),
+        deployerFee: config.deployerFee != null ? displayNumberToBigint(config.deployerFee) : BigInt(0),
         token0: {
-          liquidationFee: config.liquidationFee0 ? config.liquidationFee0 / 100 : 0,
-          flashloanFee: config.flashloanFee0 ? config.flashloanFee0 / 100 : 0
+          liquidationFee: config.liquidationFee0 != null ? displayNumberToBigint(config.liquidationFee0) : BigInt(0),
+          flashloanFee: config.flashloanFee0 != null ? displayNumberToBigint(config.flashloanFee0) : BigInt(0)
         },
         token1: {
-          liquidationFee: config.liquidationFee1 ? config.liquidationFee1 / 100 : 0,
-          flashloanFee: config.flashloanFee1 ? config.flashloanFee1 / 100 : 0
+          liquidationFee: config.liquidationFee1 != null ? displayNumberToBigint(config.liquidationFee1) : BigInt(0),
+          flashloanFee: config.flashloanFee1 != null ? displayNumberToBigint(config.flashloanFee1) : BigInt(0)
         }
       }
       

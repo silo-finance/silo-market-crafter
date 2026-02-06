@@ -11,10 +11,8 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
-import { getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
-import { verifyAddress } from '@/utils/verification/addressVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -58,18 +56,18 @@ export default function Step11Verification() {
   })
   const [numericValueVerification, setNumericValueVerification] = useState<{
     silo0: {
-      maxLtv: number | null
-      lt: number | null
-      liquidationTargetLtv: number | null
-      liquidationFee: number | null
-      flashloanFee: number | null
+      maxLtv: bigint | null
+      lt: bigint | null
+      liquidationTargetLtv: bigint | null
+      liquidationFee: bigint | null
+      flashloanFee: bigint | null
     } | null
     silo1: {
-      maxLtv: number | null
-      lt: number | null
-      liquidationTargetLtv: number | null
-      liquidationFee: number | null
-      flashloanFee: number | null
+      maxLtv: bigint | null
+      lt: bigint | null
+      liquidationTargetLtv: bigint | null
+      liquidationFee: bigint | null
+      flashloanFee: bigint | null
     } | null
   }>({
     silo0: null,
@@ -560,7 +558,14 @@ export default function Step11Verification() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [
+    wizardData.borrowConfiguration,
+    wizardData.feesConfiguration,
+    wizardData.hookOwnerAddress,
+    wizardData.networkInfo?.chainId,
+    wizardData.token0?.address,
+    wizardData.token1?.address
+  ])
 
   // Whether we're verifying the wizard's deployment (show summary) or standalone (hide summary)
   useEffect(() => {

@@ -8,7 +8,7 @@ import { isValueHigh5, verifyAddress, verifyNumericValue, convertWizardTo18Decim
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
-  wizardValue: number
+  wizardValue: bigint
 }
 
 function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
@@ -18,8 +18,7 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
   const isMatch = verifyNumericValue(onChainValue, wizardValue)
   const isHigh = isValueHigh5(onChainValue) // Use high value verification (5% threshold)
   
-  // Calculate wizard value in 18 decimals for error message display
-  // Use centralized normalization function to ensure consistency
+  // Wizard stores BigInt in on-chain format; pass-through for error message display
   const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
 
   return (
@@ -70,7 +69,7 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
 
 interface DeployerFeeVerificationIconProps {
   onChainValue: bigint
-  wizardValue: number
+  wizardValue: bigint
 }
 
 function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeVerificationIconProps) {
@@ -133,7 +132,7 @@ function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeV
 
 interface NumericValueVerificationIconProps {
   onChainValue: bigint
-  wizardValue: number | null
+  wizardValue: bigint | null
   label: string
   checkHighValue?: boolean // Whether to check if value is unexpectedly high (> 5%)
 }
@@ -152,8 +151,7 @@ function NumericValueVerificationIcon({ onChainValue, wizardValue, label, checkH
   // Check if value is unexpectedly high (if checkHighValue is enabled)
   const isHigh = checkHighValue ? isValueHigh5(onChainValue) : false
   
-  // Calculate wizard value in 18 decimals for error message display
-  // Use centralized normalization function to ensure consistency
+  // Wizard stores BigInt in on-chain format; pass-through for error message display
   const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
 
   return (
@@ -304,26 +302,26 @@ interface TokenVerification {
 
 interface NumericValueVerification {
   silo0: {
-    maxLtv: number | null
-    lt: number | null
-    liquidationTargetLtv: number | null
-    liquidationFee: number | null
-    flashloanFee: number | null
+    maxLtv: bigint | null
+    lt: bigint | null
+    liquidationTargetLtv: bigint | null
+    liquidationFee: bigint | null
+    flashloanFee: bigint | null
   } | null
   silo1: {
-    maxLtv: number | null
-    lt: number | null
-    liquidationTargetLtv: number | null
-    liquidationFee: number | null
-    flashloanFee: number | null
+    maxLtv: bigint | null
+    lt: bigint | null
+    liquidationTargetLtv: bigint | null
+    liquidationFee: bigint | null
+    flashloanFee: bigint | null
   } | null
 }
 
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
-  wizardDaoFee?: number | null
-  wizardDeployerFee?: number | null
+  wizardDaoFee?: bigint | null
+  wizardDeployerFee?: bigint | null
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
@@ -360,7 +358,7 @@ interface TreeNodeProps {
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
   tokenVerification?: { onChainToken: string | null; wizardToken: string | null } | null
-  numericValueVerification?: { wizardValue: number | null; checkHighValue?: boolean }
+  numericValueVerification?: { wizardValue: bigint | null; checkHighValue?: boolean }
   addressInJsonVerification?: Map<string, boolean>
 }
 
@@ -462,9 +460,6 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   
   // Normalize the address from item
   const normalizedItemAddress = ethers.getAddress(address).toLowerCase()
-  
-  // Determine which verification to use (hook takes precedence if both exist)
-  const verification = hookOwnerVerification ? hookOwnerVerification : irmOwnerVerification
   
   // Debug logging
   console.log('OwnerBulletContent - hookOwnerVerification:', hookOwnerVerification)

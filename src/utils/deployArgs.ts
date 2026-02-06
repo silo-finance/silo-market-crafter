@@ -5,7 +5,7 @@ import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
-import { convertWizardTo18Decimals, BP2DP_NORMALIZATION } from '@/utils/verification/normalization'
+import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
@@ -362,37 +362,35 @@ export function prepareDeployArgs(
   }
 
   // Prepare ISiloConfig.InitData
-  // Convert basis points to 18 decimals (multiply by 10^14)
-  // Use centralized normalization function from verification utilities
-  const to18Decimals = (bp: number): bigint => {
-    return convertWizardTo18Decimals(bp)
-  }
+  // Wizard stores values as BigInt in on-chain format; pass-through via centralized normalization
+  const to18Decimals = (val: bigint): bigint => convertWizardTo18Decimals(val)
 
+  const zeroBigInt = BigInt(0)
   // Order of fields must match ISiloConfig.InitData ABI: deployer, hookReceiver, deployerFee, daoFee, ...
   const _siloInitData = {
     deployer: ethers.ZeroAddress, // Can be set by user or left as zero
     hookReceiver: ethers.ZeroAddress, // CLONE_IMPLEMENTATION means zero, will use implementation
-    deployerFee: to18Decimals(wizardData.feesConfiguration?.deployerFee || 0),
-    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee || 0),
+    deployerFee: to18Decimals(wizardData.feesConfiguration?.deployerFee ?? zeroBigInt),
+    daoFee: to18Decimals(wizardData.feesConfiguration?.daoFee ?? zeroBigInt),
     token0: wizardData.token0.address,
     solvencyOracle0: _oracles.solvencyOracle0.deployed,
     maxLtvOracle0: ethers.ZeroAddress,
     interestRateModel0: irmFactoryAddress,
-    maxLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.maxLTV || 0),
-    lt0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationThreshold || 0),
-    liquidationTargetLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationTargetLTV || 0),
-    liquidationFee0: to18Decimals(wizardData.feesConfiguration?.token0.liquidationFee || 0),
-    flashloanFee0: to18Decimals(wizardData.feesConfiguration?.token0.flashloanFee || 0),
+    maxLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.maxLTV ?? zeroBigInt),
+    lt0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationThreshold ?? zeroBigInt),
+    liquidationTargetLtv0: to18Decimals(wizardData.borrowConfiguration?.token0.liquidationTargetLTV ?? zeroBigInt),
+    liquidationFee0: to18Decimals(wizardData.feesConfiguration?.token0.liquidationFee ?? zeroBigInt),
+    flashloanFee0: to18Decimals(wizardData.feesConfiguration?.token0.flashloanFee ?? zeroBigInt),
     callBeforeQuote0: false,
     token1: wizardData.token1.address,
     solvencyOracle1: _oracles.solvencyOracle1.deployed,
     maxLtvOracle1: ethers.ZeroAddress,
     interestRateModel1: irmFactoryAddress,
-    maxLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.maxLTV || 0),
-    lt1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationThreshold || 0),
-    liquidationTargetLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationTargetLTV || 0),
-    liquidationFee1: to18Decimals(wizardData.feesConfiguration?.token1.liquidationFee || 0),
-    flashloanFee1: to18Decimals(wizardData.feesConfiguration?.token1.flashloanFee || 0),
+    maxLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.maxLTV ?? zeroBigInt),
+    lt1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationThreshold ?? zeroBigInt),
+    liquidationTargetLtv1: to18Decimals(wizardData.borrowConfiguration?.token1.liquidationTargetLTV ?? zeroBigInt),
+    liquidationFee1: to18Decimals(wizardData.feesConfiguration?.token1.liquidationFee ?? zeroBigInt),
+    flashloanFee1: to18Decimals(wizardData.feesConfiguration?.token1.flashloanFee ?? zeroBigInt),
     callBeforeQuote1: false
   }
 

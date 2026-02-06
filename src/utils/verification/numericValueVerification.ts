@@ -8,16 +8,15 @@ import { convertWizardTo18Decimals } from './normalization'
  * 
  * @param onChainValue - Value from on-chain contract (in 18 decimals format)
  *                       Source: config.silo0.maxLtv, config.silo0.lt, etc. (from fetchMarketConfig)
- * @param wizardValue - Value from wizard state (0-1 format, e.g., 0.75 for 75%)
+ * @param wizardValue - Value from wizard state (BigInt in on-chain format: percentage * 10^16)
  *                      Source: wizardData.borrowConfiguration.token0.maxLTV, etc.
  * @returns true if values match, false otherwise
  */
 export function verifyNumericValue(
   onChainValue: bigint,
-  wizardValue: number
+  wizardValue: bigint
 ): boolean {
-  // Convert wizard value (0-1, e.g., 0.75 for 75%) to 18 decimals format
-  // Uses centralized normalization function to ensure consistency
+  // Wizard stores values as BigInt in on-chain format; convertWizardTo18Decimals is pass-through
   const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
   
   return onChainValue === wizardValueIn18Decimals
