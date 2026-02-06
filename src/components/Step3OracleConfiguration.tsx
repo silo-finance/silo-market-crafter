@@ -5,20 +5,17 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
-import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
-import erc20Artifact from '@/abis/IERC20.json'
 import CopyButton from '@/components/CopyButton'
 import TokenAddressInput from '@/components/TokenAddressInput'
+import ContractInfo from '@/components/ContractInfo'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
-const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -173,8 +170,10 @@ export default function Step3OracleConfiguration() {
   })
   const [ptLinearFactory, setPTLinearFactory] = useState<{ address: string; version: string } | null>(null)
   const [pt0QuoteInput, setPT0QuoteInput] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt0QuoteMetadata, setPT0QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
   const [pt1QuoteInput, setPT1QuoteInput] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
 
   // Chain ID to chain name mapping
@@ -189,6 +188,7 @@ export default function Step3OracleConfiguration() {
     }
     return chainMap[chainId] || 'mainnet'
   }
+
 
   // Fetch oracle deployments from GitHub
   useEffect(() => {
@@ -1030,22 +1030,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType0.type === 'ptLinear' ? (
             <div className="space-y-4">
               {ptLinearFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(ptLinearFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {ptLinearFactory.address}
-                    </a>
-                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="PTLinearOracleFactory"
+                  address={ptLinearFactory.address}
+                  version={ptLinearFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -1103,22 +1094,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType0.type === 'chainlink' ? (
             <div className="space-y-4">
               {chainlinkV3OracleFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {chainlinkV3OracleFactory.address}
-                    </a>
-                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="ChainlinkV3OracleFactory"
+                  address={chainlinkV3OracleFactory.address}
+                  version={chainlinkV3OracleFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
@@ -1224,24 +1206,13 @@ export default function Step3OracleConfiguration() {
                   </p>
                   {oracleScalerFactory ? (
                     <>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <a
-                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                          >
-                            {oracleScalerFactory.address}
-                          </a>
-                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Version</p>
-                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
-                      </div>
+                      <ContractInfo
+                        contractName="OracleScalerFactory"
+                        address={oracleScalerFactory.address}
+                        version={oracleScalerFactory.version || '…'}
+                        chainId={wizardData.networkInfo?.chainId}
+                        isOracle={true}
+                      />
                       <p className="text-xs text-gray-500">Quote token: Token 0 ({wizardData.token0.symbol})</p>
                     </>
                   ) : (
@@ -1359,22 +1330,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType1.type === 'ptLinear' ? (
             <div className="space-y-4">
               {ptLinearFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(ptLinearFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {ptLinearFactory.address}
-                    </a>
-                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="PTLinearOracleFactory"
+                  address={ptLinearFactory.address}
+                  version={ptLinearFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -1432,22 +1394,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType1.type === 'chainlink' ? (
             <div className="space-y-4">
               {chainlinkV3OracleFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {chainlinkV3OracleFactory.address}
-                    </a>
-                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="ChainlinkV3OracleFactory"
+                  address={chainlinkV3OracleFactory.address}
+                  version={chainlinkV3OracleFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
@@ -1553,24 +1506,13 @@ export default function Step3OracleConfiguration() {
                   </p>
                   {oracleScalerFactory ? (
                     <>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <a
-                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                          >
-                            {oracleScalerFactory.address}
-                          </a>
-                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Version</p>
-                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
-                      </div>
+                      <ContractInfo
+                        contractName="OracleScalerFactory"
+                        address={oracleScalerFactory.address}
+                        version={oracleScalerFactory.version || '…'}
+                        chainId={wizardData.networkInfo?.chainId}
+                        isOracle={true}
+                      />
                       <p className="text-xs text-gray-500">Quote token: Token 1 ({wizardData.token1.symbol})</p>
                     </>
                   ) : (

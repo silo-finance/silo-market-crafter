@@ -146,8 +146,7 @@ export default function TokenAddressInput({
   }
 
   const validateAndFetchToken = useCallback(async (
-    address: string,
-    options?: { skipUpdateInput?: boolean }
+    address: string
   ) => {
     if (!address.trim()) {
       setMetadata(null)
@@ -206,7 +205,7 @@ export default function TokenAddressInput({
     } finally {
       setLoading(false)
     }
-  }, [onResolve])
+  }, [onResolve, onError])
 
   /**
    * Process input: if hex address -> normalize and fetch metadata.
@@ -227,6 +226,8 @@ export default function TokenAddressInput({
       await validateAndFetchToken(inputValue)
       return
     }
+
+    // Symbol path: need chainId
 
     // Symbol path: need chainId
     let currentChainId: string
@@ -285,9 +286,9 @@ export default function TokenAddressInput({
     }
 
     setResolvedAddress(result.address)
-    await validateAndFetchToken(result.address, { skipUpdateInput: true })
+    await validateAndFetchToken(result.address)
     setLoading(false)
-  }, [chainId, validateAndFetchToken, onResolve])
+  }, [chainId, validateAndFetchToken, onResolve, onError])
 
   // Debounced: resolve (symbol or hex) and fetch metadata
   const debouncedProcessInput = useMemo(

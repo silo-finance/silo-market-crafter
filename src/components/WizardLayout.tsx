@@ -4,14 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
-import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
-import { normalizeAddress } from '@/utils/addressValidation'
-
-const EXPLORER_MAP: { [key: number]: string } = {
-  1: 'https://etherscan.io', 137: 'https://polygonscan.com', 10: 'https://optimistic.etherscan.io',
-  42161: 'https://arbiscan.io', 43114: 'https://snowtrace.io', 146: 'https://sonicscan.org'
-}
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
   return (

@@ -6,7 +6,6 @@ import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
-import CopyButton from '@/components/CopyButton'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 
 type OwnerSource = 'wallet' | 'manual'

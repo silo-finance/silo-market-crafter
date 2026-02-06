@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
 import CopyButton from '@/components/CopyButton'
+import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -108,6 +109,7 @@ export default function Step10Deployment() {
     }
     return chainMap[chainId] || 'mainnet'
   }
+
 
 
   // Restore txHash from context when returning to step 10 after a deploy (e.g. after refresh)
@@ -757,25 +759,13 @@ export default function Step10Deployment() {
             {loading ? (
               <p className="text-white font-mono text-sm">Loading...</p>
             ) : deployerAddress ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                <a
-                  href={getBlockExplorerUrl(deployerAddress, true)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 font-mono text-sm underline flex items-center gap-1"
-                >
-                  {`${deployerAddress.slice(0, 6)}...${deployerAddress.slice(-4)}`}
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-                <CopyButton value={deployerAddress} iconClassName="w-3.5 h-3.5" title="Copy address" />
-                {deployerVersion && (
-                  <span className="text-gray-400 text-sm">
-                    version: {deployerVersion}
-                  </span>
-                )}
-              </div>
+              <ContractInfo
+                contractName="SiloDeployer"
+                address={deployerAddress}
+                version={deployerVersion || '…'}
+                chainId={wizardData.networkInfo?.chainId}
+                isOracle={false}
+              />
             ) : (
               <p className="text-white font-mono text-sm">Not available</p>
             )}
