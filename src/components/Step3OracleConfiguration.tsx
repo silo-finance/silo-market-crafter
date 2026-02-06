@@ -5,19 +5,17 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
-import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
-import erc20Artifact from '@/abis/IERC20.json'
 import CopyButton from '@/components/CopyButton'
+import TokenAddressInput from '@/components/TokenAddressInput'
+import ContractInfo from '@/components/ContractInfo'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
-const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -172,13 +170,11 @@ export default function Step3OracleConfiguration() {
   })
   const [ptLinearFactory, setPTLinearFactory] = useState<{ address: string; version: string } | null>(null)
   const [pt0QuoteInput, setPT0QuoteInput] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt0QuoteMetadata, setPT0QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
-  const [pt0QuoteLoading, setPT0QuoteLoading] = useState(false)
-  const [pt0QuoteError, setPT0QuoteError] = useState('')
   const [pt1QuoteInput, setPT1QuoteInput] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
-  const [pt1QuoteLoading, setPT1QuoteLoading] = useState(false)
-  const [pt1QuoteError, setPT1QuoteError] = useState('')
 
   // Chain ID to chain name mapping
   const getChainName = (chainId: string): string => {
@@ -192,6 +188,7 @@ export default function Step3OracleConfiguration() {
     }
     return chainMap[chainId] || 'mainnet'
   }
+
 
   // Fetch oracle deployments from GitHub
   useEffect(() => {
@@ -419,70 +416,6 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle])
 
-  // Resolve PT hardcoded quote token (address or symbol) and fetch metadata
-  const resolvePTQuoteToken = async (input: string, tokenIndex: 0 | 1) => {
-    const chainId = wizardData.networkInfo?.chainId
-    const setLoading = tokenIndex === 0 ? setPT0QuoteLoading : setPT1QuoteLoading
-    const setMeta = tokenIndex === 0 ? setPT0QuoteMetadata : setPT1QuoteMetadata
-    const setErr = tokenIndex === 0 ? setPT0QuoteError : setPT1QuoteError
-    const setConfig = tokenIndex === 0 ? setPTLinear0 : setPTLinear1
-
-    setLoading(true)
-    setErr('')
-    setMeta(null)
-
-    const trimmed = input?.trim() ?? ''
-    if (!trimmed) {
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-      setLoading(false)
-      return
-    }
-
-    if (!chainId) {
-      setErr('Network not set')
-      setLoading(false)
-      return
-    }
-
-    try {
-      let address: string
-      if (isHexAddress(trimmed)) {
-        address = normalizeAddress(trimmed) ?? trimmed
-      } else {
-        const result = await resolveSymbolToAddress(chainId, trimmed)
-        if (!result) {
-          setErr('Unknown symbol. Enter token address manually.')
-          setLoading(false)
-          return
-        }
-        address = result.address
-      }
-
-      if (!window.ethereum) {
-        setErr('Wallet not available')
-        setLoading(false)
-        return
-      }
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(address, erc20Abi, provider)
-      const [symbol, decimals, name] = await Promise.all([
-        contract.symbol(),
-        contract.decimals(),
-        contract.name()
-      ])
-      setMeta({
-        symbol: String(symbol),
-        decimals: Number(decimals),
-        name: String(name)
-      })
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
-    } catch (err) {
-      setErr(err instanceof Error ? err.message : 'Failed to resolve token')
-      setConfig(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
   useEffect(() => {
@@ -494,7 +427,11 @@ export default function Step3OracleConfiguration() {
     ) {
       const quoteToken = wizardData.token0.address
       setSelectedScalers(prev => {
+        // Don't override if we already have a scaler from context (even if it's customCreate)
         if (prev.token0?.customCreate && prev.token0.customCreate.factoryAddress === oracleScalerFactory.address && prev.token0.customCreate.quoteToken === quoteToken) return prev
+        // Don't override if we have a saved scaler from context that doesn't match available scalers
+        const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
+        if (savedScaler0 && savedScaler0.customCreate) return prev
         return {
           ...prev,
           token0: {
@@ -521,7 +458,11 @@ export default function Step3OracleConfiguration() {
     ) {
       const quoteToken = wizardData.token1.address
       setSelectedScalers(prev => {
+        // Don't override if we already have a scaler from context (even if it's customCreate)
         if (prev.token1?.customCreate && prev.token1.customCreate.factoryAddress === oracleScalerFactory.address && prev.token1.customCreate.quoteToken === quoteToken) return prev
+        // Don't override if we have a saved scaler from context that doesn't match available scalers
+        const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
+        if (savedScaler1 && savedScaler1.customCreate) return prev
         return {
           ...prev,
           token1: {
@@ -778,21 +719,49 @@ export default function Step3OracleConfiguration() {
         token1: token1Oracles
       })
 
-      // Update selected scalers with new validation results
+      // Update selected scalers with new validation results and load from context
       setSelectedScalers(prev => {
         const updated = { ...prev }
         
-        // Update token0 if it's selected and we have a matching oracle with new validation
-        if (prev.token0) {
-          const updatedOracle = token0Oracles.find(o => o.address === prev.token0?.address)
+        // Load from context - always check if saved config matches available scalers
+        const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
+        const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
+        
+        // Update token0: ALWAYS prioritize saved config from context if it matches available scalers
+        if (savedScaler0 && token0Oracles.length > 0) {
+          const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
+          if (matchedScaler0) {
+            // Always use matched scaler from available list (has latest validation)
+            // Override any existing selection if context has a match
+            updated.token0 = matchedScaler0
+          } else if (savedScaler0.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token0 = savedScaler0
+          }
+        }
+        // If no saved config, update existing selection with new validation results
+        else if (prev.token0 && token0Oracles.length > 0) {
+          const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === prev.token0?.address.toLowerCase())
           if (updatedOracle) {
             updated.token0 = updatedOracle
           }
         }
         
-        // Update token1 if it's selected and we have a matching oracle with new validation
-        if (prev.token1) {
-          const updatedOracle = token1Oracles.find(o => o.address === prev.token1?.address)
+        // Update token1: ALWAYS prioritize saved config from context if it matches available scalers
+        if (savedScaler1 && token1Oracles.length > 0) {
+          const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
+          if (matchedScaler1) {
+            // Always use matched scaler from available list (has latest validation)
+            // Override any existing selection if context has a match
+            updated.token1 = matchedScaler1
+          } else if (savedScaler1.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token1 = savedScaler1
+          }
+        }
+        // If no saved config, update existing selection with new validation results
+        else if (prev.token1 && token1Oracles.length > 0) {
+          const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === prev.token1?.address.toLowerCase())
           if (updatedOracle) {
             updated.token1 = updatedOracle
           }
@@ -803,17 +772,55 @@ export default function Step3OracleConfiguration() {
     }
 
     findScalerOracles()
-  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1])
+  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1, wizardData.oracleConfiguration])
 
-  // Load existing selections if available
+  // Load existing selections from context when availableScalers are loaded
+  // This ensures that when we return to this step, the saved scaler is automatically selected
+  // This is the PRIMARY mechanism for loading saved scalers from context
   useEffect(() => {
-    if (wizardData.oracleConfiguration) {
-      setSelectedScalers({
-        token0: wizardData.oracleConfiguration.token0.scalerOracle || null,
-        token1: wizardData.oracleConfiguration.token1.scalerOracle || null
+    if (!wizardData.oracleConfiguration) return
+    
+    const savedScaler0 = wizardData.oracleConfiguration.token0.scalerOracle
+    const savedScaler1 = wizardData.oracleConfiguration.token1.scalerOracle
+    
+    // Only set if we have available scalers loaded
+    if (availableScalers.token0.length > 0 || availableScalers.token1.length > 0) {
+      setSelectedScalers(prev => {
+        const updated = { ...prev }
+        let changed = false
+        
+        // Match token0 scaler from saved config with available scalers
+        if (savedScaler0 && availableScalers.token0.length > 0) {
+          const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
+          if (matchedScaler0) {
+            // ALWAYS set if we have a match from context - no conditions
+            updated.token0 = matchedScaler0
+            changed = true
+          } else if (savedScaler0.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token0 = savedScaler0
+            changed = true
+          }
+        }
+        
+        // Match token1 scaler from saved config with available scalers
+        if (savedScaler1 && availableScalers.token1.length > 0) {
+          const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
+          if (matchedScaler1) {
+            // ALWAYS set if we have a match from context - no conditions
+            updated.token1 = matchedScaler1
+            changed = true
+          } else if (savedScaler1.customCreate) {
+            // Keep custom create scaler if no match found
+            updated.token1 = savedScaler1
+            changed = true
+          }
+        }
+        
+        return changed ? updated : prev
       })
     }
-  }, [wizardData.oracleConfiguration])
+  }, [wizardData.oracleConfiguration, availableScalers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1023,22 +1030,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType0.type === 'ptLinear' ? (
             <div className="space-y-4">
               {ptLinearFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(ptLinearFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {ptLinearFactory.address}
-                    </a>
-                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="PTLinearOracleFactory"
+                  address={ptLinearFactory.address}
+                  version={ptLinearFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -1065,7 +1063,6 @@ export default function Step3OracleConfiguration() {
                     if (checked) {
                       setPT0QuoteInput('')
                       setPT0QuoteMetadata(null)
-                      setPT0QuoteError('')
                     }
                   }}
                   className="rounded border-gray-600"
@@ -1075,49 +1072,35 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear0.useSecondTokenAsQuote && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt0QuoteError ? 'border-red-500' : pt0QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
-                    value={pt0QuoteInput}
-                    onChange={(e) => setPT0QuoteInput(e.target.value)}
-                    onBlur={() => pt0QuoteInput.trim() && resolvePTQuoteToken(pt0QuoteInput, 0)}
-                    placeholder="0x… or symbol from addresses JSON"
-                  />
-                  {pt0QuoteLoading && (
-                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
-                  )}
-                  {pt0QuoteError && (
-                    <p className="text-sm text-red-400 mt-1">{pt0QuoteError}</p>
-                  )}
-                  {pt0QuoteMetadata && (
-                    <p className="text-sm text-green-400 mt-1">
-                      ✓ {pt0QuoteMetadata.name} ({pt0QuoteMetadata.symbol}) – {pt0QuoteMetadata.decimals} decimals
-                    </p>
-                  )}
-                </div>
+                <TokenAddressInput
+                  value={pt0QuoteInput}
+                  onChange={(value) => {
+                    setPT0QuoteInput(value)
+                  }}
+                  onResolve={(address, metadata) => {
+                    setPT0QuoteMetadata(metadata)
+                    if (metadata && address) {
+                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                    } else {
+                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token (address or symbol)"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               )}
             </div>
           ) : wizardData.oracleType0.type === 'chainlink' ? (
             <div className="space-y-4">
               {chainlinkV3OracleFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {chainlinkV3OracleFactory.address}
-                    </a>
-                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="ChainlinkV3OracleFactory"
+                  address={chainlinkV3OracleFactory.address}
+                  version={chainlinkV3OracleFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
@@ -1223,24 +1206,13 @@ export default function Step3OracleConfiguration() {
                   </p>
                   {oracleScalerFactory ? (
                     <>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <a
-                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                          >
-                            {oracleScalerFactory.address}
-                          </a>
-                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Version</p>
-                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
-                      </div>
+                      <ContractInfo
+                        contractName="OracleScalerFactory"
+                        address={oracleScalerFactory.address}
+                        version={oracleScalerFactory.version || '…'}
+                        chainId={wizardData.networkInfo?.chainId}
+                        isOracle={true}
+                      />
                       <p className="text-xs text-gray-500">Quote token: Token 0 ({wizardData.token0.symbol})</p>
                     </>
                   ) : (
@@ -1253,26 +1225,28 @@ export default function Step3OracleConfiguration() {
                     {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
-                  {availableScalers.token0.map((oracle) => (
-                    <label
-                      key={oracle.address}
-                      className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
-                        !oracle.valid
-                          ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
-                          : selectedScalers.token0?.address === oracle.address
-                          ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
-                          : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="scaler0"
-                        value={oracle.address}
-                        checked={selectedScalers.token0?.address === oracle.address}
-                        onChange={() => setSelectedScalers(prev => ({ ...prev, token0: oracle }))}
-                        disabled={!oracle.valid}
-                        className="mt-1"
-                      />
+                  {availableScalers.token0.map((oracle) => {
+                    const isSelected = selectedScalers.token0?.address?.toLowerCase() === oracle.address.toLowerCase()
+                    return (
+                      <label
+                        key={`${oracle.address}-${isSelected}`}
+                        className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
+                          !oracle.valid
+                            ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                            : isSelected
+                            ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                            : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="scaler0"
+                          value={oracle.address}
+                          checked={isSelected}
+                          onChange={() => setSelectedScalers(prev => ({ ...prev, token0: oracle }))}
+                          disabled={!oracle.valid}
+                          className="mt-1"
+                        />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
@@ -1321,7 +1295,8 @@ export default function Step3OracleConfiguration() {
                         )}
                       </div>
                     </label>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -1355,22 +1330,13 @@ export default function Step3OracleConfiguration() {
           ) : wizardData.oracleType1.type === 'ptLinear' ? (
             <div className="space-y-4">
               {ptLinearFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">PTLinearOracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(ptLinearFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {ptLinearFactory.address}
-                    </a>
-                    <CopyButton value={ptLinearFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{ptLinearFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="PTLinearOracleFactory"
+                  address={ptLinearFactory.address}
+                  version={ptLinearFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -1397,7 +1363,6 @@ export default function Step3OracleConfiguration() {
                     if (checked) {
                       setPT1QuoteInput('')
                       setPT1QuoteMetadata(null)
-                      setPT1QuoteError('')
                     }
                   }}
                   className="rounded border-gray-600"
@@ -1407,49 +1372,35 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear1.useSecondTokenAsQuote && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Quote token (address or symbol)</label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white focus:ring-2 focus:ring-blue-500 ${pt1QuoteError ? 'border-red-500' : pt1QuoteMetadata ? 'border-green-500' : 'border-gray-700'}`}
-                    value={pt1QuoteInput}
-                    onChange={(e) => setPT1QuoteInput(e.target.value)}
-                    onBlur={() => pt1QuoteInput.trim() && resolvePTQuoteToken(pt1QuoteInput, 1)}
-                    placeholder="0x… or symbol from addresses JSON"
-                  />
-                  {pt1QuoteLoading && (
-                    <p className="text-sm text-gray-400 mt-1">Resolving…</p>
-                  )}
-                  {pt1QuoteError && (
-                    <p className="text-sm text-red-400 mt-1">{pt1QuoteError}</p>
-                  )}
-                  {pt1QuoteMetadata && (
-                    <p className="text-sm text-green-400 mt-1">
-                      ✓ {pt1QuoteMetadata.name} ({pt1QuoteMetadata.symbol}) – {pt1QuoteMetadata.decimals} decimals
-                    </p>
-                  )}
-                </div>
+                <TokenAddressInput
+                  value={pt1QuoteInput}
+                  onChange={(value) => {
+                    setPT1QuoteInput(value)
+                  }}
+                  onResolve={(address, metadata) => {
+                    setPT1QuoteMetadata(metadata)
+                    if (metadata && address) {
+                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                    } else {
+                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token (address or symbol)"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               )}
             </div>
           ) : wizardData.oracleType1.type === 'chainlink' ? (
             <div className="space-y-4">
               {chainlinkV3OracleFactory ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-gray-500 mb-1">ChainlinkV3OracleFactory</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={getBlockExplorerUrl(chainlinkV3OracleFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                    >
-                      {chainlinkV3OracleFactory.address}
-                    </a>
-                    <CopyButton value={chainlinkV3OracleFactory.address} title="Copy address" />
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">Version</p>
-                  <p className="text-sm text-gray-300">{chainlinkV3OracleFactory.version || '…'}</p>
-                </div>
+                <ContractInfo
+                  contractName="ChainlinkV3OracleFactory"
+                  address={chainlinkV3OracleFactory.address}
+                  version={chainlinkV3OracleFactory.version || '…'}
+                  chainId={wizardData.networkInfo?.chainId}
+                  isOracle={true}
+                />
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
@@ -1555,24 +1506,13 @@ export default function Step3OracleConfiguration() {
                   </p>
                   {oracleScalerFactory ? (
                     <>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">OracleScalerFactory</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <a
-                            href={getBlockExplorerUrl(oracleScalerFactory.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-400 hover:text-blue-300 font-mono break-all"
-                          >
-                            {oracleScalerFactory.address}
-                          </a>
-                          <CopyButton value={oracleScalerFactory.address} title="Copy address" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Version</p>
-                        <p className="text-sm text-gray-300">{oracleScalerFactory.version || '…'}</p>
-                      </div>
+                      <ContractInfo
+                        contractName="OracleScalerFactory"
+                        address={oracleScalerFactory.address}
+                        version={oracleScalerFactory.version || '…'}
+                        chainId={wizardData.networkInfo?.chainId}
+                        isOracle={true}
+                      />
                       <p className="text-xs text-gray-500">Quote token: Token 1 ({wizardData.token1.symbol})</p>
                     </>
                   ) : (
@@ -1585,26 +1525,28 @@ export default function Step3OracleConfiguration() {
                     {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
-                  {availableScalers.token1.map((oracle) => (
-                    <label
-                      key={oracle.address}
-                      className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
-                        !oracle.valid
-                          ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
-                          : selectedScalers.token1?.address === oracle.address
-                          ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
-                          : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="scaler1"
-                        value={oracle.address}
-                        checked={selectedScalers.token1?.address === oracle.address}
-                        onChange={() => setSelectedScalers(prev => ({ ...prev, token1: oracle }))}
-                        disabled={!oracle.valid}
-                        className="mt-1"
-                      />
+                  {availableScalers.token1.map((oracle) => {
+                    const isSelected = selectedScalers.token1?.address?.toLowerCase() === oracle.address.toLowerCase()
+                    return (
+                      <label
+                        key={`${oracle.address}-${isSelected}`}
+                        className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
+                          !oracle.valid
+                            ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                            : isSelected
+                            ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                            : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="scaler1"
+                          value={oracle.address}
+                          checked={isSelected}
+                          onChange={() => setSelectedScalers(prev => ({ ...prev, token1: oracle }))}
+                          disabled={!oracle.valid}
+                          className="mt-1"
+                        />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-white">{oracle.name}</span>
@@ -1653,7 +1595,8 @@ export default function Step3OracleConfiguration() {
                         )}
                       </div>
                     </label>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

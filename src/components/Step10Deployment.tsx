@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
 import CopyButton from '@/components/CopyButton'
+import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -108,6 +109,7 @@ export default function Step10Deployment() {
     }
     return chainMap[chainId] || 'mainnet'
   }
+
 
 
   // Restore txHash from context when returning to step 10 after a deploy (e.g. after refresh)
@@ -737,7 +739,9 @@ export default function Step10Deployment() {
 
       {/* Network Information */}
       <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Network Information</h3>
+        <p className="text-sm font-medium text-gray-300 mb-4">
+          Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">({wizardData.networkInfo?.chainId || '—'})</span>
+        </p>
         {loading && (
           <div className="mb-4 flex items-center space-x-2 text-blue-400">
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -747,40 +751,19 @@ export default function Step10Deployment() {
             <span className="text-sm">Loading deployment data...</span>
           </div>
         )}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-400">Network Name</p>
-            <p className="text-white font-medium">{wizardData.networkInfo?.networkName || 'Unknown'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 mb-2">SiloDeployer Contract Address</p>
-            {loading ? (
-              <p className="text-white font-mono text-sm">Loading...</p>
-            ) : deployerAddress ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                <a
-                  href={getBlockExplorerUrl(deployerAddress, true)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 font-mono text-sm underline flex items-center gap-1"
-                >
-                  {`${deployerAddress.slice(0, 6)}...${deployerAddress.slice(-4)}`}
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-                <CopyButton value={deployerAddress} iconClassName="w-3.5 h-3.5" title="Copy address" />
-                {deployerVersion && (
-                  <span className="text-gray-400 text-sm">
-                    version: {deployerVersion}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <p className="text-white font-mono text-sm">Not available</p>
-            )}
-          </div>
-        </div>
+        {loading ? (
+          <p className="text-white font-mono text-sm">Loading...</p>
+        ) : deployerAddress ? (
+          <ContractInfo
+            contractName="SiloDeployer"
+            address={deployerAddress}
+            version={deployerVersion || '…'}
+            chainId={wizardData.networkInfo?.chainId}
+            isOracle={false}
+          />
+        ) : (
+          <p className="text-white font-mono text-sm">Not available</p>
+        )}
       </div>
 
       {/* Navigation */}

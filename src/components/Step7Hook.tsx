@@ -21,8 +21,8 @@ const hookOptions: HookOption[] = [
   {
     value: 'SiloHookV2',
     name: 'SiloHookV2',
-    description: 'Two types of liquidations',
-    features: ['Gauge', 'Two types of liquidations']
+    description: 'Standard and defaulting liquidations',
+    features: ['Gauge', 'Standard liquidation', 'Defaulting liquidation']
   },
   {
     value: 'SiloHookV3',

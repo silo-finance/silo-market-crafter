@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, IRMConfig, IRMModelType } from '@/contexts/WizardContext'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
-import { normalizeAddress } from '@/utils/addressValidation'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import CopyButton from '@/components/CopyButton'
+import ContractInfo from '@/components/ContractInfo'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -53,22 +52,7 @@ const getChainName = (chainId: string): string => {
   return chainMap[chainId] || `chain_${chainId}`
 }
 
-/** Block explorer base URL for current chain (for address links). */
-function getExplorerAddressUrl(chainId: string, address: string): string {
-  const id = parseInt(chainId, 10)
-  const explorerMap: { [key: number]: string } = {
-    1: 'https://etherscan.io',
-    137: 'https://polygonscan.com',
-    10: 'https://optimistic.etherscan.io',
-    42161: 'https://arbiscan.io',
-    43114: 'https://snowtrace.io',
-    8453: 'https://basescan.org',
-    146: 'https://sonicscan.org',
-    653: 'https://sonicscan.org'
-  }
-  const base = explorerMap[id] || 'https://etherscan.io'
-  return `${base}/address/${address}`
-}
+
 
 /** Format rcompCap (18 decimals) as e18 notation, e.g. 2e18 instead of 2000000000000000000 */
 function formatRcompCapE18(val: number | bigint | string): string {
@@ -446,30 +430,20 @@ export default function Step4IRMSelection() {
         {activeTab === 'kink' && (
           <>
             {/* Dynamic IRM factory + address (explorer link) + version at top */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-6">
-              <h3 className="text-sm font-medium text-gray-300 mb-1">Dynamic IRM Factory</h3>
-              <p className="text-lg font-semibold text-white">{KINK_FACTORY_NAME}</p>
-              {kinkFactory?.address && wizardData.networkInfo?.chainId && (
-                <>
-                  <p className="mt-2 text-sm flex flex-wrap items-center gap-2">
-                    <a
-                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, kinkFactory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-blue-400 hover:text-blue-300 underline break-all"
-                    >
-                      {normalizeAddress(kinkFactory.address) ?? kinkFactory.address}
-                    </a>
-                    <CopyButton value={kinkFactory.address} title="Copy address" />
-                  </p>
-                  <p className="mt-1 text-sm text-gray-400">
-                    Version: {kinkFactory.version === '' ? 'Loading…' : kinkFactory.version}
-                  </p>
-                </>
-              )}
-              {!kinkFactory?.address && wizardData.networkInfo?.chainId && (
-                <p className="text-xs text-amber-400 mt-1">Factory address not found for this network. Deploy may require manual config.</p>
-              )}
+            <div className="mb-6">
+              {kinkFactory?.address && wizardData.networkInfo?.chainId ? (
+                <ContractInfo
+                  contractName={KINK_FACTORY_NAME}
+                  address={kinkFactory.address}
+                  version={kinkFactory.version === '' ? 'Loading…' : kinkFactory.version}
+                  chainId={wizardData.networkInfo.chainId}
+                  isOracle={false}
+                />
+              ) : wizardData.networkInfo?.chainId ? (
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+                  <p className="text-xs text-amber-400">Factory address not found for this network. Deploy may require manual config.</p>
+                </div>
+              ) : null}
             </div>
 
             {/* Two search boxes for Kink */}
@@ -632,30 +606,20 @@ export default function Step4IRMSelection() {
         {activeTab === 'irm' && (
           <>
             {/* IRM V2 (old) factory + address (explorer link) + version at top */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-6">
-              <h3 className="text-sm font-medium text-gray-300 mb-1">IRM V2 (old) Factory</h3>
-              <p className="text-lg font-semibold text-white">{IRM_V2_FACTORY_NAME}</p>
-              {irmV2Factory?.address && wizardData.networkInfo?.chainId && (
-                <>
-                  <p className="mt-2 text-sm flex flex-wrap items-center gap-2">
-                    <a
-                      href={getExplorerAddressUrl(wizardData.networkInfo.chainId, irmV2Factory.address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-blue-400 hover:text-blue-300 underline break-all"
-                    >
-                      {normalizeAddress(irmV2Factory.address) ?? irmV2Factory.address}
-                    </a>
-                    <CopyButton value={irmV2Factory.address} title="Copy address" />
-                  </p>
-                  <p className="mt-1 text-sm text-gray-400">
-                    Version: {irmV2Factory.version === '' ? 'Loading…' : irmV2Factory.version}
-                  </p>
-                </>
-              )}
-              {!irmV2Factory?.address && wizardData.networkInfo?.chainId && (
-                <p className="text-xs text-amber-400 mt-1">Factory address not found for this network.</p>
-              )}
+            <div className="mb-6">
+              {irmV2Factory?.address && wizardData.networkInfo?.chainId ? (
+                <ContractInfo
+                  contractName={IRM_V2_FACTORY_NAME}
+                  address={irmV2Factory.address}
+                  version={irmV2Factory.version === '' ? 'Loading…' : irmV2Factory.version}
+                  chainId={wizardData.networkInfo.chainId}
+                  isOracle={false}
+                />
+              ) : wizardData.networkInfo?.chainId ? (
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+                  <p className="text-xs text-amber-400">Factory address not found for this network.</p>
+                </div>
+              ) : null}
             </div>
 
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
