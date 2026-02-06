@@ -3,28 +3,35 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
+import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 
 interface GeneralFeeInputProps {
   field: 'daoFee' | 'deployerFee'
   label: string
-  value: number
+  value: bigint
+  displayValue: string
   onChange: (field: 'daoFee' | 'deployerFee', value: string) => void
+  onBlur: (field: 'daoFee' | 'deployerFee') => void
 }
 
 interface TokenFeeInputProps {
   tokenIndex: 0 | 1
   field: 'liquidationFee' | 'flashloanFee'
   label: string
-  value: number
+  value: bigint
+  displayValue: string
   disabled?: boolean
   onChange: (tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => void
+  onBlur: (tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee') => void
 }
 
 const GeneralFeeInput = React.memo(({ 
   field, 
   label, 
-  value, 
-  onChange
+  value,
+  displayValue,
+  onChange,
+  onBlur
 }: GeneralFeeInputProps) => {
   return (
     <div className="space-y-2">
@@ -33,12 +40,11 @@ const GeneralFeeInput = React.memo(({
       </label>
       <div className="relative w-32">
         <input
-          type="number"
-          min="0"
-          max="20"
-          step="0.01"
-          value={value === 0 ? '' : value}
+          type="text"
+          inputMode="decimal"
+          value={displayValue}
           onChange={(e) => onChange(field, e.target.value)}
+          onBlur={() => onBlur(field)}
           className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
           placeholder="0"
         />
@@ -56,9 +62,11 @@ const TokenFeeInput = React.memo(({
   tokenIndex, 
   field, 
   label, 
-  value, 
+  value,
+  displayValue,
   disabled = false,
-  onChange
+  onChange,
+  onBlur
 }: TokenFeeInputProps) => {
   return (
     <div className="space-y-2">
@@ -67,13 +75,12 @@ const TokenFeeInput = React.memo(({
       </label>
       <div className="relative w-32">
         <input
-          type="number"
-          min="0"
-          max="20"
-          step="0.01"
-          value={value === 0 ? '' : value}
+          type="text"
+          inputMode="decimal"
+          value={displayValue}
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
+          onBlur={() => onBlur(tokenIndex, field)}
           className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
             disabled
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
@@ -91,21 +98,41 @@ const TokenFeeInput = React.memo(({
 
 TokenFeeInput.displayName = 'TokenFeeInput'
 
+// Helper function to format number without scientific notation
+function formatNumberForDisplay(value: number): string {
+  if (value === 0) return ''
+  // Use toFixed to avoid scientific notation, then remove trailing zeros
+  return value.toFixed(10).replace(/\.?0+$/, '')
+}
+
 export default function Step6Fees() {
   const router = useRouter()
   const { wizardData, updateFeesConfiguration, markStepCompleted } = useWizard()
   
   const [feesConfig, setFeesConfig] = useState<FeesConfiguration>({
-    daoFee: 0,
-    deployerFee: 0,
+    daoFee: BigInt(0),
+    deployerFee: BigInt(0),
     token0: {
-      liquidationFee: 0,
-      flashloanFee: 0
+      liquidationFee: BigInt(0),
+      flashloanFee: BigInt(0)
     },
     token1: {
-      liquidationFee: 0,
-      flashloanFee: 0
+      liquidationFee: BigInt(0),
+      flashloanFee: BigInt(0)
     }
+  })
+
+  // Local state for display values (strings) during input
+  const [displayValues, setDisplayValues] = useState<{
+    daoFee: string
+    deployerFee: string
+    token0: { liquidationFee: string; flashloanFee: string }
+    token1: { liquidationFee: string; flashloanFee: string }
+  }>({
+    daoFee: '',
+    deployerFee: '',
+    token0: { liquidationFee: '', flashloanFee: '' },
+    token1: { liquidationFee: '', flashloanFee: '' }
   })
 
   // Load existing configuration; when one token is non-borrowable, the other token's fees must be 0
@@ -115,40 +142,170 @@ export default function Step6Fees() {
     if (!fees) return
     let next = { ...fees }
     if (borrow?.token0.nonBorrowable) {
-      next = { ...next, token1: { liquidationFee: 0, flashloanFee: 0 } }
+      next = { ...next, token1: { liquidationFee: BigInt(0), flashloanFee: BigInt(0) } }
     }
     if (borrow?.token1.nonBorrowable) {
-      next = { ...next, token0: { liquidationFee: 0, flashloanFee: 0 } }
+      next = { ...next, token0: { liquidationFee: BigInt(0), flashloanFee: BigInt(0) } }
     }
     setFeesConfig(next)
+    
+    // Initialize display values from BigInt values
+    setDisplayValues({
+      daoFee: formatNumberForDisplay(bigintToDisplayNumber(next.daoFee)),
+      deployerFee: formatNumberForDisplay(bigintToDisplayNumber(next.deployerFee)),
+      token0: {
+        liquidationFee: formatNumberForDisplay(bigintToDisplayNumber(next.token0.liquidationFee)),
+        flashloanFee: formatNumberForDisplay(bigintToDisplayNumber(next.token0.flashloanFee))
+      },
+      token1: {
+        liquidationFee: formatNumberForDisplay(bigintToDisplayNumber(next.token1.liquidationFee)),
+        flashloanFee: formatNumberForDisplay(bigintToDisplayNumber(next.token1.flashloanFee))
+      }
+    })
   }, [wizardData.borrowConfiguration, wizardData.feesConfiguration])
 
   const handleGeneralFeeChange = useCallback((field: 'daoFee' | 'deployerFee', value: string) => {
-    const numValue = parseFloat(value) || 0
-    const clampedValue = Math.max(0, Math.min(20, numValue))
+    // Normalize comma to dot for decimal separator
+    const normalized = value.replace(',', '.')
     
-    setFeesConfig(prevConfig => ({
-      ...prevConfig,
-      [field]: clampedValue
+    // Allow empty string, numbers, and partial numbers (e.g., "4.", "4.0")
+    // Only allow digits, one dot, and optionally a minus sign at the start
+    const isValidInput = normalized === '' || /^-?\d*\.?\d*$/.test(normalized)
+    
+    if (!isValidInput) {
+      return // Don't update if invalid input
+    }
+    
+    // Update display value immediately (allows typing dots and partial numbers)
+    setDisplayValues(prev => ({
+      ...prev,
+      [field]: normalized
     }))
   }, [])
+
+  const handleGeneralFeeBlur = useCallback((field: 'daoFee' | 'deployerFee') => {
+    const displayValue = displayValues[field]
+    
+    // Normalize comma to dot
+    const normalized = displayValue.replace(',', '.')
+    
+    // Parse as number
+    const parsed = parseFloat(normalized)
+    
+    // Convert to BigInt using displayNumberToBigint (no rounding - exact precision)
+    const bigintValue = Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+    
+    // Update BigInt value
+    setFeesConfig(prevConfig => ({
+      ...prevConfig,
+      [field]: bigintValue
+    }))
+    
+    // Update display value to formatted version (without scientific notation)
+    const formattedValue = formatNumberForDisplay(bigintToDisplayNumber(bigintValue))
+    setDisplayValues(prev => ({
+      ...prev,
+      [field]: formattedValue
+    }))
+  }, [displayValues])
 
   const handleTokenFeeChange = useCallback((tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee', value: string) => {
     const borrow = wizardData.borrowConfiguration
     const otherNonBorrowable = tokenIndex === 0 ? borrow?.token1.nonBorrowable : borrow?.token0.nonBorrowable
     if (otherNonBorrowable) return
-    const numValue = parseFloat(value) || 0
-    const clampedValue = Math.max(0, Math.min(20, numValue))
+    
+    // Normalize comma to dot for decimal separator
+    const normalized = value.replace(',', '.')
+    
+    // Allow empty string, numbers, and partial numbers
+    const isValidInput = normalized === '' || /^-?\d*\.?\d*$/.test(normalized)
+    
+    if (!isValidInput) {
+      return // Don't update if invalid input
+    }
+    
+    // Update display value immediately
+    setDisplayValues(prev => ({
+      ...prev,
+      [`token${tokenIndex}`]: {
+        ...prev[`token${tokenIndex}`],
+        [field]: normalized
+      }
+    }))
+  }, [wizardData.borrowConfiguration])
+
+  const handleTokenFeeBlur = useCallback((tokenIndex: 0 | 1, field: 'liquidationFee' | 'flashloanFee') => {
+    const displayValue = displayValues[`token${tokenIndex}`][field]
+    
+    // Normalize comma to dot
+    const normalized = displayValue.replace(',', '.')
+    
+    // Parse as number
+    const parsed = parseFloat(normalized)
+    
+    // Convert to BigInt using displayNumberToBigint (no rounding - exact precision)
+    const bigintValue = Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+    
+    // Update BigInt value
     setFeesConfig(prevConfig => {
       const newConfig = { ...prevConfig }
-      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: clampedValue }
+      newConfig[`token${tokenIndex}`] = { ...newConfig[`token${tokenIndex}`], [field]: bigintValue }
       return newConfig
     })
-  }, [wizardData.borrowConfiguration])
+    
+    // Update display value to formatted version (without scientific notation)
+    const formattedValue = formatNumberForDisplay(bigintToDisplayNumber(bigintValue))
+    setDisplayValues(prev => ({
+      ...prev,
+      [`token${tokenIndex}`]: {
+        ...prev[`token${tokenIndex}`],
+        [field]: formattedValue
+      }
+    }))
+  }, [displayValues])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    updateFeesConfiguration(feesConfig)
+    
+    // Convert all display values to BigInt before saving (in case user didn't blur)
+    const finalConfig: FeesConfiguration = {
+      daoFee: (() => {
+        const normalized = displayValues.daoFee.replace(',', '.')
+        const parsed = parseFloat(normalized)
+        return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+      })(),
+      deployerFee: (() => {
+        const normalized = displayValues.deployerFee.replace(',', '.')
+        const parsed = parseFloat(normalized)
+        return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+      })(),
+      token0: {
+        liquidationFee: (() => {
+          const normalized = displayValues.token0.liquidationFee.replace(',', '.')
+          const parsed = parseFloat(normalized)
+          return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+        })(),
+        flashloanFee: (() => {
+          const normalized = displayValues.token0.flashloanFee.replace(',', '.')
+          const parsed = parseFloat(normalized)
+          return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+        })()
+      },
+      token1: {
+        liquidationFee: (() => {
+          const normalized = displayValues.token1.liquidationFee.replace(',', '.')
+          const parsed = parseFloat(normalized)
+          return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+        })(),
+        flashloanFee: (() => {
+          const normalized = displayValues.token1.flashloanFee.replace(',', '.')
+          const parsed = parseFloat(normalized)
+          return Number.isNaN(parsed) || parsed < 0 ? BigInt(0) : displayNumberToBigint(Math.max(0, Math.min(20, parsed)))
+        })()
+      }
+    }
+    
+    updateFeesConfiguration(finalConfig)
     markStepCompleted(6)
     router.push('/wizard?step=7')
   }
@@ -183,14 +340,18 @@ export default function Step6Fees() {
               field="daoFee"
               label="DAO Fee"
               value={feesConfig.daoFee}
+              displayValue={displayValues.daoFee}
               onChange={handleGeneralFeeChange}
+              onBlur={handleGeneralFeeBlur}
             />
             
             <GeneralFeeInput
               field="deployerFee"
               label="Deployer Fee"
               value={feesConfig.deployerFee}
+              displayValue={displayValues.deployerFee}
               onChange={handleGeneralFeeChange}
+              onBlur={handleGeneralFeeBlur}
             />
           </div>
         </div>
@@ -209,8 +370,10 @@ export default function Step6Fees() {
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token0.liquidationFee}
+                displayValue={displayValues.token0.liquidationFee}
                 disabled={wizardData.borrowConfiguration?.token1.nonBorrowable}
                 onChange={handleTokenFeeChange}
+                onBlur={handleTokenFeeBlur}
               />
               
               <TokenFeeInput
@@ -218,8 +381,10 @@ export default function Step6Fees() {
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token0.flashloanFee}
+                displayValue={displayValues.token0.flashloanFee}
                 disabled={wizardData.borrowConfiguration?.token1.nonBorrowable}
                 onChange={handleTokenFeeChange}
+                onBlur={handleTokenFeeBlur}
               />
             </div>
           </div>
@@ -236,8 +401,10 @@ export default function Step6Fees() {
                 field="liquidationFee"
                 label="Liquidation Fee"
                 value={feesConfig.token1.liquidationFee}
+                displayValue={displayValues.token1.liquidationFee}
                 disabled={wizardData.borrowConfiguration?.token0.nonBorrowable}
                 onChange={handleTokenFeeChange}
+                onBlur={handleTokenFeeBlur}
               />
               
               <TokenFeeInput
@@ -245,8 +412,10 @@ export default function Step6Fees() {
                 field="flashloanFee"
                 label="Flashloan Fee"
                 value={feesConfig.token1.flashloanFee}
+                displayValue={displayValues.token1.flashloanFee}
                 disabled={wizardData.borrowConfiguration?.token0.nonBorrowable}
                 onChange={handleTokenFeeChange}
+                onBlur={handleTokenFeeBlur}
               />
             </div>
           </div>

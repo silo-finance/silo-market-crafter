@@ -4,9 +4,7 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
-import { isValueHigh5 } from '@/utils/verification/highValueVerification'
-import { verifyAddress } from '@/utils/verification/addressVerification'
-import { verifyNumericValue } from '@/utils/verification/numericValueVerification'
+import { isValueHigh5, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
@@ -21,8 +19,8 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
   const isHigh = isValueHigh5(onChainValue) // Use high value verification (5% threshold)
   
   // Calculate wizard value in 18 decimals for error message display
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  // Use centralized normalization function to ensure consistency
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
 
   return (
     <span className="inline-flex items-center gap-1">
@@ -84,8 +82,8 @@ function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeV
   const isHigh = isValueHigh5(onChainValue)
   
   // Calculate wizard value in 18 decimals for error message display
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  // Use centralized normalization function to ensure consistency
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
 
   return (
     <span className="inline-flex items-center gap-1">
@@ -155,8 +153,8 @@ function NumericValueVerificationIcon({ onChainValue, wizardValue, label, checkH
   const isHigh = checkHighValue ? isValueHigh5(onChainValue) : false
   
   // Calculate wizard value in 18 decimals for error message display
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  // Use centralized normalization function to ensure consistency
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
 
   return (
     <span className="inline-flex items-center gap-1">

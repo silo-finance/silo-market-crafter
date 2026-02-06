@@ -1,3 +1,5 @@
+import { convertWizardTo18Decimals } from './normalization'
+
 /**
  * Numeric Value Verification
  * 
@@ -15,9 +17,8 @@ export function verifyNumericValue(
   wizardValue: number
 ): boolean {
   // Convert wizard value (0-1, e.g., 0.75 for 75%) to 18 decimals format
-  // Same conversion as in deployArgs.ts: to18Decimals(bp) = BigInt(Math.round(bp * 100)) * 10^14
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  // Uses centralized normalization function to ensure consistency
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
   
   return onChainValue === wizardValueIn18Decimals
 }

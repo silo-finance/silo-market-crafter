@@ -16,5 +16,6 @@ export { verifySiloImplementation } from './siloImplementationVerification'
 export { verifyAddress } from './addressVerification'
 export { verifyAddressInJson } from './addressInJsonVerification'
 export { verifyNumericValue } from './numericValueVerification'
+export { convertWizardTo18Decimals, convert18DecimalsToWizard, BP2DP_NORMALIZATION } from './normalization'
 
 // Note: verifySiloAddress and verifyAddressInJson are async and require additional parameters

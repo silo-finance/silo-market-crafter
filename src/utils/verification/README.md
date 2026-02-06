@@ -14,12 +14,13 @@ All verification functions are isolated in this directory to make it easy for au
 
 Each verification function is in its own file:
 
+- `normalization.ts` - **Shared constants and utilities** for normalizing numeric values between wizard format (0-1) and on-chain format (18 decimals). All verification functions use these utilities to ensure consistency.
 - `numericValueVerification.ts` - **Base function** for verifying numeric values (used for DAO Fee, Deployer Fee, Max LTV, Liquidation Threshold, Liquidation Target LTV, Liquidation Fee, Flashloan Fee, etc.)
 - `addressVerification.ts` - **Base function** for verifying addresses match wizard configuration (used for Hook Owner, IRM Owner, Token addresses, etc.)
 - `siloAddressVerification.ts` - Verifies silo addresses exist in Silo Factory
 - `siloImplementationVerification.ts` - Verifies implementation address matches repository
 - `addressInJsonVerification.ts` - Verifies addresses exist in repository JSON (always performed, independent of wizard data)
-- `highValueVerification.ts` - **Global function** for checking if values are unexpectedly high
+- `highValueVerification.ts` - **Global function** for checking if values are unexpectedly high (> 5%)
 
 ## Usage
 
@@ -36,6 +37,35 @@ import {
 } from '@/utils/verification'
 ```
 
+## Normalization Utilities
+
+### `convertWizardTo18Decimals(wizardValue: number): bigint`
+
+Converts wizard value (0-1 format, e.g., 0.04 for 4%) to 18 decimals format.
+This function ensures consistency across all verification and deployment code.
+
+- `wizardValue`: Value from wizard state (0-1 format, e.g., 0.04 for 4%)
+- Returns: Value in 18 decimals format (bigint)
+
+**Example:**
+```typescript
+convertWizardTo18Decimals(0.04) // Returns 40000000000000000n (4%)
+convertWizardTo18Decimals(0.05) // Returns 50000000000000000n (5%)
+```
+
+### `convert18DecimalsToWizard(onChainValue: bigint): number`
+
+Converts 18 decimals format value to wizard format (0-1).
+
+- `onChainValue`: Value in 18 decimals format (bigint)
+- Returns: Value in wizard format (0-1, e.g., 0.04 for 4%)
+
+### `BP2DP_NORMALIZATION`
+
+Constant: `BigInt(10 ** (18 - 4))` = `10^14`
+
+This is the normalization factor used to convert percentage values to 18 decimals format.
+
 ## Function Signatures
 
 ### `verifyNumericValue(onChainValue: bigint, wizardValue: number): boolean`
@@ -47,7 +77,7 @@ import {
 - `wizardValue`: Value from wizard state (0-1 format, e.g., 0.75 for 75%)
   - Source: Any wizard numeric value (e.g., `wizardData.feesConfiguration.daoFee`, `wizardData.borrowConfiguration.token0.maxLTV`)
 
-**Note:** This function performs the conversion from wizard format (0-1) to on-chain format (18 decimals) using the same logic as `deployArgs.ts`: `BigInt(Math.round(wizardValue * 100)) * 10^14`
+**Note:** This function performs the conversion from wizard format (0-1) to on-chain format (18 decimals) using the same logic as `deployArgs.ts`: `BigInt(Math.trunc(wizardValue * 100000)) * 10^13` (no rounding - exact precision preserved for blockchain)
 
 **Usage examples:**
 - DAO Fee: `verifyNumericValue(config.silo0.daoFee, wizardData.feesConfiguration.daoFee)`

@@ -5,6 +5,7 @@ import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
+import { convertWizardTo18Decimals, BP2DP_NORMALIZATION } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
@@ -103,8 +104,7 @@ export function prepareDeployArgs(
     throw new Error('Both token0 and token1 must be set')
   }
 
-  // Constants from Solidity
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+  // Constants from Solidity - now imported from normalization utilities
 
   // Resolve hook implementation address
   // The hookReceiverImplementation from config is used directly to look up in deployments
@@ -177,7 +177,8 @@ export function prepareDeployArgs(
       )
       const hardcodedQuoteToken = ethers.getAddress(ptLinear.hardcodedQuoteTokenAddress?.trim() || ethers.ZeroAddress)
       // maxYield: percent as 18-decimal (e.g. 5% = 5e16)
-      const maxYield = BigInt(Math.round(Number(ptLinear.maxYieldPercent) || 0)) * BigInt(1e16)
+      // No rounding - blockchain requires exact precision
+      const maxYield = BigInt(Math.trunc(Number(ptLinear.maxYieldPercent) || 0)) * BigInt(1e16)
       const configTuple = [ptToken, maxYield, hardcodedQuoteToken]
       const txInput = ptLinearFactoryInterface.encodeFunctionData('create', [configTuple, ethers.ZeroHash])
       return {
@@ -362,8 +363,9 @@ export function prepareDeployArgs(
 
   // Prepare ISiloConfig.InitData
   // Convert basis points to 18 decimals (multiply by 10^14)
+  // Use centralized normalization function from verification utilities
   const to18Decimals = (bp: number): bigint => {
-    return BigInt(Math.round(bp * 100)) * BP2DP_NORMALIZATION
+    return convertWizardTo18Decimals(bp)
   }
 
   // Order of fields must match ISiloConfig.InitData ABI: deployer, hookReceiver, deployerFee, daoFee, ...

@@ -1,22 +1,21 @@
 /**
  * High Value Verification (5% threshold)
- * 
- * Checks if a value in 18 decimals format is unexpectedly high (> 5%).
- * This verification can be used for any percentage-based value (DAO Fee, Deployer Fee, Liquidation Fee, Flashloan Fee, etc.).
- * 
- * The threshold is hardcoded to 5% in this function. If a different threshold is needed,
- * create a new function with a different number in the name (e.g., `isValueHigh10` for 10%).
- * 
- * @param onChainValue - Value from on-chain contract (in 18 decimals format)
+ *
+ * Checks if a value in on-chain format is unexpectedly high (> 5%).
+ * On-chain values are stored as: percentage * 10^16 (so 4.01% = 40100000000000000).
+ * See formatPercentage in fetchMarketConfig.ts: divide by 10^16 to get percentage.
+ *
+ * Note: The on-chain format uses percentage * 10^16, which matches our new normalization
+ * where we use percentage * 100000 * 10^13 = percentage * 10^18 / 100 = percentage * 10^16.
+ *
+ * @param onChainValue - Value from on-chain contract (percentage * 10^16 format)
  * @returns true if value is greater than 5%, false otherwise
  */
+// 5% in on-chain format (percentage * 10^16) = 50000000000000000
+const FIVE_PERCENT_E16 = BigInt(5) * BigInt(10 ** 16)
+
 export function isValueHigh5(
   onChainValue: bigint
 ): boolean {
-  // Hardcoded threshold: 5%
-  // 5% in 18 decimals format: 5 * 10^14
-  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
-  const threshold = BigInt(5) * BP2DP_NORMALIZATION
-  
-  return onChainValue > threshold
+  return onChainValue > FIVE_PERCENT_E16
 }
