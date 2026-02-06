@@ -8,6 +8,11 @@ import { parseDeployTxReceipt } from '@/utils/parseDeployTxEvents'
 import { fetchMarketConfig, MarketConfig } from '@/utils/fetchMarketConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
+import ContractInfo from '@/components/ContractInfo'
+import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+
+const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -19,6 +24,8 @@ export default function Step11Verification() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [siloFactory, setSiloFactory] = useState<{ address: string; version: string } | null>(null)
+  const [siloLensAddress, setSiloLensAddress] = useState<string>('')
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerMap: { [key: number]: string } = {
@@ -30,6 +37,96 @@ export default function Step11Verification() {
     146: 'https://sonicscan.org'
   }
   const explorerUrl = chainId ? (explorerMap[parseInt(chainId, 10)] || 'https://etherscan.io') : 'https://etherscan.io'
+
+  const getChainName = (chainId: string): string => {
+    const chainMap: { [key: string]: string } = {
+      '1': 'mainnet',
+      '137': 'polygon',
+      '10': 'optimism',
+      '42161': 'arbitrum_one',
+      '43114': 'avalanche',
+      '146': 'sonic'
+    }
+    return chainMap[chainId] || 'mainnet'
+  }
+
+  // Fetch Silo Factory address and version
+  useEffect(() => {
+    if (!chainId || !config) return
+
+    const fetchSiloFactory = async () => {
+      const chainName = getChainName(chainId)
+      const factoryContractName = 'SiloFactory.sol'
+      
+      try {
+        // Fetch Silo Factory address
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${factoryContractName}.json`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) {
+            setSiloFactory({ address, version: '' })
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch Silo Factory:', err)
+      }
+
+      // Fetch SiloLens address
+      try {
+        const lensResponse = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`
+        )
+        if (lensResponse.ok) {
+          const lensData = await lensResponse.json()
+          const lensAddr = lensData.address || ''
+          if (lensAddr && ethers.isAddress(lensAddr)) {
+            setSiloLensAddress(lensAddr)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch SiloLens:', err)
+      }
+    }
+
+    fetchSiloFactory()
+  }, [chainId, config])
+
+  // Fetch Silo Factory version via Silo Lens
+  useEffect(() => {
+    if (!siloFactory?.address || !siloLensAddress || !chainId) return
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const fetchFactoryVersion = async () => {
+      const factoryAddress = siloFactory.address
+      const cached = getCachedVersion(chainId, factoryAddress)
+      if (cached != null) {
+        setSiloFactory(prev => prev ? { ...prev, version: cached } : null)
+        return
+      }
+
+      try {
+        const ethereum = window.ethereum
+        if (!ethereum) return
+        const provider = new ethers.BrowserProvider(ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+        const version = String(await lensContract.getVersion(factoryAddress))
+        setCachedVersion(chainId, factoryAddress, version)
+        setSiloFactory(prev => prev ? { ...prev, version } : null)
+      } catch (err) {
+        console.warn('Failed to fetch Silo Factory version:', err)
+        const fallback = '—'
+        setCachedVersion(chainId, factoryAddress, fallback)
+        setSiloFactory(prev => prev ? { ...prev, version: fallback } : null)
+      }
+    }
+
+    fetchFactoryVersion()
+    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siloFactory?.address, siloLensAddress, chainId])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -227,6 +324,18 @@ export default function Step11Verification() {
         </div>
       )}
 
+      {config && siloFactory && (
+        <div className="mb-6">
+          <ContractInfo
+            contractName="SiloFactory"
+            address={siloFactory.address}
+            version={siloFactory.version || '…'}
+            chainId={chainId}
+            isOracle={false}
+          />
+        </div>
+      )}
+
       {loading && (
         <div className="flex items-center justify-center py-12 text-gray-400">
           <svg className="animate-spin h-8 w-8 mr-2" fill="none" viewBox="0 0 24 24">
@@ -253,7 +362,11 @@ export default function Step11Verification() {
       )}
 
       {config && !loading && (
-        <MarketConfigTree config={config} explorerUrl={explorerUrl} />
+        <MarketConfigTree 
+          config={config} 
+          explorerUrl={explorerUrl}
+          wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
+        />
       )}
 
       <div className="flex justify-between mt-8">

@@ -5,6 +5,47 @@ import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Deci
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 
+interface DAOFeeVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: number
+}
+
+function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
+  // Convert wizard value (0-1, e.g., 0.05 for 5%) to 18 decimals format
+  // Same conversion as in deployArgs.ts: to18Decimals(bp) = BigInt(Math.round(bp * 100)) * 10^14
+  const BP2DP_NORMALIZATION = BigInt(10 ** (18 - 4)) // 10^14
+  const wizardValueIn18Decimals = BigInt(Math.round(wizardValue * 100)) * BP2DP_NORMALIZATION
+  const isMatch = onChainValue === wizardValueIn18Decimals
+
+  return (
+    <div className="relative group inline-block">
+      {isMatch ? (
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ) : (
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      )}
+      {isMatch && (
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Value verified: on-chain value matches Wizard value
+        </div>
+      )}
+      {!isMatch && (
+        <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
 function formatFactorToE(value: string): string {
   const s = value.trim()
@@ -67,6 +108,7 @@ function buildOracleBullets(
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
+  wizardDaoFee?: number | null
 }
 
 interface TokenMeta {
@@ -92,6 +134,7 @@ interface TreeNodeProps {
   explorerUrl: string
   isPercentage?: boolean
   valueMuted?: boolean
+  verificationIcon?: React.ReactNode
 }
 
 function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
@@ -121,7 +164,7 @@ function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; expl
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -159,7 +202,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           </>
         )}
         {hasValue && (
-          <span className={valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'}>
+          <span className={`${valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'} inline-flex items-center gap-1.5`}>
             {typeof value === 'boolean'
               ? (value ? 'Yes' : 'No')
               : isPercentage && typeof value === 'bigint'
@@ -167,6 +210,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 : typeof value === 'bigint'
                   ? value.toString()
                   : String(value)}
+            {verificationIcon && verificationIcon}
           </span>
         )}
         {address === ethers.ZeroAddress && (
@@ -194,7 +238,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -210,7 +254,13 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
             </TreeNode>
           </TreeNode>
-          <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode 
+            label="DAO Fee" 
+            value={config.silo0.daoFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            verificationIcon={wizardDaoFee != null ? <DAOFeeVerificationIcon onChainValue={config.silo0.daoFee} wizardValue={wizardDaoFee} /> : undefined}
+          />
           <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
           <TreeNode
             label="Hook Receiver"
