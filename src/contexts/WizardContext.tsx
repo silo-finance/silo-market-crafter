@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
+import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 
 declare global {
   interface Window {
@@ -116,28 +117,28 @@ export interface IRMConfig {
 export interface BorrowConfiguration {
   token0: {
     nonBorrowable: boolean
-    liquidationThreshold: number // 0-100%
-    maxLTV: number // 0-100%, must be <= liquidationThreshold
-    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+    liquidationThreshold: bigint // BigInt in on-chain format: percentage * 10^16
+    maxLTV: bigint // BigInt in on-chain format: percentage * 10^16, must be <= liquidationThreshold
+    liquidationTargetLTV: bigint // BigInt in on-chain format: percentage * 10^16, must be < liquidationThreshold
   }
   token1: {
     nonBorrowable: boolean
-    liquidationThreshold: number // 0-100%
-    maxLTV: number // 0-100%, must be <= liquidationThreshold
-    liquidationTargetLTV: number // 0-100%, must be < liquidationThreshold
+    liquidationThreshold: bigint // BigInt in on-chain format: percentage * 10^16
+    maxLTV: bigint // BigInt in on-chain format: percentage * 10^16, must be <= liquidationThreshold
+    liquidationTargetLTV: bigint // BigInt in on-chain format: percentage * 10^16, must be < liquidationThreshold
   }
 }
 
 export interface FeesConfiguration {
-  daoFee: number // 0-20%, step 0.01 - general setting
-  deployerFee: number // 0-20%, step 0.01 - general setting
+  daoFee: bigint // BigInt in on-chain format: percentage * 10^16
+  deployerFee: bigint // BigInt in on-chain format: percentage * 10^16
   token0: {
-    liquidationFee: number // 0-20%, step 0.01
-    flashloanFee: number // 0-20%, step 0.01
+    liquidationFee: bigint // BigInt in on-chain format: percentage * 10^16
+    flashloanFee: bigint // BigInt in on-chain format: percentage * 10^16
   }
   token1: {
-    liquidationFee: number // 0-20%, step 0.01
-    flashloanFee: number // 0-20%, step 0.01
+    liquidationFee: bigint // BigInt in on-chain format: percentage * 10^16
+    flashloanFee: bigint // BigInt in on-chain format: percentage * 10^16
   }
 }
 
@@ -235,6 +236,17 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardData] = useState<WizardData>(initialWizardData)
   const [isClient, setIsClient] = useState(false)
 
+  // JSON cannot serialize BigInt; use a marker object so we can revive on parse.
+  const bigintReplacer = (_key: string, value: unknown): unknown =>
+    typeof value === 'bigint' ? { __bigint: value.toString() } : value
+
+  const bigintReviver = (_key: string, value: unknown): unknown => {
+    if (typeof value === 'object' && value !== null && '__bigint' in value && typeof (value as { __bigint: string }).__bigint === 'string') {
+      return BigInt((value as { __bigint: string }).__bigint)
+    }
+    return value
+  }
+
   // Load saved data after component mounts (client-side only).
   // Never restore networkInfo from cache – it must always come from the connected wallet.
   useEffect(() => {
@@ -242,7 +254,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('silo-wizard-data')
     if (saved) {
       try {
-        const parsedData = JSON.parse(saved) as WizardData
+        const parsedData = JSON.parse(saved, bigintReviver) as WizardData
         setWizardData({ ...parsedData, networkInfo: null, verificationFromWizard: false })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
@@ -256,7 +268,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (isClient) {
       const toSave = { ...wizardData, networkInfo: null }
       delete (toSave as Record<string, unknown>).verificationFromWizard
-      localStorage.setItem('silo-wizard-data', JSON.stringify(toSave))
+      localStorage.setItem('silo-wizard-data', JSON.stringify(toSave, bigintReplacer))
     }
   }, [wizardData, isClient])
 
@@ -361,8 +373,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       deployer: "",
       hookReceiver: "CLONE_IMPLEMENTATION",
       hookReceiverImplementation: hookImplementation,
-      daoFee: wizardData.feesConfiguration?.daoFee ? Math.round(wizardData.feesConfiguration.daoFee * 100) : 0,
-      deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.round(wizardData.feesConfiguration.deployerFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100 (e.g. 4.02% → 402)
+      daoFee: wizardData.feesConfiguration?.daoFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.daoFee) * 100) : 0,
+      deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee) * 100) : 0,
       token0: wizardData.token0?.symbol || "",
       solvencyOracle0: (() => {
         const t = wizardData.oracleConfiguration?.token0?.type
@@ -374,11 +387,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       maxLtvOracle0: "NO_ORACLE",
       interestRateModel0: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
-      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.round(wizardData.borrowConfiguration.token0.maxLTV * 100) : 0,
-      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token0.liquidationThreshold * 100) : 0,
-      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token0.liquidationTargetLTV * 100) : 0,
-      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.round(wizardData.feesConfiguration.token0.liquidationFee * 100) : 0,
-      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.round(wizardData.feesConfiguration.token0.flashloanFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
+      maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.maxLTV) * 100) : 0,
+      lt0: wizardData.borrowConfiguration?.token0.liquidationThreshold ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationThreshold) * 100) : 0,
+      liquidationTargetLtv0: wizardData.borrowConfiguration?.token0.liquidationTargetLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV) * 100) : 0,
+      liquidationFee0: wizardData.feesConfiguration?.token0.liquidationFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee) * 100) : 0,
+      flashloanFee0: wizardData.feesConfiguration?.token0.flashloanFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee) * 100) : 0,
       callBeforeQuote0: false,
       ...(wizardData.oracleConfiguration?.token0?.type === 'chainlink' && wizardData.oracleConfiguration?.token0?.chainlinkOracle
         ? {
@@ -412,11 +426,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       maxLtvOracle1: "NO_ORACLE",
       interestRateModel1: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
-      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.round(wizardData.borrowConfiguration.token1.maxLTV * 100) : 0,
-      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.round(wizardData.borrowConfiguration.token1.liquidationThreshold * 100) : 0,
-      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.round(wizardData.borrowConfiguration.token1.liquidationTargetLTV * 100) : 0,
-      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.round(wizardData.feesConfiguration.token1.liquidationFee * 100) : 0,
-      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.round(wizardData.feesConfiguration.token1.flashloanFee * 100) : 0,
+      // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
+      maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.maxLTV) * 100) : 0,
+      lt1: wizardData.borrowConfiguration?.token1.liquidationThreshold ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationThreshold) * 100) : 0,
+      liquidationTargetLtv1: wizardData.borrowConfiguration?.token1.liquidationTargetLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.liquidationTargetLTV) * 100) : 0,
+      liquidationFee1: wizardData.feesConfiguration?.token1.liquidationFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee) * 100) : 0,
+      flashloanFee1: wizardData.feesConfiguration?.token1.flashloanFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.token1.flashloanFee) * 100) : 0,
       callBeforeQuote1: false,
       ...(wizardData.oracleConfiguration?.token1?.type === 'chainlink' && wizardData.oracleConfiguration?.token1?.chainlinkOracle
         ? {
@@ -541,33 +556,33 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         config: {} // Will be fetched from the IRM configs
       }
       
-      // Parse borrow configuration
+      // Step 9 JSON stores values as percentage * 100 (e.g. 9500 = 95%). Convert to percentage then to BigInt.
+      const toPercentage = (v: number) => v / 100
       const borrowConfig: BorrowConfiguration = {
         token0: {
           nonBorrowable: config.maxLtv0 === 0 && config.lt0 === 0,
-          liquidationThreshold: config.lt0 ? config.lt0 / 100 : 0,
-          maxLTV: config.maxLtv0 ? config.maxLtv0 / 100 : 0,
-          liquidationTargetLTV: config.liquidationTargetLtv0 ? config.liquidationTargetLtv0 / 100 : 0
+          liquidationThreshold: config.lt0 != null ? displayNumberToBigint(toPercentage(config.lt0)) : BigInt(0),
+          maxLTV: config.maxLtv0 != null ? displayNumberToBigint(toPercentage(config.maxLtv0)) : BigInt(0),
+          liquidationTargetLTV: config.liquidationTargetLtv0 != null ? displayNumberToBigint(toPercentage(config.liquidationTargetLtv0)) : BigInt(0)
         },
         token1: {
           nonBorrowable: config.maxLtv1 === 0 && config.lt1 === 0,
-          liquidationThreshold: config.lt1 ? config.lt1 / 100 : 0,
-          maxLTV: config.maxLtv1 ? config.maxLtv1 / 100 : 0,
-          liquidationTargetLTV: config.liquidationTargetLtv1 ? config.liquidationTargetLtv1 / 100 : 0
+          liquidationThreshold: config.lt1 != null ? displayNumberToBigint(toPercentage(config.lt1)) : BigInt(0),
+          maxLTV: config.maxLtv1 != null ? displayNumberToBigint(toPercentage(config.maxLtv1)) : BigInt(0),
+          liquidationTargetLTV: config.liquidationTargetLtv1 != null ? displayNumberToBigint(toPercentage(config.liquidationTargetLtv1)) : BigInt(0)
         }
       }
-      
-      // Parse fees configuration
+
       const feesConfig: FeesConfiguration = {
-        daoFee: config.daoFee ? config.daoFee / 100 : 0,
-        deployerFee: config.deployerFee ? config.deployerFee / 100 : 0,
+        daoFee: config.daoFee != null ? displayNumberToBigint(toPercentage(config.daoFee)) : BigInt(0),
+        deployerFee: config.deployerFee != null ? displayNumberToBigint(toPercentage(config.deployerFee)) : BigInt(0),
         token0: {
-          liquidationFee: config.liquidationFee0 ? config.liquidationFee0 / 100 : 0,
-          flashloanFee: config.flashloanFee0 ? config.flashloanFee0 / 100 : 0
+          liquidationFee: config.liquidationFee0 != null ? displayNumberToBigint(toPercentage(config.liquidationFee0)) : BigInt(0),
+          flashloanFee: config.flashloanFee0 != null ? displayNumberToBigint(toPercentage(config.flashloanFee0)) : BigInt(0)
         },
         token1: {
-          liquidationFee: config.liquidationFee1 ? config.liquidationFee1 / 100 : 0,
-          flashloanFee: config.flashloanFee1 ? config.flashloanFee1 / 100 : 0
+          liquidationFee: config.liquidationFee1 != null ? displayNumberToBigint(toPercentage(config.liquidationFee1)) : BigInt(0),
+          flashloanFee: config.flashloanFee1 != null ? displayNumberToBigint(toPercentage(config.flashloanFee1)) : BigInt(0)
         }
       }
       

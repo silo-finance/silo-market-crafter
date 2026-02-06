@@ -4,6 +4,201 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
+import { isValueHigh5, isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
+
+interface DAOFeeVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: bigint
+}
+
+function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
+  // onChainValue: DAO fee from on-chain contract (in 18 decimals format)
+  // wizardValue: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  const isHigh = isValueHigh5(onChainValue) // Use high value verification (5% threshold)
+  
+  // Wizard stores BigInt in on-chain format; pass-through for error message display
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {/* Verification icon - green checkmark or red cross */}
+      <div className="relative group inline-block">
+        {isMatch ? (
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Value verified: on-chain value matches Wizard value
+          </div>
+        )}
+        {!isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+          </div>
+        )}
+      </div>
+      
+      {/* Warning icon if value is unexpectedly high (> 5%) */}
+      {isHigh && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 20H4.47L12 5.99zM11 16v-4h2v4h-2zm0 2v2h2v-2h-2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            This is an unexpectedly high value (greater than 5%)
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+interface DeployerFeeVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: bigint
+}
+
+function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeVerificationIconProps) {
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
+  // onChainValue: Deployer fee from on-chain contract (in 18 decimals format)
+  // wizardValue: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  // Use global high value verification function (threshold: 5%)
+  const isHigh = isValueHigh5(onChainValue)
+  
+  // Calculate wizard value in 18 decimals for error message display
+  // Use centralized normalization function to ensure consistency
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {/* Verification icon - green checkmark or red cross */}
+      <div className="relative group inline-block">
+        {isMatch ? (
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Value verified: on-chain value matches Wizard value
+          </div>
+        )}
+        {!isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+          </div>
+        )}
+      </div>
+      
+      {/* Warning icon if fee is unexpectedly high (> 15%) */}
+      {isHigh && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 20H4.47L12 5.99zM11 16v-4h2v4h-2zm0 2v2h2v-2h-2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            This is an unexpectedly high value (greater than 5%)
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+interface NumericValueVerificationIconProps {
+  onChainValue: bigint
+  wizardValue: bigint | null
+  label: string
+  checkHighValue?: boolean // Whether to check if value is unexpectedly high (> 5%)
+}
+
+function NumericValueVerificationIcon({ onChainValue, wizardValue, label, checkHighValue = false }: NumericValueVerificationIconProps) {
+  // Only show verification if wizard value is provided
+  if (wizardValue === null) {
+    return null
+  }
+
+  // Use centralized verification function from src/utils/verification/numericValueVerification.ts
+  // onChainValue: Value from on-chain contract (in 18 decimals format)
+  // wizardValue: Value from wizard state (0-1 format, e.g., 0.75 for 75%)
+  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  
+  // Check if value is unexpectedly high (if checkHighValue is enabled)
+  const isHigh = checkHighValue ? isValueHigh5(onChainValue) : false
+  
+  // Wizard stores BigInt in on-chain format; pass-through for error message display
+  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {/* Verification icon - green checkmark or red cross */}
+      <div className="relative group inline-block">
+        {isMatch ? (
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            {label} verified: on-chain value matches Wizard value
+          </div>
+        )}
+        {!isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
+          </div>
+        )}
+      </div>
+      
+      {/* Warning icon if value is unexpectedly high (> 5%) */}
+      {isHigh && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 20H4.47L12 5.99zM11 16v-4h2v4h-2zm0 2v2h2v-2h-2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            This is an unexpectedly high value (greater than 5%)
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
 function formatFactorToE(value: string): string {
@@ -24,27 +219,60 @@ function formatFactorToE(value: string): string {
   }
 }
 
+/** Format bigint value as e18 notation with full precision (e.g. 1000000000000000000 → 1.000000000000000000e18). */
+/** Always shows all 18 decimal places. Exception: 0 → "0" */
+function formatBigIntToE18(value: bigint): string {
+  if (value === BigInt(0)) return '0'
+  
+  const str = value.toString()
+  
+  // Pad to exactly 19 digits (1 integer digit + 18 fractional digits)
+  // This ensures we always show full precision
+  const padded = str.padStart(19, '0')
+  
+  // Format as: first digit, decimal point, remaining 18 digits (always show all), e18
+  // Example: 1000000000000000000 → "1.000000000000000000e18"
+  // Example: 500000000000000000 → "0.500000000000000000e18"
+  // Example: 755000000000000000 → "0.755000000000000000e18"
+  return `${padded[0]}.${padded.slice(1)}e18`
+}
+
+/** Stable keys for oracle bullet items — use these for verification wiring, not display text */
+export const ORACLE_BULLET_KEYS = {
+  PRICE: 'oracle.price',
+  TYPE: 'oracle.type',
+  /** PT-Linear: baseDiscountPerYear from config */
+  BASE_DISCOUNT_PER_YEAR: 'baseDiscountPerYear',
+  /** Prefix for other config entries: key = config key as-is (e.g. scaleFactor, ulow, ucrit) */
+  CONFIG: (configKey: string) => `oracle.config.${configKey}`
+} as const
+
+export interface OracleBulletItem {
+  key: string
+  text: string
+}
+
 function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
   type: string | undefined,
   config: Record<string, unknown> | undefined
-): string[] {
-  const bullets: string[] = []
+): OracleBulletItem[] {
+  const bullets: OracleBulletItem[] = []
   if (quotePrice != null && quotePrice !== '') {
     const priceStr = formatQuotePriceAs18Decimals(quotePrice)
     const withSymbol = quoteTokenSymbol ? `${priceStr} ${quoteTokenSymbol}` : priceStr
-    bullets.push(`Price (1 token): ${withSymbol}`)
+    bullets.push({ key: ORACLE_BULLET_KEYS.PRICE, text: `Price (1 token): ${withSymbol}` })
   }
   if (type) {
-    bullets.push(`Type: ${type}`)
+    bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
   }
   if (config && typeof config === 'object') {
-    for (const [key, val] of Object.entries(config)) {
-      if (/quoteToken/i.test(key)) continue
+    for (const [configKey, val] of Object.entries(config)) {
+      if (/quoteToken/i.test(configKey)) continue
       const raw = typeof val === 'string' ? val : String(val)
-      const isFactor = /scaleFactor|factor/i.test(key)
-      const isBaseDiscount = /baseDiscount/i.test(key)
+      const isFactor = /scaleFactor|factor/i.test(configKey)
+      const isBaseDiscount = /baseDiscount/i.test(configKey)
       let display: string
       if (isBaseDiscount && /^\d+$/.test(raw)) {
         display = formatRate18AsPercent(raw)
@@ -53,20 +281,81 @@ function buildOracleBullets(
       } else {
         display = raw
       }
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
-      if (raw.startsWith('0x') && raw.length === 42) {
-        bullets.push(`${label}: ${formatAddress(raw)}`)
-      } else {
-        bullets.push(`${label}: ${display}`)
-      }
+      const label = configKey.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
+      const text = raw.startsWith('0x') && raw.length === 42
+        ? `${label}: ${formatAddress(raw)}`
+        : `${label}: ${display}`
+      const bulletKey = isBaseDiscount ? ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR : ORACLE_BULLET_KEYS.CONFIG(configKey)
+      bullets.push({ key: bulletKey, text })
     }
   }
   return bullets
 }
 
+interface SiloVerification {
+  silo0: boolean | null
+  silo1: boolean | null
+  error: string | null
+}
+
+interface HookOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
+interface IRMOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
+interface TokenVerification {
+  token0: { onChainToken: string | null; wizardToken: string | null } | null
+  token1: { onChainToken: string | null; wizardToken: string | null } | null
+}
+
+interface NumericValueVerification {
+  silo0: {
+    maxLtv: bigint | null
+    lt: bigint | null
+    liquidationTargetLtv: bigint | null
+    liquidationFee: bigint | null
+    flashloanFee: bigint | null
+  } | null
+  silo1: {
+    maxLtv: bigint | null
+    lt: bigint | null
+    liquidationTargetLtv: bigint | null
+    liquidationFee: bigint | null
+    flashloanFee: bigint | null
+  } | null
+}
+
+/** PT Oracle only: base discount per year on-chain vs wizard, for Solvency Oracle when type is PT-Linear */
+interface PTOracleBaseDiscountVerification {
+  silo0?: { onChain: bigint; wizard: bigint | null }
+  silo1?: { onChain: bigint; wizard: bigint | null }
+}
+
+interface CallBeforeQuoteVerification {
+  silo0?: { wizard: boolean | null }
+  silo1?: { wizard: boolean | null }
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
+  wizardDaoFee?: bigint | null
+  wizardDeployerFee?: bigint | null
+  siloVerification?: SiloVerification
+  hookOwnerVerification?: HookOwnerVerification
+  irmOwnerVerification?: IRMOwnerVerification
+  tokenVerification?: TokenVerification
+  numericValueVerification?: NumericValueVerification
+  addressInJsonVerification?: Map<string, boolean>
+  ptOracleBaseDiscountVerification?: PTOracleBaseDiscountVerification
+  callBeforeQuoteVerification?: CallBeforeQuoteVerification
 }
 
 interface TokenMeta {
@@ -86,17 +375,316 @@ interface TreeNodeProps {
   address?: string
   tokenMeta?: TokenMeta
   suffixText?: string
-  bulletItems?: string[]
+  bulletItems?: OracleBulletItem[]
   ownerBullets?: OwnerBulletItem[]
   children?: React.ReactNode
   explorerUrl: string
   isPercentage?: boolean
   valueMuted?: boolean
+  verificationIcon?: React.ReactNode
+  addressVerificationIcon?: React.ReactNode
+  hookOwnerVerification?: HookOwnerVerification
+  irmOwnerVerification?: IRMOwnerVerification
+  tokenVerification?: { onChainToken: string | null; wizardToken: string | null } | null
+  numericValueVerification?: { wizardValue: bigint | null; checkHighValue?: boolean }
+  addressInJsonVerification?: Map<string, boolean>
+  /** When true, show yellow warning icon at end of price line (possible decimals error) */
+  priceLowWarning?: boolean
+  /** When true, show yellow warning icon (arrow up) at end of price line — price unexpectedly high */
+  priceHighWarning?: boolean
+  /** When true, show red 18-decimals warning icon at end of price line */
+  priceDecimalsWarning?: boolean
+  /** PT Oracle only: base discount per year verification (match + range warning) */
+  baseDiscountVerification?: { onChain: bigint; wizard: bigint | null } | null
+  /** Call Before Quote: compare on-chain value with wizard; show green/red icon */
+  callBeforeQuoteVerification?: { wizard: boolean | null } | null
 }
 
-function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; explorerUrl: string }) {
+function PriceLowWarningIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Price is unexpectedly low — it should be verified.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceHighWarningIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Price is unexpectedly high — it should be verified.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceDecimalsWarningIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center text-white text-[10px] font-bold leading-none">
+          18
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Check the price for 18 decimals.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function PriceVerifiedIcon() {
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Price verified (range and decimals OK).
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function CallBeforeQuoteVerificationIcon({ onChain, wizard }: { onChain: boolean; wizard: boolean }) {
+  const isMatch = onChain === wizard
+  return (
+    <span className="ml-1 inline-flex align-middle">
+      <div className="relative group inline-block">
+        {isMatch ? (
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          On-chain value compared with wizard value.
+        </div>
+      </div>
+    </span>
+  )
+}
+
+function BaseDiscountVerificationIcons({ onChain, wizard }: { onChain: bigint; wizard: bigint | null }) {
+  const isMatch = wizard !== null && verifyNumericValue(onChain, wizard)
+  const outOfRange = isBaseDiscountPercentOutOfRange(onChain)
+  return (
+    <span className="ml-1 inline-flex items-center gap-0.5 align-middle">
+      {wizard !== null && (
+        <div className="relative group inline-block">
+          {isMatch ? (
+            <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          ) : (
+            <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          )}
+          <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            {isMatch ? 'Base discount per year matches wizard value' : 'Base discount per year does not match wizard value'}
+          </div>
+        </div>
+      )}
+      {outOfRange && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Verify this percentage value.
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { verified: boolean | null; isInJson: boolean | null; isIRM?: boolean }) {
+  const label = isIRM ? 'IRM owner' : 'Hook owner'
+  return (
+    <span className="inline-flex items-center gap-1">
+      {/* Green checkmark - verification that on-chain address matches wizard value */}
+      {/* This is independent check: on-chain owner === wizard owner */}
+      {verified === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            {label} verified: matches Wizard value
+          </div>
+        </div>
+      )}
+      
+      {/* Address in JSON verification - Solid Star in standard green */}
+      {/* This is independent check: address exists in addresses JSON file */}
+      {isInJson === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Address found in silo-finance repository list
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function TokenVerificationIcons({ address, tokenVerification, addressInJsonVerification }: { address: string; tokenVerification: { onChainToken: string | null; wizardToken: string | null } | null; addressInJsonVerification?: Map<string, boolean> }) {
+  if (!tokenVerification || !tokenVerification.onChainToken || !tokenVerification.wizardToken) {
+    return null
+  }
+  
+  // Normalize addresses for comparison
+  const normalizedAddress = ethers.getAddress(address).toLowerCase()
+  const normalizedOnChain = ethers.getAddress(tokenVerification.onChainToken).toLowerCase()
+  
+  // Check if the displayed address matches the on-chain token address
+  if (normalizedOnChain !== normalizedAddress) {
+    return null
+  }
+  
+  // Verify that on-chain token matches wizard token using centralized function
+  const isVerified = verifyAddress(tokenVerification.onChainToken, tokenVerification.wizardToken)
+  
+  // Get JSON verification result - always available regardless of wizard data
+  const isInJson = addressInJsonVerification?.get(normalizedAddress) ?? null
+  
+  return (
+    <span className="inline-flex items-center gap-1 ml-1">
+      {/* Green checkmark - verification that on-chain token matches wizard value */}
+      {/* This is independent check: on-chain token === wizard token */}
+      {isVerified === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Token verified: matches Wizard value
+          </div>
+        </div>
+      )}
+      
+      {/* Address in JSON verification - Solid Star in standard green */}
+      {/* This is independent check: address exists in addresses JSON file */}
+      {isInJson === true && (
+        <div className="relative group inline-block">
+          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Address found in silo-finance repository list
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
+  
+  // Normalize the address from item
+  const normalizedItemAddress = ethers.getAddress(address).toLowerCase()
+  
+  // Debug logging
+  console.log('OwnerBulletContent - hookOwnerVerification:', hookOwnerVerification)
+  console.log('OwnerBulletContent - irmOwnerVerification:', irmOwnerVerification)
+  console.log('OwnerBulletContent - item.address:', address)
+  console.log('OwnerBulletContent - normalizedItemAddress:', normalizedItemAddress)
+  
+  // Use centralized verification functions from src/utils/verification/
+  // Check 1: Verify that on-chain owner matches wizard owner (independent check)
+  // This check compares: onChainOwner === wizardOwner
+  let isVerified: boolean | null = null
+  if (hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner) {
+    // Normalize addresses for comparison
+    const normalizedOnChain = ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+    
+    console.log('OwnerBulletContent - hook verification check:')
+    console.log('  normalizedOnChain:', normalizedOnChain)
+    console.log('  normalizedItem:', normalizedItem)
+    console.log('  addresses match:', normalizedOnChain === normalizedItem)
+    
+    // Only verify if the displayed address matches the on-chain owner address
+    if (normalizedOnChain === normalizedItem) {
+      // Verify that on-chain owner matches wizard owner using centralized function
+      // This is the independent check: onChainOwner === wizardOwner
+      isVerified = verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyAddress (hook owner) result:', isVerified)
+    }
+  } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
+    // Normalize addresses for comparison
+    const normalizedOnChain = ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+    
+    console.log('OwnerBulletContent - IRM verification check:')
+    console.log('  normalizedOnChain:', normalizedOnChain)
+    console.log('  normalizedItem:', normalizedItem)
+    console.log('  addresses match:', normalizedOnChain === normalizedItem)
+    
+    // Only verify if the displayed address matches the on-chain owner address
+    if (normalizedOnChain === normalizedItem) {
+      // Verify that on-chain owner matches wizard owner using centralized function
+      // This is the independent check: onChainOwner === wizardOwner
+      isVerified = verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
+      console.log('OwnerBulletContent - verifyAddress (IRM owner) result:', isVerified)
+    }
+  }
+  
+  // Get JSON verification result - always available regardless of wizard data
+  const isInJson = addressInJsonVerification?.get(normalizedItemAddress) ?? null
+  
+  console.log('OwnerBulletContent - final values:')
+  console.log('  isVerified:', isVerified)
+  console.log('  isInJson:', isInJson)
+  
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <span className="text-gray-400 text-sm">Owner:</span>
@@ -117,15 +705,36 @@ function OwnerBulletContent({ item, explorerUrl }: { item: OwnerBulletItem; expl
       {name != null && name !== '' && (
         <span className="text-gray-400 text-sm">({name})</span>
       )}
+      {/* Show verification icons independently:
+          - Green checkmark: if we have wizard data AND on-chain owner matches wizard owner
+          - Green star: if address exists in JSON (always checked, regardless of wizard data) */}
+      <HookOwnerVerificationIcons 
+        verified={isVerified} 
+        isInJson={isInJson}
+        isIRM={!!irmOwnerVerification}
+      />
     </span>
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted }: TreeNodeProps) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, verificationIcon, addressVerificationIcon, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification }: TreeNodeProps) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
   const hasSuffix = suffixText != null && suffixText !== ''
+
+  // Generate numeric value verification icon if applicable
+  let numericVerificationIcon: React.ReactNode = null
+  if (numericValueVerification && isPercentage && typeof value === 'bigint' && numericValueVerification.wizardValue !== null) {
+    numericVerificationIcon = (
+      <NumericValueVerificationIcon
+        onChainValue={value}
+        wizardValue={numericValueVerification.wizardValue}
+        label={label}
+        checkHighValue={numericValueVerification.checkHighValue ?? false}
+      />
+    )
+  }
 
   return (
     <li className="tree-item">
@@ -144,6 +753,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               {formatAddress(address)}
             </a>
             <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+            {addressVerificationIcon && <span className="ml-1">{addressVerificationIcon}</span>}
             {hasTokenMeta && (
               <span className="text-gray-400 text-sm ml-1">
                 {' '}
@@ -156,17 +766,35 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ({suffixText})
               </span>
             )}
+            {/* Token verification icons - show at the end of the line */}
+            {tokenVerification && address && (
+              <TokenVerificationIcons 
+                address={address}
+                tokenVerification={tokenVerification}
+                addressInJsonVerification={addressInJsonVerification}
+              />
+            )}
           </>
         )}
         {hasValue && (
-          <span className={valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'}>
+          <span className={`${valueMuted ? 'text-gray-400 text-sm' : 'text-white text-sm font-mono'} inline-flex items-center gap-1.5`}>
             {typeof value === 'boolean'
               ? (value ? 'Yes' : 'No')
               : isPercentage && typeof value === 'bigint'
-                ? formatPercentage(value)
+                ? (
+                    <>
+                      {formatPercentage(value)}
+                      <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(value)})</span>
+                    </>
+                  )
                 : typeof value === 'bigint'
                   ? value.toString()
                   : String(value)}
+            {verificationIcon && verificationIcon}
+            {numericVerificationIcon && <span className="ml-1">{numericVerificationIcon}</span>}
+            {callBeforeQuoteVerification != null && callBeforeQuoteVerification.wizard !== null && typeof value === 'boolean' && (
+              <CallBeforeQuoteVerificationIcon onChain={value} wizard={callBeforeQuoteVerification.wizard} />
+            )}
           </span>
         )}
         {address === ethers.ZeroAddress && (
@@ -175,16 +803,43 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       </span>
       {bulletItems && bulletItems.length > 0 && (
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
-          {bulletItems.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
+          {bulletItems.map((item, i) => {
+            const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
+            const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
+            const hasPriceWarning = isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning)
+            const hasPriceVerified = isPriceLine && !priceLowWarning && !priceHighWarning && !priceDecimalsWarning
+            const showPriceIcons = hasPriceWarning || hasPriceVerified
+            const withIcons = showPriceIcons || isBaseDiscountBullet
+            return (
+              <li key={i}>
+                {withIcons ? (
+                  <span className="inline-flex items-center flex-wrap gap-0">
+                    {item.text}
+                    {isPriceLine && priceLowWarning && <PriceLowWarningIcon />}
+                    {isPriceLine && priceHighWarning && <PriceHighWarningIcon />}
+                    {isPriceLine && priceDecimalsWarning && <PriceDecimalsWarningIcon />}
+                    {hasPriceVerified && <PriceVerifiedIcon />}
+                    {isBaseDiscountBullet && baseDiscountVerification && <BaseDiscountVerificationIcons onChain={baseDiscountVerification.onChain} wizard={baseDiscountVerification.wizard} />}
+                  </span>
+                ) : (
+                  item.text
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
       {ownerBullets && ownerBullets.length > 0 && (
         <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {ownerBullets.map((item, i) => (
             <li key={i}>
-              <OwnerBulletContent item={item} explorerUrl={explorerUrl} />
+              <OwnerBulletContent 
+                item={item} 
+                explorerUrl={explorerUrl} 
+                hookOwnerVerification={hookOwnerVerification}
+                irmOwnerVerification={irmOwnerVerification}
+                addressInJsonVerification={addressInJsonVerification}
+              />
             </li>
           ))}
         </ul>
@@ -194,7 +849,34 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTreeProps) {
+function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
+  if (verified === null) return null
+
+  return (
+    <div className="relative group inline-block">
+      {verified ? (
+        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ) : (
+        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      )}
+      {verified && (
+        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Silo address verified and exists in Silo Factory
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -206,23 +888,54 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
             )}
             <TreeNode label="Silos" explorerUrl={explorerUrl}>
-              <TreeNode label="silo0" address={config.silo0.silo} explorerUrl={explorerUrl} />
-              <TreeNode label="silo1" address={config.silo1.silo} explorerUrl={explorerUrl} />
+              <TreeNode 
+                label="silo0" 
+                address={config.silo0.silo} 
+                explorerUrl={explorerUrl}
+                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo0} /> : undefined}
+              />
+              <TreeNode 
+                label="silo1" 
+                address={config.silo1.silo} 
+                explorerUrl={explorerUrl}
+                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo1} /> : undefined}
+              />
             </TreeNode>
           </TreeNode>
-          <TreeNode label="DAO Fee" value={config.silo0.daoFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Deployer Fee" value={config.silo0.deployerFee} explorerUrl={explorerUrl} isPercentage />
+          <TreeNode 
+            label="DAO Fee" 
+            value={config.silo0.daoFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            verificationIcon={wizardDaoFee != null ? <DAOFeeVerificationIcon onChainValue={config.silo0.daoFee} wizardValue={wizardDaoFee} /> : undefined}
+          />
+          <TreeNode 
+            label="Deployer Fee" 
+            value={config.silo0.deployerFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            verificationIcon={wizardDeployerFee != null ? <DeployerFeeVerificationIcon onChainValue={config.silo0.deployerFee} wizardValue={wizardDeployerFee} /> : undefined}
+          />
           <TreeNode
             label="Hook Receiver"
             address={config.silo0.hookReceiver}
             suffixText={config.silo0.hookReceiverVersion}
             ownerBullets={config.silo0.hookReceiverOwner ? [{ address: config.silo0.hookReceiverOwner, isContract: config.silo0.hookReceiverOwnerIsContract, name: config.silo0.hookReceiverOwnerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={hookOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           />
         </TreeNode>
 
         <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo0.token} tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Token" 
+            address={config.silo0.token} 
+            tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} 
+            explorerUrl={explorerUrl}
+            tokenVerification={tokenVerification?.token0 || null}
+            addressInJsonVerification={addressInJsonVerification}
+          />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
             <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
@@ -233,6 +946,10 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             address={config.silo0.solvencyOracle.address}
             suffixText={config.silo0.solvencyOracle.version}
             bulletItems={buildOracleBullets(config.silo0.solvencyOracle.quotePrice, config.silo0.solvencyOracle.quoteTokenSymbol, config.silo0.solvencyOracle.type, config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)}
+            priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
+            priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.solvencyOracle.quotePrice)}
+            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.solvencyOracle.quotePrice)}
+            baseDiscountVerification={ptOracleBaseDiscountVerification?.silo0 ?? null}
             explorerUrl={explorerUrl}
           />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
@@ -245,6 +962,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               address={config.silo0.maxLtvOracle.address}
               suffixText={config.silo0.maxLtvOracle.version}
               bulletItems={buildOracleBullets(config.silo0.maxLtvOracle.quotePrice, config.silo0.maxLtvOracle.quoteTokenSymbol, config.silo0.maxLtvOracle.type, config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              priceLowWarning={isPriceUnexpectedlyLow(config.silo0.maxLtvOracle.quotePrice)}
+              priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.maxLtvOracle.quotePrice)}
+              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.maxLtvOracle.quotePrice)}
               explorerUrl={explorerUrl}
             />
           )}
@@ -254,6 +974,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             suffixText={config.silo0.interestRateModel.version}
             ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
+            irmOwnerVerification={irmOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           >
             {config.silo0.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
@@ -267,16 +990,53 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV" value={config.silo0.maxLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Threshold (LT)" value={config.silo0.lt} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Target LTV" value={config.silo0.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Fee" value={config.silo0.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Flashloan Fee" value={config.silo0.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Max LTV" 
+            value={config.silo0.maxLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.maxLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Threshold (LT)" 
+            value={config.silo0.lt} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.lt } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Target LTV" 
+            value={config.silo0.liquidationTargetLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationTargetLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Fee" 
+            value={config.silo0.liquidationFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationFee, checkHighValue: true } : undefined}
+          />
+          <TreeNode 
+            label="Flashloan Fee" 
+            value={config.silo0.flashloanFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.flashloanFee, checkHighValue: true } : undefined}
+          />
+          <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0 ?? null} />
         </TreeNode>
 
         <TreeNode label="Silo 1" address={config.silo1.silo} explorerUrl={explorerUrl}>
-          <TreeNode label="Token" address={config.silo1.token} tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Token" 
+            address={config.silo1.token} 
+            tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} 
+            explorerUrl={explorerUrl}
+            tokenVerification={tokenVerification?.token1 || null}
+            addressInJsonVerification={addressInJsonVerification}
+          />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
             <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} />
             <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} />
@@ -287,6 +1047,10 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             address={config.silo1.solvencyOracle.address}
             suffixText={config.silo1.solvencyOracle.version}
             bulletItems={buildOracleBullets(config.silo1.solvencyOracle.quotePrice, config.silo1.solvencyOracle.quoteTokenSymbol, config.silo1.solvencyOracle.type, config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)}
+            priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
+            priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
+            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
+            baseDiscountVerification={ptOracleBaseDiscountVerification?.silo1 ?? null}
             explorerUrl={explorerUrl}
           />
           {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
@@ -299,6 +1063,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               address={config.silo1.maxLtvOracle.address}
               suffixText={config.silo1.maxLtvOracle.version}
               bulletItems={buildOracleBullets(config.silo1.maxLtvOracle.quotePrice, config.silo1.maxLtvOracle.quoteTokenSymbol, config.silo1.maxLtvOracle.type, config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              priceLowWarning={isPriceUnexpectedlyLow(config.silo1.maxLtvOracle.quotePrice)}
+              priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.maxLtvOracle.quotePrice)}
+              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.maxLtvOracle.quotePrice)}
               explorerUrl={explorerUrl}
             />
           )}
@@ -308,6 +1075,9 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
             suffixText={config.silo1.interestRateModel.version}
             ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
+            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
+            irmOwnerVerification={irmOwnerVerification}
+            addressInJsonVerification={addressInJsonVerification}
           >
             {config.silo1.interestRateModel.type && (
               <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
@@ -321,12 +1091,42 @@ export default function MarketConfigTree({ config, explorerUrl }: MarketConfigTr
               />
             ))}
           </TreeNode>
-          <TreeNode label="Max LTV" value={config.silo1.maxLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Threshold (LT)" value={config.silo1.lt} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Target LTV" value={config.silo1.liquidationTargetLtv} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Liquidation Fee" value={config.silo1.liquidationFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Flashloan Fee" value={config.silo1.flashloanFee} explorerUrl={explorerUrl} isPercentage />
-          <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} />
+          <TreeNode 
+            label="Max LTV" 
+            value={config.silo1.maxLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.maxLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Threshold (LT)" 
+            value={config.silo1.lt} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.lt } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Target LTV" 
+            value={config.silo1.liquidationTargetLtv} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationTargetLtv } : undefined}
+          />
+          <TreeNode 
+            label="Liquidation Fee" 
+            value={config.silo1.liquidationFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationFee, checkHighValue: true } : undefined}
+          />
+          <TreeNode 
+            label="Flashloan Fee" 
+            value={config.silo1.flashloanFee} 
+            explorerUrl={explorerUrl} 
+            isPercentage 
+            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.flashloanFee, checkHighValue: true } : undefined}
+          />
+          <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo1 ?? null} />
         </TreeNode>
       </ol>
     </div>
