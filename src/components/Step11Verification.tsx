@@ -710,7 +710,7 @@ export default function Step11Verification() {
       {wizardData.verificationFromWizard && implementationFromRepo && implementationFromEvent && (
         <div className="mb-6">
           <ContractInfo
-            contractName="Silo Implementation"
+            contractName="SILO implementation used for market deployment"
             address={implementationFromRepo.address}
             version={implementationFromRepo.version || '…'}
             chainId={chainId}

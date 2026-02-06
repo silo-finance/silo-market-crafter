@@ -11,6 +11,7 @@
  */
 
 export { isValueHigh5 } from './highValueVerification'
+export { isPriceUnexpectedlyLow } from './lowPriceVerification'
 export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
 export { verifyAddress } from './addressVerification'
