@@ -502,13 +502,15 @@ export function buildVerificationChecks(
     : token0InJson === true 
       ? VERIFICATION_STATUS.PASSED 
       : VERIFICATION_STATUS.WARNING
+  const token0InJsonMessage = createStatusMessage(token0InJsonStatus, {
+    passed: 'exists in Silo Finance repository list',
+    failed: 'does not exist in Silo Finance repository list',
+    warning: 'does not exist in Silo Finance repository list',
+    pending: 'verification pending'
+  })
   checks.push(createIndependentCheck(
     'Token 0 address',
-    token0InJsonStatus === VERIFICATION_STATUS.PASSED 
-      ? 'exists in Silo Finance repository list'
-      : token0InJsonStatus === VERIFICATION_STATUS.WARNING
-        ? 'does not exist in Silo Finance repository list'
-        : 'verification pending',
+    token0InJsonMessage,
     token0InJsonStatus
   ))
 
@@ -519,13 +521,15 @@ export function buildVerificationChecks(
     : token1InJson === true 
       ? VERIFICATION_STATUS.PASSED 
       : VERIFICATION_STATUS.WARNING
+  const token1InJsonMessage = createStatusMessage(token1InJsonStatus, {
+    passed: 'exists in Silo Finance repository list',
+    failed: 'does not exist in Silo Finance repository list',
+    warning: 'does not exist in Silo Finance repository list',
+    pending: 'verification pending'
+  })
   checks.push(createIndependentCheck(
     'Token 1 address',
-    token1InJsonStatus === VERIFICATION_STATUS.PASSED 
-      ? 'exists in Silo Finance repository list'
-      : token1InJsonStatus === VERIFICATION_STATUS.WARNING
-        ? 'does not exist in Silo Finance repository list'
-        : 'verification pending',
+    token1InJsonMessage,
     token1InJsonStatus
   ))
 
