@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, BorrowConfiguration } from '@/contexts/WizardContext'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
+import { formatWizardBigIntToE18 } from '@/utils/formatting'
 
 interface InputComponentProps {
   tokenIndex: 0 | 1
@@ -18,6 +19,17 @@ interface InputComponentProps {
   onBlur: (tokenIndex: 0 | 1, field: 'liquidationThreshold' | 'maxLTV' | 'liquidationTargetLTV') => void
 }
 
+// Helper function to get E18 representation from display value
+function getE18FromDisplayValue(displayValue: string): string {
+  if (!displayValue || displayValue === '') return '0e18'
+  const normalized = displayValue.replace(',', '.')
+  const parsed = parseFloat(normalized)
+  if (Number.isNaN(parsed) || parsed < 0) return '0e18'
+  const clampedValue = Math.max(0, Math.min(100, parsed))
+  const bigintValue = displayNumberToBigint(clampedValue)
+  return formatWizardBigIntToE18(bigintValue, false)
+}
+
 const InputComponent = React.memo(({ 
   tokenIndex, 
   field, 
@@ -28,6 +40,8 @@ const InputComponent = React.memo(({
   onChange,
   onBlur
 }: InputComponentProps) => {
+  const e18Value = getE18FromDisplayValue(displayValue)
+  
   return (
     <div className="space-y-2">
       <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
@@ -54,6 +68,11 @@ const InputComponent = React.memo(({
           %
         </div>
       </div>
+      {displayValue && displayValue !== '' && !disabled && (
+        <div className="text-gray-500 text-xs mt-1">
+          {e18Value}
+        </div>
+      )}
       {error && !disabled && (
         <div className="text-red-400 text-xs mt-1 max-w-48">
           {error}

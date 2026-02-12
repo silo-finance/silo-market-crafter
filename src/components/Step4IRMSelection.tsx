@@ -41,14 +41,7 @@ import { getChainName } from '@/utils/networks'
 
 
 
-/** Format rcompCap (18 decimals) as e18 notation, e.g. 2e18 instead of 2000000000000000000 */
-function formatRcompCapE18(val: number | bigint | string): string {
-  const n = typeof val === 'bigint' ? Number(val) : typeof val === 'string' ? Number(val) : val
-  const coeff = n / 1e18
-  if (Number.isInteger(coeff)) return `${coeff}e18`
-  const rounded = Math.round(coeff * 100) / 100
-  return `${rounded}e18`
-}
+import { formatToE18 } from '@/utils/formatting'
 
 export default function Step4IRMSelection() {
   const router = useRouter()
@@ -513,7 +506,7 @@ export default function Step4IRMSelection() {
                           onClick={() => setKinkToken0Immutable(imm)}
                         >
                           <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatRcompCapE18(imm.rcompCap)}</span>
+                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
                         </div>
                       ))
                     )}
@@ -573,7 +566,7 @@ export default function Step4IRMSelection() {
                           onClick={() => setKinkToken1Immutable(imm)}
                         >
                           <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatRcompCapE18(imm.rcompCap)}</span>
+                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
                         </div>
                       ))
                     )}

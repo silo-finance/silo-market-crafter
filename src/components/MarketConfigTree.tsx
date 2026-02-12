@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
+import { formatBigIntToE18, formatWizardBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
 import { isValueHigh5, isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
@@ -217,24 +218,6 @@ function formatFactorToE(value: string): string {
   } catch {
     return value
   }
-}
-
-/** Format bigint value as e18 notation with full precision (e.g. 1000000000000000000 → 1.000000000000000000e18). */
-/** Always shows all 18 decimal places. Exception: 0 → "0" */
-function formatBigIntToE18(value: bigint): string {
-  if (value === BigInt(0)) return '0'
-  
-  const str = value.toString()
-  
-  // Pad to exactly 19 digits (1 integer digit + 18 fractional digits)
-  // This ensures we always show full precision
-  const padded = str.padStart(19, '0')
-  
-  // Format as: first digit, decimal point, remaining 18 digits (always show all), e18
-  // Example: 1000000000000000000 → "1.000000000000000000e18"
-  // Example: 500000000000000000 → "0.500000000000000000e18"
-  // Example: 755000000000000000 → "0.755000000000000000e18"
-  return `${padded[0]}.${padded.slice(1)}e18`
 }
 
 /** Stable keys for oracle bullet items — use these for verification wiring, not display text */
@@ -784,7 +767,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ? (
                     <>
                       {formatPercentage(value)}
-                      <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(value)})</span>
+                      <span className="text-gray-500 text-xs font-normal">({formatWizardBigIntToE18(value, true)})</span>
                     </>
                   )
                 : typeof value === 'bigint'
