@@ -15,40 +15,9 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
-import { buildVerificationChecks, type VerificationCheckItem } from '@/utils/verification/buildVerificationChecks'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
-
-/** Green checkmark outline only (no background) for passed checks in the summary list */
-function VerificationCheckMark() {
-  return (
-    <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Values match">
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-    </span>
-  )
-}
-
-function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] }) {
-  if (checks.length === 0) return null
-  return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 py-4 mt-6">
-      <h3 className="text-lg font-semibold text-white mb-3">Verification checks</h3>
-      <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
-        {checks.map((item, i) => (
-          <li key={i} className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-medium text-gray-200">{item.label}</span>
-            <span>on-chain: <span className="text-gray-400">{item.onChainDisplay}</span></span>
-            <span>wizard: <span className="text-gray-400">{item.wizardDisplay}</span></span>
-            {item.passed && <VerificationCheckMark />}
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -113,9 +82,9 @@ export default function Step11Verification() {
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
 
   // Fetch Silo Factory address and version
-  // Only fetch if we have wizard data (verificationFromWizard is true)
+  // Always fetch - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !chainId || !config) return
+    if (!chainId || !config) return
 
     const fetchSiloFactory = async () => {
       const chainName = getChainName(chainId)
@@ -156,7 +125,7 @@ export default function Step11Verification() {
 
     fetchSiloFactory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, chainId, config])
+  }, [chainId, config])
 
   // Fetch Silo Implementation addresses from repository (_siloImplementations.json)
   // Only run verification if we have wizard data (verificationFromWizard is true)
@@ -262,9 +231,9 @@ export default function Step11Verification() {
   }, [wizardData.verificationFromWizard, implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
 
   // Fetch Silo Factory version via Silo Lens
-  // Only fetch if we have wizard data (verificationFromWizard is true)
+  // Always fetch - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !siloFactory?.address || !siloLensAddress || !chainId) return
+    if (!siloFactory?.address || !siloLensAddress || !chainId) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const fetchFactoryVersion = async () => {
@@ -294,20 +263,12 @@ export default function Step11Verification() {
     fetchFactoryVersion()
     // Intentionally narrow deps: only re-fetch when factory address or chain changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, siloFactory?.address, siloLensAddress, chainId])
+  }, [siloFactory?.address, siloLensAddress, chainId])
 
   // Verify silo addresses using Silo Factory isSilo method
-  // Only run verification if we have wizard data (verificationFromWizard is true)
+  // Always run verification - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) {
-      // Reset verification state if we don't have wizard data
-      if (!wizardData.verificationFromWizard) {
-        setSiloVerification({
-          silo0: null,
-          silo1: null,
-          error: null
-        })
-      }
+    if (!siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) {
       return
     }
 
@@ -334,20 +295,17 @@ export default function Step11Verification() {
         })
       } catch (err) {
         console.error('Failed to verify silo addresses:', err)
-        // Only set error if we have wizard data
-        if (wizardData.verificationFromWizard) {
-          setSiloVerification({
-            silo0: null,
-            silo1: null,
-            error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
-          })
-        }
+        setSiloVerification({
+          silo0: null,
+          silo1: null,
+          error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
+        })
       }
     }
 
     verifySilos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, siloFactory?.address, config])
+  }, [siloFactory?.address, config])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -447,12 +405,11 @@ export default function Step11Verification() {
       }
       setAddressInJsonVerification(jsonVerificationMap)
       
-      // Verify hook owner - check if we have wizard data (hookOwnerAddress exists)
-      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
-      // verificationFromWizard might be set asynchronously after handleVerify completes
-      if (wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
+      // Verify hook owner - always check on-chain address, wizard data is optional
+      // Hook owner address is always available from on-chain config
+      if (marketConfig.silo0.hookReceiverOwner) {
         const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress // Hook owner address from wizard state (wizardData.hookOwnerAddress)
+        const wizardOwner = wizardData.hookOwnerAddress ?? null // Hook owner address from wizard state (optional)
         
         // Verification is performed in MarketConfigTree component using verifyAddress()
         // from src/utils/verification/addressVerification.ts
@@ -466,7 +423,7 @@ export default function Step11Verification() {
           isInAddressesJson: isInJson
         })
       } else {
-        // Reset verification state if we don't have wizard data
+        // Reset verification state if we don't have on-chain address
         setHookOwnerVerification({
           onChainOwner: null,
           wizardOwner: null,
@@ -474,12 +431,11 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify IRM owner - check if we have wizard data (hookOwnerAddress exists) and IRM has owner (only for kink models)
-      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
-      // verificationFromWizard might be set asynchronously after handleVerify completes
-      if (wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
+      // Verify IRM owner - always check on-chain address, wizard data is optional
+      // IRM owner address is always available from on-chain config (for kink models)
+      if (marketConfig.silo0.interestRateModel.owner) {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress // IRM owner address from wizard state (wizardData.hookOwnerAddress)
+        const wizardOwner = wizardData.hookOwnerAddress ?? null // IRM owner address from wizard state (optional)
         
         // Verification is performed in MarketConfigTree component using verifyAddress()
         // from src/utils/verification/addressVerification.ts
@@ -493,7 +449,7 @@ export default function Step11Verification() {
           isInAddressesJson: isInJson
         })
       } else {
-        // Reset verification state if we don't have wizard data
+        // Reset verification state if we don't have on-chain address
         setIrmOwnerVerification({
           onChainOwner: null,
           wizardOwner: null,
@@ -708,7 +664,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {wizardData.verificationFromWizard && config && siloFactory && (
+      {config && siloFactory && (
         <div className="mb-6">
           <ContractInfo
             contractName="SiloFactory"
@@ -756,7 +712,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {wizardData.verificationFromWizard && siloVerification.error && (
+      {siloVerification.error && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
           <p className="text-red-400">Silo verification error: {siloVerification.error}</p>
         </div>
@@ -811,24 +767,22 @@ export default function Step11Verification() {
             <MarketConfigTree 
               config={config} 
               explorerUrl={explorerUrl}
-              wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
-              wizardDeployerFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null}
-              siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
-              hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
-              irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
-              tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
-              numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
+              wizardDaoFee={wizardData.feesConfiguration?.daoFee ?? null}
+              wizardDeployerFee={wizardData.feesConfiguration?.deployerFee ?? null}
+              siloVerification={siloVerification}
+              hookOwnerVerification={hookOwnerVerification}
+              irmOwnerVerification={irmOwnerVerification}
+              tokenVerification={tokenVerification}
+              numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
-              callBeforeQuoteVerification={wizardData.verificationFromWizard ? { silo0: { wizard: false }, silo1: { wizard: false } } : undefined}
-            />
-            <VerificationChecksList
-              checks={buildVerificationChecks(config, {
-                wizardDaoFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null,
-                wizardDeployerFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null,
-                numericWizard: numericValueVerification ?? { silo0: null, silo1: null },
-                ptOracleBaseDiscount: ptOracleBaseDiscountVerification
-              })}
+              callBeforeQuoteVerification={wizardData.verificationFromWizard 
+                ? { 
+                    silo0: { wizard: null }, // TODO: Add callBeforeQuote to wizardData if needed
+                    silo1: { wizard: null } 
+                  }
+                : undefined
+              }
             />
           </>
         )
