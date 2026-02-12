@@ -21,9 +21,10 @@ import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
 import type { VerificationCheckItem, VerificationStatus } from '@/utils/verification/buildVerificationChecks'
+import { VERIFICATION_STATUS, VERIFICATION_CHECK_TYPE } from '@/utils/verification/buildVerificationChecks'
 
 function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
-  if (status === 'pending') {
+  if (status === VERIFICATION_STATUS.PENDING) {
     return (
       <span className="ml-2 inline-flex shrink-0 text-gray-500" aria-label="Pending">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -32,7 +33,7 @@ function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
       </span>
     )
   }
-  if (status === 'passed') {
+  if (status === VERIFICATION_STATUS.PASSED) {
     return (
       <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Passed">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -61,9 +62,9 @@ function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] })
           <li key={i} className="pl-2">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="font-medium text-gray-200">{item.label}</span>
-              {item.type === 'independent' ? (
+              {item.type === VERIFICATION_CHECK_TYPE.INDEPENDENT ? (
                 <span className="text-gray-400">{item.message}</span>
-              ) : item.type === 'wizard-vs-onchain' && item.status === 'passed' ? (
+              ) : item.type === VERIFICATION_CHECK_TYPE.WIZARD_VS_ONCHAIN && item.status === VERIFICATION_STATUS.PASSED ? (
                 <span className="text-gray-400">on-chain value matches wizard value</span>
               ) : (
                 <>
