@@ -402,7 +402,7 @@ describe('formatWizardBigIntToE18 (formatting utility)', () => {
   describe('basic conversions', () => {
     it('converts 0 correctly', () => {
       const result = formatWizardBigIntToE18(BigInt(0))
-      expect(result).toBe('0e18')
+      expect(result).toBe('0')
     })
 
     it('converts 5% (50000000000000000) correctly', () => {

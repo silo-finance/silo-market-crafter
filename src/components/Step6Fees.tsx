@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
+import { formatWizardBigIntToE18 } from '@/utils/formatting'
 
 interface GeneralFeeInputProps {
   field: 'daoFee' | 'deployerFee'
@@ -32,6 +33,8 @@ const GeneralFeeInput = React.memo(({
   onChange,
   onBlur
 }: GeneralFeeInputProps) => {
+  const e18Value = getE18FromDisplayValue(displayValue)
+  
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-white">
@@ -51,6 +54,11 @@ const GeneralFeeInput = React.memo(({
           %
         </div>
       </div>
+      {displayValue && displayValue !== '' && (
+        <div className="text-gray-500 text-xs mt-1">
+          {e18Value}
+        </div>
+      )}
     </div>
   )
 })
@@ -66,6 +74,8 @@ const TokenFeeInput = React.memo(({
   onChange,
   onBlur
 }: TokenFeeInputProps) => {
+  const e18Value = getE18FromDisplayValue(displayValue)
+  
   return (
     <div className="space-y-2">
       <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
@@ -90,6 +100,11 @@ const TokenFeeInput = React.memo(({
           %
         </div>
       </div>
+      {displayValue && displayValue !== '' && !disabled && (
+        <div className="text-gray-500 text-xs mt-1">
+          {e18Value}
+        </div>
+      )}
     </div>
   )
 })
@@ -101,6 +116,18 @@ function formatNumberForDisplay(value: number): string {
   if (value === 0) return ''
   // Use toFixed to avoid scientific notation, then remove trailing zeros
   return value.toFixed(10).replace(/\.?0+$/, '')
+}
+
+// Helper function to get E18 representation from display value
+// Uses only global functions: displayNumberToBigint and formatWizardBigIntToE18
+function getE18FromDisplayValue(displayValue: string): string {
+  if (!displayValue || displayValue === '') return '0e18'
+  const normalized = displayValue.replace(',', '.')
+  const parsed = parseFloat(normalized)
+  if (Number.isNaN(parsed) || parsed < 0) return '0e18'
+  const clampedValue = Math.max(0, Math.min(20, parsed))
+  const bigintValue = displayNumberToBigint(clampedValue)
+  return formatWizardBigIntToE18(bigintValue, false)
 }
 
 export default function Step6Fees() {

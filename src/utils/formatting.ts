@@ -19,11 +19,11 @@ import { ethers } from 'ethers'
  * formatBigIntToE18(1000000000000000000n) // "1.000000000000000000e18" (fullPrecision=true) or "1e18" (fullPrecision=false)
  * formatBigIntToE18(500000000000000000n) // "0.500000000000000000e18" or "0.5e18"
  * formatBigIntToE18(950000000000000000n) // "0.950000000000000000e18" or "0.95e18"
- * formatBigIntToE18(0n) // "0e18"
+ * formatBigIntToE18(0n) // "0"
  * ```
  */
 export function formatBigIntToE18(value: bigint, fullPrecision: boolean = false): string {
-  if (value === BigInt(0)) return '0e18'
+  if (value === BigInt(0)) return '0'
   
   const str = value.toString()
   
@@ -63,11 +63,11 @@ export function formatBigIntToE18(value: bigint, fullPrecision: boolean = false)
  * ```typescript
  * formatWizardBigIntToE18(950000000000000000n) // "0.950000000000000000e18" (fullPrecision=true) or "0.95e18" (fullPrecision=false)
  * formatWizardBigIntToE18(50000000000000000n) // "0.050000000000000000e18" or "0.05e18"
- * formatWizardBigIntToE18(0n) // "0e18"
+ * formatWizardBigIntToE18(0n) // "0"
  * ```
  */
 export function formatWizardBigIntToE18(value: bigint, fullPrecision: boolean = false): string {
-  if (value === BigInt(0)) return '0e18'
+  if (value === BigInt(0)) return '0'
   
   // Convert wizard format (percentage * 10^16) to E18 format using string manipulation
   // to avoid floating point precision issues

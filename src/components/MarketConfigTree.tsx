@@ -9,24 +9,31 @@ import { isValueHigh5, isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceD
 
 interface DAOFeeVerificationIconProps {
   onChainValue: bigint
-  wizardValue: bigint
+  wizardValue: bigint | null
 }
 
 function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificationIconProps) {
   // Use centralized verification function from src/utils/verification/numericValueVerification.ts
   // onChainValue: DAO fee from on-chain contract (in 18 decimals format)
-  // wizardValue: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  // wizardValue: DAO fee from wizard state (0-1 format, e.g., 0.05 for 5%) or null if pending
+  const isPending = wizardValue == null
+  const isMatch = !isPending && verifyNumericValue(onChainValue, wizardValue)
   const isHigh = isValueHigh5(onChainValue) // Use high value verification (5% threshold)
   
   // Wizard stores BigInt in on-chain format; pass-through for error message display
-  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+  const wizardValueIn18Decimals = wizardValue != null ? convertWizardTo18Decimals(wizardValue) : null
 
   return (
     <span className="inline-flex items-center gap-1">
-      {/* Verification icon - green checkmark or red cross */}
+      {/* Verification icon - gray (pending), green checkmark (passed), or red cross (failed) */}
       <div className="relative group inline-block">
-        {isMatch ? (
+        {isPending ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : isMatch ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -44,7 +51,7 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
             Value verified: on-chain value matches Wizard value
           </div>
         )}
-        {!isMatch && (
+        {!isMatch && !isPending && wizardValueIn18Decimals != null && (
           <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
           </div>
@@ -70,26 +77,33 @@ function DAOFeeVerificationIcon({ onChainValue, wizardValue }: DAOFeeVerificatio
 
 interface DeployerFeeVerificationIconProps {
   onChainValue: bigint
-  wizardValue: bigint
+  wizardValue: bigint | null
 }
 
 function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeVerificationIconProps) {
   // Use centralized verification function from src/utils/verification/numericValueVerification.ts
   // onChainValue: Deployer fee from on-chain contract (in 18 decimals format)
-  // wizardValue: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%)
-  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  // wizardValue: Deployer fee from wizard state (0-1 format, e.g., 0.05 for 5%) or null if pending
+  const isPending = wizardValue == null
+  const isMatch = !isPending && verifyNumericValue(onChainValue, wizardValue)
   // Use global high value verification function (threshold: 5%)
   const isHigh = isValueHigh5(onChainValue)
   
   // Calculate wizard value in 18 decimals for error message display
   // Use centralized normalization function to ensure consistency
-  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+  const wizardValueIn18Decimals = wizardValue != null ? convertWizardTo18Decimals(wizardValue) : null
 
   return (
     <span className="inline-flex items-center gap-1">
-      {/* Verification icon - green checkmark or red cross */}
+      {/* Verification icon - gray (pending), green checkmark (passed), or red cross (failed) */}
       <div className="relative group inline-block">
-        {isMatch ? (
+        {isPending ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : isMatch ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -107,7 +121,7 @@ function DeployerFeeVerificationIcon({ onChainValue, wizardValue }: DeployerFeeV
             Value verified: on-chain value matches Wizard value
           </div>
         )}
-        {!isMatch && (
+        {!isMatch && !isPending && wizardValueIn18Decimals != null && (
           <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
           </div>
@@ -139,27 +153,29 @@ interface NumericValueVerificationIconProps {
 }
 
 function NumericValueVerificationIcon({ onChainValue, wizardValue, label, checkHighValue = false }: NumericValueVerificationIconProps) {
-  // Only show verification if wizard value is provided
-  if (wizardValue === null) {
-    return null
-  }
-
   // Use centralized verification function from src/utils/verification/numericValueVerification.ts
   // onChainValue: Value from on-chain contract (in 18 decimals format)
-  // wizardValue: Value from wizard state (0-1 format, e.g., 0.75 for 75%)
-  const isMatch = verifyNumericValue(onChainValue, wizardValue)
+  // wizardValue: Value from wizard state (0-1 format, e.g., 0.75 for 75%) or null if pending
+  const isPending = wizardValue == null
+  const isMatch = !isPending && verifyNumericValue(onChainValue, wizardValue)
   
   // Check if value is unexpectedly high (if checkHighValue is enabled)
   const isHigh = checkHighValue ? isValueHigh5(onChainValue) : false
   
   // Wizard stores BigInt in on-chain format; pass-through for error message display
-  const wizardValueIn18Decimals = convertWizardTo18Decimals(wizardValue)
+  const wizardValueIn18Decimals = wizardValue != null ? convertWizardTo18Decimals(wizardValue) : null
 
   return (
     <span className="inline-flex items-center gap-1">
-      {/* Verification icon - green checkmark or red cross */}
+      {/* Verification icon - gray (pending), green checkmark (passed), or red cross (failed) */}
       <div className="relative group inline-block">
-        {isMatch ? (
+        {isPending ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : isMatch ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -177,7 +193,7 @@ function NumericValueVerificationIcon({ onChainValue, wizardValue, label, checkH
             {label} verified: on-chain value matches Wizard value
           </div>
         )}
-        {!isMatch && (
+        {!isMatch && !isPending && wizardValueIn18Decimals != null && (
           <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             Check failed: expected on-chain value {onChainValue.toString()} vs Wizard value {wizardValueIn18Decimals.toString()}
           </div>
@@ -449,12 +465,19 @@ function PriceVerifiedIcon() {
   )
 }
 
-function CallBeforeQuoteVerificationIcon({ onChain, wizard }: { onChain: boolean; wizard: boolean }) {
-  const isMatch = onChain === wizard
+function CallBeforeQuoteVerificationIcon({ onChain, wizard }: { onChain: boolean; wizard: boolean | null }) {
+  const isPending = wizard === null
+  const isMatch = !isPending && onChain === wizard
   return (
     <span className="ml-1 inline-flex align-middle">
       <div className="relative group inline-block">
-        {isMatch ? (
+        {isPending ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : isMatch ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -467,9 +490,16 @@ function CallBeforeQuoteVerificationIcon({ onChain, wizard }: { onChain: boolean
             </svg>
           </div>
         )}
-        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          On-chain value compared with wizard value.
-        </div>
+        {isMatch && (
+          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            On-chain value compared with wizard value.
+          </div>
+        )}
+        {!isMatch && !isPending && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Check failed: on-chain value ({onChain ? 'true' : 'false'}) does not match wizard value ({wizard ? 'true' : 'false'})
+          </div>
+        )}
       </div>
     </span>
   )
@@ -520,20 +550,39 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
   const label = isIRM ? 'IRM owner' : 'Hook owner'
   return (
     <span className="inline-flex items-center gap-1">
-      {/* Green checkmark - verification that on-chain address matches wizard value */}
+      {/* Verification icon - gray (pending), green checkmark (passed), or red cross (failed) */}
       {/* This is independent check: on-chain owner === wizard owner */}
-      {verified === true && (
-        <div className="relative group inline-block">
+      <div className="relative group inline-block">
+        {verified === null ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : verified === true ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {verified === true && (
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             {label} verified: matches Wizard value
           </div>
-        </div>
-      )}
+        )}
+        {verified === false && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            {label} verification failed: on-chain owner does not match wizard owner
+          </div>
+        )}
+      </div>
       
       {/* Address in JSON verification - Solid Star in standard green */}
       {/* This is independent check: address exists in addresses JSON file */}
@@ -554,41 +603,61 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
 }
 
 function TokenVerificationIcons({ address, tokenVerification, addressInJsonVerification }: { address: string; tokenVerification: { onChainToken: string | null; wizardToken: string | null } | null; addressInJsonVerification?: Map<string, boolean> }) {
-  if (!tokenVerification || !tokenVerification.onChainToken || !tokenVerification.wizardToken) {
-    return null
-  }
-  
-  // Normalize addresses for comparison
+  // Always show icon, but with different status based on verification state
   const normalizedAddress = ethers.getAddress(address).toLowerCase()
-  const normalizedOnChain = ethers.getAddress(tokenVerification.onChainToken).toLowerCase()
+  const normalizedOnChain = tokenVerification?.onChainToken ? ethers.getAddress(tokenVerification.onChainToken).toLowerCase() : null
   
   // Check if the displayed address matches the on-chain token address
-  if (normalizedOnChain !== normalizedAddress) {
-    return null
-  }
+  const addressMatches = normalizedOnChain === normalizedAddress
   
   // Verify that on-chain token matches wizard token using centralized function
-  const isVerified = verifyAddress(tokenVerification.onChainToken, tokenVerification.wizardToken)
+  const isVerified = tokenVerification?.onChainToken && tokenVerification?.wizardToken
+    ? verifyAddress(tokenVerification.onChainToken, tokenVerification.wizardToken)
+    : null
   
   // Get JSON verification result - always available regardless of wizard data
   const isInJson = addressInJsonVerification?.get(normalizedAddress) ?? null
   
+  // Only show verification icon if address matches
+  if (!addressMatches) {
+    return null
+  }
+  
   return (
     <span className="inline-flex items-center gap-1 ml-1">
-      {/* Green checkmark - verification that on-chain token matches wizard value */}
+      {/* Verification icon - gray (pending), green checkmark (passed), or red cross (failed) */}
       {/* This is independent check: on-chain token === wizard token */}
-      {isVerified === true && (
-        <div className="relative group inline-block">
+      <div className="relative group inline-block">
+        {isVerified === null ? (
+          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : isVerified === true ? (
           <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
+        ) : (
+          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+        {isVerified === true && (
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
             Token verified: matches Wizard value
           </div>
-        </div>
-      )}
+        )}
+        {isVerified === false && (
+          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Token verification failed: on-chain token does not match wizard token
+          </div>
+        )}
+      </div>
       
       {/* Address in JSON verification - Solid Star in standard green */}
       {/* This is independent check: address exists in addresses JSON file */}
@@ -706,13 +775,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
   const hasSuffix = suffixText != null && suffixText !== ''
 
-  // Generate numeric value verification icon if applicable
+  // Generate numeric value verification icon if applicable - always show if isPercentage
   let numericVerificationIcon: React.ReactNode = null
-  if (numericValueVerification && isPercentage && typeof value === 'bigint' && numericValueVerification.wizardValue !== null) {
+  if (numericValueVerification && isPercentage && typeof value === 'bigint') {
     numericVerificationIcon = (
       <NumericValueVerificationIcon
         onChainValue={value}
-        wizardValue={numericValueVerification.wizardValue}
+        wizardValue={numericValueVerification.wizardValue ?? null}
         label={label}
         checkHighValue={numericValueVerification.checkHighValue ?? false}
       />
@@ -776,7 +845,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             {verificationIcon && verificationIcon}
             {numericVerificationIcon && <span className="ml-1">{numericVerificationIcon}</span>}
             {callBeforeQuoteVerification != null && callBeforeQuoteVerification.wizard !== null && typeof value === 'boolean' && (
-              <CallBeforeQuoteVerificationIcon onChain={value} wizard={callBeforeQuoteVerification.wizard} />
+              <CallBeforeQuoteVerificationIcon onChain={value} wizard={callBeforeQuoteVerification?.wizard ?? null} />
             )}
           </span>
         )}
@@ -833,11 +902,16 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
 }
 
 function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
-  if (verified === null) return null
-
+  // Always show icon, but with different status: pending (gray), passed (green), or failed (red)
   return (
     <div className="relative group inline-block">
-      {verified ? (
+      {verified === null ? (
+        <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ) : verified ? (
         <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
           <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -850,9 +924,14 @@ function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
           </svg>
         </div>
       )}
-      {verified && (
+      {verified === true && (
         <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
           Silo address verified and exists in Silo Factory
+        </div>
+      )}
+      {verified === false && (
+        <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Silo address not verified in Silo Factory
         </div>
       )}
     </div>
@@ -875,13 +954,13 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
                 label="silo0" 
                 address={config.silo0.silo} 
                 explorerUrl={explorerUrl}
-                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo0} /> : undefined}
+                addressVerificationIcon={<SiloVerificationIcon verified={siloVerification?.silo0 ?? null} />}
               />
               <TreeNode 
                 label="silo1" 
                 address={config.silo1.silo} 
                 explorerUrl={explorerUrl}
-                addressVerificationIcon={siloVerification ? <SiloVerificationIcon verified={siloVerification.silo1} /> : undefined}
+                addressVerificationIcon={<SiloVerificationIcon verified={siloVerification?.silo1 ?? null} />}
               />
             </TreeNode>
           </TreeNode>
@@ -890,14 +969,14 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
             value={config.silo0.daoFee} 
             explorerUrl={explorerUrl} 
             isPercentage 
-            verificationIcon={wizardDaoFee != null ? <DAOFeeVerificationIcon onChainValue={config.silo0.daoFee} wizardValue={wizardDaoFee} /> : undefined}
+            verificationIcon={<DAOFeeVerificationIcon onChainValue={config.silo0.daoFee} wizardValue={wizardDaoFee ?? null} />}
           />
           <TreeNode 
             label="Deployer Fee" 
             value={config.silo0.deployerFee} 
             explorerUrl={explorerUrl} 
             isPercentage 
-            verificationIcon={wizardDeployerFee != null ? <DeployerFeeVerificationIcon onChainValue={config.silo0.deployerFee} wizardValue={wizardDeployerFee} /> : undefined}
+            verificationIcon={<DeployerFeeVerificationIcon onChainValue={config.silo0.deployerFee} wizardValue={wizardDeployerFee ?? null} />}
           />
           <TreeNode
             label="Hook Receiver"

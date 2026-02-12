@@ -15,17 +15,37 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
-import { buildVerificationChecks, type VerificationCheckItem } from '@/utils/verification/buildVerificationChecks'
+import { buildVerificationChecks } from '@/utils/verification/buildVerificationChecks'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
-/** Green checkmark outline only (no background) for passed checks in the summary list */
-function VerificationCheckMark() {
+import type { VerificationCheckItem, VerificationStatus } from '@/utils/verification/buildVerificationChecks'
+
+function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
+  if (status === 'pending') {
+    return (
+      <span className="ml-2 inline-flex shrink-0 text-gray-500" aria-label="Pending">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+    )
+  }
+  if (status === 'passed') {
+    return (
+      <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Passed">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+    )
+  }
+  // failed
   return (
-    <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Values match">
+    <span className="ml-2 inline-flex shrink-0 text-red-500" aria-label="Failed">
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </span>
   )
@@ -36,13 +56,33 @@ function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] })
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 py-4 mt-6">
       <h3 className="text-lg font-semibold text-white mb-3">Verification checks</h3>
-      <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
+      <ol className="list-decimal list-outside space-y-2 text-gray-300 text-sm ml-6">
         {checks.map((item, i) => (
-          <li key={i} className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-medium text-gray-200">{item.label}</span>
-            <span>on-chain: <span className="text-gray-400">{item.onChainDisplay}</span></span>
-            <span>wizard: <span className="text-gray-400">{item.wizardDisplay}</span></span>
-            {item.passed && <VerificationCheckMark />}
+          <li key={i} className="pl-2">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-medium text-gray-200">{item.label}</span>
+              {item.type === 'independent' ? (
+                <span className="text-gray-400">{item.message}</span>
+              ) : item.type === 'wizard-vs-onchain' && item.status === 'passed' ? (
+                <span className="text-gray-400">on-chain value matches wizard value</span>
+              ) : (
+                <>
+                  <span>on-chain: <span className="text-gray-400">{item.onChainDisplay ?? '—'}</span></span>
+                  <span>wizard: <span className="text-gray-400">{item.wizardDisplay ?? '—'}</span></span>
+                </>
+              )}
+              <VerificationStatusIcon status={item.status} />
+            </div>
+            {(item.condition || item.error) && (
+              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                {item.condition && (
+                  <li className="text-xs text-gray-500">{item.condition}</li>
+                )}
+                {item.error && (
+                  <li className="text-xs text-red-400">{item.error}</li>
+                )}
+              </ul>
+            )}
           </li>
         ))}
       </ol>
@@ -811,23 +851,29 @@ export default function Step11Verification() {
             <MarketConfigTree 
               config={config} 
               explorerUrl={explorerUrl}
-              wizardDaoFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null}
-              wizardDeployerFee={wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null}
-              siloVerification={wizardData.verificationFromWizard ? siloVerification : undefined}
-              hookOwnerVerification={wizardData.verificationFromWizard ? hookOwnerVerification : undefined}
-              irmOwnerVerification={wizardData.verificationFromWizard ? irmOwnerVerification : undefined}
-              tokenVerification={wizardData.verificationFromWizard ? tokenVerification : undefined}
-              numericValueVerification={wizardData.verificationFromWizard ? numericValueVerification : undefined}
+              wizardDaoFee={wizardData.feesConfiguration?.daoFee ?? null}
+              wizardDeployerFee={wizardData.feesConfiguration?.deployerFee ?? null}
+              siloVerification={siloVerification}
+              hookOwnerVerification={hookOwnerVerification}
+              irmOwnerVerification={irmOwnerVerification}
+              tokenVerification={tokenVerification}
+              numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
-              callBeforeQuoteVerification={wizardData.verificationFromWizard ? { silo0: { wizard: false }, silo1: { wizard: false } } : undefined}
+              callBeforeQuoteVerification={{ silo0: { wizard: false }, silo1: { wizard: false } }}
             />
             <VerificationChecksList
               checks={buildVerificationChecks(config, {
-                wizardDaoFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.daoFee != null ? wizardData.feesConfiguration.daoFee : null,
-                wizardDeployerFee: wizardData.verificationFromWizard && wizardData.feesConfiguration?.deployerFee != null ? wizardData.feesConfiguration.deployerFee : null,
+                wizardDaoFee: wizardData.feesConfiguration?.daoFee ?? null,
+                wizardDeployerFee: wizardData.feesConfiguration?.deployerFee ?? null,
                 numericWizard: numericValueVerification ?? { silo0: null, silo1: null },
-                ptOracleBaseDiscount: ptOracleBaseDiscountVerification
+                ptOracleBaseDiscount: ptOracleBaseDiscountVerification,
+                siloVerification: siloVerification,
+                implementationVerified: implementationVerified,
+                hookOwnerVerification: hookOwnerVerification,
+                irmOwnerVerification: irmOwnerVerification,
+                tokenVerification: tokenVerification,
+                callBeforeQuoteVerification: { silo0: { wizard: false }, silo1: { wizard: false } }
               })}
             />
           </>

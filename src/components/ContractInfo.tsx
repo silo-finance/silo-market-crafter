@@ -52,14 +52,17 @@ export default function ContractInfo({
       <div className="flex items-center gap-2">
         <p className="text-sm font-medium text-white">{contractName}</p>
         {sourceUrl && (
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-gray-400 hover:text-gray-300 underline"
-          >
-            source
-          </a>
+          <span className="text-xs text-gray-400">
+            Fetched from SILO repository: {' '}
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-gray-300 underline"
+            >
+              source
+            </a>
+          </span>
         )}
       </div>
       <div className="space-y-2">
