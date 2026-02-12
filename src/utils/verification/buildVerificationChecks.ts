@@ -15,12 +15,13 @@ import {
 import { verifyAddress } from '@/utils/verification/addressVerification'
 import { ethers } from 'ethers'
 
-export type VerificationStatus = 'pending' | 'passed' | 'failed'
+export type VerificationStatus = 'pending' | 'passed' | 'failed' | 'warning'
 
 export const VERIFICATION_STATUS = {
   PENDING: 'pending' as const,
   PASSED: 'passed' as const,
-  FAILED: 'failed' as const
+  FAILED: 'failed' as const,
+  WARNING: 'warning' as const
 } as const
 
 export type VerificationCheckType = 'wizard-vs-onchain' | 'independent'
@@ -87,6 +88,7 @@ export interface BuildVerificationChecksOptions {
     token0: { onChainToken: string | null; wizardToken: string | null } | null
     token1: { onChainToken: string | null; wizardToken: string | null } | null
   }
+  tokenAddressInJsonVerification?: Map<string, boolean>
   callBeforeQuoteVerification?: {
     silo0?: { wizard: boolean | null }
     silo1?: { wizard: boolean | null }
@@ -130,6 +132,7 @@ function createStatusMessage(
     passed: string
     failed: string
     pending: string
+    warning?: string
   }
 ): string {
   switch (status) {
@@ -137,6 +140,8 @@ function createStatusMessage(
       return messages.passed
     case VERIFICATION_STATUS.FAILED:
       return messages.failed
+    case VERIFICATION_STATUS.WARNING:
+      return messages.warning ?? messages.pending
     case VERIFICATION_STATUS.PENDING:
       return messages.pending
   }
@@ -197,6 +202,7 @@ export function buildVerificationChecks(
     hookOwnerVerification,
     irmOwnerVerification,
     tokenVerification,
+    tokenAddressInJsonVerification,
     callBeforeQuoteVerification
   } = options
 
@@ -461,7 +467,7 @@ export function buildVerificationChecks(
     irmOwnerStatus === VERIFICATION_STATUS.FAILED ? 'on-chain owner does not match wizard owner' : undefined
   ))
 
-  // Token verification (token0, token1) - always add
+  // Token verification (token0, token1) - wizard vs on-chain - always add
   const token0Verified = tokenVerification?.token0?.onChainToken && tokenVerification?.token0?.wizardToken
     ? verifyAddress(tokenVerification.token0.onChainToken, tokenVerification.token0.wizardToken)
     : null
@@ -486,6 +492,41 @@ export function buildVerificationChecks(
     token1Status,
     !tokenVerification?.token1?.onChainToken || !tokenVerification?.token1?.wizardToken ? 'requires wizard data' : undefined,
     token1Status === VERIFICATION_STATUS.FAILED ? 'on-chain token does not match wizard token' : undefined
+  ))
+
+  // Token address in JSON verification (token0, token1) - independent check - always add
+  const token0Address = config.silo0.token
+  const token0InJson = token0Address ? (tokenAddressInJsonVerification?.get(token0Address.toLowerCase()) ?? null) : null
+  const token0InJsonStatus = token0InJson === null 
+    ? VERIFICATION_STATUS.PENDING 
+    : token0InJson === true 
+      ? VERIFICATION_STATUS.PASSED 
+      : VERIFICATION_STATUS.WARNING
+  checks.push(createIndependentCheck(
+    'Token 0 address',
+    token0InJsonStatus === VERIFICATION_STATUS.PASSED 
+      ? 'exists in Silo Finance repository list'
+      : token0InJsonStatus === VERIFICATION_STATUS.WARNING
+        ? 'does not exist in Silo Finance repository list'
+        : 'verification pending',
+    token0InJsonStatus
+  ))
+
+  const token1Address = config.silo1.token
+  const token1InJson = token1Address ? (tokenAddressInJsonVerification?.get(token1Address.toLowerCase()) ?? null) : null
+  const token1InJsonStatus = token1InJson === null 
+    ? VERIFICATION_STATUS.PENDING 
+    : token1InJson === true 
+      ? VERIFICATION_STATUS.PASSED 
+      : VERIFICATION_STATUS.WARNING
+  checks.push(createIndependentCheck(
+    'Token 1 address',
+    token1InJsonStatus === VERIFICATION_STATUS.PASSED 
+      ? 'exists in Silo Finance repository list'
+      : token1InJsonStatus === VERIFICATION_STATUS.WARNING
+        ? 'does not exist in Silo Finance repository list'
+        : 'verification pending',
+    token1InJsonStatus
   ))
 
   // Call Before Quote verification - always add

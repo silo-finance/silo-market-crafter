@@ -26,7 +26,7 @@ import { VERIFICATION_STATUS, VERIFICATION_CHECK_TYPE } from '@/utils/verificati
 function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
   if (status === VERIFICATION_STATUS.PENDING) {
     return (
-      <span className="ml-2 inline-flex shrink-0 text-gray-500" aria-label="Pending">
+      <span className="mr-2 inline-flex shrink-0 text-gray-500" aria-label="Pending">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
@@ -35,16 +35,25 @@ function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
   }
   if (status === VERIFICATION_STATUS.PASSED) {
     return (
-      <span className="ml-2 inline-flex shrink-0 text-green-500" aria-label="Passed">
+      <span className="mr-2 inline-flex shrink-0 text-green-500" aria-label="Passed">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </span>
     )
   }
+  if (status === VERIFICATION_STATUS.WARNING) {
+    return (
+      <span className="mr-2 inline-flex shrink-0 text-yellow-500" aria-label="Warning">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </span>
+    )
+  }
   // failed
   return (
-    <span className="ml-2 inline-flex shrink-0 text-red-500" aria-label="Failed">
+    <span className="mr-2 inline-flex shrink-0 text-red-500" aria-label="Failed">
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
@@ -62,6 +71,7 @@ function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] })
           <li key={i} className="pl-2">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="font-medium text-gray-200">{item.label}</span>
+              <VerificationStatusIcon status={item.status} />
               {item.type === VERIFICATION_CHECK_TYPE.INDEPENDENT ? (
                 <span className="text-gray-400">{item.message}</span>
               ) : item.type === VERIFICATION_CHECK_TYPE.WIZARD_VS_ONCHAIN && item.status === VERIFICATION_STATUS.PASSED ? (
@@ -72,7 +82,6 @@ function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] })
                   <span>wizard: <span className="text-gray-400">{item.wizardDisplay ?? '—'}</span></span>
                 </>
               )}
-              <VerificationStatusIcon status={item.status} />
             </div>
             {(item.condition || item.error) && (
               <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
@@ -874,6 +883,7 @@ export default function Step11Verification() {
                 hookOwnerVerification: hookOwnerVerification,
                 irmOwnerVerification: irmOwnerVerification,
                 tokenVerification: tokenVerification,
+                tokenAddressInJsonVerification: addressInJsonVerification,
                 callBeforeQuoteVerification: { silo0: { wizard: false }, silo1: { wizard: false } }
               })}
             />
