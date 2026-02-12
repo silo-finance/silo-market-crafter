@@ -46,7 +46,7 @@ function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
     return (
       <span className="mr-2 inline-flex shrink-0 text-yellow-500" aria-label="Warning">
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <path d="M12 2L2 20h20L12 2zm0 3.99L19.53 18H4.47L12 5.99zM11 15v-2h2v2h-2zm0-4V8h2v3h-2z"/>
         </svg>
       </span>
     )
@@ -497,12 +497,11 @@ export default function Step11Verification() {
       }
       setAddressInJsonVerification(jsonVerificationMap)
       
-      // Verify hook owner - check if we have wizard data (hookOwnerAddress exists)
-      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
-      // verificationFromWizard might be set asynchronously after handleVerify completes
-      if (wizardData.hookOwnerAddress && marketConfig.silo0.hookReceiverOwner) {
+      // Verify hook owner - always check on-chain address, wizard data is optional
+      // Hook owner address is always available from on-chain config
+      if (marketConfig.silo0.hookReceiverOwner) {
         const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress // Hook owner address from wizard state (wizardData.hookOwnerAddress)
+        const wizardOwner = wizardData.hookOwnerAddress ?? null // Hook owner address from wizard state (optional)
         
         // Verification is performed in MarketConfigTree component using verifyAddress()
         // from src/utils/verification/addressVerification.ts
@@ -516,7 +515,7 @@ export default function Step11Verification() {
           isInAddressesJson: isInJson
         })
       } else {
-        // Reset verification state if we don't have wizard data
+        // Reset verification state if we don't have on-chain address
         setHookOwnerVerification({
           onChainOwner: null,
           wizardOwner: null,

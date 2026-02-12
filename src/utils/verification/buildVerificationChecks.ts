@@ -439,7 +439,7 @@ export function buildVerificationChecks(
     implStatus === VERIFICATION_STATUS.FAILED ? 'implementation address not found in repository' : undefined
   ))
 
-  // Hook owner verification - always add
+  // Hook owner verification - wizard vs on-chain - always add
   const hookOwnerVerified = hookOwnerVerification?.onChainOwner && hookOwnerVerification?.wizardOwner
     ? verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
     : null
@@ -451,6 +451,26 @@ export function buildVerificationChecks(
     hookOwnerStatus,
     !hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner ? 'requires wizard data' : undefined,
     hookOwnerStatus === VERIFICATION_STATUS.FAILED ? 'on-chain owner does not match wizard owner' : undefined
+  ))
+
+  // Hook owner address in JSON verification - independent check - always add
+  const hookOwnerAddress = hookOwnerVerification?.onChainOwner ?? null
+  const hookOwnerInJson = hookOwnerAddress ? (tokenAddressInJsonVerification?.get(hookOwnerAddress.toLowerCase()) ?? null) : null
+  const hookOwnerInJsonStatus = hookOwnerInJson === null 
+    ? VERIFICATION_STATUS.PENDING 
+    : hookOwnerInJson === true 
+      ? VERIFICATION_STATUS.PASSED 
+      : VERIFICATION_STATUS.WARNING
+  const hookOwnerInJsonMessage = createStatusMessage(hookOwnerInJsonStatus, {
+    passed: 'exists in Silo Finance repository list',
+    failed: 'does not exist in Silo Finance repository list',
+    warning: 'does not exist in Silo Finance repository list',
+    pending: 'verification pending'
+  })
+  checks.push(createIndependentCheck(
+    'Hook owner address',
+    hookOwnerInJsonMessage,
+    hookOwnerInJsonStatus
   ))
 
   // IRM owner verification - always add
