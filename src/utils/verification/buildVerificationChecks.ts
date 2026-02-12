@@ -12,12 +12,38 @@ import {
   isBaseDiscountPercentOutOfRange,
   verifyNumericValue
 } from '@/utils/verification'
+import { verifyAddress } from '@/utils/verification/addressVerification'
+import { ethers } from 'ethers'
+
+export const VERIFICATION_STATUS = {
+  PENDING: 'pending' as const,
+  PASSED: 'passed' as const,
+  FAILED: 'failed' as const,
+  WARNING: 'warning' as const,
+  NOT_AVAILABLE: 'not_available' as const
+} as const
+
+export const VERIFICATION_CHECK_TYPE = {
+  WIZARD_VS_ONCHAIN: 'wizard-vs-onchain' as const,
+  INDEPENDENT: 'independent' as const
+} as const
+
+export type VerificationStatus = typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS]
+export type VerificationCheckType = typeof VERIFICATION_CHECK_TYPE[keyof typeof VERIFICATION_CHECK_TYPE]
 
 export interface VerificationCheckItem {
   label: string
-  onChainDisplay: string
-  wizardDisplay: string
-  passed: boolean
+  type: VerificationCheckType
+  status: VerificationStatus
+  /** Condition required for this verification (e.g., "requires wizard data") */
+  condition?: string
+  /** Error message if verification failed */
+  error?: string
+  // For wizard-vs-onchain type
+  onChainDisplay?: string
+  wizardDisplay?: string
+  // For independent type
+  message?: string
 }
 
 export interface BuildVerificationChecksOptions {
@@ -43,6 +69,30 @@ export interface BuildVerificationChecksOptions {
     silo0?: { onChain: bigint; wizard: bigint | null }
     silo1?: { onChain: bigint; wizard: bigint | null }
   }
+  siloVerification?: {
+    silo0: boolean | null
+    silo1: boolean | null
+  }
+  implementationVerified?: boolean | null
+  hookOwnerVerification?: {
+    onChainOwner: string | null
+    wizardOwner: string | null
+    isInAddressesJson: boolean | null
+  }
+  irmOwnerVerification?: {
+    onChainOwner: string | null
+    wizardOwner: string | null
+    isInAddressesJson: boolean | null
+  }
+  tokenVerification?: {
+    token0: { onChainToken: string | null; wizardToken: string | null } | null
+    token1: { onChainToken: string | null; wizardToken: string | null } | null
+  }
+  tokenAddressInJsonVerification?: Map<string, boolean>
+  callBeforeQuoteVerification?: {
+    silo0?: { wizard: boolean | null }
+    silo1?: { wizard: boolean | null }
+  }
 }
 
 function formatPrice(quotePriceRaw: string | undefined): string {
@@ -50,50 +100,180 @@ function formatPrice(quotePriceRaw: string | undefined): string {
   return formatQuotePriceAs18Decimals(quotePriceRaw)
 }
 
+function formatAddress(address: string | null | undefined): string {
+  if (!address) return '—'
+  try {
+    // Normalize address using ethers
+    return ethers.getAddress(address)
+  } catch {
+    return address
+  }
+}
+
+/**
+ * Helper function to determine verification status based on verification result
+ */
+function getVerificationStatus(
+  isVerified: boolean | null | undefined,
+  defaultValue: VerificationStatus = VERIFICATION_STATUS.PENDING
+): VerificationStatus {
+  if (isVerified === null || isVerified === undefined) {
+    return defaultValue
+  }
+  return isVerified ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+}
+
+/**
+ * Helper function to create status message for independent checks
+ */
+function createStatusMessage(
+  status: VerificationStatus,
+  messages: {
+    passed: string
+    failed: string
+    pending: string
+    warning?: string
+    not_available?: string
+  }
+): string {
+  switch (status) {
+    case VERIFICATION_STATUS.PASSED:
+      return messages.passed
+    case VERIFICATION_STATUS.FAILED:
+      return messages.failed
+    case VERIFICATION_STATUS.WARNING:
+      return messages.warning ?? messages.pending
+    case VERIFICATION_STATUS.PENDING:
+      return messages.pending
+    case VERIFICATION_STATUS.NOT_AVAILABLE:
+      return messages.not_available ?? 'N/A'
+  }
+}
+
+/**
+ * Helper function to create a wizard-vs-onchain verification check
+ */
+function createWizardVsOnChainCheck(
+  label: string,
+  onChainValue: string,
+  wizardValue: string | null,
+  status: VerificationStatus,
+  condition?: string,
+  error?: string
+): VerificationCheckItem {
+  return {
+    label,
+    type: VERIFICATION_CHECK_TYPE.WIZARD_VS_ONCHAIN,
+    onChainDisplay: onChainValue,
+    wizardDisplay: wizardValue ?? '—',
+    status,
+    condition,
+    error
+  }
+}
+
+/**
+ * Helper function to create an independent verification check (not comparing wizard vs on-chain)
+ */
+function createIndependentCheck(
+  label: string,
+  message: string,
+  status: VerificationStatus,
+  error?: string
+): VerificationCheckItem {
+  return {
+    label,
+    type: VERIFICATION_CHECK_TYPE.INDEPENDENT,
+    message,
+    status,
+    error
+  }
+}
+
+/**
+ * Helper function to create an address in JSON verification check
+ * This is a reusable function for checking if an address exists in the Silo Finance repository list
+ */
+function createAddressInJsonCheck(
+  label: string,
+  address: string | null,
+  addressInJsonVerification: Map<string, boolean> | undefined
+): VerificationCheckItem {
+  const addressInJson = address ? (addressInJsonVerification?.get(address.toLowerCase()) ?? null) : null
+  const status = addressInJson === null 
+    ? VERIFICATION_STATUS.PENDING 
+    : addressInJson === true 
+      ? VERIFICATION_STATUS.PASSED 
+      : VERIFICATION_STATUS.WARNING
+  const message = createStatusMessage(status, {
+    passed: 'exists in Silo Finance repository list',
+    failed: 'does not exist in Silo Finance repository list',
+    warning: 'does not exist in Silo Finance repository list',
+    pending: 'verification pending'
+  })
+  return createIndependentCheck(label, message, status)
+}
+
 export function buildVerificationChecks(
   config: MarketConfig,
   options: BuildVerificationChecksOptions
 ): VerificationCheckItem[] {
   const checks: VerificationCheckItem[] = []
-  const { wizardDaoFee, wizardDeployerFee, numericWizard, ptOracleBaseDiscount } = options
+  const { 
+    wizardDaoFee, 
+    wizardDeployerFee, 
+    numericWizard, 
+    ptOracleBaseDiscount,
+    siloVerification,
+    implementationVerified,
+    hookOwnerVerification,
+    irmOwnerVerification,
+    tokenVerification,
+    tokenAddressInJsonVerification,
+    callBeforeQuoteVerification
+  } = options
 
-  // DAO Fee
-  if (wizardDaoFee != null) {
-    const onChain = config.silo0.daoFee
-    const passed = verifyNumericValue(onChain, wizardDaoFee)
-    checks.push({
-      label: 'DAO Fee',
-      onChainDisplay: formatPercentage(onChain),
-      wizardDisplay: formatPercentage(wizardDaoFee),
-      passed
-    })
-  }
+  // DAO Fee - always add, but with appropriate status
+  const daoFeeStatus = wizardDaoFee == null 
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(verifyNumericValue(config.silo0.daoFee, wizardDaoFee))
+  checks.push(createWizardVsOnChainCheck(
+    'DAO Fee',
+    formatPercentage(config.silo0.daoFee),
+    wizardDaoFee != null ? formatPercentage(wizardDaoFee) : null,
+    daoFeeStatus,
+    wizardDaoFee == null ? 'requires wizard data' : undefined
+  ))
 
-  // Deployer Fee
-  if (wizardDeployerFee != null) {
-    const onChain = config.silo0.deployerFee
-    const passed = verifyNumericValue(onChain, wizardDeployerFee)
-    checks.push({
-      label: 'Deployer Fee',
-      onChainDisplay: formatPercentage(onChain),
-      wizardDisplay: formatPercentage(wizardDeployerFee),
-      passed
-    })
-  }
+  // Deployer Fee - always add, but with appropriate status
+  const deployerFeeStatus = wizardDeployerFee == null 
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(verifyNumericValue(config.silo0.deployerFee, wizardDeployerFee))
+  checks.push(createWizardVsOnChainCheck(
+    'Deployer Fee',
+    formatPercentage(config.silo0.deployerFee),
+    wizardDeployerFee != null ? formatPercentage(wizardDeployerFee) : null,
+    deployerFeeStatus,
+    wizardDeployerFee == null ? 'requires wizard data' : undefined
+  ))
 
-  // Silo 0 – Solvency Oracle price
+  // Silo 0 – Solvency Oracle price - always checkable (independent check)
   const price0Sol = config.silo0.solvencyOracle.quotePrice
   const low0Sol = isPriceUnexpectedlyLow(price0Sol)
   const high0Sol = isPriceUnexpectedlyHigh(price0Sol)
   const decimals0Sol = isPriceDecimalsInvalid(price0Sol)
-  checks.push({
-    label: 'Silo 0 Solvency Oracle – price',
-    onChainDisplay: formatPrice(price0Sol),
-    wizardDisplay: '—',
-    passed: !low0Sol && !high0Sol && !decimals0Sol
-  })
+  const price0SolStatus: VerificationStatus = !low0Sol && !high0Sol && !decimals0Sol ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+  const price0SolError = price0SolStatus === VERIFICATION_STATUS.FAILED 
+    ? (low0Sol ? 'price unexpectedly low' : high0Sol ? 'price unexpectedly high' : decimals0Sol ? 'invalid price decimals' : '')
+    : undefined
+  checks.push(createIndependentCheck(
+    'Silo 0 Solvency Oracle – price',
+    `Price: ${formatPrice(price0Sol)}`,
+    price0SolStatus,
+    price0SolError
+  ))
 
-  // Silo 0 – Max LTV Oracle price (only if different from Solvency)
+  // Silo 0 – Max LTV Oracle price (only if different from Solvency) - always checkable (independent check)
   if (
     config.silo0.maxLtvOracle.address &&
     config.silo0.maxLtvOracle.address !== config.silo0.solvencyOracle.address
@@ -102,61 +282,78 @@ export function buildVerificationChecks(
     const low0Max = isPriceUnexpectedlyLow(price0Max)
     const high0Max = isPriceUnexpectedlyHigh(price0Max)
     const decimals0Max = isPriceDecimalsInvalid(price0Max)
-    checks.push({
-      label: 'Silo 0 Max LTV Oracle – price',
-      onChainDisplay: formatPrice(price0Max),
-      wizardDisplay: '—',
-      passed: !low0Max && !high0Max && !decimals0Max
-    })
+    const price0MaxStatus: VerificationStatus = !low0Max && !high0Max && !decimals0Max ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+    const price0MaxError = price0MaxStatus === VERIFICATION_STATUS.FAILED
+      ? (low0Max ? 'price unexpectedly low' : high0Max ? 'price unexpectedly high' : decimals0Max ? 'invalid price decimals' : '')
+      : undefined
+    checks.push(createIndependentCheck(
+      'Silo 0 Max LTV Oracle – price',
+      `Price: ${formatPrice(price0Max)}`,
+      price0MaxStatus,
+      price0MaxError
+    ))
   }
 
-  // Silo 0 – Base Discount Per Year (PT Oracle)
+  // Silo 0 – Base Discount Per Year (PT Oracle) - always add if PT Oracle exists
   const bd0 = ptOracleBaseDiscount.silo0
   if (bd0) {
-    const wizardStr = bd0.wizard != null ? formatPercentage(bd0.wizard) : '—'
+    const wizardStr = bd0.wizard != null ? formatPercentage(bd0.wizard) : null
     const match = bd0.wizard != null && verifyNumericValue(bd0.onChain, bd0.wizard)
     const outOfRange = isBaseDiscountPercentOutOfRange(bd0.onChain)
-    checks.push({
-      label: 'Silo 0 Solvency Oracle – Base Discount Per Year',
-      onChainDisplay: formatPercentage(bd0.onChain),
-      wizardDisplay: wizardStr,
-      passed: match && !outOfRange
-    })
+    const bd0Status = bd0.wizard == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(match && !outOfRange)
+    const bd0Error = bd0Status === VERIFICATION_STATUS.FAILED 
+      ? (outOfRange ? 'base discount out of range' : !match ? 'wizard value does not match on-chain value' : '')
+      : undefined
+    checks.push(createWizardVsOnChainCheck(
+      'Silo 0 Solvency Oracle – Base Discount Per Year',
+      formatPercentage(bd0.onChain),
+      wizardStr,
+      bd0Status,
+      bd0.wizard == null ? 'requires wizard data' : undefined,
+      bd0Error
+    ))
   }
 
-  // Silo 0 – Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee
+  // Silo 0 – Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee - always add
   const n0 = numericWizard.silo0
-  if (n0) {
-    const addNumeric = (key: keyof typeof n0, label: string) => {
-      const wizardVal = n0[key]
-      if (wizardVal == null) return
-      const onChain = config.silo0[key]
-      const passed = verifyNumericValue(onChain, wizardVal)
-      checks.push({
-        label: `Silo 0 – ${label}`,
-        onChainDisplay: formatPercentage(onChain),
-        wizardDisplay: formatPercentage(wizardVal),
-        passed
-      })
-    }
-    addNumeric('maxLtv', 'Max LTV')
-    addNumeric('lt', 'Liquidation Threshold (LT)')
-    addNumeric('liquidationTargetLtv', 'Liquidation Target LTV')
-    addNumeric('liquidationFee', 'Liquidation Fee')
-    addNumeric('flashloanFee', 'Flashloan Fee')
+  const addNumeric = (key: 'maxLtv' | 'lt' | 'liquidationTargetLtv' | 'liquidationFee' | 'flashloanFee', label: string) => {
+    const wizardVal = n0?.[key] ?? null
+    const onChain = config.silo0[key]
+    const status = wizardVal == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(verifyNumericValue(onChain, wizardVal))
+    checks.push(createWizardVsOnChainCheck(
+      `Silo 0 – ${label}`,
+      formatPercentage(onChain),
+      wizardVal != null ? formatPercentage(wizardVal) : null,
+      status,
+      wizardVal == null ? 'requires wizard data' : undefined,
+      status === VERIFICATION_STATUS.FAILED ? 'wizard value does not match on-chain value' : undefined
+    ))
   }
+  addNumeric('maxLtv', 'Max LTV')
+  addNumeric('lt', 'Liquidation Threshold (LT)')
+  addNumeric('liquidationTargetLtv', 'Liquidation Target LTV')
+  addNumeric('liquidationFee', 'Liquidation Fee')
+  addNumeric('flashloanFee', 'Flashloan Fee')
 
-  // Silo 1 – Solvency Oracle price
+  // Silo 1 – Solvency Oracle price - always checkable (independent check)
   const price1Sol = config.silo1.solvencyOracle.quotePrice
   const low1Sol = isPriceUnexpectedlyLow(price1Sol)
   const high1Sol = isPriceUnexpectedlyHigh(price1Sol)
   const decimals1Sol = isPriceDecimalsInvalid(price1Sol)
-  checks.push({
-    label: 'Silo 1 Solvency Oracle – price',
-    onChainDisplay: formatPrice(price1Sol),
-    wizardDisplay: '—',
-    passed: !low1Sol && !high1Sol && !decimals1Sol
-  })
+  const price1SolStatus: VerificationStatus = !low1Sol && !high1Sol && !decimals1Sol ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+  const price1SolError = price1SolStatus === VERIFICATION_STATUS.FAILED
+    ? (low1Sol ? 'price unexpectedly low' : high1Sol ? 'price unexpectedly high' : decimals1Sol ? 'invalid price decimals' : '')
+    : undefined
+  checks.push(createIndependentCheck(
+    'Silo 1 Solvency Oracle – price',
+    `Price: ${formatPrice(price1Sol)}`,
+    price1SolStatus,
+    price1SolError
+  ))
 
   if (
     config.silo1.maxLtvOracle.address &&
@@ -166,47 +363,223 @@ export function buildVerificationChecks(
     const low1Max = isPriceUnexpectedlyLow(price1Max)
     const high1Max = isPriceUnexpectedlyHigh(price1Max)
     const decimals1Max = isPriceDecimalsInvalid(price1Max)
-    checks.push({
-      label: 'Silo 1 Max LTV Oracle – price',
-      onChainDisplay: formatPrice(price1Max),
-      wizardDisplay: '—',
-      passed: !low1Max && !high1Max && !decimals1Max
-    })
+    const price1MaxStatus: VerificationStatus = !low1Max && !high1Max && !decimals1Max ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+    const price1MaxError = price1MaxStatus === VERIFICATION_STATUS.FAILED
+      ? (low1Max ? 'price unexpectedly low' : high1Max ? 'price unexpectedly high' : decimals1Max ? 'invalid price decimals' : '')
+      : undefined
+    checks.push(createIndependentCheck(
+      'Silo 1 Max LTV Oracle – price',
+      `Price: ${formatPrice(price1Max)}`,
+      price1MaxStatus,
+      price1MaxError
+    ))
   }
 
   const bd1 = ptOracleBaseDiscount.silo1
   if (bd1) {
-    const wizardStr = bd1.wizard != null ? formatPercentage(bd1.wizard) : '—'
+    const wizardStr = bd1.wizard != null ? formatPercentage(bd1.wizard) : null
     const match = bd1.wizard != null && verifyNumericValue(bd1.onChain, bd1.wizard)
     const outOfRange = isBaseDiscountPercentOutOfRange(bd1.onChain)
-    checks.push({
-      label: 'Silo 1 Solvency Oracle – Base Discount Per Year',
-      onChainDisplay: formatPercentage(bd1.onChain),
-      wizardDisplay: wizardStr,
-      passed: match && !outOfRange
-    })
+    const bd1Status = bd1.wizard == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(match && !outOfRange)
+    const bd1Error = bd1Status === VERIFICATION_STATUS.FAILED
+      ? (outOfRange ? 'base discount out of range' : !match ? 'wizard value does not match on-chain value' : '')
+      : undefined
+    checks.push(createWizardVsOnChainCheck(
+      'Silo 1 Solvency Oracle – Base Discount Per Year',
+      formatPercentage(bd1.onChain),
+      wizardStr,
+      bd1Status,
+      bd1.wizard == null ? 'requires wizard data' : undefined,
+      bd1Error
+    ))
   }
 
+  // Silo 1 – Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee - always add
   const n1 = numericWizard.silo1
-  if (n1) {
-    const addNumeric = (key: keyof typeof n1, label: string) => {
-      const wizardVal = n1[key]
-      if (wizardVal == null) return
-      const onChain = config.silo1[key]
-      const passed = verifyNumericValue(onChain, wizardVal)
-      checks.push({
-        label: `Silo 1 – ${label}`,
-        onChainDisplay: formatPercentage(onChain),
-        wizardDisplay: formatPercentage(wizardVal),
-        passed
-      })
-    }
-    addNumeric('maxLtv', 'Max LTV')
-    addNumeric('lt', 'Liquidation Threshold (LT)')
-    addNumeric('liquidationTargetLtv', 'Liquidation Target LTV')
-    addNumeric('liquidationFee', 'Liquidation Fee')
-    addNumeric('flashloanFee', 'Flashloan Fee')
+  const addNumeric1 = (key: 'maxLtv' | 'lt' | 'liquidationTargetLtv' | 'liquidationFee' | 'flashloanFee', label: string) => {
+    const wizardVal = n1?.[key] ?? null
+    const onChain = config.silo1[key]
+    const status = wizardVal == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(verifyNumericValue(onChain, wizardVal))
+    checks.push(createWizardVsOnChainCheck(
+      `Silo 1 – ${label}`,
+      formatPercentage(onChain),
+      wizardVal != null ? formatPercentage(wizardVal) : null,
+      status,
+      wizardVal == null ? 'requires wizard data' : undefined,
+      status === VERIFICATION_STATUS.FAILED ? 'wizard value does not match on-chain value' : undefined
+    ))
   }
+  addNumeric1('maxLtv', 'Max LTV')
+  addNumeric1('lt', 'Liquidation Threshold (LT)')
+  addNumeric1('liquidationTargetLtv', 'Liquidation Target LTV')
+  addNumeric1('liquidationFee', 'Liquidation Fee')
+  addNumeric1('flashloanFee', 'Flashloan Fee')
+
+  // Silo verification (silo0, silo1) - always add (independent check, verifies against Silo Factory repository)
+  const silo0Status = getVerificationStatus(siloVerification?.silo0)
+  const silo0Address = formatAddress(config.silo0.silo)
+  const silo0Message = createStatusMessage(silo0Status, {
+    passed: `Address ${silo0Address} verified in Silo Factory`,
+    failed: `Address ${silo0Address} not verified in Silo Factory`,
+    pending: 'Verification pending'
+  })
+  checks.push(createIndependentCheck(
+    'Silo 0 address',
+    silo0Message,
+    silo0Status,
+    silo0Status === VERIFICATION_STATUS.FAILED ? 'silo address not verified in Silo Factory' : undefined
+  ))
+
+  const silo1Status = getVerificationStatus(siloVerification?.silo1)
+  const silo1Address = formatAddress(config.silo1.silo)
+  const silo1Message = createStatusMessage(silo1Status, {
+    passed: `Address ${silo1Address} verified in Silo Factory`,
+    failed: `Address ${silo1Address} not verified in Silo Factory`,
+    pending: 'Verification pending'
+  })
+  checks.push(createIndependentCheck(
+    'Silo 1 address',
+    silo1Message,
+    silo1Status,
+    silo1Status === VERIFICATION_STATUS.FAILED ? 'silo address not verified in Silo Factory' : undefined
+  ))
+
+  // Implementation verification - always add (independent check, does not require wizard data)
+  const implStatus = getVerificationStatus(implementationVerified)
+  const implMessage = createStatusMessage(implStatus, {
+    passed: 'Contract address matches repository',
+    failed: 'Contract address does not match repository',
+    pending: 'Verification pending'
+  })
+  checks.push(createIndependentCheck(
+    'SILO implementation address',
+    implMessage,
+    implStatus,
+    implStatus === VERIFICATION_STATUS.FAILED ? 'implementation address not found in repository' : undefined
+  ))
+
+  // Hook owner verification - wizard vs on-chain - always add
+  const hookOwnerVerified = hookOwnerVerification?.onChainOwner && hookOwnerVerification?.wizardOwner
+    ? verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
+    : null
+  const hookOwnerStatus = hookOwnerVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(hookOwnerVerified)
+  checks.push(createWizardVsOnChainCheck(
+    'Hook owner',
+    formatAddress(hookOwnerVerification?.onChainOwner),
+    hookOwnerVerification?.wizardOwner ? formatAddress(hookOwnerVerification.wizardOwner) : null,
+    hookOwnerStatus,
+    !hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner ? 'requires wizard data' : undefined,
+    hookOwnerStatus === VERIFICATION_STATUS.FAILED ? 'on-chain owner does not match wizard owner' : undefined
+  ))
+
+  // Hook owner address in JSON verification - independent check - always add
+  checks.push(createAddressInJsonCheck(
+    'Hook owner address',
+    hookOwnerVerification?.onChainOwner ?? null,
+    tokenAddressInJsonVerification
+  ))
+
+  // IRM owner verification - wizard vs on-chain - always add
+  const irmOwnerVerified = irmOwnerVerification?.onChainOwner && irmOwnerVerification?.wizardOwner
+    ? verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
+    : null
+  const irmOwnerStatus = irmOwnerVerified === null && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(irmOwnerVerified)
+  checks.push(createWizardVsOnChainCheck(
+    'IRM owner',
+    formatAddress(irmOwnerVerification?.onChainOwner),
+    irmOwnerVerification?.wizardOwner ? formatAddress(irmOwnerVerification.wizardOwner) : null,
+    irmOwnerStatus,
+    !irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner ? 'requires wizard data' : undefined,
+    irmOwnerStatus === VERIFICATION_STATUS.FAILED ? 'on-chain owner does not match wizard owner' : undefined
+  ))
+
+  // IRM owner address in JSON verification - independent check - always add
+  checks.push(createAddressInJsonCheck(
+    'IRM owner address',
+    irmOwnerVerification?.onChainOwner ?? null,
+    tokenAddressInJsonVerification
+  ))
+
+  // Token verification (token0, token1) - wizard vs on-chain - always add
+  const token0Verified = tokenVerification?.token0?.onChainToken && tokenVerification?.token0?.wizardToken
+    ? verifyAddress(tokenVerification.token0.onChainToken, tokenVerification.token0.wizardToken)
+    : null
+  const token0Status = token0Verified === null && (!tokenVerification?.token0?.onChainToken || !tokenVerification?.token0?.wizardToken)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(token0Verified)
+  checks.push(createWizardVsOnChainCheck(
+    'Silo 0 Token',
+    formatAddress(tokenVerification?.token0?.onChainToken),
+    tokenVerification?.token0?.wizardToken ? formatAddress(tokenVerification.token0.wizardToken) : null,
+    token0Status,
+    !tokenVerification?.token0?.onChainToken || !tokenVerification?.token0?.wizardToken ? 'requires wizard data' : undefined,
+    token0Status === VERIFICATION_STATUS.FAILED ? 'on-chain token does not match wizard token' : undefined
+  ))
+
+  const token1Verified = tokenVerification?.token1?.onChainToken && tokenVerification?.token1?.wizardToken
+    ? verifyAddress(tokenVerification.token1.onChainToken, tokenVerification.token1.wizardToken)
+    : null
+  const token1Status = token1Verified === null && (!tokenVerification?.token1?.onChainToken || !tokenVerification?.token1?.wizardToken)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(token1Verified)
+  checks.push(createWizardVsOnChainCheck(
+    'Silo 1 Token',
+    formatAddress(tokenVerification?.token1?.onChainToken),
+    tokenVerification?.token1?.wizardToken ? formatAddress(tokenVerification.token1.wizardToken) : null,
+    token1Status,
+    !tokenVerification?.token1?.onChainToken || !tokenVerification?.token1?.wizardToken ? 'requires wizard data' : undefined,
+    token1Status === VERIFICATION_STATUS.FAILED ? 'on-chain token does not match wizard token' : undefined
+  ))
+
+  // Token address in JSON verification (token0, token1) - independent check - always add
+  checks.push(createAddressInJsonCheck(
+    'Token 0 address',
+    config.silo0.token,
+    tokenAddressInJsonVerification
+  ))
+
+  checks.push(createAddressInJsonCheck(
+    'Token 1 address',
+    config.silo1.token,
+    tokenAddressInJsonVerification
+  ))
+
+  // Call Before Quote verification - always add
+  const cbq0Wizard = callBeforeQuoteVerification?.silo0?.wizard
+  const cbq0Verified = cbq0Wizard != null ? (config.silo0.callBeforeQuote === cbq0Wizard) : null
+  const cbq0Status = cbq0Wizard == null
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(cbq0Verified)
+  checks.push(createWizardVsOnChainCheck(
+    'Silo 0 Call Before Quote',
+    config.silo0.callBeforeQuote ? 'true' : 'false',
+    cbq0Wizard != null ? (cbq0Wizard ? 'true' : 'false') : null,
+    cbq0Status,
+    cbq0Wizard == null ? 'requires wizard data' : undefined,
+    cbq0Status === VERIFICATION_STATUS.FAILED ? 'on-chain value does not match wizard value' : undefined
+  ))
+
+  const cbq1Wizard = callBeforeQuoteVerification?.silo1?.wizard
+  const cbq1Verified = cbq1Wizard != null ? (config.silo1.callBeforeQuote === cbq1Wizard) : null
+  const cbq1Status = cbq1Wizard == null
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(cbq1Verified)
+  checks.push(createWizardVsOnChainCheck(
+    'Silo 1 Call Before Quote',
+    config.silo1.callBeforeQuote ? 'true' : 'false',
+    cbq1Wizard != null ? (cbq1Wizard ? 'true' : 'false') : null,
+    cbq1Status,
+    cbq1Wizard == null ? 'requires wizard data' : undefined,
+    cbq1Status === VERIFICATION_STATUS.FAILED ? 'on-chain value does not match wizard value' : undefined
+  ))
 
   return checks
 }

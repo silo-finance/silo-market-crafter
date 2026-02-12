@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
+import { getNetworkDisplayName } from '@/utils/networks'
 
 declare global {
   interface Window {
@@ -15,25 +16,7 @@ declare global {
 
 /** Map chainId (decimal string) to display name; used when syncing from wallet (e.g. chainChanged). */
 function getNetworkNameForChainId(chainIdDecimal: string): string {
-  const id = parseInt(chainIdDecimal, 10)
-  const map: Record<number, string> = {
-    1: 'Ethereum Mainnet',
-    11155111: 'Sepolia',
-    137: 'Polygon',
-    42161: 'Arbitrum One',
-    421614: 'Arbitrum Sepolia',
-    43114: 'Avalanche C-Chain',
-    8453: 'Base',
-    146: 'Sonic',
-    653: 'Sonic Testnet',
-    10: 'Optimism',
-    100: 'Gnosis',
-    56: 'BNB Smart Chain',
-    250: 'Fantom Opera',
-    25: 'Cronos',
-    1284: 'Moonbeam',
-  }
-  return map[id] ?? `Network ${chainIdDecimal}`
+  return getNetworkDisplayName(chainIdDecimal)
 }
 
 export interface TokenData {

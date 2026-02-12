@@ -6,23 +6,10 @@ import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
+import { getNativeTokenSymbol } from '@/utils/networks'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 
 type OwnerSource = 'wallet' | 'manual'
-
-function getNativeTokenSymbol(chainId: string): string {
-  const map: { [key: string]: string } = {
-    '1': 'ETH',
-    '137': 'MATIC',
-    '10': 'ETH',
-    '42161': 'ETH',
-    '43114': 'AVAX',
-    '8453': 'ETH',
-    '146': 'S',
-    '653': 'S'
-  }
-  return map[chainId] || 'ETH'
-}
 
 export default function Step8HookOwner() {
   const router = useRouter()

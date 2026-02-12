@@ -10,6 +10,7 @@
  */
 
 import { convertWizardTo18Decimals, convert18DecimalsToWizard, bigintToDisplayNumber, displayNumberToBigint, BP2DP_NORMALIZATION } from '@/utils/verification/normalization'
+import { formatWizardBigIntToE18 } from '@/utils/formatting'
 
 describe('convertWizardTo18Decimals', () => {
   describe('basic percentage conversions', () => {
@@ -394,5 +395,51 @@ describe('BP2DP_NORMALIZATION constant', () => {
 
   it('is a bigint', () => {
     expect(typeof BP2DP_NORMALIZATION).toBe('bigint')
+  })
+})
+
+describe('formatWizardBigIntToE18 (formatting utility)', () => {
+  describe('basic conversions', () => {
+    it('converts 0 correctly', () => {
+      const result = formatWizardBigIntToE18(BigInt(0))
+      expect(result).toBe('0')
+    })
+
+    it('converts 5% (50000000000000000) correctly', () => {
+      // 5% in wizard format: 5 * 10^16 = 50000000000000000
+      const wizardValue = BigInt('50000000000000000')
+      const result = formatWizardBigIntToE18(wizardValue, false)
+      // 5% = 0.05e18
+      expect(result).toBe('0.05e18')
+    })
+
+    it('converts 95% correctly using full UI flow: displayNumberToBigint → formatWizardBigIntToE18', () => {
+      // This test uses only global functions that the UI uses
+      // Step 1: Convert 95% to BigInt using displayNumberToBigint (same as UI)
+      const bigintValue = displayNumberToBigint(95)
+      // 95% in wizard format: 95 * 10^16 = 950000000000000000
+      expect(bigintValue).toBe(BigInt('950000000000000000'))
+      
+      // Step 2: Convert BigInt to E18 notation using formatWizardBigIntToE18 (same as UI)
+      const e18Result = formatWizardBigIntToE18(bigintValue, false)
+      // 95% = 0.95e18 (must be exact, no floating point errors)
+      expect(e18Result).toBe('0.95e18')
+    })
+
+    it('converts 100% (1000000000000000000) correctly', () => {
+      // 100% in wizard format: 100 * 10^16 = 1000000000000000000
+      const wizardValue = BigInt('1000000000000000000')
+      const result = formatWizardBigIntToE18(wizardValue, false)
+      // 100% = 1e18
+      expect(result).toBe('1e18')
+    })
+
+    it('formats with full precision when fullPrecision=true', () => {
+      // 95% in wizard format: 95 * 10^16 = 950000000000000000
+      const wizardValue = BigInt('950000000000000000')
+      const result = formatWizardBigIntToE18(wizardValue, true)
+      // Full precision should show all 18 decimal places
+      expect(result).toBe('0.950000000000000000e18')
+    })
   })
 })

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
+import { getNetworkDisplayName } from '@/utils/networks'
 import packageJson from '../../package.json'
 import CopyButton from '@/components/CopyButton'
 
@@ -26,112 +27,8 @@ export default function Header() {
   const [networkName, setNetworkName] = useState<string>('')
 
   const getNetworkInfo = async (chainId: string) => {
-    const networkMap: { [key: number]: string } = {
-      // Ethereum
-      1: 'Ethereum Mainnet',
-      3: 'Ropsten',
-      4: 'Rinkeby',
-      5: 'Goerli',
-      42: 'Kovan',
-      11155111: 'Sepolia',
-      
-      // Polygon
-      137: 'Polygon',
-      80001: 'Polygon Mumbai',
-      1101: 'Polygon zkEVM',
-      1442: 'Polygon zkEVM Testnet',
-      
-      // Optimism
-      10: 'Optimism',
-      420: 'Optimism Goerli',
-      11155420: 'Optimism Sepolia',
-      
-      // Arbitrum
-      42161: 'Arbitrum One',
-      421613: 'Arbitrum Goerli',
-      421614: 'Arbitrum Sepolia',
-      42170: 'Arbitrum Nova',
-      
-      // BSC (Binance Smart Chain)
-      56: 'BSC',
-      97: 'BSC Testnet',
-      
-      // Avalanche
-      43114: 'Avalanche C-Chain',
-      43113: 'Avalanche Fuji',
-      
-      // Fantom
-      250: 'Fantom Opera',
-      4002: 'Fantom Testnet',
-      
-      // Base
-      8453: 'Base',
-      84532: 'Base Sepolia',
-      84531: 'Base Goerli',
-      
-      // Linea
-      59144: 'Linea',
-      59140: 'Linea Goerli',
-      59141: 'Linea Sepolia',
-      
-      // Scroll
-      534352: 'Scroll',
-      534351: 'Scroll Sepolia',
-      
-      // Mantle
-      5000: 'Mantle',
-      5001: 'Mantle Sepolia',
-      
-      // Celo
-      42220: 'Celo',
-      44787: 'Celo Alfajores',
-      
-      // Gnosis
-      100: 'Gnosis',
-      10200: 'Gnosis Chiado',
-      
-      // Moonbeam
-      1284: 'Moonbeam',
-      1287: 'Moonbase Alpha',
-      
-      // Harmony
-      1666600000: 'Harmony One',
-      1666700000: 'Harmony Testnet',
-      
-      // Cronos
-      25: 'Cronos',
-      338: 'Cronos Testnet',
-      
-      // Klaytn
-      8217: 'Klaytn',
-      1001: 'Klaytn Baobab',
-      
-      // Aurora
-      1313161554: 'Aurora',
-      1313161555: 'Aurora Testnet',
-      
-      // Metis
-      1088: 'Metis Andromeda',
-      599: 'Metis Goerli',
-      
-      // Boba
-      288: 'Boba Network',
-      28882: 'Boba Goerli',
-      
-      // ZkSync Era
-      324: 'zkSync Era',
-      300: 'zkSync Era Testnet',
-      
-      // Immutable X
-      13371: 'Immutable X',
-      
-      // Sonic
-      146: 'Sonic',
-      653: 'Sonic Testnet',
-    }
-    
     const id = parseInt(chainId, 16)
-    const name = networkMap[id] || `Unknown Network (${id})`
+    const name = getNetworkDisplayName(id)
     setNetworkId(id.toString())
     setNetworkName(name)
   }

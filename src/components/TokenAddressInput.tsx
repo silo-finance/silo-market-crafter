@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
+import { getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import erc20Artifact from '@/abis/IERC20.json'
 
@@ -27,30 +28,6 @@ function debounce<T extends (...args: any[]) => any>(
     clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
   }
-}
-
-function getExplorerAddressUrl(chainId: string, address: string): string {
-  const id = parseInt(chainId, 10)
-  const explorerMap: { [key: number]: string } = {
-    1: 'https://etherscan.io',
-    137: 'https://polygonscan.com',
-    10: 'https://optimistic.etherscan.io',
-    18: 'https://optimistic.etherscan.io',
-    420: 'https://goerli-optimism.etherscan.io',
-    4202: 'https://sepolia-optimism.etherscan.io',
-    42161: 'https://arbiscan.io',
-    421613: 'https://goerli.arbiscan.io',
-    421614: 'https://sepolia.arbiscan.io',
-    43114: 'https://snowtrace.io',
-    43113: 'https://testnet.snowtrace.io',
-    8453: 'https://basescan.org',
-    84531: 'https://goerli.basescan.org',
-    84532: 'https://sepolia.basescan.org',
-    146: 'https://sonicscan.org',
-    653: 'https://sonicscan.org'
-  }
-  const base = explorerMap[id] || 'https://etherscan.io'
-  return `${base}/address/${address}`
 }
 
 export interface TokenAddressInputProps {

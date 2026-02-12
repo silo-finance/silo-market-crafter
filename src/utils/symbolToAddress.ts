@@ -7,20 +7,10 @@
 export const ADDRESSES_JSON_BASE =
   'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/common/addresses'
 
+import { getChainName } from '@/utils/networks'
+
 export function getChainNameForAddresses(chainId: string): string {
-  const map: { [key: string]: string } = {
-    '1': 'mainnet',
-    '137': 'polygon',
-    '42161': 'arbitrum_one',
-    '43114': 'avalanche',
-    '8453': 'base',
-    '11155111': 'sepolia',
-    '10': 'optimism',
-    '31337': 'anvil',
-    '146': 'sonic',
-    '653': 'sonic_testnet'
-  }
-  return map[chainId] || `chain_${chainId}`
+  return getChainName(chainId)
 }
 
 /**

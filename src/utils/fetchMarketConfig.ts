@@ -7,15 +7,7 @@ import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
 import erc20Abi from '@/abis/IERC20.json'
 import siloLensAbi from '@/abis/silo/ISiloLens.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
-
-const CHAIN_ID_TO_NAME: Record<string, string> = {
-  '1': 'mainnet',
-  '137': 'polygon',
-  '10': 'optimism',
-  '42161': 'arbitrum_one',
-  '43114': 'avalanche',
-  '146': 'sonic'
-}
+import { getChainName } from '@/utils/networks'
 
 async function fetchSiloLensAddress(chainName: string): Promise<string | null> {
   const lensContractName = 'SiloLens.sol'
@@ -155,7 +147,7 @@ export async function fetchMarketConfig(
 
   // Fetch versions for oracles and IRMs via SiloLens (bulk: one getVersion per unique address)
   const chainId = (await provider.getNetwork()).chainId.toString()
-  const chainName = CHAIN_ID_TO_NAME[chainId] ?? 'mainnet'
+  const chainName = getChainName(chainId)
   const siloLensAddress = await fetchSiloLensAddress(chainName)
   if (siloLensAddress) {
     const uniqueAddresses = new Set<string>()

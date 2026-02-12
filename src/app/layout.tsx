@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/Header'
 import AlphaDisclaimer from '@/components/AlphaDisclaimer'
+import NetworkWarning from '@/components/NetworkWarning'
 import { WizardProvider } from '@/contexts/WizardContext'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <WizardProvider>
+          <NetworkWarning />
           <Header />
           <AlphaDisclaimer>
             {children}
