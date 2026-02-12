@@ -82,9 +82,9 @@ export default function Step11Verification() {
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
 
   // Fetch Silo Factory address and version
-  // Only fetch if we have wizard data (verificationFromWizard is true)
+  // Always fetch - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !chainId || !config) return
+    if (!chainId || !config) return
 
     const fetchSiloFactory = async () => {
       const chainName = getChainName(chainId)
@@ -125,7 +125,7 @@ export default function Step11Verification() {
 
     fetchSiloFactory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, chainId, config])
+  }, [chainId, config])
 
   // Fetch Silo Implementation addresses from repository (_siloImplementations.json)
   // Only run verification if we have wizard data (verificationFromWizard is true)
@@ -231,9 +231,9 @@ export default function Step11Verification() {
   }, [wizardData.verificationFromWizard, implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
 
   // Fetch Silo Factory version via Silo Lens
-  // Only fetch if we have wizard data (verificationFromWizard is true)
+  // Always fetch - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !siloFactory?.address || !siloLensAddress || !chainId) return
+    if (!siloFactory?.address || !siloLensAddress || !chainId) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const fetchFactoryVersion = async () => {
@@ -263,20 +263,12 @@ export default function Step11Verification() {
     fetchFactoryVersion()
     // Intentionally narrow deps: only re-fetch when factory address or chain changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, siloFactory?.address, siloLensAddress, chainId])
+  }, [siloFactory?.address, siloLensAddress, chainId])
 
   // Verify silo addresses using Silo Factory isSilo method
-  // Only run verification if we have wizard data (verificationFromWizard is true)
+  // Always run verification - this is independent verification that doesn't require wizard data
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) {
-      // Reset verification state if we don't have wizard data
-      if (!wizardData.verificationFromWizard) {
-        setSiloVerification({
-          silo0: null,
-          silo1: null,
-          error: null
-        })
-      }
+    if (!siloFactory?.address || !config || typeof window === 'undefined' || !window.ethereum) {
       return
     }
 
@@ -303,20 +295,17 @@ export default function Step11Verification() {
         })
       } catch (err) {
         console.error('Failed to verify silo addresses:', err)
-        // Only set error if we have wizard data
-        if (wizardData.verificationFromWizard) {
-          setSiloVerification({
-            silo0: null,
-            silo1: null,
-            error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
-          })
-        }
+        setSiloVerification({
+          silo0: null,
+          silo1: null,
+          error: err instanceof Error ? err.message : 'Failed to verify silo addresses'
+        })
       }
     }
 
     verifySilos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, siloFactory?.address, config])
+  }, [siloFactory?.address, config])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -675,7 +664,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {wizardData.verificationFromWizard && config && siloFactory && (
+      {config && siloFactory && (
         <div className="mb-6">
           <ContractInfo
             contractName="SiloFactory"
@@ -723,7 +712,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {wizardData.verificationFromWizard && siloVerification.error && (
+      {siloVerification.error && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
           <p className="text-red-400">Silo verification error: {siloVerification.error}</p>
         </div>
