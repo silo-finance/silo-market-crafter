@@ -787,7 +787,13 @@ export default function Step11Verification() {
               numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
-              callBeforeQuoteVerification={{ silo0: { wizard: false }, silo1: { wizard: false } }}
+              callBeforeQuoteVerification={wizardData.verificationFromWizard 
+                ? { 
+                    silo0: { wizard: null }, // TODO: Add callBeforeQuote to wizardData if needed
+                    silo1: { wizard: null } 
+                  }
+                : undefined
+              }
             />
           </>
         )
