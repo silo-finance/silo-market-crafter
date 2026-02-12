@@ -473,7 +473,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
         )}
       </span>
       {/* Verification details as sub-items */}
-      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-xs space-y-0.5">
+      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
         <li className="flex items-center">
           <span>{ownerLabel} verification:</span>
           <VerificationStatusIconSmall status={wizardVsOnChainStatus} />
@@ -568,7 +568,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               : VERIFICATION_STATUS.WARNING
           
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-xs space-y-0.5">
+            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
               <li className="flex items-center">
                 <span>Token verification:</span>
                 <VerificationStatusIconSmall status={tokenWizardVsOnChainStatus} />
@@ -641,7 +641,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           }
           
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-xs space-y-0.5">
+            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
               <li className="flex items-center">
                 <span>Verification:</span>
                 <VerificationStatusIconSmall status={verificationStatus} />
@@ -665,7 +665,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           const verificationStatus = onChainValue === wizardValue ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
           
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-xs space-y-0.5">
+            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
               <li className="flex items-center">
                 <span>Verification:</span>
                 <VerificationStatusIconSmall status={verificationStatus} />
@@ -694,7 +694,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 {item.text}
                 {/* Price verification details as sub-items */}
                 {isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning || hasPriceVerified) && (
-                  <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-xs space-y-0.5">
+                  <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
                     {priceLowWarning && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
@@ -736,7 +736,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                       : VERIFICATION_STATUS.FAILED
                   
                   return (
-                    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-xs space-y-0.5">
+                    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
                       <li className="flex items-center">
                         <span>Base Discount verification:</span>
                         <VerificationStatusIconSmall status={verificationStatus} />
