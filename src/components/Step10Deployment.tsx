@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
+import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
@@ -97,18 +98,8 @@ export default function Step10Deployment() {
     !!currentArgsHash &&
     currentArgsHash === wizardData.lastDeployArgsHash
 
-  // Chain ID to chain name mapping
-  const getChainName = (chainId: string): string => {
-    const chainMap: { [key: string]: string } = {
-      '1': 'mainnet',
-      '137': 'polygon',
-      '10': 'optimism',
-      '42161': 'arbitrum_one',
-      '43114': 'avalanche',
-      '146': 'sonic'
-    }
-    return chainMap[chainId] || 'mainnet'
-  }
+  // Chain ID to chain name mapping - using centralized network config
+  // getChainName is imported from @/utils/networks
 
 
 
@@ -710,16 +701,8 @@ export default function Step10Deployment() {
 
   const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
     if (!wizardData.networkInfo?.chainId) return '#'
-    const chainId = parseInt(wizardData.networkInfo.chainId)
-    const explorerMap: { [key: number]: string } = {
-      1: 'https://etherscan.io',
-      137: 'https://polygonscan.com',
-      10: 'https://optimistic.etherscan.io',
-      42161: 'https://arbiscan.io',
-      43114: 'https://snowtrace.io',
-      146: 'https://sonicscan.org'
-    }
-    const baseUrl = explorerMap[chainId] || 'https://etherscan.io'
+    const chainId = wizardData.networkInfo.chainId
+    const baseUrl = getExplorerBaseUrl(chainId)
     const path = isAddress ? 'address' : 'tx'
     return `${baseUrl}/${path}/${hash}`
   }

@@ -2,20 +2,11 @@
 
 import React from 'react'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
-
-const EXPLORER_MAP: { [key: number]: string } = {
-  1: 'mainnet',
-  137: 'polygon',
-  10: 'optimism',
-  42161: 'arbitrum_one',
-  43114: 'avalanche',
-  146: 'sonic'
-}
+import { getChainName } from '@/utils/networks'
 
 function getSourceUrl(chainId: string | number | undefined, contractName: string, isOracle: boolean = false, isImplementation: boolean = false): string {
   if (!chainId) return ''
-  const id = typeof chainId === 'string' ? parseInt(chainId, 10) : chainId
-  const chainName = EXPLORER_MAP[id] || 'mainnet'
+  const chainName = getChainName(chainId)
   if (isImplementation) {
     return `https://github.com/silo-finance/silo-contracts-v2/blob/master/silo-core/deploy/silo/_siloImplementations.json`
   }

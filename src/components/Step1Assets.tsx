@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard, WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
 import { getAddressesJsonUrl } from '@/utils/symbolToAddress'
+import { getNetworkDisplayName } from '@/utils/networks'
 import TokenAddressInput from '@/components/TokenAddressInput'
 
 interface TokenMetadata {
@@ -215,50 +216,7 @@ export default function Step1Assets() {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
         const networkId = parseInt(chainId, 16).toString()
         
-        // Network name mapping (same as in Header component)
-        const networkMap: { [key: number]: string } = {
-          1: 'Ethereum Mainnet',
-          3: 'Ropsten',
-          4: 'Rinkeby',
-          5: 'Goerli',
-          42: 'Kovan',
-          11155111: 'Sepolia',
-          137: 'Polygon',
-          80001: 'Polygon Mumbai',
-          1101: 'Polygon zkEVM',
-          1442: 'Polygon zkEVM Testnet',
-          10: 'Optimism',
-          420: 'Optimism Goerli',
-          4202: 'Optimism Sepolia',
-          8453: 'Base',
-          84531: 'Base Goerli',
-          84532: 'Base Sepolia',
-          42161: 'Arbitrum One',
-          421613: 'Arbitrum Goerli',
-          421614: 'Arbitrum Sepolia',
-          56: 'BNB Smart Chain',
-          97: 'BNB Smart Chain Testnet',
-          250: 'Fantom Opera',
-          4002: 'Fantom Testnet',
-          43114: 'Avalanche C-Chain',
-          43113: 'Avalanche Fuji',
-          25: 'Cronos',
-          338: 'Cronos Testnet',
-          100: 'Gnosis',
-          10200: 'Gnosis Chiado',
-          1284: 'Moonbeam',
-          1287: 'Moonbase Alpha',
-          1285: 'Moonriver',
-          592: 'Astar',
-          81: 'Astar Shibuya',
-          336: 'Astar Shiden',
-          1281: 'Moonbeam Moonbase',
-          1288: 'Moonbeam Moonriver',
-          146: 'Sonic',
-          653: 'Sonic Testnet'
-        }
-        
-        const networkName = networkMap[parseInt(networkId)] || `Network ${networkId}`
+        const networkName = getNetworkDisplayName(networkId)
         
         updateNetworkInfo({
           chainId: networkId,
@@ -305,50 +263,7 @@ export default function Step1Assets() {
       const chainId = await window.ethereum!.request({ method: 'eth_chainId' }) as string
       const networkId = parseInt(chainId, 16).toString()
       
-      // Network name mapping (same as in Header component)
-      const networkMap: { [key: number]: string } = {
-        1: 'Ethereum Mainnet',
-        3: 'Ropsten',
-        4: 'Rinkeby',
-        5: 'Goerli',
-        42: 'Kovan',
-        11155111: 'Sepolia',
-        137: 'Polygon',
-        80001: 'Polygon Mumbai',
-        1101: 'Polygon zkEVM',
-        1442: 'Polygon zkEVM Testnet',
-        10: 'Optimism',
-        420: 'Optimism Goerli',
-        4202: 'Optimism Sepolia',
-        8453: 'Base',
-        84531: 'Base Goerli',
-        84532: 'Base Sepolia',
-        42161: 'Arbitrum One',
-        421613: 'Arbitrum Goerli',
-        421614: 'Arbitrum Sepolia',
-        56: 'BNB Smart Chain',
-        97: 'BNB Smart Chain Testnet',
-        250: 'Fantom Opera',
-        4002: 'Fantom Testnet',
-        43114: 'Avalanche C-Chain',
-        43113: 'Avalanche Fuji',
-        25: 'Cronos',
-        338: 'Cronos Testnet',
-        100: 'Gnosis',
-        10200: 'Gnosis Chiado',
-        1284: 'Moonbeam',
-        1287: 'Moonbase Alpha',
-        1285: 'Moonriver',
-        592: 'Astar',
-        81: 'Astar Shibuya',
-        336: 'Astar Shiden',
-        1281: 'Moonbeam Moonbase',
-        1288: 'Moonbeam Moonriver',
-        146: 'Sonic',
-        653: 'Sonic Testnet'
-      }
-      
-      const networkName = networkMap[parseInt(networkId)] || `Network ${networkId}`
+      const networkName = getNetworkDisplayName(networkId)
       
       // Update network info
       updateNetworkInfo({

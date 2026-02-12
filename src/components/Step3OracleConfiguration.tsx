@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
@@ -176,18 +177,8 @@ export default function Step3OracleConfiguration() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
 
-  // Chain ID to chain name mapping
-  const getChainName = (chainId: string): string => {
-    const chainMap: { [key: string]: string } = {
-      '1': 'mainnet',
-      '137': 'polygon',
-      '10': 'optimism',
-      '42161': 'arbitrum_one',
-      '43114': 'avalanche',
-      '146': 'sonic'
-    }
-    return chainMap[chainId] || 'mainnet'
-  }
+  // Chain ID to chain name mapping - using centralized network config
+  // getChainName is imported from @/utils/networks
 
 
   // Fetch oracle deployments from GitHub
@@ -950,16 +941,7 @@ export default function Step3OracleConfiguration() {
 
   const getBlockExplorerUrl = (address: string) => {
     const chainId = wizardData.networkInfo?.chainId || '1'
-    const networkMap: { [key: string]: string } = {
-      '1': 'https://etherscan.io/address/',
-      '137': 'https://polygonscan.com/address/',
-      '10': 'https://optimistic.etherscan.io/address/',
-      '42161': 'https://arbiscan.io/address/',
-      '43114': 'https://snowtrace.io/address/',
-      '146': 'https://sonicscan.org/address/'
-    }
-    const baseUrl = networkMap[chainId] || 'https://etherscan.io/address/'
-    return `${baseUrl}${address}`
+    return getExplorerAddressUrl(chainId, address)
   }
 
   if (!wizardData.token0 || !wizardData.token1 || !wizardData.oracleType0 || !wizardData.oracleType1) {

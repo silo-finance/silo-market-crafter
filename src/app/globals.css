@@ -51,7 +51,7 @@ body {
   padding: 0.05rem 0;
   margin-left: 0;
 }
-/* Numery listy – mniejsza, przytłumiona czcionka (nadpisuje bazowe style) */
+/* List numbers – smaller, muted font (overrides base styles) */
 .tree .tree-item::marker {
   font-size: 0.75em !important;
   font-weight: 500 !important;

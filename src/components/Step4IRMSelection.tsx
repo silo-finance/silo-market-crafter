@@ -37,20 +37,7 @@ const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-
 const KINK_FACTORY_NAME = 'DynamicKinkModelFactory.sol'
 const IRM_V2_FACTORY_NAME = 'InterestRateModelV2Factory.sol'
 
-const getChainName = (chainId: string): string => {
-  const chainMap: { [key: string]: string } = {
-    '1': 'mainnet',
-    '137': 'polygon',
-    '42161': 'arbitrum_one',
-    '43114': 'avalanche',
-    '8453': 'base',
-    '11155111': 'sepolia',
-    '31337': 'anvil',
-    '146': 'sonic',
-    '653': 'sonic_testnet'
-  }
-  return chainMap[chainId] || `chain_${chainId}`
-}
+import { getChainName } from '@/utils/networks'
 
 
 

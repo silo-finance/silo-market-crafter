@@ -2,31 +2,11 @@
 
 import React from 'react'
 import { normalizeAddress } from '@/utils/addressValidation'
+import { getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 
-const EXPLORER_MAP: { [key: number]: string } = {
-  1: 'https://etherscan.io',
-  137: 'https://polygonscan.com',
-  10: 'https://optimistic.etherscan.io',
-  18: 'https://optimistic.etherscan.io',
-  420: 'https://goerli-optimism.etherscan.io',
-  4202: 'https://sepolia-optimism.etherscan.io',
-  42161: 'https://arbiscan.io',
-  421613: 'https://goerli.arbiscan.io',
-  421614: 'https://sepolia.arbiscan.io',
-  43114: 'https://snowtrace.io',
-  43113: 'https://testnet.snowtrace.io',
-  8453: 'https://basescan.org',
-  84531: 'https://goerli.basescan.org',
-  84532: 'https://sepolia.basescan.org',
-  146: 'https://sonicscan.org',
-  653: 'https://sonicscan.org'
-}
-
 function getExplorerUrl(chainId: string | number | undefined, address: string): string {
-  const id = typeof chainId === 'string' ? parseInt(chainId, 10) : (chainId || 1)
-  const base = EXPLORER_MAP[id] || 'https://etherscan.io'
-  return `${base}/address/${address}`
+  return getExplorerAddressUrl(chainId || 1, address)
 }
 
 export interface AddressDisplayShortProps {

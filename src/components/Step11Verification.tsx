@@ -16,6 +16,7 @@ import { verifySiloImplementation } from '@/utils/verification/siloImplementatio
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { buildVerificationChecks, type VerificationCheckItem } from '@/utils/verification/buildVerificationChecks'
+import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
@@ -109,27 +110,7 @@ export default function Step11Verification() {
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
 
   const chainId = wizardData.networkInfo?.chainId
-  const explorerMap: { [key: number]: string } = {
-    1: 'https://etherscan.io',
-    137: 'https://polygonscan.com',
-    10: 'https://optimistic.etherscan.io',
-    42161: 'https://arbiscan.io',
-    43114: 'https://snowtrace.io',
-    146: 'https://sonicscan.org'
-  }
-  const explorerUrl = chainId ? (explorerMap[parseInt(chainId, 10)] || 'https://etherscan.io') : 'https://etherscan.io'
-
-  const getChainName = (chainId: string): string => {
-    const chainMap: { [key: string]: string } = {
-      '1': 'mainnet',
-      '137': 'polygon',
-      '10': 'optimism',
-      '42161': 'arbitrum_one',
-      '43114': 'avalanche',
-      '146': 'sonic'
-    }
-    return chainMap[chainId] || 'mainnet'
-  }
+  const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
 
   // Fetch Silo Factory address and version
   // Only fetch if we have wizard data (verificationFromWizard is true)
