@@ -347,6 +347,13 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
       </span>
     )
   }
+  if (status === VERIFICATION_STATUS.NOT_AVAILABLE) {
+    return (
+      <span className="inline-flex shrink-0 text-gray-500 ml-1">
+        <span className="text-xs font-medium">N/A</span>
+      </span>
+    )
+  }
   if (status === VERIFICATION_STATUS.PASSED) {
     return (
       <span className="inline-flex shrink-0 text-green-500 ml-1">
@@ -436,11 +443,13 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   console.log('  isInJson:', isInJson)
   
   // Determine verification statuses
-  const wizardVsOnChainStatus = isVerified === null 
-    ? VERIFICATION_STATUS.PENDING 
-    : isVerified === true 
-      ? VERIFICATION_STATUS.PASSED 
-      : VERIFICATION_STATUS.FAILED
+  const wizardVsOnChainStatus = isVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner) && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : isVerified === null 
+      ? VERIFICATION_STATUS.PENDING 
+      : isVerified === true 
+        ? VERIFICATION_STATUS.PASSED 
+        : VERIFICATION_STATUS.FAILED
   
   const addressInJsonStatus = isInJson === null 
     ? VERIFICATION_STATUS.PENDING 
@@ -485,6 +494,9 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           )}
           {wizardVsOnChainStatus === VERIFICATION_STATUS.PENDING && (
             <span className="text-gray-500 ml-1">verification pending</span>
+          )}
+          {wizardVsOnChainStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
+            <span className="text-gray-500 ml-1">N/A</span>
           )}
         </li>
         <li className="flex items-center">
@@ -555,11 +567,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             : null
           const isInJson = addressInJsonVerification?.get(normalizedAddress) ?? null
           
-          const tokenWizardVsOnChainStatus = isVerified === null 
-            ? VERIFICATION_STATUS.PENDING 
-            : isVerified === true 
-              ? VERIFICATION_STATUS.PASSED 
-              : VERIFICATION_STATUS.FAILED
+          const tokenWizardVsOnChainStatus = isVerified === null && (!tokenVerification.onChainToken || !tokenVerification.wizardToken)
+            ? VERIFICATION_STATUS.NOT_AVAILABLE
+            : isVerified === null 
+              ? VERIFICATION_STATUS.PENDING 
+              : isVerified === true 
+                ? VERIFICATION_STATUS.PASSED 
+                : VERIFICATION_STATUS.FAILED
           
           const tokenAddressInJsonStatus = isInJson === null 
             ? VERIFICATION_STATUS.PENDING 
@@ -580,6 +594,9 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 )}
                 {tokenWizardVsOnChainStatus === VERIFICATION_STATUS.PENDING && (
                   <span className="text-gray-500 ml-1">verification pending</span>
+                )}
+                {tokenWizardVsOnChainStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
+                  <span className="text-gray-500 ml-1">N/A</span>
                 )}
               </li>
               <li className="flex items-center">
@@ -627,19 +644,36 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           if (label === 'DAO Fee' && wizardDaoFee != null) {
             wizardValue = wizardDaoFee
             verificationStatus = verifyNumericValue(value, wizardValue) ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+          } else if (label === 'DAO Fee' && wizardDaoFee == null) {
+            verificationStatus = VERIFICATION_STATUS.NOT_AVAILABLE
           } else if (label === 'Deployer Fee' && wizardDeployerFee != null) {
             wizardValue = wizardDeployerFee
             verificationStatus = verifyNumericValue(value, wizardValue) ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+          } else if (label === 'Deployer Fee' && wizardDeployerFee == null) {
+            verificationStatus = VERIFICATION_STATUS.NOT_AVAILABLE
           } else if (numericValueVerification && numericValueVerification.wizardValue != null) {
             // Other numeric values use numericValueVerification
             wizardValue = numericValueVerification.wizardValue
             verificationStatus = verifyNumericValue(value, wizardValue) ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+          } else if (numericValueVerification && numericValueVerification.wizardValue == null) {
+            verificationStatus = VERIFICATION_STATUS.NOT_AVAILABLE
+          } else {
+            verificationStatus = VERIFICATION_STATUS.NOT_AVAILABLE
           }
           
-          if (wizardValue == null) {
-            return null
+          if (verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE) {
+            return (
+              <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
+                <li className="flex items-center">
+                  <span>Verification:</span>
+                  <VerificationStatusIconSmall status={verificationStatus} />
+                  <span className="text-gray-500 ml-1">N/A</span>
+                </li>
+              </ul>
+            )
           }
           
+          // At this point verificationStatus can only be PASSED or FAILED
           return (
             <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
               <li className="flex items-center">
@@ -650,9 +684,6 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 )}
                 {verificationStatus === VERIFICATION_STATUS.FAILED && (
                   <span className="text-gray-500 ml-1">does not match Wizard value</span>
-                )}
-                {verificationStatus === VERIFICATION_STATUS.PENDING && (
-                  <span className="text-gray-500 ml-1">verification pending</span>
                 )}
               </li>
             </ul>
@@ -730,7 +761,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                   const isMatch = baseDiscountVerification.wizard !== null && verifyNumericValue(baseDiscountVerification.onChain, baseDiscountVerification.wizard)
                   const outOfRange = isBaseDiscountPercentOutOfRange(baseDiscountVerification.onChain)
                   const verificationStatus = baseDiscountVerification.wizard === null 
-                    ? VERIFICATION_STATUS.PENDING 
+                    ? VERIFICATION_STATUS.NOT_AVAILABLE 
                     : isMatch && !outOfRange
                       ? VERIFICATION_STATUS.PASSED 
                       : VERIFICATION_STATUS.FAILED
@@ -746,8 +777,8 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                         {verificationStatus === VERIFICATION_STATUS.FAILED && (
                           <span className="text-gray-500 ml-1">{outOfRange ? 'out of range' : 'does not match Wizard value'}</span>
                         )}
-                        {verificationStatus === VERIFICATION_STATUS.PENDING && (
-                          <span className="text-gray-500 ml-1">verification pending</span>
+                        {verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
+                          <span className="text-gray-500 ml-1">N/A</span>
                         )}
                       </li>
                     </ul>

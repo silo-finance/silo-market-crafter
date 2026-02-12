@@ -15,21 +15,21 @@ import {
 import { verifyAddress } from '@/utils/verification/addressVerification'
 import { ethers } from 'ethers'
 
-export type VerificationStatus = 'pending' | 'passed' | 'failed' | 'warning'
-
 export const VERIFICATION_STATUS = {
   PENDING: 'pending' as const,
   PASSED: 'passed' as const,
   FAILED: 'failed' as const,
-  WARNING: 'warning' as const
+  WARNING: 'warning' as const,
+  NOT_AVAILABLE: 'not_available' as const
 } as const
-
-export type VerificationCheckType = 'wizard-vs-onchain' | 'independent'
 
 export const VERIFICATION_CHECK_TYPE = {
   WIZARD_VS_ONCHAIN: 'wizard-vs-onchain' as const,
   INDEPENDENT: 'independent' as const
 } as const
+
+export type VerificationStatus = typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS]
+export type VerificationCheckType = typeof VERIFICATION_CHECK_TYPE[keyof typeof VERIFICATION_CHECK_TYPE]
 
 export interface VerificationCheckItem {
   label: string
@@ -133,6 +133,7 @@ function createStatusMessage(
     failed: string
     pending: string
     warning?: string
+    not_available?: string
   }
 ): string {
   switch (status) {
@@ -144,6 +145,8 @@ function createStatusMessage(
       return messages.warning ?? messages.pending
     case VERIFICATION_STATUS.PENDING:
       return messages.pending
+    case VERIFICATION_STATUS.NOT_AVAILABLE:
+      return messages.not_available ?? 'N/A'
   }
 }
 
@@ -231,9 +234,9 @@ export function buildVerificationChecks(
   } = options
 
   // DAO Fee - always add, but with appropriate status
-  const daoFeeStatus = getVerificationStatus(
-    wizardDaoFee != null ? verifyNumericValue(config.silo0.daoFee, wizardDaoFee) : null
-  )
+  const daoFeeStatus = wizardDaoFee == null 
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(verifyNumericValue(config.silo0.daoFee, wizardDaoFee))
   checks.push(createWizardVsOnChainCheck(
     'DAO Fee',
     formatPercentage(config.silo0.daoFee),
@@ -243,9 +246,9 @@ export function buildVerificationChecks(
   ))
 
   // Deployer Fee - always add, but with appropriate status
-  const deployerFeeStatus = getVerificationStatus(
-    wizardDeployerFee != null ? verifyNumericValue(config.silo0.deployerFee, wizardDeployerFee) : null
-  )
+  const deployerFeeStatus = wizardDeployerFee == null 
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(verifyNumericValue(config.silo0.deployerFee, wizardDeployerFee))
   checks.push(createWizardVsOnChainCheck(
     'Deployer Fee',
     formatPercentage(config.silo0.deployerFee),
@@ -297,10 +300,9 @@ export function buildVerificationChecks(
     const wizardStr = bd0.wizard != null ? formatPercentage(bd0.wizard) : null
     const match = bd0.wizard != null && verifyNumericValue(bd0.onChain, bd0.wizard)
     const outOfRange = isBaseDiscountPercentOutOfRange(bd0.onChain)
-    const bd0Status = getVerificationStatus(
-      bd0.wizard != null ? (match && !outOfRange) : null,
-      VERIFICATION_STATUS.PENDING
-    )
+    const bd0Status = bd0.wizard == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(match && !outOfRange)
     const bd0Error = bd0Status === VERIFICATION_STATUS.FAILED 
       ? (outOfRange ? 'base discount out of range' : !match ? 'wizard value does not match on-chain value' : '')
       : undefined
@@ -319,10 +321,9 @@ export function buildVerificationChecks(
   const addNumeric = (key: 'maxLtv' | 'lt' | 'liquidationTargetLtv' | 'liquidationFee' | 'flashloanFee', label: string) => {
     const wizardVal = n0?.[key] ?? null
     const onChain = config.silo0[key]
-    const status = getVerificationStatus(
-      wizardVal != null ? verifyNumericValue(onChain, wizardVal) : null,
-      VERIFICATION_STATUS.PENDING
-    )
+    const status = wizardVal == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(verifyNumericValue(onChain, wizardVal))
     checks.push(createWizardVsOnChainCheck(
       `Silo 0 – ${label}`,
       formatPercentage(onChain),
@@ -379,10 +380,9 @@ export function buildVerificationChecks(
     const wizardStr = bd1.wizard != null ? formatPercentage(bd1.wizard) : null
     const match = bd1.wizard != null && verifyNumericValue(bd1.onChain, bd1.wizard)
     const outOfRange = isBaseDiscountPercentOutOfRange(bd1.onChain)
-    const bd1Status = getVerificationStatus(
-      bd1.wizard != null ? (match && !outOfRange) : null,
-      VERIFICATION_STATUS.PENDING
-    )
+    const bd1Status = bd1.wizard == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(match && !outOfRange)
     const bd1Error = bd1Status === VERIFICATION_STATUS.FAILED
       ? (outOfRange ? 'base discount out of range' : !match ? 'wizard value does not match on-chain value' : '')
       : undefined
@@ -401,10 +401,9 @@ export function buildVerificationChecks(
   const addNumeric1 = (key: 'maxLtv' | 'lt' | 'liquidationTargetLtv' | 'liquidationFee' | 'flashloanFee', label: string) => {
     const wizardVal = n1?.[key] ?? null
     const onChain = config.silo1[key]
-    const status = getVerificationStatus(
-      wizardVal != null ? verifyNumericValue(onChain, wizardVal) : null,
-      VERIFICATION_STATUS.PENDING
-    )
+    const status = wizardVal == null
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : getVerificationStatus(verifyNumericValue(onChain, wizardVal))
     checks.push(createWizardVsOnChainCheck(
       `Silo 1 – ${label}`,
       formatPercentage(onChain),
@@ -467,7 +466,9 @@ export function buildVerificationChecks(
   const hookOwnerVerified = hookOwnerVerification?.onChainOwner && hookOwnerVerification?.wizardOwner
     ? verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
     : null
-  const hookOwnerStatus = getVerificationStatus(hookOwnerVerified, VERIFICATION_STATUS.PENDING)
+  const hookOwnerStatus = hookOwnerVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(hookOwnerVerified)
   checks.push(createWizardVsOnChainCheck(
     'Hook owner',
     formatAddress(hookOwnerVerification?.onChainOwner),
@@ -488,7 +489,9 @@ export function buildVerificationChecks(
   const irmOwnerVerified = irmOwnerVerification?.onChainOwner && irmOwnerVerification?.wizardOwner
     ? verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
     : null
-  const irmOwnerStatus = getVerificationStatus(irmOwnerVerified, VERIFICATION_STATUS.PENDING)
+  const irmOwnerStatus = irmOwnerVerified === null && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(irmOwnerVerified)
   checks.push(createWizardVsOnChainCheck(
     'IRM owner',
     formatAddress(irmOwnerVerification?.onChainOwner),
@@ -509,7 +512,9 @@ export function buildVerificationChecks(
   const token0Verified = tokenVerification?.token0?.onChainToken && tokenVerification?.token0?.wizardToken
     ? verifyAddress(tokenVerification.token0.onChainToken, tokenVerification.token0.wizardToken)
     : null
-  const token0Status = getVerificationStatus(token0Verified, VERIFICATION_STATUS.PENDING)
+  const token0Status = token0Verified === null && (!tokenVerification?.token0?.onChainToken || !tokenVerification?.token0?.wizardToken)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(token0Verified)
   checks.push(createWizardVsOnChainCheck(
     'Silo 0 Token',
     formatAddress(tokenVerification?.token0?.onChainToken),
@@ -522,7 +527,9 @@ export function buildVerificationChecks(
   const token1Verified = tokenVerification?.token1?.onChainToken && tokenVerification?.token1?.wizardToken
     ? verifyAddress(tokenVerification.token1.onChainToken, tokenVerification.token1.wizardToken)
     : null
-  const token1Status = getVerificationStatus(token1Verified, VERIFICATION_STATUS.PENDING)
+  const token1Status = token1Verified === null && (!tokenVerification?.token1?.onChainToken || !tokenVerification?.token1?.wizardToken)
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(token1Verified)
   checks.push(createWizardVsOnChainCheck(
     'Silo 1 Token',
     formatAddress(tokenVerification?.token1?.onChainToken),
@@ -548,7 +555,9 @@ export function buildVerificationChecks(
   // Call Before Quote verification - always add
   const cbq0Wizard = callBeforeQuoteVerification?.silo0?.wizard
   const cbq0Verified = cbq0Wizard != null ? (config.silo0.callBeforeQuote === cbq0Wizard) : null
-  const cbq0Status = getVerificationStatus(cbq0Verified, VERIFICATION_STATUS.PENDING)
+  const cbq0Status = cbq0Wizard == null
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(cbq0Verified)
   checks.push(createWizardVsOnChainCheck(
     'Silo 0 Call Before Quote',
     config.silo0.callBeforeQuote ? 'true' : 'false',
@@ -560,7 +569,9 @@ export function buildVerificationChecks(
 
   const cbq1Wizard = callBeforeQuoteVerification?.silo1?.wizard
   const cbq1Verified = cbq1Wizard != null ? (config.silo1.callBeforeQuote === cbq1Wizard) : null
-  const cbq1Status = getVerificationStatus(cbq1Verified, VERIFICATION_STATUS.PENDING)
+  const cbq1Status = cbq1Wizard == null
+    ? VERIFICATION_STATUS.NOT_AVAILABLE
+    : getVerificationStatus(cbq1Verified)
   checks.push(createWizardVsOnChainCheck(
     'Silo 1 Call Before Quote',
     config.silo1.callBeforeQuote ? 'true' : 'false',
