@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
-import { formatBigIntToE18, formatWizardBigIntToE18 } from '@/utils/formatting'
+import { formatWizardBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import { ethers } from 'ethers'
-import { isValueHigh5, isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue, convertWizardTo18Decimals } from '@/utils/verification'
+import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 
 
@@ -188,154 +188,6 @@ interface TreeNodeProps {
   /** Call Before Quote: compare on-chain value with wizard; show green/red icon */
   callBeforeQuoteVerification?: { wizard: boolean | null } | null
 }
-
-function PriceLowWarningIcon() {
-  return (
-    <span className="ml-1 inline-flex align-middle">
-      <div className="relative group inline-block">
-        <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-        <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Price is unexpectedly low — it should be verified.
-        </div>
-      </div>
-    </span>
-  )
-}
-
-function PriceHighWarningIcon() {
-  return (
-    <span className="ml-1 inline-flex align-middle">
-      <div className="relative group inline-block">
-        <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </div>
-        <div className="absolute left-0 top-full mt-2 w-72 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Price is unexpectedly high — it should be verified.
-        </div>
-      </div>
-    </span>
-  )
-}
-
-function PriceDecimalsWarningIcon() {
-  return (
-    <span className="ml-1 inline-flex align-middle">
-      <div className="relative group inline-block">
-        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center text-white text-[10px] font-bold leading-none">
-          18
-        </div>
-        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Check the price for 18 decimals.
-        </div>
-      </div>
-    </span>
-  )
-}
-
-function PriceVerifiedIcon() {
-  return (
-    <span className="ml-1 inline-flex align-middle">
-      <div className="relative group inline-block">
-        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Price verified (range and decimals OK).
-        </div>
-      </div>
-    </span>
-  )
-}
-
-function CallBeforeQuoteVerificationIcon({ onChain, wizard }: { onChain: boolean; wizard: boolean | null }) {
-  const isPending = wizard === null
-  const isMatch = !isPending && onChain === wizard
-  return (
-    <span className="ml-1 inline-flex align-middle">
-      <div className="relative group inline-block">
-        {isPending ? (
-          <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        ) : isMatch ? (
-          <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        ) : (
-          <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-        )}
-        {isMatch && (
-          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            On-chain value compared with wizard value.
-          </div>
-        )}
-        {!isMatch && !isPending && (
-          <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Check failed: on-chain value ({onChain ? 'true' : 'false'}) does not match wizard value ({wizard ? 'true' : 'false'})
-          </div>
-        )}
-      </div>
-    </span>
-  )
-}
-
-function BaseDiscountVerificationIcons({ onChain, wizard }: { onChain: bigint; wizard: bigint | null }) {
-  const isMatch = wizard !== null && verifyNumericValue(onChain, wizard)
-  const outOfRange = isBaseDiscountPercentOutOfRange(onChain)
-  return (
-    <span className="ml-1 inline-flex items-center gap-0.5 align-middle">
-      {wizard !== null && (
-        <div className="relative group inline-block">
-          {isMatch ? (
-            <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          ) : (
-            <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-          )}
-          <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            {isMatch ? 'Base discount per year matches wizard value' : 'Base discount per year does not match wizard value'}
-          </div>
-        </div>
-      )}
-      {outOfRange && (
-        <div className="relative group inline-block">
-          <div className="w-4 h-4 bg-amber-500 rounded flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <div className="absolute left-0 top-full mt-2 w-56 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Verify this percentage value.
-          </div>
-        </div>
-      )}
-    </span>
-  )
-}
-
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
   if (status === VERIFICATION_STATUS.PENDING) {
@@ -716,10 +568,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           {bulletItems.map((item, i) => {
             const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
             const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
-            const hasPriceWarning = isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning)
             const hasPriceVerified = isPriceLine && !priceLowWarning && !priceHighWarning && !priceDecimalsWarning
-            const showPriceIcons = hasPriceWarning || hasPriceVerified
-            const withIcons = showPriceIcons || isBaseDiscountBullet
             return (
               <li key={i}>
                 {item.text}
@@ -806,43 +655,6 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       )}
       {children && <ol className="tree">{children}</ol>}
     </li>
-  )
-}
-
-function SiloVerificationIcon({ verified }: { verified: boolean | null }) {
-  // Always show icon, but with different status: pending (gray), passed (green), or failed (red)
-  return (
-    <div className="relative group inline-block">
-      {verified === null ? (
-        <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      ) : verified ? (
-        <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      ) : (
-        <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-      )}
-      {verified === true && (
-        <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Silo address verified and exists in Silo Factory
-        </div>
-      )}
-      {verified === false && (
-        <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Silo address not verified in Silo Factory
-        </div>
-      )}
-    </div>
   )
 }
 
