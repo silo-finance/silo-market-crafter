@@ -15,90 +15,9 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
-import { buildVerificationChecks } from '@/utils/verification/buildVerificationChecks'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 
 const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
-
-import type { VerificationCheckItem, VerificationStatus } from '@/utils/verification/buildVerificationChecks'
-import { VERIFICATION_STATUS, VERIFICATION_CHECK_TYPE } from '@/utils/verification/buildVerificationChecks'
-
-function VerificationStatusIcon({ status }: { status: VerificationStatus }) {
-  if (status === VERIFICATION_STATUS.PENDING) {
-    return (
-      <span className="mr-2 inline-flex shrink-0 text-gray-500" aria-label="Pending">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </span>
-    )
-  }
-  if (status === VERIFICATION_STATUS.PASSED) {
-    return (
-      <span className="mr-2 inline-flex shrink-0 text-green-500" aria-label="Passed">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </span>
-    )
-  }
-  if (status === VERIFICATION_STATUS.WARNING) {
-    return (
-      <span className="mr-2 inline-flex shrink-0 text-yellow-500" aria-label="Warning">
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2L2 20h20L12 2zm0 3.99L19.53 18H4.47L12 5.99zM11 15v-2h2v2h-2zm0-4V8h2v3h-2z"/>
-        </svg>
-      </span>
-    )
-  }
-  // failed
-  return (
-    <span className="mr-2 inline-flex shrink-0 text-red-500" aria-label="Failed">
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </span>
-  )
-}
-
-function VerificationChecksList({ checks }: { checks: VerificationCheckItem[] }) {
-  if (checks.length === 0) return null
-  return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 py-4 mt-6">
-      <h3 className="text-lg font-semibold text-white mb-3">Verification checks</h3>
-      <ol className="list-decimal list-outside space-y-2 text-gray-300 text-sm ml-6">
-        {checks.map((item, i) => (
-          <li key={i} className="pl-2">
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-medium text-gray-200">{item.label}</span>
-              <VerificationStatusIcon status={item.status} />
-              {item.type === VERIFICATION_CHECK_TYPE.INDEPENDENT ? (
-                <span className="text-gray-400">{item.message}</span>
-              ) : item.type === VERIFICATION_CHECK_TYPE.WIZARD_VS_ONCHAIN && item.status === VERIFICATION_STATUS.PASSED ? (
-                <span className="text-gray-400">on-chain value matches wizard value</span>
-              ) : (
-                <>
-                  <span>on-chain: <span className="text-gray-400">{item.onChainDisplay ?? '—'}</span></span>
-                  <span>wizard: <span className="text-gray-400">{item.wizardDisplay ?? '—'}</span></span>
-                </>
-              )}
-            </div>
-            {(item.condition || item.error) && (
-              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                {item.condition && (
-                  <li className="text-xs text-gray-500">{item.condition}</li>
-                )}
-                {item.error && (
-                  <li className="text-xs text-red-400">{item.error}</li>
-                )}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -869,21 +788,6 @@ export default function Step11Verification() {
               addressInJsonVerification={addressInJsonVerification}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
               callBeforeQuoteVerification={{ silo0: { wizard: false }, silo1: { wizard: false } }}
-            />
-            <VerificationChecksList
-              checks={buildVerificationChecks(config, {
-                wizardDaoFee: wizardData.feesConfiguration?.daoFee ?? null,
-                wizardDeployerFee: wizardData.feesConfiguration?.deployerFee ?? null,
-                numericWizard: numericValueVerification ?? { silo0: null, silo1: null },
-                ptOracleBaseDiscount: ptOracleBaseDiscountVerification,
-                siloVerification: siloVerification,
-                implementationVerified: implementationVerified,
-                hookOwnerVerification: hookOwnerVerification,
-                irmOwnerVerification: irmOwnerVerification,
-                tokenVerification: tokenVerification,
-                tokenAddressInJsonVerification: addressInJsonVerification,
-                callBeforeQuoteVerification: { silo0: { wizard: false }, silo1: { wizard: false } }
-              })}
             />
           </>
         )
