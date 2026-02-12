@@ -523,12 +523,11 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify IRM owner - check if we have wizard data (hookOwnerAddress exists) and IRM has owner (only for kink models)
-      // We check wizardData.hookOwnerAddress instead of verificationFromWizard because
-      // verificationFromWizard might be set asynchronously after handleVerify completes
-      if (wizardData.hookOwnerAddress && marketConfig.silo0.interestRateModel.owner) {
+      // Verify IRM owner - always check on-chain address, wizard data is optional
+      // IRM owner address is always available from on-chain config (for kink models)
+      if (marketConfig.silo0.interestRateModel.owner) {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress // IRM owner address from wizard state (wizardData.hookOwnerAddress)
+        const wizardOwner = wizardData.hookOwnerAddress ?? null // IRM owner address from wizard state (optional)
         
         // Verification is performed in MarketConfigTree component using verifyAddress()
         // from src/utils/verification/addressVerification.ts
@@ -542,7 +541,7 @@ export default function Step11Verification() {
           isInAddressesJson: isInJson
         })
       } else {
-        // Reset verification state if we don't have wizard data
+        // Reset verification state if we don't have on-chain address
         setIrmOwnerVerification({
           onChainOwner: null,
           wizardOwner: null,

@@ -602,7 +602,7 @@ function HookOwnerVerificationIcons({ verified, isInJson, isIRM = false }: { ver
         <div className="relative group inline-block">
           <div className="w-4 h-4 bg-yellow-500 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              <path d="M12 2L2 20h20L12 2zm0 3.99L19.53 18H4.47L12 5.99zM11 15v-2h2v2h-2zm0-4V8h2v3h-2z"/>
             </svg>
           </div>
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -698,7 +698,7 @@ function TokenVerificationIcons({ address, tokenVerification, addressInJsonVerif
         <div className="relative group inline-block">
           <div className="w-4 h-4 bg-yellow-500 rounded flex items-center justify-center">
             <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              <path d="M12 2L2 20h20L12 2zm0 3.99L19.53 18H4.47L12 5.99zM11 15v-2h2v2h-2zm0-4V8h2v3h-2z"/>
             </svg>
           </div>
           <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">

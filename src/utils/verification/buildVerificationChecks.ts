@@ -187,6 +187,30 @@ function createIndependentCheck(
   }
 }
 
+/**
+ * Helper function to create an address in JSON verification check
+ * This is a reusable function for checking if an address exists in the Silo Finance repository list
+ */
+function createAddressInJsonCheck(
+  label: string,
+  address: string | null,
+  addressInJsonVerification: Map<string, boolean> | undefined
+): VerificationCheckItem {
+  const addressInJson = address ? (addressInJsonVerification?.get(address.toLowerCase()) ?? null) : null
+  const status = addressInJson === null 
+    ? VERIFICATION_STATUS.PENDING 
+    : addressInJson === true 
+      ? VERIFICATION_STATUS.PASSED 
+      : VERIFICATION_STATUS.WARNING
+  const message = createStatusMessage(status, {
+    passed: 'exists in Silo Finance repository list',
+    failed: 'does not exist in Silo Finance repository list',
+    warning: 'does not exist in Silo Finance repository list',
+    pending: 'verification pending'
+  })
+  return createIndependentCheck(label, message, status)
+}
+
 export function buildVerificationChecks(
   config: MarketConfig,
   options: BuildVerificationChecksOptions
@@ -454,26 +478,13 @@ export function buildVerificationChecks(
   ))
 
   // Hook owner address in JSON verification - independent check - always add
-  const hookOwnerAddress = hookOwnerVerification?.onChainOwner ?? null
-  const hookOwnerInJson = hookOwnerAddress ? (tokenAddressInJsonVerification?.get(hookOwnerAddress.toLowerCase()) ?? null) : null
-  const hookOwnerInJsonStatus = hookOwnerInJson === null 
-    ? VERIFICATION_STATUS.PENDING 
-    : hookOwnerInJson === true 
-      ? VERIFICATION_STATUS.PASSED 
-      : VERIFICATION_STATUS.WARNING
-  const hookOwnerInJsonMessage = createStatusMessage(hookOwnerInJsonStatus, {
-    passed: 'exists in Silo Finance repository list',
-    failed: 'does not exist in Silo Finance repository list',
-    warning: 'does not exist in Silo Finance repository list',
-    pending: 'verification pending'
-  })
-  checks.push(createIndependentCheck(
+  checks.push(createAddressInJsonCheck(
     'Hook owner address',
-    hookOwnerInJsonMessage,
-    hookOwnerInJsonStatus
+    hookOwnerVerification?.onChainOwner ?? null,
+    tokenAddressInJsonVerification
   ))
 
-  // IRM owner verification - always add
+  // IRM owner verification - wizard vs on-chain - always add
   const irmOwnerVerified = irmOwnerVerification?.onChainOwner && irmOwnerVerification?.wizardOwner
     ? verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
     : null
@@ -485,6 +496,13 @@ export function buildVerificationChecks(
     irmOwnerStatus,
     !irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner ? 'requires wizard data' : undefined,
     irmOwnerStatus === VERIFICATION_STATUS.FAILED ? 'on-chain owner does not match wizard owner' : undefined
+  ))
+
+  // IRM owner address in JSON verification - independent check - always add
+  checks.push(createAddressInJsonCheck(
+    'IRM owner address',
+    irmOwnerVerification?.onChainOwner ?? null,
+    tokenAddressInJsonVerification
   ))
 
   // Token verification (token0, token1) - wizard vs on-chain - always add
@@ -515,42 +533,16 @@ export function buildVerificationChecks(
   ))
 
   // Token address in JSON verification (token0, token1) - independent check - always add
-  const token0Address = config.silo0.token
-  const token0InJson = token0Address ? (tokenAddressInJsonVerification?.get(token0Address.toLowerCase()) ?? null) : null
-  const token0InJsonStatus = token0InJson === null 
-    ? VERIFICATION_STATUS.PENDING 
-    : token0InJson === true 
-      ? VERIFICATION_STATUS.PASSED 
-      : VERIFICATION_STATUS.WARNING
-  const token0InJsonMessage = createStatusMessage(token0InJsonStatus, {
-    passed: 'exists in Silo Finance repository list',
-    failed: 'does not exist in Silo Finance repository list',
-    warning: 'does not exist in Silo Finance repository list',
-    pending: 'verification pending'
-  })
-  checks.push(createIndependentCheck(
+  checks.push(createAddressInJsonCheck(
     'Token 0 address',
-    token0InJsonMessage,
-    token0InJsonStatus
+    config.silo0.token,
+    tokenAddressInJsonVerification
   ))
 
-  const token1Address = config.silo1.token
-  const token1InJson = token1Address ? (tokenAddressInJsonVerification?.get(token1Address.toLowerCase()) ?? null) : null
-  const token1InJsonStatus = token1InJson === null 
-    ? VERIFICATION_STATUS.PENDING 
-    : token1InJson === true 
-      ? VERIFICATION_STATUS.PASSED 
-      : VERIFICATION_STATUS.WARNING
-  const token1InJsonMessage = createStatusMessage(token1InJsonStatus, {
-    passed: 'exists in Silo Finance repository list',
-    failed: 'does not exist in Silo Finance repository list',
-    warning: 'does not exist in Silo Finance repository list',
-    pending: 'verification pending'
-  })
-  checks.push(createIndependentCheck(
+  checks.push(createAddressInJsonCheck(
     'Token 1 address',
-    token1InJsonMessage,
-    token1InJsonStatus
+    config.silo1.token,
+    tokenAddressInJsonVerification
   ))
 
   // Call Before Quote verification - always add
