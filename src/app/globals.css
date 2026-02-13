@@ -186,6 +186,46 @@ body {
   background-color: #ecfccb !important;
 }
 
+/* Light theme hover states for better visibility */
+.light-market-theme [class*="text-lime-600"] {
+  color: #65a30d !important;
+}
+
+.light-market-theme [class*="hover:text-lime-500"]:hover {
+  color: #4d7c0f !important;
+}
+
+.light-market-theme [class*="hover:text-emerald-800"]:hover {
+  color: #065f46 !important;
+}
+
+.light-market-theme [class*="hover:text-emerald-950"]:hover {
+  color: #022c22 !important;
+}
+
+.light-market-theme [class*="hover:text-gray-300"]:hover {
+  color: #052e16 !important;
+}
+
+.light-market-theme [class*="hover:bg-lime-800/30"]:hover {
+  background-color: rgba(101, 163, 13, 0.25) !important;
+}
+
+.light-market-theme [class*="hover:bg-lime-800"]:hover {
+  background-color: #65a30d !important;
+}
+
+.light-market-theme [class*="hover:bg-lime-700"]:hover {
+  background-color: #4d7c0f !important;
+}
+
+.light-market-theme [class*="hover:bg-lime-300"]:hover {
+  background-color: #c8e6b8 !important;
+}
+
+.light-market-theme [class*="hover:bg-lime-200"]:hover {
+  background-color: #dff0d2 !important;
+}
 
 /* Improve readability of warning/error banners on light layout. */
 .light-market-theme [class*="bg-yellow-900"] {
@@ -297,6 +337,14 @@ body {
   color: rgba(190, 242, 100, 0.8) !important;
 }
 
+.theme-dark .light-market-theme [class*="hover:text-emerald-800"]:hover {
+  color: rgba(217, 249, 157, 0.95) !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:text-emerald-950"]:hover {
+  color: #f7fee7 !important;
+}
+
 .theme-dark .light-market-theme [class*="placeholder-emerald-400"] {
   color: rgba(190, 242, 100, 0.45) !important;
 }
@@ -367,6 +415,10 @@ body {
   color: rgba(190, 242, 100, 0.7) !important;
 }
 
+.theme-dark .light-market-theme [class*="hover:text-gray-300"]:hover {
+  color: rgba(217, 249, 157, 0.95) !important;
+}
+
 .theme-dark .light-market-theme [class*="text-gray-500"] {
   color: rgba(163, 230, 53, 0.6) !important;
 }
@@ -381,6 +433,14 @@ body {
 
 .theme-dark .light-market-theme [class*="text-lime-300"] {
   color: #bef264 !important;
+}
+
+.theme-dark .light-market-theme [class*="text-lime-600"] {
+  color: #bef264 !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:text-lime-500"]:hover {
+  color: #d9f99d !important;
 }
 
 .theme-dark .light-market-theme [class*="bg-lime-950"] {
@@ -475,6 +535,30 @@ body {
 
 .theme-dark .light-market-theme [class*="hover:bg-gray-700"]:hover {
   background-color: #2a372a !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-800/30"]:hover {
+  background-color: rgba(77, 124, 15, 0.4) !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-800/80"]:hover {
+  background-color: rgba(77, 124, 15, 0.85) !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-800"]:hover {
+  background-color: #4d7c0f !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-700"]:hover {
+  background-color: #65a30d !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-300"]:hover {
+  background-color: #2a372a !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-lime-200"]:hover {
+  background-color: #243024 !important;
 }
 
 .theme-dark .light-market-theme [class*="bg-lime-900/20"] {
