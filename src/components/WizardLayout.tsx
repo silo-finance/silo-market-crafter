@@ -80,7 +80,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="bg-transparent border-l border-lime-200 p-6">
+          <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-emerald-950">Configuration Summary</h2>
               <button
