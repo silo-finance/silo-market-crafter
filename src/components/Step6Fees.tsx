@@ -47,7 +47,7 @@ const GeneralFeeInput = React.memo(({
           value={displayValue}
           onChange={(e) => onChange(field, e.target.value)}
           onBlur={() => onBlur(field)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent text-center"
           placeholder="0"
         />
         <div className="absolute right-2 top-2 text-gray-400 text-sm">
@@ -89,7 +89,7 @@ const TokenFeeInput = React.memo(({
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
           onBlur={() => onBlur(tokenIndex, field)}
-          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent ${
             disabled
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
               : 'bg-gray-700 border border-gray-600 text-white'
@@ -386,7 +386,7 @@ export default function Step6Fees() {
           {/* Token 0 Fees */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Fees for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+              Fees for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
@@ -417,7 +417,7 @@ export default function Step6Fees() {
           {/* Token 1 Fees */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Fees for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+              Fees for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
@@ -462,7 +462,7 @@ export default function Step6Fees() {
           
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>JSON Config</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

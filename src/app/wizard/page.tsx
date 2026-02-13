@@ -76,8 +76,8 @@ function WizardPageContent() {
 
 export default function WizardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">
-      <div className="text-white">Loading...</div>
+    <Suspense fallback={<div className="min-h-screen bg-[#eef6e8] text-emerald-900 flex items-center justify-center">
+      <div className="text-emerald-900">Loading...</div>
     </div>}>
       <WizardPageContent />
     </Suspense>

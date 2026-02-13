@@ -40,7 +40,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="light-market-theme min-h-screen bg-[#eef6e8] text-emerald-950">
         {children}
       </div>
     )
@@ -49,7 +49,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const showSummarySidebar = !isStep11Standalone && isSummaryOpen
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="light-market-theme min-h-screen bg-[#eef6e8] text-emerald-950">
       <div className="flex">
         {/* Main Content */}
         <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
@@ -57,13 +57,13 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
             {/* Header with Navigation and Reset Button */}
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-white">Silo Market Creator</h1>
-                <p className="text-gray-400">Create a new Silo market step by step</p>
+                <h1 className="text-2xl font-bold text-emerald-950">Silo Market Creator</h1>
+                <p className="text-emerald-700">Create a new Silo market step by step</p>
               </div>
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => updateStep(0)}
-                  className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                  className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
                   title="Back to Landing Page"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,12 +80,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="bg-gray-900 border-l border-gray-800 p-6">
+          <div className="bg-[#ecf5e4] border-l border-lime-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">Configuration Summary</h2>
+              <h2 className="text-xl font-semibold text-emerald-950">Configuration Summary</h2>
               <button
                 onClick={() => setIsSummaryOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-emerald-700 hover:text-emerald-950 transition-colors"
                 title="Hide Summary"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
             {/* Progress Indicator */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Progress</h3>
+              <h3 className="text-sm font-medium text-emerald-800 mb-3">Progress</h3>
               <div className="space-y-1.5">
                 {[
                   { step: 1, title: 'Assets' },
@@ -121,25 +121,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       onClick={() => isClickable && handleStepClick(item.step)}
                       className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
                         wizardData.currentStep >= item.step
-                          ? 'bg-blue-900/30 border border-blue-700'
-                          : 'bg-gray-800 border border-gray-700'
+                          ? 'bg-lime-900/20 border border-lime-700/50'
+                          : 'bg-[#1a241a] border border-lime-900/40'
                       } ${
-                        isClickable ? 'cursor-pointer hover:bg-blue-800/40' : 'cursor-default'
+                        isClickable ? 'cursor-pointer hover:bg-lime-800/30' : 'cursor-default'
                       }`}
                     >
                       <div
                         className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${
                           isCompleted
-                            ? 'bg-green-600 text-white'
+                            ? 'bg-lime-600 text-lime-950'
                             : isCurrent
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-600 text-gray-400'
+                            ? 'bg-lime-700 text-lime-50'
+                            : 'bg-lime-950/70 text-lime-300/50'
                         }`}
                       >
                         {isCompleted ? '✓' : item.step}
                       </div>
                       <div className={`text-xs font-medium ${
-                        wizardData.currentStep >= item.step ? 'text-white' : 'text-gray-400'
+                        wizardData.currentStep >= item.step ? 'text-lime-50' : 'text-lime-200/60'
                       }`}>
                         {item.title}
                       </div>
@@ -154,29 +154,29 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 1: Assets */}
               {wizardData.token0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Selected Assets</h3>
+                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Selected Assets</h3>
                   <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 0{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <AddressDisplayShort
                           address={wizardData.token0.address}
                           chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
                           className="text-xs"
                         />
-                        <span className="text-xs text-gray-400">{wizardData.token0.symbol}</span>
+                        <span className="text-xs text-lime-200/65">{wizardData.token0.symbol}</span>
                       </div>
                     </div>
                     {wizardData.token1 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-lime-50">Token 1{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <AddressDisplayShort
                             address={wizardData.token1.address}
                             chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
                             className="text-xs"
                           />
-                          <span className="text-xs text-gray-400">{wizardData.token1.symbol}</span>
+                          <span className="text-xs text-lime-200/65">{wizardData.token1.symbol}</span>
                         </div>
                       </div>
                     )}
@@ -187,12 +187,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
               {wizardData.currentStep !== 11 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Oracle Configuration</h3>
+                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Oracle Configuration</h3>
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
-                        <div className="text-xs text-gray-400 capitalize mb-2">
+                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-lime-50">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                        <div className="text-xs text-lime-200/65 capitalize mb-2">
                           Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
                         {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
@@ -200,7 +200,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <>
-                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="text-xs text-lime-200/65">{scaler.name}</div>
                               <div className="mt-1">
                                 <AddressDisplayShort
                                   address={scaler.address}
@@ -208,7 +208,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   className="text-xs"
                                 />
                               </div>
-                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
@@ -217,9 +217,9 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     )}
                     {wizardData.oracleType1 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
-                        <div className="text-xs text-gray-400 capitalize mb-2">
+                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-lime-50">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="text-xs text-lime-200/65 capitalize mb-2">
                           Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
                         {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
@@ -227,7 +227,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <>
-                              <div className="text-xs text-gray-400">{scaler.name}</div>
+                              <div className="text-xs text-lime-200/65">{scaler.name}</div>
                               <div className="mt-1">
                                 <AddressDisplayShort
                                   address={scaler.address}
@@ -235,7 +235,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   className="text-xs"
                                 />
                               </div>
-                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
@@ -250,16 +250,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 4: IRM Selection */}
               {wizardData.selectedIRM0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Interest Rate Models</h3>
+                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Interest Rate Models</h3>
                   <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 IRM{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-gray-400">{wizardData.selectedIRM0.name}</div>
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 0 IRM{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs text-lime-200/65">{wizardData.selectedIRM0.name}</div>
                     </div>
                     {wizardData.selectedIRM1 && (
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-white">Token 1 IRM{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
-                        <div className="text-xs text-gray-400">{wizardData.selectedIRM1.name}</div>
+                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                        <div className="text-sm font-medium text-lime-50">Token 1 IRM{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="text-xs text-lime-200/65">{wizardData.selectedIRM1.name}</div>
                       </div>
                     )}
                   </div>
@@ -269,11 +269,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 5: Borrow Configuration */}
               {wizardData.borrowConfiguration && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Borrow Configuration</h3>
+                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Borrow Configuration</h3>
                   <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-gray-400">
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 0{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs text-lime-200/65">
                         {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
                         )}
@@ -283,9 +283,9 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                         Target LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
-                      <div className="text-xs text-gray-400">
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 1{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="text-xs text-lime-200/65">
                         {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
                         )}
@@ -302,25 +302,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 6: Fees Configuration */}
               {wizardData.feesConfiguration && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Fees Configuration</h3>
+                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Fees Configuration</h3>
                   <div className="space-y-2">
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">General Fees</div>
-                      <div className="text-xs text-gray-400">
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">General Fees</div>
+                      <div className="text-xs text-lime-200/65">
                         DAO: {bigintToDisplayNumber(wizardData.feesConfiguration.daoFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Deployer: {bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-gray-400"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-gray-400">
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs text-lime-200/65">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-white">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-gray-400"> - {wizardData.token1.symbol}</span> : ''}</div>
-                      <div className="text-xs text-gray-400">
+                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-lime-50">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="text-xs text-lime-200/65">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
@@ -331,22 +331,22 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
               {/* Owners: Hook Owner + IRM Owner (Kink only) */}
               <div>
-                <h3 className="text-sm font-medium text-gray-300 mb-3">Owners</h3>
+                <h3 className="text-sm font-medium text-lime-200/80 mb-3">Owners</h3>
                 <div className="space-y-2">
-                  <div className="bg-gray-800 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-white">Hook Owner</div>
+                  <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-lime-50">Hook Owner</div>
                     {wizardData.hookOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-gray-500 mt-1">—</div>
+                      <div className="text-xs text-lime-300/45 mt-1">—</div>
                     )}
                   </div>
-                  <div className="bg-gray-800 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-white">IRM Owner</div>
+                  <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-lime-50">IRM Owner</div>
                     {wizardData.irmModelType === 'kink' && wizardData.hookOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-gray-500 mt-1">not available</div>
+                      <div className="text-xs text-lime-300/45 mt-1">not available</div>
                     )}
                   </div>
                 </div>
@@ -359,7 +359,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {!isSummaryOpen && (
           <button
             onClick={() => setIsSummaryOpen(true)}
-            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-lime-50 p-3 rounded-full shadow-lg transition-all duration-200 z-50"
             title="Show Summary"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
