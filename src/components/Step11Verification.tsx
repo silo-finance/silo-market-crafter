@@ -630,12 +630,12 @@ export default function Step11Verification() {
                 value={input}
                 onChange={handleInputChange}
                 placeholder="0x... or transaction hash or explorer URL"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+                className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
               >
                 {loading ? 'Loading...' : 'Verify'}
               </button>
@@ -655,7 +655,7 @@ export default function Step11Verification() {
               href={`${explorerUrl}/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 font-mono text-sm break-all"
+              className="text-lime-600 hover:text-lime-500 font-mono text-sm break-all"
             >
               {txHash}
             </a>
@@ -735,7 +735,7 @@ export default function Step11Verification() {
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="mt-3 text-blue-400 hover:text-blue-300 text-sm"
+              className="mt-3 text-lime-600 hover:text-lime-500 text-sm"
             >
               Try again with different input
             </button>

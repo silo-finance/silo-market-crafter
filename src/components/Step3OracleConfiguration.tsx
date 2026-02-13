@@ -998,12 +998,12 @@ export default function Step3OracleConfiguration() {
           </p>
           
           {wizardData.oracleType0.type === 'none' ? (
-            <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+            <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-blue-400 font-medium">No Oracle Configuration Needed</span>
+                <span className="text-lime-500 font-medium">No Oracle Configuration Needed</span>
               </div>
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
@@ -1028,7 +1028,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-lime-700"
                   value={ptLinear0.maxYieldPercent === 0 ? '' : ptLinear0.maxYieldPercent}
                   onChange={(e) => setPTLinear0(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -1216,7 +1216,7 @@ export default function Step3OracleConfiguration() {
                           !oracle.valid
                             ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                            ? 'border-lime-700 bg-lime-900/20 cursor-pointer'
                             : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                         }`}
                       >
@@ -1239,7 +1239,7 @@ export default function Step3OracleConfiguration() {
                                 href={getBlockExplorerUrl(oracle.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-lime-600 hover:text-lime-500"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {oracle.scaleFactor}
@@ -1257,7 +1257,7 @@ export default function Step3OracleConfiguration() {
                             href={getBlockExplorerUrl(oracle.address)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 text-sm"
+                            className="text-lime-600 hover:text-lime-500 text-sm"
                           >
                             {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
                           </a>
@@ -1298,12 +1298,12 @@ export default function Step3OracleConfiguration() {
           </p>
           
           {wizardData.oracleType1.type === 'none' ? (
-            <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+            <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-blue-400 font-medium">No Oracle Configuration Needed</span>
+                <span className="text-lime-500 font-medium">No Oracle Configuration Needed</span>
               </div>
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
@@ -1328,7 +1328,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-lime-700"
                   value={ptLinear1.maxYieldPercent === 0 ? '' : ptLinear1.maxYieldPercent}
                   onChange={(e) => setPTLinear1(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -1516,7 +1516,7 @@ export default function Step3OracleConfiguration() {
                           !oracle.valid
                             ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-blue-500 bg-blue-900/20 cursor-pointer'
+                            ? 'border-lime-700 bg-lime-900/20 cursor-pointer'
                             : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                         }`}
                       >
@@ -1539,7 +1539,7 @@ export default function Step3OracleConfiguration() {
                                 href={getBlockExplorerUrl(oracle.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-lime-600 hover:text-lime-500"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {oracle.scaleFactor}
@@ -1557,7 +1557,7 @@ export default function Step3OracleConfiguration() {
                             href={getBlockExplorerUrl(oracle.address)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 text-sm"
+                            className="text-lime-600 hover:text-lime-500 text-sm"
                           >
                             {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
                           </a>
@@ -1614,7 +1614,7 @@ export default function Step3OracleConfiguration() {
               (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0'))) ||
               (wizardData.oracleType0.type === 'ptLinear' && (Number(ptLinear0.maxYieldPercent) <= 0 || (!ptLinear0.useSecondTokenAsQuote && (!ptLinear0.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear0.hardcodedQuoteTokenAddress))))) ||
               (wizardData.oracleType1.type === 'ptLinear' && (Number(ptLinear1.maxYieldPercent) <= 0 || (!ptLinear1.useSecondTokenAsQuote && (!ptLinear1.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear1.hardcodedQuoteTokenAddress)))))}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>

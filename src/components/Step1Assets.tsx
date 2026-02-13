@@ -318,7 +318,7 @@ export default function Step1Assets() {
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-lime-600 hover:text-lime-500 underline"
           >
             {wizardData.networkInfo?.chainId
               ? `in this JSON file (${wizardData.networkInfo.networkName})`
@@ -419,7 +419,7 @@ export default function Step1Assets() {
           <button
             type="submit"
             disabled={loading || !token0Metadata || !token1Metadata || !!token0Error || !!token1Error}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>

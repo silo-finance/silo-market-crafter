@@ -295,7 +295,7 @@ export default function Step8HookOwner() {
           <label 
             className={`flex items-start space-x-3 p-6 rounded-lg border cursor-pointer transition-all ${
               ownerSource === 'wallet'
-                ? 'border-blue-500 bg-blue-900/20'
+                ? 'border-lime-700 bg-lime-900/20'
                 : 'border-gray-700 hover:border-gray-600 bg-gray-800'
             }`}
           >
@@ -330,7 +330,7 @@ export default function Step8HookOwner() {
           <label 
             className={`flex items-start space-x-3 p-6 rounded-lg border cursor-pointer transition-all ${
               ownerSource === 'manual'
-                ? 'border-blue-500 bg-blue-900/20'
+                ? 'border-lime-700 bg-lime-900/20'
                 : 'border-gray-700 hover:border-gray-600 bg-gray-800'
             }`}
           >
@@ -356,7 +356,7 @@ export default function Step8HookOwner() {
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline"
+                  className="text-lime-600 hover:text-lime-500 underline"
                 >
                   {wizardData.networkInfo?.chainId
                     ? `in this JSON file (${wizardData.networkInfo.networkName})`
@@ -378,7 +378,7 @@ export default function Step8HookOwner() {
                       : addressValidation.isValid
                       ? 'border-green-500 focus:border-green-500'
                       : 'border-gray-600'
-                    : 'border-gray-600 focus:border-blue-500'
+                    : 'border-gray-600 focus:border-lime-700'
                 }`}
                 disabled={ownerSource !== 'manual'}
               />
@@ -463,7 +463,7 @@ export default function Step8HookOwner() {
               (ownerSource === 'wallet' && !connectedWalletAddress) || 
               (ownerSource === 'manual' && (!addressValidation.isValid || !resolvedOwnerAddress || !manualAddress.trim()))
             }
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>

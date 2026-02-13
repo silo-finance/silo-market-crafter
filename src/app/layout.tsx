@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import AlphaDisclaimer from '@/components/AlphaDisclaimer'
 import NetworkWarning from '@/components/NetworkWarning'
 import { WizardProvider } from '@/contexts/WizardContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,15 +20,34 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var saved = localStorage.getItem('market-crafter-theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var theme = (saved === 'dark' || saved === 'light') ? saved : (prefersDark ? 'dark' : 'light');
+                  document.documentElement.classList.remove('theme-light', 'theme-dark');
+                  document.documentElement.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>
-        <WizardProvider>
-          <NetworkWarning />
-          <Header />
-          <AlphaDisclaimer>
-            {children}
-          </AlphaDisclaimer>
-        </WizardProvider>
+        <ThemeProvider>
+          <WizardProvider>
+            <NetworkWarning />
+            <Header />
+            <AlphaDisclaimer>
+              {children}
+            </AlphaDisclaimer>
+          </WizardProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

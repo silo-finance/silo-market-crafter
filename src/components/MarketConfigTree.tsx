@@ -319,7 +319,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           href={`${explorerUrl}/address/${address}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 font-mono text-sm"
+          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
         >
           {formatAddress(address)}
         </a>
@@ -387,7 +387,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               href={`${explorerUrl}/address/${address}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 font-mono text-sm"
+              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
             >
               {formatAddress(address)}
             </a>

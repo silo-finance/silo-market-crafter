@@ -95,7 +95,7 @@ export default function Step7Hook() {
               key={option.value}
               className={`flex items-start space-x-4 p-6 rounded-lg border cursor-pointer transition-all ${
                 selectedHook === option.value
-                  ? 'border-blue-500 bg-blue-900/20'
+                  ? 'border-lime-700 bg-lime-900/20'
                   : 'border-gray-700 hover:border-gray-600 bg-gray-800'
               }`}
             >
@@ -156,7 +156,7 @@ export default function Step7Hook() {
           <button
             type="submit"
             disabled={loading || !selectedHook}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>
