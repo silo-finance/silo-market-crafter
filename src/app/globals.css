@@ -456,6 +456,39 @@ body {
   accent-color: #65a30d;
 }
 
+/* Dark overrides for missing color classes */
+.theme-dark .light-market-theme [class*="bg-white"] {
+  background-color: #1a241a !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:border-gray-600"]:hover {
+  border-color: #365314 !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:border-gray-700"]:hover {
+  border-color: #2a372a !important;
+}
+
+.theme-dark .light-market-theme [class*="border-lime-200"] {
+  border-color: rgba(77, 124, 15, 0.35) !important;
+}
+
+.theme-dark .light-market-theme [class*="hover:bg-gray-700"]:hover {
+  background-color: #2a372a !important;
+}
+
+.theme-dark .light-market-theme [class*="bg-lime-900/20"] {
+  background-color: rgba(77, 124, 15, 0.2) !important;
+}
+
+.theme-dark .light-market-theme [class*="bg-emerald-900/20"] {
+  background-color: rgba(6, 78, 59, 0.2) !important;
+}
+
+.theme-dark .light-market-theme [class*="bg-green-900/20"] {
+  background-color: rgba(20, 83, 45, 0.2) !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -484,6 +517,10 @@ body {
   font-size: 0.75em !important;
   font-weight: 500 !important;
   color: #9ca3af !important; /* gray-400 */
+}
+
+.theme-dark .tree .tree-item::marker {
+  color: rgba(190, 242, 100, 0.6) !important; /* lime-300 with opacity */
 }
 .tree-item .tree-item-content {
   display: inline;
