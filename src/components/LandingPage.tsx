@@ -64,7 +64,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="light-market-theme min-h-screen bg-[#eef6e8] flex items-center justify-center px-4">
+    <div className="light-market-theme min-h-screen flex items-center justify-center px-4">
       <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-12">

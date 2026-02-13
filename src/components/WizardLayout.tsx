@@ -40,7 +40,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
     return (
-      <div className="light-market-theme min-h-screen bg-[#eef6e8] text-emerald-950">
+      <div className="light-market-theme min-h-screen text-emerald-950">
         {children}
       </div>
     )
@@ -49,7 +49,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const showSummarySidebar = !isStep11Standalone && isSummaryOpen
 
   return (
-    <div className="light-market-theme min-h-screen bg-[#eef6e8] text-emerald-950">
+    <div className="light-market-theme min-h-screen text-emerald-950">
       <div className="flex">
         {/* Main Content */}
         <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
@@ -80,7 +80,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="bg-[#ecf5e4] border-l border-lime-200 p-6">
+          <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-emerald-950">Configuration Summary</h2>
               <button

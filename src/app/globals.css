@@ -8,7 +8,7 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
-  --header-bg: rgba(238, 246, 232, 0.95);
+  --header-bg: transparent;
   --header-border: #d9f99d;
   --header-text: #065f46;
   --header-text-soft: #047857;
@@ -23,6 +23,7 @@
   --header-toggle-off-bg-hover: #bef264;
   --header-toggle-off-text: #065f46;
   --header-logo-filter: brightness(0) saturate(100%) invert(26%) sepia(21%) saturate(1264%) hue-rotate(104deg) brightness(92%) contrast(92%);
+  --summary-bg: rgba(6, 95, 70, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,16 +37,16 @@
 body {
   color: rgb(var(--foreground-rgb));
   background-color: #eef6e8;
-  background-image: 
-    linear-gradient(to bottom, #f6fbf2, #eef6e8),
-    linear-gradient(90deg, rgba(77, 124, 15, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(77, 124, 15, 0.03) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
-  background-position: 0 0, 0 0, 0 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='2400' height='1600' viewBox='0 0 2400 1600' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(77,124,15,0.05)' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M -120 120 Q 280 40 620 220 T 1320 340 T 2160 220'/%3E%3Cpath d='M -80 260 Q 260 140 600 290 T 1360 470 T 2280 360'/%3E%3Cpath d='M -40 410 Q 300 250 700 420 T 1500 610 T 2360 540'/%3E%3Cpath d='M 30 590 Q 430 350 860 560 T 1690 760 T 2420 740'/%3E%3Cpath d='M 140 780 Q 520 520 980 740 T 1810 930 T 2460 960'/%3E%3Cpath d='M 280 980 Q 680 700 1160 910 T 1960 1110 T 2480 1190'/%3E%3Cpath d='M -220 1160 Q 120 980 460 1140 T 1180 1340 T 2060 1500'/%3E%3Cpath d='M -260 1360 Q 140 1150 520 1300 T 1260 1480 T 2140 1620'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(135deg, #f6fbf2 0%, #eef6e8 55%, #e5f1dc 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, cover;
+  background-position: top left, center;
 }
 
 .theme-dark {
-  --header-bg: rgba(15, 20, 16, 0.9);
+  --header-bg: transparent;
   --header-border: rgba(77, 124, 15, 0.45);
   --header-text: rgba(217, 249, 157, 0.85);
   --header-text-soft: rgba(190, 242, 100, 0.75);
@@ -60,11 +61,16 @@ body {
   --header-toggle-off-bg-hover: #2a372a;
   --header-toggle-off-text: rgba(217, 249, 157, 0.85);
   --header-logo-filter: none;
+  --summary-bg: rgba(6, 95, 70, 0.12);
 }
 
 .header-shell {
   background-color: var(--header-bg);
   border-bottom: 1px solid var(--header-border);
+}
+
+.summary-panel {
+  background-color: var(--summary-bg);
 }
 
 .header-text {
@@ -119,6 +125,7 @@ body {
 /* Centralized light theme scope for wizard/layout surfaces. */
 .light-market-theme {
   color: #022c22;
+  background: transparent;
 }
 
 .light-market-theme [class*="bg-gray-900"] {
@@ -306,21 +313,21 @@ body {
 .theme-dark body {
   color: #f8fafc;
   background-color: #0f1410;
-  background-image: 
-    linear-gradient(to bottom, #131b13, #0f1410),
-    linear-gradient(90deg, rgba(77, 124, 15, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(77, 124, 15, 0.08) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
-  background-position: 0 0, 0 0, 0 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='2400' height='1600' viewBox='0 0 2400 1600' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(132,204,22,0.06)' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M -120 120 Q 280 40 620 220 T 1320 340 T 2160 220'/%3E%3Cpath d='M -80 260 Q 260 140 600 290 T 1360 470 T 2280 360'/%3E%3Cpath d='M -40 410 Q 300 250 700 420 T 1500 610 T 2360 540'/%3E%3Cpath d='M 30 590 Q 430 350 860 560 T 1690 760 T 2420 740'/%3E%3Cpath d='M 140 780 Q 520 520 980 740 T 1810 930 T 2460 960'/%3E%3Cpath d='M 280 980 Q 680 700 1160 910 T 1960 1110 T 2480 1190'/%3E%3Cpath d='M -220 1160 Q 120 980 460 1140 T 1180 1340 T 2060 1500'/%3E%3Cpath d='M -260 1360 Q 140 1150 520 1300 T 1260 1480 T 2140 1620'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(135deg, #131b13 0%, #0f1410 55%, #0b120b 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, cover;
+  background-position: top left, center;
 }
 
 .theme-dark .light-market-theme {
   color: #f0fdf4;
-  background-color: #0f1410 !important;
+  background: transparent !important;
 }
 
 .theme-dark .light-market-theme [class*="bg-[#eef6e8]"] {
-  background-color: #0f1410 !important;
+  background-color: transparent !important;
 }
 
 .theme-dark .light-market-theme [class*="bg-[#f6fbf2]"] {
