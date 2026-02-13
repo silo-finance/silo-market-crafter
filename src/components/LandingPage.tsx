@@ -64,14 +64,14 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="light-market-theme min-h-screen bg-[#eef6e8] flex items-center justify-center px-4">
       <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-white mb-4">
+          <h1 className="text-5xl font-bold text-emerald-950 mb-4">
             Silo Market Crafter
           </h1>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-emerald-800">
             Create or load Silo market configurations
           </p>
         </div>
@@ -79,22 +79,22 @@ export default function LandingPage() {
         {/* Main Options */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Start New Wizard */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-8">
+          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-lime-800/90 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-white mb-4">
+              <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
                 Start New Wizard
               </h2>
-              <p className="text-gray-400 mb-6">
+              <p className="text-emerald-700 mb-6">
                 Create a new Silo market in few easy steps.
               </p>
               <button
                 onClick={handleStartWizard}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                className="w-full bg-lime-800/90 hover:bg-lime-700 text-lime-50 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
               >
                 Start Wizard
               </button>
@@ -102,17 +102,17 @@ export default function LandingPage() {
           </div>
 
           {/* Load Existing Config */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-8">
+          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-lime-700/90 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-white mb-4">
+              <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
                 Load Existing Config
               </h2>
-              <p className="text-gray-400 mb-6">
+              <p className="text-emerald-700 mb-6">
                 Upload or paste an existing JSON configuration to edit and deploy.
               </p>
             </div>
@@ -123,8 +123,8 @@ export default function LandingPage() {
                 onClick={() => setIsUploadMode(false)}
                 className={`flex-1 py-2 px-4 rounded-l-lg font-medium transition-colors ${
                   !isUploadMode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-lime-800 text-lime-50'
+                    : 'bg-lime-100 text-emerald-800 hover:bg-lime-200'
                 }`}
               >
                 Paste JSON
@@ -133,8 +133,8 @@ export default function LandingPage() {
                 onClick={() => setIsUploadMode(true)}
                 className={`flex-1 py-2 px-4 rounded-r-lg font-medium transition-colors ${
                   isUploadMode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-lime-800 text-lime-50'
+                    : 'bg-lime-100 text-emerald-800 hover:bg-lime-200'
                 }`}
               >
                 Upload File
@@ -148,7 +148,7 @@ export default function LandingPage() {
                   type="file"
                   accept=".json"
                   onChange={handleFileUpload}
-                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  className="w-full p-3 bg-white border border-lime-200 rounded-lg text-emerald-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-lime-800 file:text-lime-50 hover:file:bg-lime-700"
                 />
               </div>
             )}
@@ -162,7 +162,7 @@ export default function LandingPage() {
                   if (error) setError('') // Clear error when user types
                 }}
                 placeholder="Paste your JSON configuration here..."
-                className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-32 p-3 bg-white border border-lime-200 rounded-lg text-emerald-900 placeholder-emerald-400 resize-none focus:outline-none focus:ring-2 focus:ring-lime-700"
               />
             </div>
 
@@ -177,14 +177,14 @@ export default function LandingPage() {
             <div className="flex space-x-3">
               <button
                 onClick={clearInput}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-lime-200 hover:bg-lime-300 text-emerald-900 font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 Clear
               </button>
               <button
                 onClick={handleLoadConfig}
                 disabled={isLoading || !jsonInput.trim()}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-lime-800 hover:bg-lime-700 disabled:bg-lime-200 disabled:cursor-not-allowed text-lime-50 disabled:text-emerald-700 font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 {isLoading ? 'Loading...' : 'Load Config'}
               </button>
@@ -193,7 +193,7 @@ export default function LandingPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="text-center mt-12 text-gray-400 text-sm">
+        <div className="text-center mt-12 text-emerald-700 text-sm">
           <p>
             Make sure your wallet is connected to determine the correct blockchain for token resolution.
           </p>

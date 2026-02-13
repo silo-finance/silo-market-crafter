@@ -131,7 +131,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-black/90 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <header className="bg-[#eef6e8]/95 backdrop-blur-sm border-b border-lime-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo + Market Crafter version */}
@@ -146,7 +146,7 @@ export default function Header() {
                 style={{ width: 'auto' }}
               />
             </Link>
-            <span className="text-gray-300 text-sm font-medium">
+            <span className="text-emerald-800 text-sm font-medium">
               Market Crafter v{packageJson.version}
             </span>
           </div>
@@ -155,7 +155,7 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             <Link 
               href="/wizard?step=11"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="text-emerald-800 hover:text-emerald-950 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Verify Market
             </Link>
@@ -163,7 +163,7 @@ export default function Header() {
               href="https://silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="text-emerald-800 hover:text-emerald-950 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Silo Finance
             </Link>
@@ -171,7 +171,7 @@ export default function Header() {
               href="https://app.silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="text-emerald-800 hover:text-emerald-950 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Silo App
             </Link>
@@ -183,21 +183,21 @@ export default function Header() {
               <div className="flex items-center space-x-4">
                 <div className="text-right flex items-center gap-2 justify-end">
                   <div
-                    className="text-sm text-gray-300 font-mono"
+                    className="text-sm text-emerald-800 font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
                   </div>
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-emerald-700">
                   {networkName} ({networkId})
                 </div>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
                 <button
                   type="button"
                   onClick={disconnectWallet}
-                  className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                  className="text-emerald-700 hover:text-emerald-950 text-sm font-medium transition-colors"
                 >
                   Disconnect
                 </button>
@@ -205,7 +205,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={connectWallet}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                className="bg-lime-800/80 hover:bg-lime-700 text-lime-50 font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 Connect MetaMask
               </button>

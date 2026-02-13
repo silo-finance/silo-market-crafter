@@ -20,12 +20,107 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background-color: #eef6e8;
+  background-image: linear-gradient(to bottom, #f6fbf2, #eef6e8);
+}
+
+/* Centralized light theme scope for wizard/layout surfaces. */
+.light-market-theme {
+  color: #022c22;
+}
+
+.light-market-theme [class*="bg-gray-900"] {
+  background-color: #f6fbf2 !important;
+}
+
+.light-market-theme [class*="bg-gray-800"] {
+  background-color: #edf7e6 !important;
+}
+
+.light-market-theme [class*="bg-gray-700"] {
+  background-color: #dff0d2 !important;
+}
+
+.light-market-theme [class*="bg-gray-600"] {
+  background-color: #c8e6b8 !important;
+}
+
+.light-market-theme [class*="bg-[#131b13]"] {
+  background-color: #ecf5e4 !important;
+}
+
+.light-market-theme [class*="bg-[#1a241a]"] {
+  background-color: #f6fbf2 !important;
+}
+
+.light-market-theme [class*="border-gray-800"],
+.light-market-theme [class*="border-gray-700"],
+.light-market-theme [class*="border-gray-600"] {
+  border-color: #b9d8a9 !important;
+}
+
+.light-market-theme [class*="border-lime-900"] {
+  border-color: #b9d8a9 !important;
+}
+
+.light-market-theme [class*="text-white"] {
+  color: #052e16 !important;
+}
+
+.light-market-theme [class*="text-gray-300"] {
+  color: #14532d !important;
+}
+
+.light-market-theme [class*="text-gray-400"] {
+  color: #166534 !important;
+}
+
+.light-market-theme [class*="text-gray-500"] {
+  color: #3f6212 !important;
+}
+
+.light-market-theme [class*="text-lime-50"] {
+  color: #052e16 !important;
+}
+
+.light-market-theme [class*="text-lime-200"] {
+  color: #166534 !important;
+}
+
+.light-market-theme [class*="text-lime-300"] {
+  color: #3f6212 !important;
+}
+
+.light-market-theme [class*="bg-lime-950"] {
+  background-color: #d9f99d !important;
+}
+
+.light-market-theme [class*="bg-lime-900"] {
+  background-color: #ecfccb !important;
+}
+
+.light-market-theme [class*="bg-blue-900"] {
+  background-color: rgba(163, 230, 53, 0.15) !important;
+}
+
+.light-market-theme [class*="bg-blue-600"] {
+  background-color: #4d7c0f !important;
+}
+
+.light-market-theme [class*="hover:bg-blue-700"]:hover {
+  background-color: #3f6212 !important;
+}
+
+.light-market-theme [class*="border-blue-500"] {
+  border-color: #65a30d !important;
+}
+
+.light-market-theme [class*="text-blue-400"] {
+  color: #3f6212 !important;
+}
+
+.light-market-theme [class*="hover:text-blue-300"]:hover {
+  color: #365314 !important;
 }
 
 @layer utilities {
