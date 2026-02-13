@@ -53,6 +53,13 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     nativeTokenSymbol: 'S',
   },
   {
+    chainId: 196,
+    displayName: 'OKX',
+    chainName: 'xlayer',
+    explorerBaseUrl: 'https://www.okx.com/web3/explorer/xlayer',
+    nativeTokenSymbol: 'OKB',
+  },
+  {
     chainId: 1776,
     displayName: 'Injective',
     chainName: 'injective',
