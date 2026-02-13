@@ -64,22 +64,22 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="light-market-theme min-h-screen flex items-center justify-center px-4">
+    <div className="light-market-theme min-h-screen flex items-center justify-center px-4 sm:px-6">
       <div className="max-w-4xl w-full">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-emerald-950 mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-emerald-950 mb-4">
             Silo Market Crafter
           </h1>
-          <p className="text-xl text-emerald-800">
+          <p className="text-base sm:text-xl text-emerald-800">
             Create or load Silo market configurations
           </p>
         </div>
 
         {/* Main Options */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Start New Wizard */}
-          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
+          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-6 sm:p-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-lime-800/90 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,7 @@ export default function LandingPage() {
           </div>
 
           {/* Load Existing Config */}
-          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
+          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-6 sm:p-8">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-lime-700/90 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,7 +174,7 @@ export default function LandingPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={clearInput}
                 className="flex-1 bg-lime-200 hover:bg-lime-300 text-emerald-900 font-medium py-2 px-4 rounded-lg transition-colors"

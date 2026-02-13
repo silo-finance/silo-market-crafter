@@ -135,9 +135,9 @@ export default function Header() {
   return (
     <header className="header-shell backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-3">
           {/* Logo + Market Crafter version */}
-          <div className="flex-shrink-0 flex items-center gap-3">
+          <div className="min-w-0 flex items-center gap-2 sm:gap-3">
             <Link href="/" className="flex items-center">
               <Image 
                 src="https://cdn.prod.website-files.com/684669826f2b6c83c65f3f7c/684669826f2b6c83c65f3f86_Frame%2010169.svg" 
@@ -150,13 +150,13 @@ export default function Header() {
                 }}
               />
             </Link>
-            <span className="header-text text-sm font-medium">
+            <span className="header-text hidden sm:inline text-sm font-medium">
               Market Crafter v{packageJson.version}
             </span>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden lg:flex space-x-8">
             <Link 
               href="/wizard?step=11"
               className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
@@ -182,7 +182,7 @@ export default function Header() {
           </nav>
 
           {/* MetaMask Connect / Disconnect */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
             <div className="header-theme-toggle flex items-center rounded-lg overflow-hidden">
               <button
                 type="button"
@@ -204,24 +204,24 @@ export default function Header() {
               </button>
             </div>
             {isConnected ? (
-              <div className="flex items-center space-x-4">
-                <div className="text-right flex items-center gap-2 justify-end">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+                <div className="text-right flex items-center gap-2 justify-end min-w-0">
                   <div
-                    className="header-text text-sm font-mono"
+                    className="header-text text-xs sm:text-sm font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
                   </div>
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
                 </div>
-                <div className="header-text-soft text-xs">
+                <div className="header-text-soft hidden md:block text-xs">
                   {networkName} ({networkId})
                 </div>
-                <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
+                <div className="hidden sm:block w-2 h-2 bg-lime-500 rounded-full"></div>
                 <button
                   type="button"
                   onClick={disconnectWallet}
-                  className="header-link text-sm font-medium transition-colors"
+                  className="header-link text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   Disconnect
                 </button>
@@ -229,7 +229,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={connectWallet}
-                className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-sm whitespace-nowrap"
               >
                 Connect MetaMask
               </button>

@@ -50,20 +50,20 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
   return (
     <div className="light-market-theme min-h-screen text-emerald-950">
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Main Content */}
-        <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
-          <div className="p-8">
+        <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-full lg:w-2/3' : 'w-full'}`}>
+          <div className="p-4 sm:p-6 lg:p-8">
             {/* Header with Navigation and Reset Button */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-emerald-950">Silo Market Creator</h1>
                 <p className="text-emerald-700">Create a new Silo market step by step</p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   onClick={() => updateStep(0)}
-                  className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                  className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 w-full sm:w-auto"
                   title="Back to Landing Page"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,8 +79,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         </div>
 
         {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
-        <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
+        <div className={`${showSummarySidebar ? 'w-full lg:w-1/3' : 'w-0 lg:w-0'} transition-all duration-300 overflow-hidden`}>
+          <div className="summary-panel border-t border-lime-200 lg:border-t-0 lg:border-l p-4 sm:p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-emerald-950">Configuration Summary</h2>
               <button
@@ -359,7 +359,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {!isSummaryOpen && (
           <button
             onClick={() => setIsSummaryOpen(true)}
-            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-lime-50 p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+            className="fixed bottom-4 right-4 lg:top-1/2 lg:bottom-auto lg:transform lg:-translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-lime-50 p-3 rounded-full shadow-lg transition-all duration-200 z-50"
             title="Show Summary"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
