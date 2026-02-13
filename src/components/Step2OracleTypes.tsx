@@ -263,7 +263,7 @@ export default function Step2OracleTypes() {
                       {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
                     </span>
                     {oracleType.enabled ? (
-                      <span className="text-green-400 text-sm">✓ Available</span>
+                      <span className="status-muted-success text-sm">✓ Available</span>
                     ) : (
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
@@ -320,7 +320,7 @@ export default function Step2OracleTypes() {
                       {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
                     </span>
                     {oracleType.enabled ? (
-                      <span className="text-green-400 text-sm">✓ Available</span>
+                      <span className="status-muted-success text-sm">✓ Available</span>
                     ) : (
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}

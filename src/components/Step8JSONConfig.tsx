@@ -92,7 +92,7 @@ export default function Step8JSONConfig() {
 
         <button
           onClick={handleDeploy}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          className="bg-emerald-900 hover:bg-emerald-800 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           <span>Deploy Market</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

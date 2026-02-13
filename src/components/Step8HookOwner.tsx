@@ -386,7 +386,7 @@ export default function Step8HookOwner() {
               {ownerSource === 'manual' && manualAddress && (
                 <div className="mt-2 space-y-1">
                   {validatingAddress ? (
-                    <div className="text-sm text-gray-400 flex items-center space-x-2">
+                    <div className="text-sm status-muted-success flex items-center space-x-2">
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -400,24 +400,24 @@ export default function Step8HookOwner() {
                   ) : addressValidation.isValid && resolvedOwnerAddress ? (
                     <div className="space-y-1">
                       {ownerResolvedKey && (
-                        <div className="text-sm text-gray-400">
-                          Matched name: <span className="font-mono text-gray-300">{ownerResolvedKey}</span>
+                        <div className="text-sm status-muted-success">
+                          Matched name: <span className="font-mono text-emerald-800/85">{ownerResolvedKey}</span>
                         </div>
                       )}
                       {!ownerResolvedKey && ownerNameFromJson && (
-                        <div className="text-sm text-gray-400">
-                          Name (from addresses): <span className="font-mono text-gray-300">{ownerNameFromJson}</span>
+                        <div className="text-sm status-muted-success">
+                          Name (from addresses): <span className="font-mono text-emerald-800/85">{ownerNameFromJson}</span>
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                        <span className="text-green-400">✓ Address</span>
+                        <span className="status-muted-success">✓ Address</span>
                         <AddressDisplayLong
                           address={resolvedOwnerAddress}
                           chainId={wizardData.networkInfo?.chainId}
                           className="break-all"
                         />
                       </div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-sm status-muted-success">
                         {addressValidation.isContract === null
                           ? 'Type: Checking…'
                           : addressValidation.isContract
@@ -425,8 +425,8 @@ export default function Step8HookOwner() {
                             : 'Type: Wallet (EOA)'}
                       </div>
                       {nativeBalance !== null && (
-                        <div className="text-sm text-gray-400">
-                          Native balance: <span className="text-gray-300 font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
+                        <div className="text-sm status-muted-success">
+                          Native balance: <span className="text-emerald-800/85 font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
                         </div>
                       )}
                     </div>

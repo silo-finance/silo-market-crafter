@@ -113,7 +113,7 @@ export default function Step7Hook() {
                     {option.name}
                   </span>
                   {selectedHook === option.value && (
-                    <span className="text-green-400 text-sm">✓ Selected</span>
+                    <span className="status-muted-success text-sm">✓ Selected</span>
                   )}
                 </div>
                 <p className="text-sm text-gray-400 mb-3">

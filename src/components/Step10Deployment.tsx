@@ -777,7 +777,7 @@ export default function Step10Deployment() {
               deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
             ))
           }
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           {deploying ? (
             <>
@@ -791,7 +791,7 @@ export default function Step10Deployment() {
             <span>Market deployed</span>
           ) : (
             <>
-              <span>Create Market</span>
+              <span>Execute Transaction</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -824,7 +824,7 @@ export default function Step10Deployment() {
 
       {configUnchangedAfterDeploy && txHash && (
         <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
-          <div className="text-green-400 text-sm mb-2">
+          <div className="status-muted-success text-sm mb-2">
             ✓ Transaction submitted successfully!
           </div>
           <div className="flex flex-wrap items-center gap-2 mb-3">

@@ -1246,7 +1246,7 @@ export default function Step3OracleConfiguration() {
                               </a>
                             </span>
                             {oracle.valid ? (
-                              <span className="text-green-400 text-xs">✓ Valid</span>
+                              <span className="status-muted-success text-xs">✓ Valid</span>
                             ) : (
                               <span className="text-red-400 text-xs">✗ Invalid</span>
                             )}
@@ -1271,7 +1271,7 @@ export default function Step3OracleConfiguration() {
                           </div>
                         )}
                         {oracle.valid && (
-                          <div className="mt-2 text-xs text-green-400">
+                          <div className="mt-2 text-xs status-muted-success">
                             This scaler correctly scales the token price to 18 decimals for proper market calculations.
                           </div>
                         )}
@@ -1546,7 +1546,7 @@ export default function Step3OracleConfiguration() {
                               </a>
                             </span>
                             {oracle.valid ? (
-                              <span className="text-green-400 text-xs">✓ Valid</span>
+                              <span className="status-muted-success text-xs">✓ Valid</span>
                             ) : (
                               <span className="text-red-400 text-xs">✗ Invalid</span>
                             )}
@@ -1571,7 +1571,7 @@ export default function Step3OracleConfiguration() {
                           </div>
                         )}
                         {oracle.valid && (
-                          <div className="mt-2 text-xs text-green-400">
+                          <div className="mt-2 text-xs status-muted-success">
                             This scaler correctly scales the token price to 18 decimals for proper market calculations.
                           </div>
                         )}

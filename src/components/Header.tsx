@@ -143,7 +143,11 @@ export default function Header() {
                 width={32}
                 height={32}
                 className="h-8 w-auto"
-                style={{ width: 'auto' }}
+                style={{
+                  width: 'auto',
+                  // Tint white SVG to muted emerald for light header.
+                  filter: 'brightness(0) saturate(100%) invert(26%) sepia(21%) saturate(1264%) hue-rotate(104deg) brightness(92%) contrast(92%)'
+                }}
               />
             </Link>
             <span className="text-emerald-800 text-sm font-medium">

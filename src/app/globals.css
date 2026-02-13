@@ -123,6 +123,64 @@ body {
   color: #365314 !important;
 }
 
+/* Improve readability of warning/error banners on light layout. */
+.light-market-theme [class*="bg-yellow-900"] {
+  background-color: #fef9c3 !important;
+}
+
+.light-market-theme [class*="border-yellow-500"] {
+  border-color: #ca8a04 !important;
+}
+
+.light-market-theme [class*="text-yellow-400"] {
+  color: #854d0e !important;
+}
+
+.light-market-theme [class*="text-yellow-300"] {
+  color: #a16207 !important;
+}
+
+.light-market-theme [class*="bg-red-900"] {
+  background-color: #ffe4e6 !important;
+}
+
+.light-market-theme [class*="border-red-500"] {
+  border-color: #fb7185 !important;
+}
+
+.light-market-theme [class*="text-red-400"] {
+  color: #9f1239 !important;
+}
+
+/* Keep white label on destructive (red) action buttons. */
+.light-market-theme button[class*="bg-red-"],
+.light-market-theme a[class*="bg-red-"],
+.light-market-theme input[class*="bg-red-"] {
+  color: #ffffff !important;
+}
+
+/* Force white label for high-priority dark CTA buttons. */
+.light-market-theme .cta-strong-white,
+.light-market-theme .cta-strong-white * {
+  color: #ffffff !important;
+}
+
+/* Shared muted success/info tone used across form metadata/status text. */
+.status-muted-success {
+  color: rgb(6 95 70 / 0.75) !important;
+}
+
+/* Unify checkbox accent color in light theme. */
+.light-market-theme input[type="checkbox"] {
+  accent-color: #4d7c0f;
+}
+
+.light-market-theme select:focus {
+  border-color: #65a30d !important;
+  box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.35) !important;
+  outline: none !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

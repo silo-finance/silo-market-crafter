@@ -373,14 +373,14 @@ export default function TokenAddressInput({
         )}
       </div>
       {showMatchedAddress && resolvedAddress && value.trim() !== resolvedAddress && (
-        <div className="mt-2 text-sm text-gray-400 font-mono break-all flex flex-wrap items-center gap-2">
+        <div className="mt-2 text-sm status-muted-success font-mono break-all flex flex-wrap items-center gap-2">
           <span>Matched address:</span>
           {chainId ? (
             <a
               href={getExplorerAddressUrl(chainId, resolvedAddress)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-emerald-700 hover:text-emerald-800 underline"
             >
               {normalizeAddress(resolvedAddress) ?? resolvedAddress}
             </a>
@@ -396,7 +396,7 @@ export default function TokenAddressInput({
         </div>
       )}
       {metadata && (
-        <div className="mt-2 text-sm text-green-400">
+        <div className="mt-2 text-sm status-muted-success">
           ✓ {metadata.name} ({metadata.symbol}) - {metadata.decimals} decimals
         </div>
       )}

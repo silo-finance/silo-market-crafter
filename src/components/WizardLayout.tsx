@@ -208,7 +208,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   className="text-xs"
                                 />
                               </div>
-                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
@@ -235,7 +235,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   className="text-xs"
                                 />
                               </div>
-                              <div className={`text-xs mt-1 ${scaler.valid ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>

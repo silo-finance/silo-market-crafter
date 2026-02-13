@@ -514,7 +514,7 @@ export default function Step4IRMSelection() {
                 </div>
 
                 {kinkToken0Config && kinkToken0Immutable && (
-                  <p className="text-xs text-green-400">
+                  <p className="text-xs status-muted-success">
                     Combined: {kinkToken0Config.name}:{kinkToken0Immutable.name}
                   </p>
                 )}
@@ -574,7 +574,7 @@ export default function Step4IRMSelection() {
                 </div>
 
                 {kinkToken1Config && kinkToken1Immutable && (
-                  <p className="text-xs text-green-400">
+                  <p className="text-xs status-muted-success">
                     Combined: {kinkToken1Config.name}:{kinkToken1Immutable.name}
                   </p>
                 )}
