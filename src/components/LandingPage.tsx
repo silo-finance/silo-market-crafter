@@ -87,7 +87,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
-                Start New Wizard
+                Start New Market
               </h2>
               <p className="text-emerald-700 mb-6">
                 Create a new Silo market in few easy steps.
@@ -96,7 +96,7 @@ export default function LandingPage() {
                 onClick={handleStartWizard}
                 className="w-full bg-lime-800/90 hover:bg-lime-700 text-lime-50 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
               >
-                Start Wizard
+                Start
               </button>
             </div>
           </div>

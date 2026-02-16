@@ -62,7 +62,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => updateStep(0)}
+                  onClick={() => router.push('/')}
                   className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
                   title="Back to Landing Page"
                 >
