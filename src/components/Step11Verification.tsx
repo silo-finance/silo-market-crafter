@@ -77,6 +77,7 @@ export default function Step11Verification() {
   })
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
+  const [addressVersions, setAddressVersions] = useState<Map<string, string>>(new Map())
 
   const chainId = wizardData.networkInfo?.chainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
@@ -306,6 +307,72 @@ export default function Step11Verification() {
     verifySilos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siloFactory?.address, config])
+
+  // Fetch versions for all addresses displayed in market configuration tree.
+  // Keep existing behavior where addresses with known versions keep their own value.
+  useEffect(() => {
+    if (!config || !siloLensAddress || !chainId) {
+      setAddressVersions(new Map())
+      return
+    }
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const fetchTreeAddressVersions = async () => {
+      try {
+        const ethereum = window.ethereum
+        if (!ethereum) return
+
+        const provider = new ethers.BrowserProvider(ethereum)
+        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
+
+        const addresses = new Set<string>()
+        const addAddress = (value?: string | null) => {
+          if (!value || !ethers.isAddress(value) || value === ethers.ZeroAddress) return
+          addresses.add(ethers.getAddress(value).toLowerCase())
+        }
+
+        addAddress(config.siloConfig)
+        addAddress(config.silo0.silo)
+        addAddress(config.silo1.silo)
+        addAddress(config.silo0.token)
+        addAddress(config.silo1.token)
+        addAddress(config.silo0.protectedShareToken)
+        addAddress(config.silo0.collateralShareToken)
+        addAddress(config.silo0.debtShareToken)
+        addAddress(config.silo1.protectedShareToken)
+        addAddress(config.silo1.collateralShareToken)
+        addAddress(config.silo1.debtShareToken)
+        addAddress(config.silo0.hookReceiverOwner)
+        addAddress(config.silo1.hookReceiverOwner)
+        addAddress(config.silo0.interestRateModel.owner)
+        addAddress(config.silo1.interestRateModel.owner)
+
+        const versions = new Map<string, string>()
+        await Promise.all(
+          Array.from(addresses).map(async (address) => {
+            const cached = getCachedVersion(chainId, address)
+            if (cached !== null) {
+              if (cached !== '') versions.set(address, cached)
+              return
+            }
+            try {
+              const version = String(await lensContract.getVersion(address))
+              setCachedVersion(chainId, address, version)
+              if (version !== '') versions.set(address, version)
+            } catch {
+              setCachedVersion(chainId, address, '')
+            }
+          })
+        )
+
+        setAddressVersions(versions)
+      } catch (err) {
+        console.warn('Failed to fetch tree address versions:', err)
+      }
+    }
+
+    fetchTreeAddressVersions()
+  }, [config, siloLensAddress, chainId])
 
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
@@ -775,6 +842,7 @@ export default function Step11Verification() {
               tokenVerification={tokenVerification}
               numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
+              addressVersions={addressVersions}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
               callBeforeQuoteVerification={wizardData.verificationFromWizard 
                 ? { 
