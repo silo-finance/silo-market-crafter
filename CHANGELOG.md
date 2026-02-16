@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Updated
 - Make Wizard Home Page
+- Display versions of all contracts in the verification step.
 
 ## 0.6.0 - 2026-02-16
 ### Added
