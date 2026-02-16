@@ -25,7 +25,7 @@ interface WizardLayoutProps {
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
   const router = useRouter()
-  const { wizardData, updateStep } = useWizard()
+  const { wizardData } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
   const handleStepClick = (step: number) => {
