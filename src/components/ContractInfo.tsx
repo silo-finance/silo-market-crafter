@@ -70,7 +70,7 @@ export default function ContractInfo({
           <AddressDisplayLong
             address={address}
             chainId={chainId}
-            linkClassName="text-blue-400 hover:text-blue-300"
+            linkClassName="text-lime-600 hover:text-lime-500"
           />
           {verificationIcon && verificationIcon}
         </div>

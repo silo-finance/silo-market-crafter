@@ -726,7 +726,7 @@ export default function Step10Deployment() {
           Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">({wizardData.networkInfo?.chainId || '—'})</span>
         </p>
         {loading && (
-          <div className="mb-4 flex items-center space-x-2 text-blue-400">
+          <div className="mb-4 flex items-center space-x-2 text-lime-500">
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -777,7 +777,7 @@ export default function Step10Deployment() {
               deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
             ))
           }
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           {deploying ? (
             <>
@@ -791,7 +791,7 @@ export default function Step10Deployment() {
             <span>Market deployed</span>
           ) : (
             <>
-              <span>Create Market</span>
+              <span>Execute Transaction</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -824,7 +824,7 @@ export default function Step10Deployment() {
 
       {configUnchangedAfterDeploy && txHash && (
         <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
-          <div className="text-green-400 text-sm mb-2">
+          <div className="status-muted-success text-sm mb-2">
             ✓ Transaction submitted successfully!
           </div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -832,7 +832,7 @@ export default function Step10Deployment() {
               href={getBlockExplorerUrl(txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 text-sm underline"
+              className="text-lime-600 hover:text-lime-500 text-sm underline"
             >
               View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
             </a>
@@ -841,7 +841,7 @@ export default function Step10Deployment() {
           <button
             type="button"
             onClick={() => router.push(`/wizard?step=11&tx=${txHash}`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            className="bg-lime-800 hover:bg-lime-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification
           </button>

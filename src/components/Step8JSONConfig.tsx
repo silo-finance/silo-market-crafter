@@ -63,13 +63,13 @@ export default function Step8JSONConfig() {
       </div>
 
       {/* Information Note */}
-      <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 mb-6">
+      <div className="bg-lime-900/20 border border-lime-700/50 rounded-lg p-4 mb-6">
         <div className="flex items-start space-x-3">
-          <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-lime-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div className="flex-1">
-            <h4 className="text-blue-400 font-semibold mb-2">Deployment Options</h4>
+            <h4 className="text-lime-500 font-semibold mb-2">Deployment Options</h4>
             <p className="text-sm text-gray-300">
               This JSON configuration can be used to deploy a market using a PR request. If you want to deploy the market directly from the wizard, proceed to the final step - deployment.
             </p>
@@ -92,7 +92,7 @@ export default function Step8JSONConfig() {
 
         <button
           onClick={handleDeploy}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          className="bg-emerald-900 hover:bg-emerald-800 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           <span>Deploy Market</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ export default function Step8JSONConfig() {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copySuccess
                   ? 'bg-green-600 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-lime-800 hover:bg-lime-700 text-white'
               }`}
             >
               {copySuccess ? '✓ Copied!' : 'Copy JSON'}

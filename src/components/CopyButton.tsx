@@ -45,7 +45,7 @@ export default function CopyButton({ value, className = '', title = 'Copy', icon
       aria-label={copied ? 'Copied' : title}
     >
       {copied ? (
-        <CheckIcon className={`${iconClassName} text-green-400`} />
+        <CheckIcon className={`${iconClassName} status-muted-success`} />
       ) : (
         <ClipboardIcon className={iconClassName} />
       )}

@@ -32,6 +32,13 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     nativeTokenSymbol: 'ETH',
   },
   {
+    chainId: 56,
+    displayName: 'BNB Chain',
+    chainName: 'bnb',
+    explorerBaseUrl: 'https://bscscan.com',
+    nativeTokenSymbol: 'BNB',
+  },
+  {
     chainId: 42161,
     displayName: 'Arbitrum One',
     chainName: 'arbitrum_one',
@@ -51,6 +58,13 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     chainName: 'sonic',
     explorerBaseUrl: 'https://sonicscan.org',
     nativeTokenSymbol: 'S',
+  },
+  {
+    chainId: 196,
+    displayName: 'OKX',
+    chainName: 'okx',
+    explorerBaseUrl: 'https://www.okx.com/web3/explorer/xlayer',
+    nativeTokenSymbol: 'OKB',
   },
   {
     chainId: 1776,

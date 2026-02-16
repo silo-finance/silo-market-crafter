@@ -8,6 +8,7 @@ import { normalizeAddress } from '@/utils/addressValidation'
 import { getNetworkDisplayName } from '@/utils/networks'
 import packageJson from '../../package.json'
 import CopyButton from '@/components/CopyButton'
+import { useTheme } from '@/contexts/ThemeContext'
 
 declare global {
   interface Window {
@@ -21,6 +22,7 @@ declare global {
 
 export default function Header() {
   const { clearNetworkInfo } = useWizard()
+  const { theme, setTheme } = useTheme()
   const [isConnected, setIsConnected] = useState(false)
   const [account, setAccount] = useState<string>('')
   const [networkId, setNetworkId] = useState<string>('')
@@ -131,7 +133,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-black/90 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <header className="header-shell backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo + Market Crafter version */}
@@ -142,11 +144,13 @@ export default function Header() {
                 alt="Silo"
                 width={32}
                 height={32}
-                className="h-8 w-auto"
-                style={{ width: 'auto' }}
+                className="header-logo h-8 w-auto"
+                style={{
+                  width: 'auto',
+                }}
               />
             </Link>
-            <span className="text-gray-300 text-sm font-medium">
+            <span className="header-text text-sm font-medium">
               Market Crafter v{packageJson.version}
             </span>
           </div>
@@ -155,7 +159,7 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             <Link 
               href="/wizard?step=11"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Verify Market
             </Link>
@@ -163,7 +167,7 @@ export default function Header() {
               href="https://silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Silo Finance
             </Link>
@@ -171,33 +175,53 @@ export default function Header() {
               href="https://app.silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Silo App
             </Link>
           </nav>
 
           {/* MetaMask Connect / Disconnect */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            <div className="header-theme-toggle flex items-center rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className="header-theme-toggle-button px-2.5 py-1.5 text-xs font-semibold"
+                aria-pressed={theme === 'light'}
+                title="Switch to light theme"
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className="header-theme-toggle-button px-2.5 py-1.5 text-xs font-semibold"
+                aria-pressed={theme === 'dark'}
+                title="Switch to dark theme"
+              >
+                Dark
+              </button>
+            </div>
             {isConnected ? (
               <div className="flex items-center space-x-4">
                 <div className="text-right flex items-center gap-2 justify-end">
                   <div
-                    className="text-sm text-gray-300 font-mono"
+                    className="header-text text-sm font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
                   </div>
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="header-text-soft text-xs">
                   {networkName} ({networkId})
                 </div>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
                 <button
                   type="button"
                   onClick={disconnectWallet}
-                  className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                  className="header-link text-sm font-medium transition-colors"
                 >
                   Disconnect
                 </button>
@@ -205,7 +229,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={connectWallet}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 Connect MetaMask
               </button>

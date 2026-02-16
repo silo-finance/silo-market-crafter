@@ -381,7 +381,7 @@ export default function Step4IRMSelection() {
           onClick={() => { setActiveTab('kink'); setError('') }}
           className={`px-6 py-3 font-medium rounded-t-lg transition-colors ${
             activeTab === 'kink'
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500'
+              ? 'bg-gray-800 text-white border-b-2 border-lime-700'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -392,7 +392,7 @@ export default function Step4IRMSelection() {
           onClick={() => { setActiveTab('irm'); setError('') }}
           className={`px-6 py-3 font-medium rounded-t-lg transition-colors ${
             activeTab === 'irm'
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500'
+              ? 'bg-gray-800 text-white border-b-2 border-lime-700'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -438,7 +438,7 @@ export default function Step4IRMSelection() {
                   value={kinkConfigSearch}
                   onChange={e => setKinkConfigSearch(e.target.value)}
                   placeholder="e.g. static-2.4-6"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkConfigs.length} config(s)</p>
               </div>
@@ -452,7 +452,7 @@ export default function Step4IRMSelection() {
                   value={kinkImmutableSearch}
                   onChange={e => setKinkImmutableSearch(e.target.value)}
                   placeholder="e.g. T1day_C200"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkImmutables.length} immutable(s)</p>
               </div>
@@ -463,7 +463,7 @@ export default function Step4IRMSelection() {
               {/* Token 0 */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-white">
-                  <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+                  <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
                 </h3>
 
                 <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
@@ -478,7 +478,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`t0-cfg-${cfg.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken0Config?.name === cfg.name ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            kinkToken0Config?.name === cfg.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken0Config(cfg)}
                         >
@@ -501,7 +501,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`t0-imm-${imm.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken0Immutable?.name === imm.name ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            kinkToken0Immutable?.name === imm.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken0Immutable(imm)}
                         >
@@ -514,7 +514,7 @@ export default function Step4IRMSelection() {
                 </div>
 
                 {kinkToken0Config && kinkToken0Immutable && (
-                  <p className="text-xs text-green-400">
+                  <p className="text-xs status-muted-success">
                     Combined: {kinkToken0Config.name}:{kinkToken0Immutable.name}
                   </p>
                 )}
@@ -523,7 +523,7 @@ export default function Step4IRMSelection() {
               {/* Token 1 */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-white">
-                  <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+                  <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
                 </h3>
 
                 <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
@@ -538,7 +538,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`t1-cfg-${cfg.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken1Config?.name === cfg.name ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            kinkToken1Config?.name === cfg.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken1Config(cfg)}
                         >
@@ -561,7 +561,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`t1-imm-${imm.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken1Immutable?.name === imm.name ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            kinkToken1Immutable?.name === imm.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken1Immutable(imm)}
                         >
@@ -574,7 +574,7 @@ export default function Step4IRMSelection() {
                 </div>
 
                 {kinkToken1Config && kinkToken1Immutable && (
-                  <p className="text-xs text-green-400">
+                  <p className="text-xs status-muted-success">
                     Combined: {kinkToken1Config.name}:{kinkToken1Immutable.name}
                   </p>
                 )}
@@ -612,7 +612,7 @@ export default function Step4IRMSelection() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name (case insensitive)..."
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent"
               />
               <p className="text-xs text-gray-400 mt-2">
                 Found {filteredIRMs.length} IRM{filteredIRMs.length !== 1 ? 's' : ''}
@@ -623,7 +623,7 @@ export default function Step4IRMSelection() {
               {/* IRM Token 0 */}
               <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">
-                  Interest Rate Model for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+                  Interest Rate Model for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
                 </h3>
                 {loading && filteredIRMs.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
@@ -641,7 +641,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`token0-${irm.name}`}
                           className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                            isSelected ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            isSelected ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => handleIRMSelection(0, irm)}
                         >
@@ -660,7 +660,7 @@ export default function Step4IRMSelection() {
                                 <div className="mt-3 bg-gray-800 rounded p-3 text-xs text-gray-300 space-y-1">
                                   {Object.entries(irm.config).map(([key, value]) => (
                                     <div key={key} className="flex justify-between">
-                                      <span className="text-blue-400">{key}:</span>
+                                      <span className="text-lime-600">{key}:</span>
                                       <span className="text-gray-200">{formatParameterValue(value)}</span>
                                     </div>
                                   ))}
@@ -678,7 +678,7 @@ export default function Step4IRMSelection() {
               {/* IRM Token 1 */}
               <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">
-                  Interest Rate Model for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+                  Interest Rate Model for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
                 </h3>
                 {loading && filteredIRMs.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
@@ -696,7 +696,7 @@ export default function Step4IRMSelection() {
                         <div
                           key={`token1-${irm.name}`}
                           className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                            isSelected ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
+                            isSelected ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => handleIRMSelection(1, irm)}
                         >
@@ -715,7 +715,7 @@ export default function Step4IRMSelection() {
                                 <div className="mt-3 bg-gray-800 rounded p-3 text-xs text-gray-300 space-y-1">
                                   {Object.entries(irm.config).map(([key, value]) => (
                                     <div key={key} className="flex justify-between">
-                                      <span className="text-blue-400">{key}:</span>
+                                      <span className="text-lime-600">{key}:</span>
                                       <span className="text-gray-200">{formatParameterValue(value)}</span>
                                     </div>
                                   ))}
@@ -747,7 +747,7 @@ export default function Step4IRMSelection() {
           <button
             type="submit"
             disabled={!canProceed}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Borrow Setup</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

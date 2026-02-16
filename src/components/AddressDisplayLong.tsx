@@ -38,7 +38,7 @@ export default function AddressDisplayLong({
         href={explorerUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className={`text-blue-400 hover:text-blue-300 font-mono ${breakAll ? 'break-all' : ''} ${linkClassName}`}
+        className={`text-lime-600 hover:text-lime-500 font-mono ${breakAll ? 'break-all' : ''} ${linkClassName}`}
       >
         {normalizedAddress}
       </a>

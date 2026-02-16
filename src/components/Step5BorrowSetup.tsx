@@ -60,7 +60,7 @@ const InputComponent = React.memo(({
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed' 
               : error
               ? 'bg-gray-700 border-red-500 text-white focus:ring-red-500'
-              : 'bg-gray-700 border-gray-600 text-white focus:ring-blue-500'
+              : 'bg-gray-700 border-gray-600 text-white focus:ring-lime-700'
           }`}
           placeholder="0"
         />
@@ -381,7 +381,7 @@ export default function Step5BorrowSetup() {
           {/* Token 0 Configuration */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Collateral Configuration for <span className="text-blue-400 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+              Collateral Configuration for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -391,7 +391,7 @@ export default function Step5BorrowSetup() {
                   type="checkbox"
                   checked={borrowConfig.token0.nonBorrowable}
                   onChange={(e) => handleNonBorrowableChange(0, e.target.checked)}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-lime-700 bg-gray-700 border-gray-600 rounded focus:ring-lime-700 focus:ring-2"
                 />
                 <span className="text-white font-medium">Non-borrowable</span>
               </label>
@@ -441,7 +441,7 @@ export default function Step5BorrowSetup() {
           {/* Token 1 Configuration */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Collateral Configuration for <span className="text-blue-400 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+              Collateral Configuration for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -451,7 +451,7 @@ export default function Step5BorrowSetup() {
                   type="checkbox"
                   checked={borrowConfig.token1.nonBorrowable}
                   onChange={(e) => handleNonBorrowableChange(1, e.target.checked)}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-lime-700 bg-gray-700 border-gray-600 rounded focus:ring-lime-700 focus:ring-2"
                 />
                 <span className="text-white font-medium">Non-borrowable</span>
               </label>
@@ -500,8 +500,8 @@ export default function Step5BorrowSetup() {
         </div>
 
         {/* Validation Rules Info */}
-        <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4 mb-6">
-          <h4 className="text-blue-400 font-semibold mb-2">Validation Rules:</h4>
+        <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4 mb-6">
+          <h4 className="text-lime-500 font-semibold mb-2">Validation Rules:</h4>
           <ul className="text-sm text-gray-300 space-y-1">
             <li>• Max LTV must be less than or equal to Liquidation Threshold</li>
             <li>• Liquidation Target LTV must be less than Liquidation Threshold</li>
@@ -524,7 +524,7 @@ export default function Step5BorrowSetup() {
           
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-800 hover:bg-lime-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Fees</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
