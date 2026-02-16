@@ -604,7 +604,7 @@ export default function Step11Verification() {
   }
 
   const goToDeployment = () => router.push('/wizard?step=10')
-  const goToNewMarket = () => router.push('/wizard?step=0')
+  const goToNewMarket = () => router.push('/')
 
   return (
     <div className="max-w-6xl mx-auto">

@@ -16,8 +16,8 @@ export default function ResetButton() {
   const handleConfirmReset = () => {
     resetWizardWithCache()
     setShowConfirmDialog(false)
-    // Navigate to landing page (step 0)
-    router.push('/wizard?step=0')
+    // Navigate to home page (wizard step 0)
+    router.push('/')
   }
 
   const handleCancelReset = () => {
