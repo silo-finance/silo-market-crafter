@@ -11,12 +11,17 @@ export default function Error({
   reset: () => void
 }) {
   const handleClearCache = useCallback(() => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+    const homePath = basePath ? `${basePath.replace(/\/$/, '')}/` : '/'
+
     try {
       clearVersionCache()
       WIZARD_CACHE_KEYS.forEach((key) => localStorage.removeItem(key))
-      window.location.href = '/'
     } catch {
       // no-op
+    } finally {
+      // Keep redirect within app base path (important for GitHub Pages deployments).
+      window.location.replace(homePath)
     }
   }, [])
 
