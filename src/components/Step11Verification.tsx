@@ -213,11 +213,10 @@ export default function Step11Verification() {
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const factoryAddress = siloFactory?.address
-    const shouldFetchImplementation =
-      wizardData.verificationFromWizard &&
-      implementationVerified === true &&
-      !!implementationFromRepo?.address
-    const implementationAddress = shouldFetchImplementation ? implementationFromRepo!.address : undefined
+    const implementationAddress =
+      wizardData.verificationFromWizard && implementationFromRepo?.address
+        ? implementationFromRepo.address
+        : undefined
 
     const addresses = [factoryAddress, implementationAddress].filter(
       (value): value is string => !!value
@@ -281,7 +280,6 @@ export default function Step11Verification() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     wizardData.verificationFromWizard,
-    implementationVerified,
     implementationFromRepo?.address,
     siloFactory?.address,
     siloLensAddress,
@@ -799,9 +797,9 @@ export default function Step11Verification() {
               </div>
             ) : implementationVerified === false ? (
               <div className="relative group inline-block">
-                <div className="w-4 h-4 bg-red-600 rounded flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                <div className="flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
                 <div className="absolute left-0 top-full mt-2 w-80 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">

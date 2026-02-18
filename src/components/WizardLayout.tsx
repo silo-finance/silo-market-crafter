@@ -164,6 +164,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           address={wizardData.token0.address}
                           chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
                           className="text-xs"
+                          showVersion={false}
                         />
                         <span className="text-xs text-lime-200/65">{wizardData.token0.symbol}</span>
                       </div>
@@ -176,6 +177,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             address={wizardData.token1.address}
                             chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
                             className="text-xs"
+                            showVersion={false}
                           />
                           <span className="text-xs text-lime-200/65">{wizardData.token1.symbol}</span>
                         </div>

@@ -758,42 +758,41 @@ export default function Step10Deployment() {
           <span>JSON Config</span>
         </button>
         
-        <button
-          onClick={handleDeploy}
-          disabled={
-            configUnchangedAfterDeploy ||
-            deploying ||
-            !deployerAddress ||
-            !deployArgs ||
-            !wizardData.hookOwnerAddress ||
-            !ethers.isAddress(wizardData.hookOwnerAddress) ||
-            (deployArgs && (
-              deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
-              deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
-              deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
-            ))
-          }
-          className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
-          {deploying ? (
-            <>
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Deploying...</span>
-            </>
-          ) : configUnchangedAfterDeploy ? (
-            <span>Market deployed</span>
-          ) : (
-            <>
-              <span>Execute Transaction</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </>
-          )}
-        </button>
+        {!configUnchangedAfterDeploy && (
+          <button
+            onClick={handleDeploy}
+            disabled={
+              deploying ||
+              !deployerAddress ||
+              !deployArgs ||
+              !wizardData.hookOwnerAddress ||
+              !ethers.isAddress(wizardData.hookOwnerAddress) ||
+              (deployArgs && (
+                deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
+                deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
+                deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
+              ))
+            }
+            className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          >
+            {deploying ? (
+              <>
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Deploying...</span>
+              </>
+            ) : (
+              <>
+                <span>Execute Transaction</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Warnings and Errors */}
@@ -819,8 +818,8 @@ export default function Step10Deployment() {
       )}
 
       {configUnchangedAfterDeploy && txHash && (
-        <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
-          <div className="status-muted-success text-sm mb-2">
+        <div className="bg-[#f6fbf2] border border-lime-300 rounded-lg p-4 mb-6">
+          <div className="text-emerald-800 text-sm font-semibold mb-2">
             ✓ Transaction submitted successfully!
           </div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -828,7 +827,7 @@ export default function Step10Deployment() {
               href={getBlockExplorerUrl(txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 text-sm underline"
+              className="text-emerald-700 hover:text-emerald-900 text-sm underline"
             >
               View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
             </a>
@@ -837,7 +836,7 @@ export default function Step10Deployment() {
           <button
             type="button"
             onClick={() => router.push(`/wizard?step=11&tx=${txHash}`)}
-            className="bg-lime-800 hover:bg-lime-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            className="bg-lime-800 hover:bg-lime-700 text-white cta-strong-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification
           </button>
