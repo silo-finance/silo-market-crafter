@@ -224,7 +224,7 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   if (status === VERIFICATION_STATUS.WARNING) {
     return (
       <span className="inline-flex shrink-0 text-yellow-500 ml-1">
-        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 2L2 20h20L12 2zm0 3.99L19.53 18H4.47L12 5.99zM11 15v-2h2v2h-2zm0-4V8h2v3h-2z"/>
         </svg>
       </span>
@@ -829,9 +829,9 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
-            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
-            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
@@ -945,9 +945,9 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
-            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
-            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
