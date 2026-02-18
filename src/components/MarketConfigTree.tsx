@@ -667,6 +667,11 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
 }
 
 export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
+  const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
+  const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
+  const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
+  const marketName = `${asset0Symbol} / ${asset1Symbol} #${marketId}`
+
   const renderSiloFactoryBullet = (siloFactoryAddress?: string) => {
     if (!siloFactoryAddress || siloFactoryAddress === ethers.ZeroAddress) {
       return (
@@ -715,7 +720,10 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
-      <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">
+        Market Configuration Tree:{' '}
+        <span className="text-lime-300">{marketName}</span>
+      </h3>
       
       <ol className="tree">
         <TreeNode label="Silo Config" address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions}>
