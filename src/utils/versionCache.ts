@@ -1,5 +1,5 @@
 /**
- * In-memory cache for contract versions from Silo Lens getVersion(address).
+ * In-memory cache for contract versions from Silo Lens getVersion/getVersions.
  * Key: chainId + address (same contract on same chain = same version).
  * Avoids repeated RPC calls when switching tabs or remounting.
  */
@@ -18,4 +18,8 @@ export function getCachedVersion(chainId: string, address: string): string | nul
 export function setCachedVersion(chainId: string, address: string, version: string): void {
   if (!chainId || !address) return
   cache.set(cacheKey(chainId, address), version)
+}
+
+export function clearVersionCache(): void {
+  cache.clear()
 }

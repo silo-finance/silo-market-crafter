@@ -8,14 +8,12 @@ import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCo
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
-import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
-const siloLensAbi = (siloLensArtifact as FoundryArtifact).abi
 const deployerAbi = (deployerArtifact as FoundryArtifact).abi
 const deployerInterface = new ethers.Interface(deployerAbi as ethers.InterfaceAbi)
 
@@ -381,23 +379,21 @@ export default function Step10Deployment() {
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
     if (!deployerAddress || !siloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, deployerAddress)
-    if (cached != null) {
-      setDeployerVersion(cached)
-      return
-    }
     const fetchDeployerVersion = async () => {
       if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(deployerAddress))
-        setCachedVersion(chainId, deployerAddress, version)
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses: [deployerAddress]
+        })
+        const version = versionsByAddress.get(deployerAddress.toLowerCase()) ?? ''
         setDeployerVersion(version)
         console.log(`SiloDeployer version: ${version}`)
       } catch (err) {
         console.warn('Failed to fetch SiloDeployer version:', err)
-        setCachedVersion(chainId, deployerAddress, '—')
         setDeployerVersion('—')
       }
     }
