@@ -5,6 +5,7 @@ import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
 import erc20Abi from '@/abis/IERC20.json'
+import iShareTokenAbi from '@/abis/silo/IShareToken.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -73,12 +74,15 @@ export interface SiloConfig {
   protectedShareToken: string
   protectedShareTokenSymbol?: string
   protectedShareTokenDecimals?: number
+  protectedShareTokenOffset?: number
   collateralShareToken: string
   collateralShareTokenSymbol?: string
   collateralShareTokenDecimals?: number
+  collateralShareTokenOffset?: number
   debtShareToken: string
   debtShareTokenSymbol?: string
   debtShareTokenDecimals?: number
+  debtShareTokenOffset?: number
   solvencyOracle: OracleInfo
   maxLtvOracle: OracleInfo
   interestRateModel: IRMInfo
@@ -329,11 +333,33 @@ async function fetchSiloConfig(
     }
   }
 
-  const [tokenMeta, protectedMeta, collateralMeta, debtMeta] = await Promise.all([
+  const fetchShareTokenOffset = async (address: string): Promise<number | undefined> => {
+    if (!address || address === ethers.ZeroAddress) return undefined
+    try {
+      const contract = new ethers.Contract(address, iShareTokenAbi.abi as ethers.InterfaceAbi, provider)
+      const offset = await contract.decimalsOffset()
+      return typeof offset === 'number' ? offset : Number(offset)
+    } catch {
+      return undefined
+    }
+  }
+
+  const [
+    tokenMeta,
+    protectedMeta,
+    collateralMeta,
+    debtMeta,
+    protectedOffset,
+    collateralOffset,
+    debtOffset
+  ] = await Promise.all([
     fetchSymbolDecimals(config.token),
     fetchSymbolDecimals(config.protectedShareToken),
     fetchSymbolDecimals(config.collateralShareToken),
-    fetchSymbolDecimals(config.debtShareToken)
+    fetchSymbolDecimals(config.debtShareToken),
+    fetchShareTokenOffset(config.protectedShareToken),
+    fetchShareTokenOffset(config.collateralShareToken),
+    fetchShareTokenOffset(config.debtShareToken)
   ])
 
   // ISiloOracle.quote(_baseAmount, _baseToken) - fetch price for 1 token
@@ -418,12 +444,15 @@ async function fetchSiloConfig(
     protectedShareToken: config.protectedShareToken,
     protectedShareTokenSymbol: protectedMeta.symbol,
     protectedShareTokenDecimals: protectedMeta.decimals,
+    protectedShareTokenOffset: protectedOffset,
     collateralShareToken: config.collateralShareToken,
     collateralShareTokenSymbol: collateralMeta.symbol,
     collateralShareTokenDecimals: collateralMeta.decimals,
+    collateralShareTokenOffset: collateralOffset,
     debtShareToken: config.debtShareToken,
     debtShareTokenSymbol: debtMeta.symbol,
     debtShareTokenDecimals: debtMeta.decimals,
+    debtShareTokenOffset: debtOffset,
     solvencyOracle,
     maxLtvOracle,
     interestRateModel,
