@@ -182,6 +182,7 @@ interface TreeNodeProps {
   numericValueVerification?: { wizardValue: bigint | null; checkHighValue?: boolean }
   addressInJsonVerification?: Map<string, boolean>
   addressVersions?: Map<string, string>
+  showAddressVersion?: boolean
   /** When true, show yellow warning icon at end of price line (possible decimals error) */
   priceLowWarning?: boolean
   /** When true, show yellow warning icon (arrow up) at end of price line — price unexpectedly high */
@@ -214,7 +215,7 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   if (status === VERIFICATION_STATUS.PASSED) {
     return (
       <span className="inline-flex shrink-0 text-green-500 ml-1">
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </span>
@@ -232,7 +233,7 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   // failed
   return (
     <span className="inline-flex shrink-0 text-red-500 ml-1">
-      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </span>
@@ -373,14 +374,16 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
   const normalizedAddress = hasAddress ? ethers.getAddress(address).toLowerCase() : null
-  const versionText = (suffixText != null && suffixText !== '')
-    ? suffixText
-    : (normalizedAddress ? addressVersions?.get(normalizedAddress) : undefined)
+  const versionText = !showAddressVersion
+    ? undefined
+    : (suffixText != null && suffixText !== '')
+      ? suffixText
+      : (normalizedAddress ? addressVersions?.get(normalizedAddress) : undefined)
   const hasSuffix = versionText != null && versionText !== ''
 
   return (
@@ -823,11 +826,12 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             tokenVerification={tokenVerification?.token0 || null}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
+            showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
@@ -938,11 +942,12 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             tokenVerification={tokenVerification?.token1 || null}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
+            showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
+            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} showAddressVersion={false} />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
