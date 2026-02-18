@@ -14,6 +14,7 @@ function OwnerAddressRow({ address, chainId }: { address: string; chainId: numbe
         address={address}
         chainId={chainId}
         className="text-xs"
+        showVersion={false}
       />
     </div>
   )
@@ -206,6 +207,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   address={scaler.address}
                                   chainId={chainId}
                                   className="text-xs"
+                                  version={scaler.version ?? '—'}
                                 />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
@@ -233,6 +235,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   address={scaler.address}
                                   chainId={chainId}
                                   className="text-xs"
+                                  version={scaler.version ?? '—'}
                                 />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>

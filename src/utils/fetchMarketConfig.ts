@@ -5,9 +5,9 @@ import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
 import erc20Abi from '@/abis/IERC20.json'
-import siloLensAbi from '@/abis/silo/ISiloLens.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
+import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 
 async function fetchSiloLensAddress(chainName: string): Promise<string | null> {
   const lensContractName = 'SiloLens.sol'
@@ -66,6 +66,7 @@ export interface TokenMeta {
 
 export interface SiloConfig {
   silo: string
+  factory?: string
   token: string
   tokenSymbol?: string
   tokenDecimals?: number
@@ -145,7 +146,7 @@ export async function fetchMarketConfig(
     fetchSiloConfig(provider, siloConfigContract, silo1Address)
   ])
 
-  // Fetch versions for oracles and IRMs via SiloLens (bulk: one getVersion per unique address)
+  // Fetch versions for oracles and IRMs via SiloLens (bulk getVersions per unique address set)
   const chainId = (await provider.getNetwork()).chainId.toString()
   const chainName = getChainName(chainId)
   const siloLensAddress = await fetchSiloLensAddress(chainName)
@@ -157,11 +158,13 @@ export async function fetchMarketConfig(
       if (c.interestRateModel.address && c.interestRateModel.address !== ethers.ZeroAddress) uniqueAddresses.add(c.interestRateModel.address.toLowerCase())
       if (c.hookReceiver && c.hookReceiver !== ethers.ZeroAddress) uniqueAddresses.add(c.hookReceiver.toLowerCase())
     }
-    const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi.abi as ethers.InterfaceAbi, provider)
     const addresses = Array.from(uniqueAddresses)
-    const versions = await Promise.all(addresses.map(addr => lensContract.getVersion(addr)))
-    const versionByAddress = new Map<string, string>()
-    addresses.forEach((addr, i) => versionByAddress.set(addr, String(versions[i] ?? '')))
+    const versionByAddress = await fetchSiloLensVersionsWithCache({
+      provider,
+      lensAddress: siloLensAddress,
+      chainId,
+      addresses
+    })
     const getVersion = (address: string) => versionByAddress.get(address.toLowerCase()) ?? undefined
     config0.solvencyOracle.version = getVersion(config0.solvencyOracle.address)
     config0.maxLtvOracle.version = getVersion(config0.maxLtvOracle.address)
@@ -281,6 +284,28 @@ async function fetchSiloConfig(
   siloAddress: string
 ): Promise<SiloConfig> {
   const config = await siloConfigContract.getConfig(siloAddress)
+  let factoryAddress: string | undefined
+  try {
+    const siloContract = new ethers.Contract(
+      siloAddress,
+      [
+        {
+          type: 'function',
+          name: 'factory',
+          inputs: [],
+          outputs: [{ name: '', type: 'address' }],
+          stateMutability: 'view'
+        }
+      ] as const,
+      provider
+    )
+    const factory = await siloContract.factory()
+    if (factory && typeof factory === 'string' && factory !== ethers.ZeroAddress) {
+      factoryAddress = factory
+    }
+  } catch {
+    // Some silo variants may not expose factory(); keep undefined.
+  }
 
   // Fetch oracle info
   const solvencyOracle = await fetchOracleInfo(provider, config.solvencyOracle)
@@ -386,6 +411,7 @@ async function fetchSiloConfig(
 
   return {
     silo: siloAddress,
+    factory: factoryAddress,
     token: config.token,
     tokenSymbol: tokenMeta.symbol,
     tokenDecimals: tokenMeta.decimals,

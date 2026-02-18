@@ -4,6 +4,7 @@ import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
+import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
@@ -137,6 +138,8 @@ interface CallBeforeQuoteVerification {
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
+  chainId?: string
+  currentSiloFactoryAddress?: string
   wizardDaoFee?: bigint | null
   wizardDeployerFee?: bigint | null
   siloVerification?: SiloVerification
@@ -236,7 +239,7 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification, addressVersions }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean>; addressVersions?: Map<string, string> }) {
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
@@ -312,8 +315,6 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       : VERIFICATION_STATUS.WARNING
   
   const ownerLabel = irmOwnerVerification ? 'IRM owner' : 'Hook owner'
-  const ownerVersion = addressVersions?.get(normalizedItemAddress)
-  
   return (
     <>
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -327,9 +328,6 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           {formatAddress(address)}
         </a>
         <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
-        {ownerVersion != null && ownerVersion !== '' && (
-          <span className="text-gray-400 text-sm">({ownerVersion})</span>
-        )}
         {isContract !== undefined && (
           <span className="text-gray-500 text-xs font-medium px-1.5 py-0.5 rounded bg-gray-800">
             {isContract ? 'Contract' : 'EOA'}
@@ -658,7 +656,6 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 hookOwnerVerification={hookOwnerVerification}
                 irmOwnerVerification={irmOwnerVerification}
                 addressInJsonVerification={addressInJsonVerification}
-                addressVersions={addressVersions}
               />
             </li>
           ))}
@@ -669,7 +666,53 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
+  const renderSiloFactoryBullet = (siloFactoryAddress?: string) => {
+    if (!siloFactoryAddress || siloFactoryAddress === ethers.ZeroAddress) {
+      return (
+        <span className="inline-flex items-center gap-1">
+          Factory: <span className="text-gray-500">N/A</span>
+        </span>
+      )
+    }
+
+    const verificationStatus = !currentSiloFactoryAddress
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : verifyAddress(siloFactoryAddress, currentSiloFactoryAddress)
+        ? VERIFICATION_STATUS.PASSED
+        : VERIFICATION_STATUS.FAILED
+    const version = addressVersions.get(siloFactoryAddress.toLowerCase()) ?? '—'
+
+    return (
+      <>
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span>Factory:</span>
+          <AddressDisplayShort
+            address={siloFactoryAddress}
+            chainId={chainId}
+            className="text-sm"
+            version={version}
+          />
+        </span>
+        <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+          <li className="flex items-center">
+            <span>Silo factory verification:</span>
+            <VerificationStatusIconSmall status={verificationStatus} />
+            {verificationStatus === VERIFICATION_STATUS.PASSED && (
+              <span className="text-gray-500 ml-1">matches current Silo Factory</span>
+            )}
+            {verificationStatus === VERIFICATION_STATUS.FAILED && (
+              <span className="text-gray-500 ml-1">does not match current Silo Factory</span>
+            )}
+            {verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
+              <span className="text-gray-500 ml-1">N/A</span>
+            )}
+          </li>
+        </ul>
+      </>
+    )
+  }
+
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
       <h3 className="text-lg font-semibold text-white mb-4">Market Configuration Tree</h3>
@@ -687,11 +730,15 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
                 explorerUrl={explorerUrl}
                 addressVersions={addressVersions}
                 bulletItems={[
+                  {
+                    key: 'factory',
+                    text: renderSiloFactoryBullet(config.silo0.factory)
+                  },
                   { 
                     key: 'verification', 
                     text: (
                       <span className="inline-flex items-center gap-1">
-                        Address verified in Silo Factory:
+                        Address verified in current Silo Factory:
                         <VerificationStatusIconSmall status={
                           siloVerification?.silo0 === true 
                             ? VERIFICATION_STATUS.PASSED 
@@ -710,11 +757,15 @@ export default function MarketConfigTree({ config, explorerUrl, wizardDaoFee, wi
                 explorerUrl={explorerUrl}
                 addressVersions={addressVersions}
                 bulletItems={[
+                  {
+                    key: 'factory',
+                    text: renderSiloFactoryBullet(config.silo1.factory)
+                  },
                   { 
                     key: 'verification', 
                     text: (
                       <span className="inline-flex items-center gap-1">
-                        Address verified in Silo Factory:
+                        Address verified in current Silo Factory:
                         <VerificationStatusIconSmall status={
                           siloVerification?.silo1 === true 
                             ? VERIFICATION_STATUS.PASSED 

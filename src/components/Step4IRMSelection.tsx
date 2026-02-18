@@ -5,11 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, IRMConfig, IRMModelType } from '@/contexts/WizardContext'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
-import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import ContractInfo from '@/components/ContractInfo'
-import siloLensArtifact from '@/abis/silo/ISiloLens.json'
-
-const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
 interface IRMConfigItem {
   name: string
@@ -58,7 +55,6 @@ export default function Step4IRMSelection() {
   const [selectedIRM0, setSelectedIRM0] = useState<IRMConfig | null>(wizardData.selectedIRM0)
   const [selectedIRM1, setSelectedIRM1] = useState<IRMConfig | null>(wizardData.selectedIRM1)
   const [irmV2Factory, setIrmV2Factory] = useState<{ address: string; version: string } | null>(null)
-  const [irmV2SiloLensAddress, setIrmV2SiloLensAddress] = useState<string>('')
 
   // ----- Kink state -----
   const [kinkConfigs, setKinkConfigs] = useState<KinkConfigItem[]>([])
@@ -172,98 +168,83 @@ export default function Step4IRMSelection() {
     const chainName = getChainName(chainId)
     const fetchAll = async () => {
       try {
-        const [kinkRes, irmV2Res, lensRes] = await Promise.all([
+        const [kinkResResult, irmV2ResResult, lensResResult] = await Promise.allSettled([
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${KINK_FACTORY_NAME}.json`),
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${IRM_V2_FACTORY_NAME}.json`),
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`)
         ])
+        const kinkRes = kinkResResult.status === 'fulfilled' ? kinkResResult.value : null
+        const irmV2Res = irmV2ResResult.status === 'fulfilled' ? irmV2ResResult.value : null
+        const lensRes = lensResResult.status === 'fulfilled' ? lensResResult.value : null
+
         let kinkAddr = ''
-        if (kinkRes.ok) {
+        if (kinkRes?.ok) {
           const data = await kinkRes.json()
           kinkAddr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
         setKinkFactory(kinkAddr ? { address: kinkAddr, version: '' } : null)
+
         let irmV2Addr = ''
-        if (irmV2Res.ok) {
+        if (irmV2Res?.ok) {
           const data = await irmV2Res.json()
           irmV2Addr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
         setIrmV2Factory(irmV2Addr ? { address: irmV2Addr, version: '' } : null)
+
         let lensAddr = ''
-        if (lensRes.ok) {
+        if (lensRes?.ok) {
           const data = await lensRes.json()
           lensAddr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
         setSiloLensAddress(lensAddr)
-        setIrmV2SiloLensAddress(lensAddr)
       } catch (err) {
         console.warn('Failed to fetch factory or Lens:', err)
         setKinkFactory(null)
         setIrmV2Factory(null)
         setSiloLensAddress('')
-        setIrmV2SiloLensAddress('')
       }
     }
     fetchAll()
   }, [wizardData.networkInfo?.chainId])
 
-  // ----- Fetch Kink factory version via Silo Lens (cached per chainId+address) -----
+  // ----- Fetch both factory versions via one Silo Lens getVersions call -----
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
-    if (!kinkFactory?.address || !siloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, kinkFactory.address)
-    if (cached != null) {
-      setKinkFactory(prev => prev ? { ...prev, version: cached } : null)
-      return
-    }
-    const fetchVersion = async () => {
-      if (!window.ethereum) return
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(kinkFactory!.address))
-        setCachedVersion(chainId, kinkFactory!.address, version)
-        setKinkFactory(prev => prev ? { ...prev, version } : null)
-      } catch (err) {
-        console.warn('Failed to fetch Kink factory version from Silo Lens:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, kinkFactory!.address, fallback)
-        setKinkFactory(prev => prev ? { ...prev, version: fallback } : null)
-      }
-    }
-    fetchVersion()
-    // Intentionally narrow deps: only re-fetch when factory address or chain changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kinkFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+    if (!siloLensAddress || !chainId) return
+    const addresses = [kinkFactory?.address, irmV2Factory?.address].filter(
+      (value): value is string => !!value
+    )
+    if (addresses.length === 0) return
 
-  // ----- Fetch IRM V2 factory version via Silo Lens (cached per chainId+address) -----
-  useEffect(() => {
-    const chainId = wizardData.networkInfo?.chainId
-    if (!irmV2Factory?.address || !irmV2SiloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, irmV2Factory.address)
-    if (cached != null) {
-      setIrmV2Factory(prev => prev ? { ...prev, version: cached } : null)
-      return
-    }
-    const fetchVersion = async () => {
+    const fetchVersions = async () => {
       if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(irmV2SiloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(irmV2Factory!.address))
-        setCachedVersion(chainId, irmV2Factory!.address, version)
-        setIrmV2Factory(prev => prev ? { ...prev, version } : null)
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses
+        })
+
+        const getVersion = (address?: string) =>
+          address ? versionsByAddress.get(address.toLowerCase()) ?? '' : ''
+
+        setKinkFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
+        setIrmV2Factory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
       } catch (err) {
-        console.warn('Failed to fetch IRM V2 factory version from Silo Lens:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, irmV2Factory!.address, fallback)
-        setIrmV2Factory(prev => prev ? { ...prev, version: fallback } : null)
+        console.warn('Failed to fetch factory versions from Silo Lens:', err)
+        setKinkFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setIrmV2Factory(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
-    fetchVersion()
-    // Intentionally narrow deps: only re-fetch when factory address or chain changes
+    fetchVersions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [irmV2Factory?.address, irmV2SiloLensAddress, wizardData.networkInfo?.chainId])
+  }, [kinkFactory?.address, irmV2Factory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // ----- Kink filters -----
   useEffect(() => {

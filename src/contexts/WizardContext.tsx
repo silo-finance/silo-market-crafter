@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 import { getNetworkDisplayName } from '@/utils/networks'
+import { clearVersionCache } from '@/utils/versionCache'
 
 declare global {
   interface Window {
@@ -66,6 +67,7 @@ export interface CustomScalerCreate {
 export interface ScalerOracle {
   name: string
   address: string
+  version?: string
   scaleFactor: string
   valid: boolean
   resultDecimals?: number
@@ -611,6 +613,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   }
 
   const resetWizardWithCache = () => {
+    clearVersionCache()
     if (typeof window !== 'undefined') {
       WIZARD_CACHE_KEYS.forEach(key => localStorage.removeItem(key))
     }
