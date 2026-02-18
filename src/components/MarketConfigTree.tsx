@@ -44,6 +44,14 @@ export interface OracleBulletItem {
   text: string | React.ReactNode
 }
 
+function buildShareTokenMetaBullet(symbol?: string, decimals?: number, offset?: number): OracleBulletItem[] {
+  if (symbol == null && decimals == null && offset == null) return []
+  const symbolText = symbol != null && symbol !== '' ? symbol : 'N/A'
+  const decimalsText = decimals != null ? String(decimals) : 'N/A'
+  const offsetText = offset != null ? String(offset) : 'N/A'
+  return [{ key: 'share-token-meta', text: `symbol: ${symbolText}, decimals: ${decimalsText}, decimals offset: ${offsetText}` }]
+}
+
 function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
@@ -829,9 +837,39 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo0.protectedShareToken} tokenMeta={{ symbol: config.silo0.protectedShareTokenSymbol, decimals: config.silo0.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Collateral Share Token" address={config.silo0.collateralShareToken} tokenMeta={{ symbol: config.silo0.collateralShareTokenSymbol, decimals: config.silo0.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Debt Share Token" address={config.silo0.debtShareToken} tokenMeta={{ symbol: config.silo0.debtShareTokenSymbol, decimals: config.silo0.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode
+              label="Protected Share Token"
+              address={config.silo0.protectedShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo0.protectedShareTokenSymbol,
+                config.silo0.protectedShareTokenDecimals,
+                config.silo0.protectedShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
+            <TreeNode
+              label="Collateral Share Token"
+              address={config.silo0.collateralShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo0.collateralShareTokenSymbol,
+                config.silo0.collateralShareTokenDecimals,
+                config.silo0.collateralShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
+            <TreeNode
+              label="Debt Share Token"
+              address={config.silo0.debtShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo0.debtShareTokenSymbol,
+                config.silo0.debtShareTokenDecimals,
+                config.silo0.debtShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
@@ -945,9 +983,39 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             showAddressVersion={false}
           />
           <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode label="Protected Share Token" address={config.silo1.protectedShareToken} tokenMeta={{ symbol: config.silo1.protectedShareTokenSymbol, decimals: config.silo1.protectedShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Collateral Share Token" address={config.silo1.collateralShareToken} tokenMeta={{ symbol: config.silo1.collateralShareTokenSymbol, decimals: config.silo1.collateralShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-            <TreeNode label="Debt Share Token" address={config.silo1.debtShareToken} tokenMeta={{ symbol: config.silo1.debtShareTokenSymbol, decimals: config.silo1.debtShareTokenDecimals }} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+            <TreeNode
+              label="Protected Share Token"
+              address={config.silo1.protectedShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo1.protectedShareTokenSymbol,
+                config.silo1.protectedShareTokenDecimals,
+                config.silo1.protectedShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
+            <TreeNode
+              label="Collateral Share Token"
+              address={config.silo1.collateralShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo1.collateralShareTokenSymbol,
+                config.silo1.collateralShareTokenDecimals,
+                config.silo1.collateralShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
+            <TreeNode
+              label="Debt Share Token"
+              address={config.silo1.debtShareToken}
+              bulletItems={buildShareTokenMetaBullet(
+                config.silo1.debtShareTokenSymbol,
+                config.silo1.debtShareTokenDecimals,
+                config.silo1.debtShareTokenOffset
+              )}
+              explorerUrl={explorerUrl}
+              addressVersions={addressVersions}
+            />
           </TreeNode>
           <TreeNode
             label="Solvency Oracle"
