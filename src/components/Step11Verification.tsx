@@ -9,15 +9,12 @@ import { fetchMarketConfig, MarketConfig } from '@/utils/fetchMarketConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
-import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
-import siloLensArtifact from '@/abis/silo/ISiloLens.json'
+import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
-
-const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -31,6 +28,7 @@ export default function Step11Verification() {
   const [showForm, setShowForm] = useState(false)
   const [siloFactory, setSiloFactory] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
+  const [detectedChainId, setDetectedChainId] = useState<string>('')
   const [siloVerification, setSiloVerification] = useState<{ silo0: boolean | null; silo1: boolean | null; error: string | null }>({
     silo0: null,
     silo1: null,
@@ -77,8 +75,9 @@ export default function Step11Verification() {
   })
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
+  const [addressVersions, setAddressVersions] = useState<Map<string, string>>(new Map())
 
-  const chainId = wizardData.networkInfo?.chainId
+  const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
 
   // Fetch Silo Factory address and version
@@ -99,7 +98,12 @@ export default function Step11Verification() {
           const data = await response.json()
           const address = data.address || ''
           if (address && ethers.isAddress(address)) {
-            setSiloFactory({ address, version: '' })
+            setSiloFactory(prev => {
+              if (prev && prev.address.toLowerCase() === address.toLowerCase()) {
+                return prev
+              }
+              return { address, version: '—' }
+            })
           }
         }
       } catch (err) {
@@ -116,10 +120,17 @@ export default function Step11Verification() {
           const lensAddr = lensData.address || ''
           if (lensAddr && ethers.isAddress(lensAddr)) {
             setSiloLensAddress(lensAddr)
+          } else {
+            setSiloLensAddress('')
           }
+        } else {
+          // Missing deployment file is non-fatal (e.g. chain not deployed yet).
+          setSiloLensAddress('')
         }
       } catch (err) {
-        console.warn('Failed to fetch SiloLens:', err)
+        // Network errors must not block other verification logic.
+        console.warn('Failed to fetch SiloLens (non-fatal):', err)
+        setSiloLensAddress('')
       }
     }
 
@@ -196,74 +207,86 @@ export default function Step11Verification() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.verificationFromWizard, chainId, implementationFromEvent])
 
-  // Fetch Silo Implementation version via Silo Lens (only if verified)
-  // Only run if we have wizard data (verificationFromWizard is true)
+  // Fetch Silo Factory + verified implementation versions via one bulk Silo Lens getVersions call.
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !implementationFromRepo?.address || !siloLensAddress || !chainId || implementationVerified !== true) return
+    if (!siloLensAddress || !chainId) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
-    const fetchImplementationVersion = async () => {
-      const implAddress = implementationFromRepo.address
-      const cached = getCachedVersion(chainId, implAddress)
-      if (cached != null) {
-        setImplementationFromRepo(prev => prev ? { ...prev, version: cached } : null)
-        return
+    const factoryAddress = siloFactory?.address
+    const shouldFetchImplementation =
+      wizardData.verificationFromWizard &&
+      implementationVerified === true &&
+      !!implementationFromRepo?.address
+    const implementationAddress = shouldFetchImplementation ? implementationFromRepo!.address : undefined
+
+    const addresses = [factoryAddress, implementationAddress].filter(
+      (value): value is string => !!value
+    )
+    if (addresses.length === 0) return
+
+    const fetchVersions = async () => {
+      const ethereum = window.ethereum
+      if (!ethereum) return
+      const provider = new ethers.BrowserProvider(ethereum)
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const versionsByAddress = await fetchSiloLensVersionsWithCache({
+            provider,
+            lensAddress: siloLensAddress,
+            chainId,
+            addresses
+          })
+
+          const getVersion = (address?: string) =>
+            address ? versionsByAddress.get(address.toLowerCase()) ?? '' : ''
+
+          const factoryVersion = factoryAddress ? getVersion(factoryAddress) : ''
+          const implementationVersion = implementationAddress ? getVersion(implementationAddress) : ''
+
+          if (factoryAddress && factoryVersion !== '') {
+            setSiloFactory(prev => (prev ? { ...prev, version: factoryVersion } : null))
+          }
+
+          if (implementationAddress && implementationVersion !== '') {
+            setImplementationFromRepo(prev =>
+              prev ? { ...prev, version: implementationVersion } : null
+            )
+          }
+
+          const needsFactoryRetry = !!factoryAddress && factoryVersion === ''
+          const needsImplementationRetry = !!implementationAddress && implementationVersion === ''
+
+          if (!needsFactoryRetry && !needsImplementationRetry) return
+        } catch (err) {
+          if (attempt === 3) {
+            console.warn('Failed to fetch Silo Factory/Implementation versions:', err)
+          }
+        }
+
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 800 * attempt))
+        }
       }
 
-      try {
-        const ethereum = window.ethereum
-        if (!ethereum) return
-        const provider = new ethers.BrowserProvider(ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(implAddress))
-        setCachedVersion(chainId, implAddress, version)
-        setImplementationFromRepo(prev => prev ? { ...prev, version } : null)
-      } catch (err) {
-        console.warn('Failed to fetch Silo Implementation version:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, implAddress, fallback)
-        setImplementationFromRepo(prev => prev ? { ...prev, version: fallback } : null)
+      if (factoryAddress) {
+        setSiloFactory(prev => (prev ? { ...prev, version: '—' } : null))
+      }
+      if (implementationAddress) {
+        setImplementationFromRepo(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
 
-    fetchImplementationVersion()
+    fetchVersions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, implementationFromRepo?.address, siloLensAddress, chainId, implementationVerified])
-
-  // Fetch Silo Factory version via Silo Lens
-  // Always fetch - this is independent verification that doesn't require wizard data
-  useEffect(() => {
-    if (!siloFactory?.address || !siloLensAddress || !chainId) return
-    if (typeof window === 'undefined' || !window.ethereum) return
-
-    const fetchFactoryVersion = async () => {
-      const factoryAddress = siloFactory.address
-      const cached = getCachedVersion(chainId, factoryAddress)
-      if (cached != null) {
-        setSiloFactory(prev => prev ? { ...prev, version: cached } : null)
-        return
-      }
-
-      try {
-        const ethereum = window.ethereum
-        if (!ethereum) return
-        const provider = new ethers.BrowserProvider(ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(factoryAddress))
-        setCachedVersion(chainId, factoryAddress, version)
-        setSiloFactory(prev => prev ? { ...prev, version } : null)
-      } catch (err) {
-        console.warn('Failed to fetch Silo Factory version:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, factoryAddress, fallback)
-        setSiloFactory(prev => prev ? { ...prev, version: fallback } : null)
-      }
-    }
-
-    fetchFactoryVersion()
-    // Intentionally narrow deps: only re-fetch when factory address or chain changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siloFactory?.address, siloLensAddress, chainId])
+  }, [
+    wizardData.verificationFromWizard,
+    implementationVerified,
+    implementationFromRepo?.address,
+    siloFactory?.address,
+    siloLensAddress,
+    chainId
+  ])
 
   // Verify silo addresses using Silo Factory isSilo method
   // Always run verification - this is independent verification that doesn't require wizard data
@@ -307,6 +330,82 @@ export default function Step11Verification() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siloFactory?.address, config])
 
+  // Fetch versions for all addresses displayed in market configuration tree.
+  // Keep existing behavior where addresses with known versions keep their own value.
+  useEffect(() => {
+    if (!config || !siloLensAddress || !chainId) {
+      setAddressVersions(new Map())
+      return
+    }
+    if (typeof window === 'undefined' || !window.ethereum) return
+
+    const fetchTreeAddressVersions = async () => {
+      try {
+        const ethereum = window.ethereum
+        if (!ethereum) return
+
+        const provider = new ethers.BrowserProvider(ethereum)
+
+        const addresses = new Set<string>()
+        const addAddress = (value?: string | null) => {
+          if (!value || !ethers.isAddress(value) || value === ethers.ZeroAddress) return
+          addresses.add(ethers.getAddress(value).toLowerCase())
+        }
+
+        addAddress(config.siloConfig)
+        addAddress(config.silo0.silo)
+        addAddress(config.silo1.silo)
+        addAddress(config.silo0.token)
+        addAddress(config.silo1.token)
+        addAddress(config.silo0.protectedShareToken)
+        addAddress(config.silo0.collateralShareToken)
+        addAddress(config.silo0.debtShareToken)
+        addAddress(config.silo1.protectedShareToken)
+        addAddress(config.silo1.collateralShareToken)
+        addAddress(config.silo1.debtShareToken)
+        addAddress(config.silo0.hookReceiver)
+        addAddress(config.silo1.hookReceiver)
+        addAddress(config.silo0.solvencyOracle.address)
+        addAddress(config.silo0.maxLtvOracle.address)
+        addAddress(config.silo1.solvencyOracle.address)
+        addAddress(config.silo1.maxLtvOracle.address)
+        addAddress(config.silo0.interestRateModel.address)
+        addAddress(config.silo1.interestRateModel.address)
+        addAddress(config.silo0.factory)
+        addAddress(config.silo1.factory)
+        addAddress(config.silo0.hookReceiverOwner)
+        addAddress(config.silo1.hookReceiverOwner)
+        addAddress(config.silo0.interestRateModel.owner)
+        addAddress(config.silo1.interestRateModel.owner)
+
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses: Array.from(addresses)
+        })
+
+        const versions = new Map<string, string>()
+        versionsByAddress.forEach((version, address) => {
+          if (version !== '') versions.set(address, version)
+        })
+
+        setAddressVersions(versions)
+      } catch (err) {
+        console.warn('Failed to fetch tree address versions:', err)
+      }
+    }
+
+    fetchTreeAddressVersions()
+  }, [config, siloLensAddress, chainId])
+
+  // If factory version was fetched through the general addressVersions flow, sync it to the top SiloFactory card.
+  useEffect(() => {
+    if (!siloFactory?.address) return
+    const versionFromMap = addressVersions.get(siloFactory.address.toLowerCase())
+    if (!versionFromMap || versionFromMap === '') return
+    setSiloFactory(prev => (prev ? { ...prev, version: versionFromMap } : null))
+  }, [siloFactory?.address, addressVersions])
   const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
     if (!value.trim()) {
       setError('Please enter a Silo Config address or transaction hash')
@@ -325,6 +424,8 @@ export default function Step11Verification() {
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
+      const network = await provider.getNetwork()
+      setDetectedChainId(network.chainId.toString())
       let siloConfigAddress: string
 
       if (isTxHash) {
@@ -373,7 +474,7 @@ export default function Step11Verification() {
       setConfig(marketConfig)
       
       // Get chain ID - use wizard data if available, otherwise get from provider
-      const chainIdForVerification = wizardData.networkInfo?.chainId || (await provider.getNetwork()).chainId.toString()
+      const chainIdForVerification = wizardData.networkInfo?.chainId || network.chainId.toString()
       
       // Verify addresses in JSON - ALWAYS performed regardless of wizard data
       // This verification is independent and can be done for any address
@@ -604,7 +705,7 @@ export default function Step11Verification() {
   }
 
   const goToDeployment = () => router.push('/wizard?step=10')
-  const goToNewMarket = () => router.push('/wizard?step=0')
+  const goToNewMarket = () => router.push('/')
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -669,7 +770,7 @@ export default function Step11Verification() {
           <ContractInfo
             contractName="SiloFactory"
             address={siloFactory.address}
-            version={siloFactory.version || '…'}
+            version={siloFactory.version || '—'}
             chainId={chainId}
             isOracle={false}
           />
@@ -767,6 +868,8 @@ export default function Step11Verification() {
             <MarketConfigTree 
               config={config} 
               explorerUrl={explorerUrl}
+              chainId={chainId}
+              currentSiloFactoryAddress={siloFactory?.address}
               wizardDaoFee={wizardData.feesConfiguration?.daoFee ?? null}
               wizardDeployerFee={wizardData.feesConfiguration?.deployerFee ?? null}
               siloVerification={siloVerification}
@@ -775,6 +878,7 @@ export default function Step11Verification() {
               tokenVerification={tokenVerification}
               numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
+              addressVersions={addressVersions}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
               callBeforeQuoteVerification={wizardData.verificationFromWizard 
                 ? { 

@@ -22,6 +22,10 @@ export interface AddressDisplayShortProps {
   startChars?: number
   /** Number of characters to show at the end (default: 4) */
   endChars?: number
+  /** Optional contract version displayed next to address */
+  version?: string
+  /** Show version label next to address (default: true) */
+  showVersion?: boolean
 }
 
 export default function AddressDisplayShort({
@@ -30,7 +34,9 @@ export default function AddressDisplayShort({
   className = '',
   linkClassName = '',
   startChars = 6,
-  endChars = 4
+  endChars = 4,
+  version,
+  showVersion = true
 }: AddressDisplayShortProps) {
   const normalizedAddress = normalizeAddress(address) ?? address
   const shortAddress = `${normalizedAddress.slice(0, startChars)}...${normalizedAddress.slice(-endChars)}`
@@ -47,6 +53,9 @@ export default function AddressDisplayShort({
         {shortAddress}
       </a>
       <CopyButton value={normalizedAddress} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+      {showVersion && (
+        <span className="text-gray-400 text-xs">({version || '—'})</span>
+      )}
     </div>
   )
 }

@@ -14,6 +14,7 @@ function OwnerAddressRow({ address, chainId }: { address: string; chainId: numbe
         address={address}
         chainId={chainId}
         className="text-xs"
+        showVersion={false}
       />
     </div>
   )
@@ -25,7 +26,7 @@ interface WizardLayoutProps {
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
   const router = useRouter()
-  const { wizardData, updateStep } = useWizard()
+  const { wizardData } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
   const handleStepClick = (step: number) => {
@@ -62,7 +63,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => updateStep(0)}
+                  onClick={() => router.push('/')}
                   className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
                   title="Back to Landing Page"
                 >
@@ -206,6 +207,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   address={scaler.address}
                                   chainId={chainId}
                                   className="text-xs"
+                                  version={scaler.version ?? '—'}
                                 />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>
@@ -233,6 +235,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   address={scaler.address}
                                   chainId={chainId}
                                   className="text-xs"
+                                  version={scaler.version ?? '—'}
                                 />
                               </div>
                               <div className={`text-xs mt-1 ${scaler.valid ? 'status-muted-success' : 'text-red-400'}`}>

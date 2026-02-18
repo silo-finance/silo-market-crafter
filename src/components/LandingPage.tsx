@@ -6,11 +6,12 @@ import { useWizard } from '@/contexts/WizardContext'
 
 export default function LandingPage() {
   const router = useRouter()
-  const { parseJSONConfig } = useWizard()
+  const { parseJSONConfig, resetWizardWithCache } = useWizard()
   const [jsonInput, setJsonInput] = useState('')
   const [isUploadMode, setIsUploadMode] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [cacheMessage, setCacheMessage] = useState('')
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -63,6 +64,13 @@ export default function LandingPage() {
     setError('')
   }
 
+  const handleClearCache = () => {
+    resetWizardWithCache()
+    setJsonInput('')
+    setError('')
+    setCacheMessage('Cache cleared. You can retry Verify Market now.')
+  }
+
   return (
     <div className="light-market-theme min-h-screen flex items-center justify-center px-4">
       <div className="max-w-4xl w-full">
@@ -87,16 +95,16 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
-                Start New Wizard
+                Start New Market
               </h2>
               <p className="text-emerald-700 mb-6">
                 Create a new Silo market in few easy steps.
               </p>
               <button
                 onClick={handleStartWizard}
-                className="w-full bg-lime-800/90 hover:bg-lime-700 text-lime-50 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                className="w-full bg-lime-800/90 hover:bg-lime-700 text-white cta-strong-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
               >
-                Start Wizard
+                Create New Market
               </button>
             </div>
           </div>
@@ -193,10 +201,22 @@ export default function LandingPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="text-center mt-12 text-emerald-700 text-sm">
+        <div className="text-center mt-12 text-emerald-700 text-sm space-y-4">
           <p>
             Make sure your wallet is connected to determine the correct blockchain for token resolution.
           </p>
+          <div className="max-w-2xl mx-auto bg-lime-100/60 border border-lime-200 rounded-lg p-4">
+            <p className="text-emerald-900 mb-3">
+              If you see UI/runtime errors while opening pages (for example Verify Market), clear local cache and retry.
+            </p>
+            <button
+              onClick={handleClearCache}
+              className="bg-orange-600 hover:bg-orange-500 text-white cta-strong-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Clear Cache
+            </button>
+            {cacheMessage && <p className="mt-2 text-emerald-800">{cacheMessage}</p>}
+          </div>
         </div>
       </div>
     </div>

@@ -4,18 +4,16 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
-import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
+import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
-import siloLensArtifact from '@/abis/silo/ISiloLens.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
-import CopyButton from '@/components/CopyButton'
 import TokenAddressInput from '@/components/TokenAddressInput'
 import ContractInfo from '@/components/ContractInfo'
+import AddressDisplayShort from '@/components/AddressDisplayShort'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
-const siloLensAbi = (siloLensArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
@@ -294,91 +292,56 @@ export default function Step3OracleConfiguration() {
     fetchLens()
   }, [wizardData.networkInfo?.chainId])
 
-  // Fetch OracleScalerFactory version via Silo Lens (cached per chainId+address)
+  // Fetch oracle factory versions via Silo Lens in one bulk getVersions call.
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
-    if (!oracleScalerFactory?.address || !siloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, oracleScalerFactory.address)
-    if (cached != null) {
-      setOracleScalerFactory(prev => prev ? { ...prev, version: cached } : null)
-      return
-    }
-    const fetchFactoryVersion = async () => {
-      if (!window.ethereum) return
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(oracleScalerFactory!.address))
-        setCachedVersion(chainId, oracleScalerFactory!.address, version)
-        setOracleScalerFactory(prev => prev ? { ...prev, version } : null)
-      } catch (err) {
-        console.warn('Failed to fetch OracleScalerFactory version from Silo Lens:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, oracleScalerFactory!.address, fallback)
-        setOracleScalerFactory(prev => prev ? { ...prev, version: fallback } : null)
-      }
-    }
-    fetchFactoryVersion()
-    // Intentionally narrow deps: only re-fetch when factory address or chain changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [oracleScalerFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+    if (!siloLensAddress || !chainId) return
+    const addresses = [
+      oracleScalerFactory?.address,
+      chainlinkV3OracleFactory?.address,
+      ptLinearFactory?.address
+    ].filter((value): value is string => !!value)
+    if (addresses.length === 0) return
 
-  // Fetch ChainlinkV3OracleFactory version via Silo Lens (cached per chainId+address)
-  useEffect(() => {
-    const chainId = wizardData.networkInfo?.chainId
-    if (!chainlinkV3OracleFactory?.address || !siloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, chainlinkV3OracleFactory.address)
-    if (cached != null) {
-      setChainlinkV3OracleFactory(prev => prev ? { ...prev, version: cached } : null)
-      return
-    }
-    const fetchFactoryVersion = async () => {
+    const fetchFactoryVersions = async () => {
       if (!window.ethereum) return
       try {
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(chainlinkV3OracleFactory!.address))
-        setCachedVersion(chainId, chainlinkV3OracleFactory!.address, version)
-        setChainlinkV3OracleFactory(prev => prev ? { ...prev, version } : null)
-      } catch (err) {
-        console.warn('Failed to fetch ChainlinkV3OracleFactory version from Silo Lens:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, chainlinkV3OracleFactory!.address, fallback)
-        setChainlinkV3OracleFactory(prev => prev ? { ...prev, version: fallback } : null)
-      }
-    }
-    fetchFactoryVersion()
-    // Intentionally narrow deps: only re-fetch when factory address or chain changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chainlinkV3OracleFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses
+        })
 
-  // Fetch PTLinearOracleFactory version via Silo Lens (cached per chainId+address)
-  useEffect(() => {
-    const chainId = wizardData.networkInfo?.chainId
-    if (!ptLinearFactory?.address || !siloLensAddress || !chainId) return
-    const cached = getCachedVersion(chainId, ptLinearFactory.address)
-    if (cached != null) {
-      setPTLinearFactory(prev => prev ? { ...prev, version: cached } : null)
-      return
-    }
-    const fetchFactoryVersion = async () => {
-      if (!window.ethereum) return
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const lensContract = new ethers.Contract(siloLensAddress, siloLensAbi, provider)
-        const version = String(await lensContract.getVersion(ptLinearFactory!.address))
-        setCachedVersion(chainId, ptLinearFactory!.address, version)
-        setPTLinearFactory(prev => prev ? { ...prev, version } : null)
+        const getVersion = (address?: string) =>
+          address ? versionsByAddress.get(address.toLowerCase()) ?? '' : ''
+
+        setOracleScalerFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
+        setChainlinkV3OracleFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
+        setPTLinearFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
       } catch (err) {
-        console.warn('Failed to fetch PTLinearOracleFactory version from Silo Lens:', err)
-        const fallback = '—'
-        setCachedVersion(chainId, ptLinearFactory!.address, fallback)
-        setPTLinearFactory(prev => prev ? { ...prev, version: fallback } : null)
+        console.warn('Failed to fetch oracle factory versions from Silo Lens:', err)
+        setOracleScalerFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setChainlinkV3OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setPTLinearFactory(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
-    fetchFactoryVersion()
+    fetchFactoryVersions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ptLinearFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+  }, [
+    oracleScalerFactory?.address,
+    chainlinkV3OracleFactory?.address,
+    ptLinearFactory?.address,
+    siloLensAddress,
+    wizardData.networkInfo?.chainId
+  ])
 
   // Sync PT-Linear state from wizard when returning to step
   useEffect(() => {
@@ -700,10 +663,42 @@ export default function Step3OracleConfiguration() {
       }
 
       // Validate for both tokens
-      const [token0Oracles, token1Oracles] = await Promise.all([
+      const [token0OraclesRaw, token1OraclesRaw] = await Promise.all([
         validateOraclesForToken(wizardData.token0.address, wizardData.token0.decimals),
         validateOraclesForToken(wizardData.token1.address, wizardData.token1.decimals)
       ])
+
+      let token0Oracles = token0OraclesRaw
+      let token1Oracles = token1OraclesRaw
+
+      // Enrich contract addresses with versions from Silo Lens when available.
+      if (siloLensAddress && window.ethereum) {
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum)
+          const chainId = wizardData.networkInfo.chainId
+          const allScalerAddresses = Array.from(
+            new Set([...token0OraclesRaw, ...token1OraclesRaw].map(oracle => oracle.address))
+          )
+          const versionsByAddress = await fetchSiloLensVersionsWithCache({
+            provider,
+            lensAddress: siloLensAddress,
+            chainId,
+            addresses: allScalerAddresses
+          })
+          const withVersion = (oracle: ScalerOracle): ScalerOracle => ({
+            ...oracle,
+            version: versionsByAddress.get(oracle.address.toLowerCase()) ?? '—'
+          })
+          token0Oracles = token0OraclesRaw.map(withVersion)
+          token1Oracles = token1OraclesRaw.map(withVersion)
+        } catch {
+          token0Oracles = token0OraclesRaw.map(oracle => ({ ...oracle, version: '—' }))
+          token1Oracles = token1OraclesRaw.map(oracle => ({ ...oracle, version: '—' }))
+        }
+      } else {
+        token0Oracles = token0OraclesRaw.map(oracle => ({ ...oracle, version: '—' }))
+        token1Oracles = token1OraclesRaw.map(oracle => ({ ...oracle, version: '—' }))
+      }
 
       setAvailableScalers({
         token0: token0Oracles,
@@ -763,7 +758,7 @@ export default function Step3OracleConfiguration() {
     }
 
     findScalerOracles()
-  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1, wizardData.oracleConfiguration])
+  }, [oracleDeployments, wizardData.networkInfo, wizardData.token0, wizardData.token1, wizardData.oracleConfiguration, siloLensAddress])
 
   // Load existing selections from context when availableScalers are loaded
   // This ensures that when we return to this step, the saved scaler is automatically selected
@@ -1252,18 +1247,13 @@ export default function Step3OracleConfiguration() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={getBlockExplorerUrl(oracle.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-lime-600 hover:text-lime-500 text-sm"
-                          >
-                            {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
-                          </a>
-                          <span onClick={(e) => e.stopPropagation()}>
-                            <CopyButton value={oracle.address} title="Copy address" />
-                          </span>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <AddressDisplayShort
+                            address={oracle.address}
+                            chainId={wizardData.networkInfo?.chainId}
+                            className="text-sm"
+                            version={oracle.version ?? '—'}
+                          />
                         </div>
                         {!oracle.valid && oracle.resultDecimals && (
                           <div className="mt-2 text-xs text-red-400">
@@ -1552,18 +1542,13 @@ export default function Step3OracleConfiguration() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={getBlockExplorerUrl(oracle.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-lime-600 hover:text-lime-500 text-sm"
-                          >
-                            {oracle.address.slice(0, 6)}...{oracle.address.slice(-4)}
-                          </a>
-                          <span onClick={(e) => e.stopPropagation()}>
-                            <CopyButton value={oracle.address} title="Copy address" />
-                          </span>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <AddressDisplayShort
+                            address={oracle.address}
+                            chainId={wizardData.networkInfo?.chainId}
+                            className="text-sm"
+                            version={oracle.version ?? '—'}
+                          />
                         </div>
                         {!oracle.valid && oracle.resultDecimals && (
                           <div className="mt-2 text-xs text-red-400">
