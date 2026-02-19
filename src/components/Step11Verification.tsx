@@ -79,6 +79,19 @@ export default function Step11Verification() {
 
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
+  const updateVerificationUrl = useCallback(
+    (params: { txHash?: string; siloConfigAddress?: string }) => {
+      const query = new URLSearchParams()
+      query.set('step', '11')
+      if (params.txHash) {
+        query.set('tx', params.txHash)
+      } else if (params.siloConfigAddress) {
+        query.set('address', params.siloConfigAddress)
+      }
+      router.replace(`/wizard?${query.toString()}`, { scroll: false })
+    },
+    [router]
+  )
 
   // Fetch Silo Factory address and version
   // Always fetch - this is independent verification that doesn't require wizard data
@@ -470,6 +483,12 @@ export default function Step11Verification() {
       // Fetch market configuration
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       setConfig(marketConfig)
+      setInput(isTxHash ? value.trim() : siloConfigAddress)
+      // Keep standalone verification URL shareable and reproducible.
+      updateVerificationUrl({
+        txHash: isTxHash ? value.trim() : undefined,
+        siloConfigAddress: isTxHash ? undefined : siloConfigAddress
+      })
       
       // Get chain ID - use wizard data if available, otherwise get from provider
       const chainIdForVerification = wizardData.networkInfo?.chainId || network.chainId.toString()
@@ -632,7 +651,8 @@ export default function Step11Verification() {
     wizardData.hookOwnerAddress,
     wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
-    wizardData.token1?.address
+    wizardData.token1?.address,
+    updateVerificationUrl
   ])
 
   // Whether we're verifying the wizard's deployment (show summary) or standalone (hide summary)
@@ -650,9 +670,13 @@ export default function Step11Verification() {
   // Extract hash from URL if present
   useEffect(() => {
     const urlHash = searchParams.get('tx')
+    const urlAddress = searchParams.get('address') || searchParams.get('contract')
     if (urlHash) {
       setInput(urlHash)
       handleVerify(urlHash, true)
+    } else if (urlAddress) {
+      setInput(urlAddress)
+      handleVerify(urlAddress, false)
     } else {
       // Check if we have saved transaction hash
       const savedHash = wizardData.lastDeployTxHash

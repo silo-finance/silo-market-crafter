@@ -1,0 +1,1273 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "allowance",
+            "inputs": [
+                {
+                    "name": "owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "spender",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "approve",
+            "inputs": [
+                {
+                    "name": "spender",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "balanceOf",
+            "inputs": [
+                {
+                    "name": "account",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "balanceOfAndTotalSupply",
+            "inputs": [
+                {
+                    "name": "_account",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "balance",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "totalSupply",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "burn",
+            "inputs": [
+                {
+                    "name": "_owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_spender",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_amount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "decimals",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint8",
+                    "internalType": "uint8"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "decimalsOffset",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "forwardTransferFromNoChecks",
+            "inputs": [
+                {
+                    "name": "_from",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_to",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_amount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "hookReceiver",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "hookSetup",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "tuple",
+                    "internalType": "struct IShareToken.HookSetup",
+                    "components": [
+                        {
+                            "name": "hookReceiver",
+                            "type": "address",
+                            "internalType": "address"
+                        },
+                        {
+                            "name": "hooksBefore",
+                            "type": "uint24",
+                            "internalType": "uint24"
+                        },
+                        {
+                            "name": "hooksAfter",
+                            "type": "uint24",
+                            "internalType": "uint24"
+                        },
+                        {
+                            "name": "tokenType",
+                            "type": "uint24",
+                            "internalType": "uint24"
+                        }
+                    ]
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "mint",
+            "inputs": [
+                {
+                    "name": "_owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_spender",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_amount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "name",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "string",
+                    "internalType": "string"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "silo",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "silo",
+                    "type": "address",
+                    "internalType": "contract ISilo"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "siloConfig",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "silo",
+                    "type": "address",
+                    "internalType": "contract ISiloConfig"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "symbol",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "string",
+                    "internalType": "string"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "synchronizeHooks",
+            "inputs": [
+                {
+                    "name": "_hooksBefore",
+                    "type": "uint24",
+                    "internalType": "uint24"
+                },
+                {
+                    "name": "_hooksAfter",
+                    "type": "uint24",
+                    "internalType": "uint24"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "totalSupply",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "transfer",
+            "inputs": [
+                {
+                    "name": "to",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "transferFrom",
+            "inputs": [
+                {
+                    "name": "from",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "to",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "bool",
+                    "internalType": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "event",
+            "name": "Approval",
+            "inputs": [
+                {
+                    "name": "owner",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "spender",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "NotificationSent",
+            "inputs": [
+                {
+                    "name": "notificationReceiver",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "success",
+                    "type": "bool",
+                    "indexed": false,
+                    "internalType": "bool"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "Transfer",
+            "inputs": [
+                {
+                    "name": "from",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "to",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "value",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "error",
+            "name": "AmountExceedsAllowance",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlySilo",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlySiloConfig",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OwnerIsZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "RecipientIsZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "RecipientNotSolventAfterTransfer",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "SenderNotSolventAfterTransfer",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroTransfer",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "allowance(address,address)": "dd62ed3e",
+        "approve(address,uint256)": "095ea7b3",
+        "balanceOf(address)": "70a08231",
+        "balanceOfAndTotalSupply(address)": "dce5c2db",
+        "burn(address,address,uint256)": "f6b911bc",
+        "decimals()": "313ce567",
+        "decimalsOffset()": "96b298c5",
+        "forwardTransferFromNoChecks(address,address,uint256)": "d985616c",
+        "hookReceiver()": "8fea8062",
+        "hookSetup()": "0ed4fe31",
+        "mint(address,address,uint256)": "c6c3bbe6",
+        "name()": "06fdde03",
+        "silo()": "eb3beb29",
+        "siloConfig()": "d714fd19",
+        "symbol()": "95d89b41",
+        "synchronizeHooks(uint24,uint24)": "4c7b0f3c",
+        "totalSupply()": "18160ddd",
+        "transfer(address,uint256)": "a9059cbb",
+        "transferFrom(address,address,uint256)": "23b872dd"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"AmountExceedsAllowance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlySilo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlySiloConfig\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OwnerIsZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RecipientIsZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RecipientNotSolventAfterTransfer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SenderNotSolventAfterTransfer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroTransfer\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"notificationReceiver\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"}],\"name\":\"NotificationSent\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"balanceOfAndTotalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalSupply\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimalsOffset\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"forwardTransferFromNoChecks\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"hookReceiver\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"hookSetup\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"hookReceiver\",\"type\":\"address\"},{\"internalType\":\"uint24\",\"name\":\"hooksBefore\",\"type\":\"uint24\"},{\"internalType\":\"uint24\",\"name\":\"hooksAfter\",\"type\":\"uint24\"},{\"internalType\":\"uint24\",\"name\":\"tokenType\",\"type\":\"uint24\"}],\"internalType\":\"struct IShareToken.HookSetup\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"silo\",\"outputs\":[{\"internalType\":\"contract ISilo\",\"name\":\"silo\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"siloConfig\",\"outputs\":[{\"internalType\":\"contract ISiloConfig\",\"name\":\"silo\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint24\",\"name\":\"_hooksBefore\",\"type\":\"uint24\"},{\"internalType\":\"uint24\",\"name\":\"_hooksAfter\",\"type\":\"uint24\"}],\"name\":\"synchronizeHooks\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"Approval(address,address,uint256)\":{\"details\":\"Emitted when the allowance of a `spender` for an `owner` is set by a call to {approve}. `value` is the new allowance.\"},\"NotificationSent(address,bool)\":{\"params\":{\"notificationReceiver\":\"receiver address\",\"success\":\"false if TX reverted on `notificationReceiver` side, otherwise true\"}},\"Transfer(address,address,uint256)\":{\"details\":\"Emitted when `value` tokens are moved from one account (`from`) to another (`to`). Note that `value` may be zero.\"}},\"kind\":\"dev\",\"methods\":{\"allowance(address,address)\":{\"details\":\"Returns the remaining number of tokens that `spender` will be allowed to spend on behalf of `owner` through {transferFrom}. This is zero by default. This value changes when {approve} or {transferFrom} are called.\"},\"approve(address,uint256)\":{\"details\":\"Sets a `value` amount of tokens as the allowance of `spender` over the caller's tokens. Returns a boolean value indicating whether the operation succeeded. IMPORTANT: Beware that changing an allowance with this method brings the risk that someone may use both the old and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards: https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729 Emits an {Approval} event.\"},\"balanceOf(address)\":{\"details\":\"Returns the value of tokens owned by `account`.\"},\"balanceOfAndTotalSupply(address)\":{\"details\":\"Returns the amount of tokens owned by `account`.\",\"params\":{\"_account\":\"address for which to return data\"},\"returns\":{\"balance\":\"of the _account\",\"totalSupply\":\"total supply of the token\"}},\"burn(address,address,uint256)\":{\"params\":{\"_amount\":\"amount of token to be burned\",\"_owner\":\"wallet for which to burn token\",\"_spender\":\"wallet that asks for burn\"}},\"decimals()\":{\"details\":\"Returns the decimals places of the token.\"},\"decimalsOffset()\":{\"details\":\"offset value uses by vaults to calculate the conversion rate between assets and shares it determines how many shares are minted for 1 asset eg. with offset 3, 1 asset = 1000 shares notice, that 1:1000 ratio can change for collateral shares when shares value changes eg due to interest accrual. see openzeppelin contract: contracts/token/ERC20/extensions/ERC4626.sol for more details about offset\"},\"forwardTransferFromNoChecks(address,address,uint256)\":{\"params\":{\"_amount\":\"amount of token to transfer\",\"_from\":\"wallet from which we transferring tokens\",\"_to\":\"wallet that will get tokens\"}},\"mint(address,address,uint256)\":{\"params\":{\"_amount\":\"amount of token to be minted\",\"_owner\":\"wallet for which to mint token\",\"_spender\":\"wallet that asks for mint\"}},\"name()\":{\"details\":\"Returns the name of the token.\"},\"silo()\":{\"returns\":{\"silo\":\"address\"}},\"symbol()\":{\"details\":\"Returns the symbol of the token.\"},\"synchronizeHooks(uint24,uint24)\":{\"params\":{\"_hooksAfter\":\"hooks bitmap to trigger hooks AFTER action\",\"_hooksBefore\":\"hooks bitmap to trigger hooks BEFORE action\"}},\"totalSupply()\":{\"details\":\"Returns the value of tokens in existence.\"},\"transfer(address,uint256)\":{\"details\":\"Moves a `value` amount of tokens from the caller's account to `to`. Returns a boolean value indicating whether the operation succeeded. Emits a {Transfer} event.\"},\"transferFrom(address,address,uint256)\":{\"details\":\"Moves a `value` amount of tokens from `from` to `to` using the allowance mechanism. `value` is then deducted from the caller's allowance. Returns a boolean value indicating whether the operation succeeded. Emits a {Transfer} event.\"}},\"version\":1},\"userdoc\":{\"events\":{\"NotificationSent(address,bool)\":{\"notice\":\"Emitted every time receiver is notified about token transfer\"}},\"kind\":\"user\",\"methods\":{\"burn(address,address,uint256)\":{\"notice\":\"Burn method for Silo to close debt\"},\"decimalsOffset()\":{\"notice\":\"this method is available since Silo Core v4.0.0\"},\"forwardTransferFromNoChecks(address,address,uint256)\":{\"notice\":\"TransferFrom method for liquidation\"},\"hookReceiver()\":{\"notice\":\"Returns hook receiver address\"},\"hookSetup()\":{\"notice\":\"Returns hook setup\"},\"mint(address,address,uint256)\":{\"notice\":\"Mint method for Silo to create debt\"},\"silo()\":{\"notice\":\"Returns silo address for which token was deployed\"},\"synchronizeHooks(uint24,uint24)\":{\"notice\":\"method for SiloConfig to synchronize hooks\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-core/contracts/interfaces/IShareToken.sol\":\"IShareToken\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol\":{\"keccak256\":\"0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf\",\"dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb\"]},\"gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b\",\"dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009\",\"dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"keccak256\":\"0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323\",\"dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR\"]},\"gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827\",\"dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA\"]},\"gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e\",\"dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX\"]},\"silo-core/contracts/interfaces/ICrossReentrancyGuard.sol\":{\"keccak256\":\"0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587\",\"dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7\"]},\"silo-core/contracts/interfaces/IERC3156FlashBorrower.sol\":{\"keccak256\":\"0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c\",\"dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS\"]},\"silo-core/contracts/interfaces/IERC3156FlashLender.sol\":{\"keccak256\":\"0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb\",\"dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa\"]},\"silo-core/contracts/interfaces/IHookReceiver.sol\":{\"keccak256\":\"0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e\",\"dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet\"]},\"silo-core/contracts/interfaces/IShareToken.sol\":{\"keccak256\":\"0x14d9673622c536cea06949184a1cf1bf64bc8f80aa0c29937818a6d8cf7969f3\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://f9329e3f60a637da29bcd188f0d69c62d63e15b9152676af4f574a05d1eb9f4a\",\"dweb:/ipfs/QmYyC2PzjA8cxJFLa1jsPdquTXbNgKW8yKJZRexCf7nn3s\"]},\"silo-core/contracts/interfaces/ISilo.sol\":{\"keccak256\":\"0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8\",\"dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4\"]},\"silo-core/contracts/interfaces/ISiloConfig.sol\":{\"keccak256\":\"0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036\",\"dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS\"]},\"silo-core/contracts/interfaces/ISiloFactory.sol\":{\"keccak256\":\"0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67\",\"dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "AmountExceedsAllowance"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlySilo"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlySiloConfig"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OwnerIsZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "RecipientIsZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "RecipientNotSolventAfterTransfer"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "SenderNotSolventAfterTransfer"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroTransfer"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "owner",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "spender",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "Approval",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "notificationReceiver",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "bool",
+                            "name": "success",
+                            "type": "bool",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "NotificationSent",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "to",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "Transfer",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "spender",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "allowance",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "spender",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "approve",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "account",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "balanceOf",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_account",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "balanceOfAndTotalSupply",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "balance",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "totalSupply",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_spender",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_amount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "burn"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "decimals",
+                    "outputs": [
+                        {
+                            "internalType": "uint8",
+                            "name": "",
+                            "type": "uint8"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "decimalsOffset",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_from",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_to",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_amount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "forwardTransferFromNoChecks"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "hookReceiver",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "hookSetup",
+                    "outputs": [
+                        {
+                            "internalType": "struct IShareToken.HookSetup",
+                            "name": "",
+                            "type": "tuple",
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "hookReceiver",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint24",
+                                    "name": "hooksBefore",
+                                    "type": "uint24"
+                                },
+                                {
+                                    "internalType": "uint24",
+                                    "name": "hooksAfter",
+                                    "type": "uint24"
+                                },
+                                {
+                                    "internalType": "uint24",
+                                    "name": "tokenType",
+                                    "type": "uint24"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_spender",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_amount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "mint"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "name",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "silo",
+                    "outputs": [
+                        {
+                            "internalType": "contract ISilo",
+                            "name": "silo",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "siloConfig",
+                    "outputs": [
+                        {
+                            "internalType": "contract ISiloConfig",
+                            "name": "silo",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "symbol",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint24",
+                            "name": "_hooksBefore",
+                            "type": "uint24"
+                        },
+                        {
+                            "internalType": "uint24",
+                            "name": "_hooksAfter",
+                            "type": "uint24"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "synchronizeHooks"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "totalSupply",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "to",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "transfer",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "",
+                            "type": "bool"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "to",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "value",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "transferFrom",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "",
+                            "type": "bool"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "allowance(address,address)": {
+                        "details": "Returns the remaining number of tokens that `spender` will be allowed to spend on behalf of `owner` through {transferFrom}. This is zero by default. This value changes when {approve} or {transferFrom} are called."
+                    },
+                    "approve(address,uint256)": {
+                        "details": "Sets a `value` amount of tokens as the allowance of `spender` over the caller's tokens. Returns a boolean value indicating whether the operation succeeded. IMPORTANT: Beware that changing an allowance with this method brings the risk that someone may use both the old and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards: https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729 Emits an {Approval} event."
+                    },
+                    "balanceOf(address)": {
+                        "details": "Returns the value of tokens owned by `account`."
+                    },
+                    "balanceOfAndTotalSupply(address)": {
+                        "details": "Returns the amount of tokens owned by `account`.",
+                        "params": {
+                            "_account": "address for which to return data"
+                        },
+                        "returns": {
+                            "balance": "of the _account",
+                            "totalSupply": "total supply of the token"
+                        }
+                    },
+                    "burn(address,address,uint256)": {
+                        "params": {
+                            "_amount": "amount of token to be burned",
+                            "_owner": "wallet for which to burn token",
+                            "_spender": "wallet that asks for burn"
+                        }
+                    },
+                    "decimals()": {
+                        "details": "Returns the decimals places of the token."
+                    },
+                    "decimalsOffset()": {
+                        "details": "offset value uses by vaults to calculate the conversion rate between assets and shares it determines how many shares are minted for 1 asset eg. with offset 3, 1 asset = 1000 shares notice, that 1:1000 ratio can change for collateral shares when shares value changes eg due to interest accrual. see openzeppelin contract: contracts/token/ERC20/extensions/ERC4626.sol for more details about offset"
+                    },
+                    "forwardTransferFromNoChecks(address,address,uint256)": {
+                        "params": {
+                            "_amount": "amount of token to transfer",
+                            "_from": "wallet from which we transferring tokens",
+                            "_to": "wallet that will get tokens"
+                        }
+                    },
+                    "mint(address,address,uint256)": {
+                        "params": {
+                            "_amount": "amount of token to be minted",
+                            "_owner": "wallet for which to mint token",
+                            "_spender": "wallet that asks for mint"
+                        }
+                    },
+                    "name()": {
+                        "details": "Returns the name of the token."
+                    },
+                    "silo()": {
+                        "returns": {
+                            "silo": "address"
+                        }
+                    },
+                    "symbol()": {
+                        "details": "Returns the symbol of the token."
+                    },
+                    "synchronizeHooks(uint24,uint24)": {
+                        "params": {
+                            "_hooksAfter": "hooks bitmap to trigger hooks AFTER action",
+                            "_hooksBefore": "hooks bitmap to trigger hooks BEFORE action"
+                        }
+                    },
+                    "totalSupply()": {
+                        "details": "Returns the value of tokens in existence."
+                    },
+                    "transfer(address,uint256)": {
+                        "details": "Moves a `value` amount of tokens from the caller's account to `to`. Returns a boolean value indicating whether the operation succeeded. Emits a {Transfer} event."
+                    },
+                    "transferFrom(address,address,uint256)": {
+                        "details": "Moves a `value` amount of tokens from `from` to `to` using the allowance mechanism. `value` is then deducted from the caller's allowance. Returns a boolean value indicating whether the operation succeeded. Emits a {Transfer} event."
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "burn(address,address,uint256)": {
+                        "notice": "Burn method for Silo to close debt"
+                    },
+                    "decimalsOffset()": {
+                        "notice": "this method is available since Silo Core v4.0.0"
+                    },
+                    "forwardTransferFromNoChecks(address,address,uint256)": {
+                        "notice": "TransferFrom method for liquidation"
+                    },
+                    "hookReceiver()": {
+                        "notice": "Returns hook receiver address"
+                    },
+                    "hookSetup()": {
+                        "notice": "Returns hook setup"
+                    },
+                    "mint(address,address,uint256)": {
+                        "notice": "Mint method for Silo to create debt"
+                    },
+                    "silo()": {
+                        "notice": "Returns silo address for which token was deployed"
+                    },
+                    "synchronizeHooks(uint24,uint24)": {
+                        "notice": "method for SiloConfig to synchronize hooks"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-core/contracts/interfaces/IShareToken.sol": "IShareToken"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC4626.sol": {
+                "keccak256": "0x6423475004ac1c4db6e9f16908cbfb82e630f7868051869c6f89c7452facbc06",
+                "urls": [
+                    "bzz-raw://bd31766a3235519db9207c02652e124746eef3e451271e82830090f9864ff4cf",
+                    "dweb:/ipfs/QmNjjADM3vFELnFtiZJYuRRXEjQb8KP7cq6b8YqKww6Sdb"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/interfaces/IERC721.sol": {
+                "keccak256": "0xc4d7ebf63eb2f6bf3fee1b6c0ee775efa9f31b4843a5511d07eea147e212932d",
+                "urls": [
+                    "bzz-raw://01c66a2fad66bc710db7510419a7eee569b40b67cd9f01b70a3fc90d6f76c03b",
+                    "dweb:/ipfs/QmT1CjJZq4eTNA4nu8E9ZrWfaZu6ReUsDbjcK8DbEFqwx5"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/IERC20.sol": {
+                "keccak256": "0xee2337af2dc162a973b4be6d3f7c16f06298259e0af48c5470d2839bfa8a22f4",
+                "urls": [
+                    "bzz-raw://30c476b4b2f405c1bb3f0bae15b006d129c80f1bfd9d0f2038160a3bb9745009",
+                    "dweb:/ipfs/Qmb3VcuDufv6xbHeVgksC4tHpc5gKYVqBEwjEXW72XzSvN"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+                "keccak256": "0x88f7b6f070ad1de2bf899da6978ed74b5038eac78c01b7359b92b60c3d965c28",
+                "urls": [
+                    "bzz-raw://c436edb6733a036607c6f17cc590e8ee351363a8cb4c564a98d9a66392c89323",
+                    "dweb:/ipfs/QmcJvJR2K3EtYcKEXVpQ1WqT6TvAbVem5HR1FirAsqEXFR"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/token/ERC721/IERC721.sol": {
+                "keccak256": "0xe0e3a2099f2e2ce3579dd35548f613928739642058dfec95b1745f93364ce3de",
+                "urls": [
+                    "bzz-raw://36a3930518e5c4a3c83839aaa136b863af513e6eeee6a3654e8f910f8007f827",
+                    "dweb:/ipfs/QmcU1b6SYYUMiXJ6jd5HY6sgYjJLdBu4smak1X1FDgkoaA"
+                ],
+                "license": "MIT"
+            },
+            "gitmodules/openzeppelin-contracts-5/contracts/utils/introspection/IERC165.sol": {
+                "keccak256": "0xc859863e3bda7ec3cddf6dafe2ffe91bcbe648d1395b856b839c32ee9617c44c",
+                "urls": [
+                    "bzz-raw://a9d5417888b873cf2225ed5d50b2a67be97c1504134a2a580512168d587ad82e",
+                    "dweb:/ipfs/QmNr5fTb2heFW658NZn7dDnofZgFvQTnNxKRJ3wdnR1skX"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ICrossReentrancyGuard.sol": {
+                "keccak256": "0xaa4630440cab11959878e581febb33b7760313c71651810f92006a310530af05",
+                "urls": [
+                    "bzz-raw://7cd5997f5a6f930fe5da0c289fcebf65793de2345354bb143629d47c78e23587",
+                    "dweb:/ipfs/QmZDPQo4WYG27dzvD9NVzg5TPMmGQaNQzSDC8ViTK8Upr7"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IERC3156FlashBorrower.sol": {
+                "keccak256": "0x2416f69db19aa0fabb6092dffb91bf17fa2c68ff9999270fe75c08780ead0f2c",
+                "urls": [
+                    "bzz-raw://6987702a740bf7bfa9530b19356df09097c5e76e0fb247726253e6561719984c",
+                    "dweb:/ipfs/QmTriauTZ25SdSGyddgspVtZ5NiEch64RzvWMgKAMdLrZS"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IERC3156FlashLender.sol": {
+                "keccak256": "0x0151ed6d02e5a07e9ef22d72e0ee5500f4ef064c87dc73a0d15ee272629497bd",
+                "urls": [
+                    "bzz-raw://e3e66cc66e3e09be34f351c7cfb55c8c2b9593bea615fa35458d5c83a6d98adb",
+                    "dweb:/ipfs/QmNmQTbCoXKSwND31ZsD8c9FqyYvnwBggKs4gWDWYstnDa"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IHookReceiver.sol": {
+                "keccak256": "0x4d7ca1fc58b01605bc10ed95b09f4baccd0a0f2709a96720c0556ec2087c7371",
+                "urls": [
+                    "bzz-raw://8ff180bf928fe37e524c2e90d5cd2c7827f5b386f6b49b6e23a77b39e60bf96e",
+                    "dweb:/ipfs/QmTF44uyCKJhxSwsTLMXLmn5cfuTKikdskBE6YvbG6wJet"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/IShareToken.sol": {
+                "keccak256": "0x14d9673622c536cea06949184a1cf1bf64bc8f80aa0c29937818a6d8cf7969f3",
+                "urls": [
+                    "bzz-raw://f9329e3f60a637da29bcd188f0d69c62d63e15b9152676af4f574a05d1eb9f4a",
+                    "dweb:/ipfs/QmYyC2PzjA8cxJFLa1jsPdquTXbNgKW8yKJZRexCf7nn3s"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISilo.sol": {
+                "keccak256": "0xd3cff2851e50edbf0325b79c4b1d9e76383b0b268d9f2c5dd720f5f927879fe7",
+                "urls": [
+                    "bzz-raw://a180b17bf84d642390f9e66946fd4af15de949a651fa731eb3b0aa898bee65b8",
+                    "dweb:/ipfs/QmQD7LGLNuYNFsftXrgoHaTjkEZEzaLQjHcLuUTVb9cqV4"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloConfig.sol": {
+                "keccak256": "0xffaad4ebd0fce64b9a3de39b8d9a029c29b5122ddc2383e9687a4140b53b8d6e",
+                "urls": [
+                    "bzz-raw://2f71ce654e270a6f1c885baa35f61c01cdc983e7149874600b5da7e48979d036",
+                    "dweb:/ipfs/QmcpnJ7D7prmvtywSniDotKwvnH6C25THXw3pbY7kHmrzS"
+                ],
+                "license": "MIT"
+            },
+            "silo-core/contracts/interfaces/ISiloFactory.sol": {
+                "keccak256": "0xaaef1f031dfe3bbea9cdc471c77e06a8bc61619c6c2f436da7fbe530b5827dca",
+                "urls": [
+                    "bzz-raw://206ad1673641e716376f655cd2be10b3f9969c76d3c76540114639098d758c67",
+                    "dweb:/ipfs/QmPi8fBvJ44LrZNn2aGKYfGVtyU8WaidxpSUzBt5zjQqHv"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 183
+}
