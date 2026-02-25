@@ -60,10 +60,10 @@ export default function Step7Hook() {
       updateSelectedHook(selectedHook)
 
       // Mark step as completed
-      markStepCompleted(7)
+      markStepCompleted(8)
 
       // Move to next step
-      router.push('/wizard?step=8')
+      router.push('/wizard?step=9')
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -73,14 +73,14 @@ export default function Step7Hook() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=6')
+    router.push('/wizard?step=7')
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 7: Hook Selection
+          Step 8: Hook Selection
         </h1>
         <p className="text-gray-300 text-lg">
           Choose a hook implementation for your market

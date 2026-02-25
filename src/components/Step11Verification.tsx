@@ -82,7 +82,7 @@ export default function Step11Verification() {
   const updateVerificationUrl = useCallback(
     (params: { txHash?: string; siloConfigAddress?: string }) => {
       const query = new URLSearchParams()
-      query.set('step', '11')
+      query.set('step', '12')
       if (params.txHash) {
         query.set('tx', params.txHash)
       } else if (params.siloConfigAddress) {
@@ -726,14 +726,14 @@ export default function Step11Verification() {
     }
   }
 
-  const goToDeployment = () => router.push('/wizard?step=10')
+  const goToDeployment = () => router.push('/wizard?step=11')
   const goToNewMarket = () => router.push('/')
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 11: Verification
+          Step 12: Verification
         </h1>
         <p className="text-gray-300 text-lg">
           View complete market configuration tree

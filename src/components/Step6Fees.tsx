@@ -331,19 +331,19 @@ export default function Step6Fees() {
     }
     
     updateFeesConfiguration(finalConfig)
-    markStepCompleted(6)
-    router.push('/wizard?step=7')
+    markStepCompleted(7)
+    router.push('/wizard?step=8')
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=5')
+    router.push('/wizard?step=6')
   }
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 6: Fees
+          Step 7: Fees
         </h1>
         <p className="text-gray-300 text-lg">
           Configure general fees and per-token fees (0-20%, step 0.01)

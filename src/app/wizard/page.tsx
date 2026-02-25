@@ -6,14 +6,15 @@ import { useWizard } from '@/contexts/WizardContext'
 import WizardLayout from '@/components/WizardLayout'
 import LandingPage from '@/components/LandingPage'
 import Step1Assets from '@/components/Step1Assets'
-import Step4IRMSelection from '@/components/Step4IRMSelection'
-import Step5BorrowSetup from '@/components/Step5BorrowSetup'
-import Step6Fees from '@/components/Step6Fees'
-import Step7Hook from '@/components/Step7Hook'
-import Step8HookOwner from '@/components/Step8HookOwner'
-import Step8JSONConfig from '@/components/Step8JSONConfig'
-import Step10Deployment from '@/components/Step10Deployment'
-import Step11Verification from '@/components/Step11Verification'
+import Step4ManageableOracle from '@/components/Step4ManageableOracle'
+import Step5IRMSelection from '@/components/Step4IRMSelection'
+import Step6BorrowSetup from '@/components/Step5BorrowSetup'
+import Step7Fees from '@/components/Step6Fees'
+import Step8Hook from '@/components/Step7Hook'
+import Step9HookOwner from '@/components/Step8HookOwner'
+import Step10JSONConfig from '@/components/Step8JSONConfig'
+import Step11Deployment from '@/components/Step10Deployment'
+import Step12Verification from '@/components/Step11Verification'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
@@ -27,7 +28,7 @@ function WizardPageContent() {
   
   // Update wizard state when URL changes
   useEffect(() => {
-    if (currentStep >= 0 && currentStep <= 11 && currentStep !== wizardData.currentStep) {
+    if (currentStep >= 0 && currentStep <= 12 && currentStep !== wizardData.currentStep) {
       console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
       updateStep(currentStep)
     }
@@ -47,21 +48,23 @@ function WizardPageContent() {
       case 3:
         return <Step3OracleConfiguration />
       case 4:
-        return <Step4IRMSelection />
+        return <Step4ManageableOracle />
       case 5:
-        return <Step5BorrowSetup />
+        return <Step5IRMSelection />
       case 6:
-        return <Step6Fees />
+        return <Step6BorrowSetup />
       case 7:
-        return <Step7Hook />
+        return <Step7Fees />
       case 8:
-        return <Step8HookOwner />
+        return <Step8Hook />
       case 9:
-        return <Step8JSONConfig />
+        return <Step9HookOwner />
       case 10:
-        return <Step10Deployment />
+        return <Step10JSONConfig />
       case 11:
-        return <Step11Verification />
+        return <Step11Deployment />
+      case 12:
+        return <Step12Verification />
       default:
         return <LandingPage />
     }

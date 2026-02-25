@@ -47,7 +47,7 @@ export default function LandingPage() {
       console.log('JSON parsing result:', success)
       if (success) {
         console.log('JSON loaded successfully - navigating to step 9')
-        router.push('/wizard?step=9') // Go directly to Step 9 (JSON Config)
+        router.push('/wizard?step=10') // Go directly to Step 10 (JSON Config)
       } else {
         setError('Failed to parse JSON configuration. Please check the format and ensure all required fields are present.')
       }

@@ -5,6 +5,7 @@ import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
+import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
@@ -18,6 +19,8 @@ const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).ab
 const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
 const ptLinearFactoryAbi = (ptLinearOracleFactoryAbi as FoundryArtifact).abi
 const ptLinearFactoryInterface = new ethers.Interface(ptLinearFactoryAbi)
+const manageableFactoryAbi = (manageableOracleFactoryAbi as FoundryArtifact).abi
+const manageableFactoryInterface = new ethers.Interface(manageableFactoryAbi)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -89,6 +92,7 @@ export interface DeployArgs {
 export interface OracleDeployments {
   chainlinkV3OracleFactory?: string
   ptLinearOracleFactory?: string
+  manageableOracleFactory?: string
 }
 
 /**
@@ -202,18 +206,69 @@ export function prepareDeployArgs(
     return getOracleTxData(scaler.address)
   }
 
+  /** Wrap oracle txData in ManageableOracle when manageableOracle is enabled. */
+  const wrapInManageableIfEnabled = (
+    txData: { deployed: string; factory: string; txInput: string }
+  ): { deployed: string; factory: string; txInput: string } => {
+    const manageable = wizardData.manageableOracle ?? true
+    if (!manageable || !oracleDeployments?.manageableOracleFactory) return txData
+
+    const owner =
+      wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress)
+        ? ethers.getAddress(wizardData.manageableOracleOwnerAddress)
+        : ethers.ZeroAddress
+    const timelock = wizardData.manageableOracleTimelock ?? 86400 // fallback for old cached data
+    const externalSalt = ethers.ZeroHash
+
+    // Pre-deployed oracle: use create(oracle, owner, timelock, salt)
+    if (txData.deployed !== ethers.ZeroAddress) {
+      const txInput = manageableFactoryInterface.encodeFunctionData('create', [
+        txData.deployed,
+        owner,
+        timelock,
+        externalSalt
+      ])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.manageableOracleFactory,
+        txInput
+      }
+    }
+
+    // Factory + txInput: use create(underlyingFactory, underlyingInitData, owner, timelock, salt)
+    if (txData.factory !== ethers.ZeroAddress && txData.txInput !== '0x') {
+      const txInput = manageableFactoryInterface.encodeFunctionData('create', [
+        txData.factory,
+        txData.txInput,
+        owner,
+        timelock,
+        externalSalt
+      ])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.manageableOracleFactory,
+        txInput
+      }
+    }
+
+    return txData
+  }
+
+  const solvency0Raw = getSolvencyOracleTxData(
+    wizardData.oracleConfiguration?.token0?.scalerOracle,
+    wizardData.oracleConfiguration?.token0?.chainlinkOracle,
+    wizardData.oracleConfiguration?.token0?.ptLinearOracle
+  )
+  const solvency1Raw = getSolvencyOracleTxData(
+    wizardData.oracleConfiguration?.token1?.scalerOracle,
+    wizardData.oracleConfiguration?.token1?.chainlinkOracle,
+    wizardData.oracleConfiguration?.token1?.ptLinearOracle
+  )
+
   const _oracles = {
-    solvencyOracle0: getSolvencyOracleTxData(
-      wizardData.oracleConfiguration?.token0?.scalerOracle,
-      wizardData.oracleConfiguration?.token0?.chainlinkOracle,
-      wizardData.oracleConfiguration?.token0?.ptLinearOracle
-    ),
+    solvencyOracle0: wrapInManageableIfEnabled(solvency0Raw),
     maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
-    solvencyOracle1: getSolvencyOracleTxData(
-      wizardData.oracleConfiguration?.token1?.scalerOracle,
-      wizardData.oracleConfiguration?.token1?.chainlinkOracle,
-      wizardData.oracleConfiguration?.token1?.ptLinearOracle
-    ),
+    solvencyOracle1: wrapInManageableIfEnabled(solvency1Raw),
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 

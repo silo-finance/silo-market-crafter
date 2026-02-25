@@ -149,7 +149,13 @@ export interface WizardData {
   lastDeployTxHash: string | null
   /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
   lastDeployArgsHash: string | null
-  /** On step 11: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
+  /** If true, wrap solvency oracles in ManageableOracle to allow future updates. Default true. */
+  manageableOracle: boolean
+  /** Timelock duration in seconds for ManageableOracle (when manageableOracle is true). Undefined = not yet selected. */
+  manageableOracleTimelock: number | undefined
+  /** Owner address for ManageableOracle (when manageableOracle is true). Separate from hook owner. */
+  manageableOracleOwnerAddress: string | null
+  /** On step 12: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
   verificationFromWizard?: boolean
 }
 
@@ -181,6 +187,9 @@ interface WizardContextType {
   parseJSONConfig: (jsonString: string) => Promise<boolean>
   setLastDeployTxHash: (txHash: string | null, argsHash?: string | null) => void
   setVerificationFromWizard: (value: boolean) => void
+  updateManageableOracle: (value: boolean) => void
+  updateManageableOracleTimelock: (seconds: number | undefined) => void
+  updateManageableOracleOwnerAddress: (address: string | null) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -214,6 +223,9 @@ const initialWizardData: WizardData = {
   hookOwnerAddress: null,
   lastDeployTxHash: null,
   lastDeployArgsHash: null,
+  manageableOracle: true,
+  manageableOracleTimelock: undefined,
+  manageableOracleOwnerAddress: null,
   verificationFromWizard: false
 }
 
@@ -240,7 +252,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (saved) {
       try {
         const parsedData = JSON.parse(saved, bigintReviver) as WizardData
-        setWizardData({ ...parsedData, networkInfo: null, verificationFromWizard: false })
+        setWizardData({
+          ...parsedData,
+          networkInfo: null,
+          verificationFromWizard: false,
+          manageableOracle: parsedData.manageableOracle ?? true,
+          manageableOracleTimelock: parsedData.manageableOracleTimelock,
+          manageableOracleOwnerAddress: parsedData.manageableOracleOwnerAddress ?? null
+        })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }
@@ -248,7 +267,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Save wizard data to localStorage whenever it changes (client-side only).
-  // Do not persist networkInfo or verificationFromWizard (UI-only for step 11).
+  // Do not persist networkInfo or verificationFromWizard (UI-only for step 12).
   useEffect(() => {
     if (isClient) {
       const toSave = { ...wizardData, networkInfo: null }
@@ -347,6 +366,18 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const updateHookOwnerAddress = (address: string | null) => {
     setWizardData(prev => ({ ...prev, hookOwnerAddress: address }))
+  }
+
+  const updateManageableOracle = (value: boolean) => {
+    setWizardData(prev => ({ ...prev, manageableOracle: value }))
+  }
+
+  const updateManageableOracleTimelock = (seconds: number | undefined) => {
+    setWizardData(prev => ({ ...prev, manageableOracleTimelock: seconds }))
+  }
+
+  const updateManageableOracleOwnerAddress = (address: string | null) => {
+    setWizardData(prev => ({ ...prev, manageableOracleOwnerAddress: address }))
   }
 
   const generateJSONConfig = () => {
@@ -644,6 +675,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateFeesConfiguration,
         updateSelectedHook,
         updateHookOwnerAddress,
+        updateManageableOracle,
+        updateManageableOracleTimelock,
+        updateManageableOracleOwnerAddress,
         generateJSONConfig,
         parseJSONConfig,
         setLastDeployTxHash,

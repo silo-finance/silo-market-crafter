@@ -186,6 +186,11 @@ body {
   color: #166534 !important;
 }
 
+/* Manageable oracle badge – white text on dark tag bg for readability */
+.light-market-theme .manageable-badge {
+  color: #ffffff !important;
+}
+
 .light-market-theme [class*="text-lime-300"] {
   color: #3f6212 !important;
 }

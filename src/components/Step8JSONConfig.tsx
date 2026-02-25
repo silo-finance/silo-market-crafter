@@ -42,20 +42,20 @@ export default function Step8JSONConfig() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=8')
+    router.push('/wizard?step=9')
   }
 
   const handleDeploy = () => {
-    markStepCompleted(9)
+    markStepCompleted(10)
     // Navigate to Step 10 (Deployment)
-    router.push('/wizard?step=10')
+    router.push('/wizard?step=11')
   }
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 9: JSON Configuration
+          Step 10: JSON Configuration
         </h1>
         <p className="text-gray-300 text-lg">
           Review and download your market configuration
