@@ -1,21 +1,42 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { bigintToDisplayNumber } from '@/utils/verification/normalization'
+import { resolveAddressToName } from '@/utils/symbolToAddress'
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
+  const [nameFromJson, setNameFromJson] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!address || !chainId) {
+      setNameFromJson(null)
+      return
+    }
+    let cancelled = false
+    resolveAddressToName(String(chainId), address).then((name) => {
+      if (!cancelled) setNameFromJson(name)
+    })
+    return () => { cancelled = true }
+  }, [address, chainId])
+
   return (
-    <div className="mt-1">
+    <div className="mt-1 flex items-center gap-2 flex-wrap">
       <AddressDisplayShort
         address={address}
         chainId={chainId}
         className="text-xs"
         showVersion={false}
       />
+      {nameFromJson != null && (
+        <>
+          <span className="text-xs text-lime-200/50">—</span>
+          <span className="text-xs text-lime-200/65">{nameFromJson}</span>
+        </>
+      )}
     </div>
   )
 }
