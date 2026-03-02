@@ -111,6 +111,8 @@ describe('deploy calldata from step-9 JSON', () => {
       ? { ...wizardData.token1, address: _siloInitData.token1 }
       : { address: _siloInitData.token1, symbol: '', decimals: 18, name: '' }
     wizardData.hookOwnerAddress = hookOwnerAddress
+    // IRM owner (Kink) = Oracle owner; fixture was created when both used same address
+    wizardData.manageableOracleOwnerAddress = hookOwnerAddress
 
     const siloCoreDeployments: SiloCoreDeployments = {
       'DynamicKinkModelFactory.sol': _siloInitData.interestRateModel0,

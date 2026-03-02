@@ -8,13 +8,14 @@ import LandingPage from '@/components/LandingPage'
 import Step1Assets from '@/components/Step1Assets'
 import Step4ManageableOracle from '@/components/Step4ManageableOracle'
 import Step5IRMSelection from '@/components/Step4IRMSelection'
-import Step6BorrowSetup from '@/components/Step5BorrowSetup'
-import Step7Fees from '@/components/Step6Fees'
-import Step8Hook from '@/components/Step7Hook'
-import Step9HookOwner from '@/components/Step8HookOwner'
-import Step10JSONConfig from '@/components/Step8JSONConfig'
-import Step11Deployment from '@/components/Step10Deployment'
-import Step12Verification from '@/components/Step11Verification'
+import Step6OracleIrmOwner from '@/components/Step6OracleIrmOwner'
+import Step7BorrowSetup from '@/components/Step5BorrowSetup'
+import Step8Fees from '@/components/Step6Fees'
+import Step9Hook from '@/components/Step7Hook'
+import Step10HookOwner from '@/components/Step8HookOwner'
+import Step11JSONConfig from '@/components/Step8JSONConfig'
+import Step12Deployment from '@/components/Step10Deployment'
+import Step13Verification from '@/components/Step11Verification'
 import Step2OracleTypes from '@/components/Step2OracleTypes'
 import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
@@ -28,7 +29,7 @@ function WizardPageContent() {
   
   // Update wizard state when URL changes
   useEffect(() => {
-    if (currentStep >= 0 && currentStep <= 12 && currentStep !== wizardData.currentStep) {
+    if (currentStep >= 0 && currentStep <= 13 && currentStep !== wizardData.currentStep) {
       console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
       updateStep(currentStep)
     }
@@ -52,19 +53,21 @@ function WizardPageContent() {
       case 5:
         return <Step5IRMSelection />
       case 6:
-        return <Step6BorrowSetup />
+        return <Step6OracleIrmOwner />
       case 7:
-        return <Step7Fees />
+        return <Step7BorrowSetup />
       case 8:
-        return <Step8Hook />
+        return <Step8Fees />
       case 9:
-        return <Step9HookOwner />
+        return <Step9Hook />
       case 10:
-        return <Step10JSONConfig />
+        return <Step10HookOwner />
       case 11:
-        return <Step11Deployment />
+        return <Step11JSONConfig />
       case 12:
-        return <Step12Verification />
+        return <Step12Deployment />
+      case 13:
+        return <Step13Verification />
       default:
         return <LandingPage />
     }

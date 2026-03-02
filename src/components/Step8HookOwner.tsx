@@ -204,8 +204,8 @@ export default function Step8HookOwner() {
 
     try {
       updateHookOwnerAddress(resolvedOwnerAddress!)
-      markStepCompleted(9)
-      router.push('/wizard?step=10')
+      markStepCompleted(10)
+      router.push('/wizard?step=11')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -214,14 +214,14 @@ export default function Step8HookOwner() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=8')
+    router.push('/wizard?step=9')
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 9: Hook Owner Selection
+          Step 10: Hook Owner Selection
         </h1>
         <p className="text-gray-300 text-lg">
           Enter the address of the hook owner. This applies to all hook types.

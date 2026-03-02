@@ -8,14 +8,13 @@ import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { ethers } from 'ethers'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
-import OwnerSelectionBlock from '@/components/OwnerSelectionBlock'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 
 const MANAGEABLE_ORACLE_FACTORY_NAME = 'ManageableOracleFactory'
 
 export default function Step4ManageableOracle() {
   const router = useRouter()
-  const { wizardData, updateManageableOracle, updateManageableOracleTimelock, updateManageableOracleOwnerAddress, markStepCompleted } = useWizard()
+  const { wizardData, updateManageableOracle, updateManageableOracleTimelock, markStepCompleted } = useWizard()
 
   const [manageableEnabled, setManageableEnabled] = useState(
     wizardData.manageableOracle ?? true
@@ -221,7 +220,6 @@ export default function Step4ManageableOracle() {
     if (manageableEnabled) {
       if (timelockDayOptions.length === 0) errors.push('Timelock options not loaded yet – please wait')
       else if (selectedTimelockDays === undefined) errors.push('Please select a timelock duration (days)')
-      if (!hasValidOwner) errors.push('Please select a Manageable Oracle owner')
     }
     if (errors.length > 0) {
       setValidationErrors(errors)
@@ -235,8 +233,6 @@ export default function Step4ManageableOracle() {
     markStepCompleted(4)
     router.push('/wizard?step=5')
   }
-
-  const hasValidOwner = !!(wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress) && wizardData.manageableOracleOwnerAddress !== ethers.ZeroAddress)
 
   const goToPreviousStep = () => {
     router.push('/wizard?step=3')
@@ -266,7 +262,6 @@ export default function Step4ManageableOracle() {
                   setSelectedTimelockDays(undefined)
                   setValidationErrors([])
                   updateManageableOracleTimelock(undefined)
-                  updateManageableOracleOwnerAddress(null)
                 }
               }}
               className="mt-1 w-5 h-5 rounded border-gray-600 bg-gray-800 text-lime-600 focus:ring-lime-500 focus:ring-offset-gray-900"
@@ -283,22 +278,6 @@ export default function Step4ManageableOracle() {
             </div>
           </label>
         </div>
-
-        {/* Manageable Oracle Owner selection */}
-        {manageableEnabled && (
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-white mb-3">Manageable Oracle Owner</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              The owner of the ManageableOracle contract. Only this address can propose oracle updates (subject to the timelock).
-            </p>
-            <OwnerSelectionBlock
-              value={wizardData.manageableOracleOwnerAddress}
-              onChange={updateManageableOracleOwnerAddress}
-              chainId={wizardData.networkInfo?.chainId}
-              networkName={wizardData.networkInfo?.networkName}
-            />
-          </div>
-        )}
 
         {/* Manageable Oracle Factory info */}
         {manageableEnabled && manageableFactory?.address && wizardData.networkInfo?.chainId && (

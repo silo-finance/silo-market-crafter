@@ -36,7 +36,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     }
   }
 
-  const isStep12Standalone = wizardData.currentStep === 12 && !wizardData.verificationFromWizard
+  const isStep13Standalone = wizardData.currentStep === 13 && !wizardData.verificationFromWizard
 
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
@@ -47,7 +47,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     )
   }
 
-  const showSummarySidebar = !isStep12Standalone && isSummaryOpen
+  const showSummarySidebar = !isStep13Standalone && isSummaryOpen
 
   return (
     <div className="light-market-theme min-h-screen text-emerald-950">
@@ -105,13 +105,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   { step: 3, title: 'Oracle Config' },
                   { step: 4, title: 'Manageable Oracle' },
                   { step: 5, title: 'IRM Selection' },
-                  { step: 6, title: 'Borrow Setup' },
-                  { step: 7, title: 'Fees' },
-                  { step: 8, title: 'Hook' },
-                  { step: 9, title: 'Hook Owner' },
-                  { step: 10, title: 'JSON Config' },
-                  { step: 11, title: 'Deployment' },
-                  { step: 12, title: 'Verification' }
+                  { step: 6, title: 'Oracle/IRM Owner' },
+                  { step: 7, title: 'Borrow Setup' },
+                  { step: 8, title: 'Fees' },
+                  { step: 9, title: 'Hook' },
+                  { step: 10, title: 'Hook Owner' },
+                  { step: 11, title: 'JSON Config' },
+                  { step: 12, title: 'Deployment' },
+                  { step: 13, title: 'Verification' }
                 ].map((item) => {
                   const isCompleted = wizardData.currentStep > item.step
                   const isCurrent = wizardData.currentStep === item.step
@@ -188,20 +189,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 3: Oracle Configuration – not shown on step 12 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 12 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
+              {/* Step 3: Oracle Configuration – not shown on step 13 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 13 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
                   <h3 className="text-sm font-medium text-lime-200/80 mb-3">Oracle Configuration</h3>
                   {wizardData.manageableOracle && wizardData.manageableOracleTimelock != null && wizardData.manageableOracleTimelock > 0 && (
                     <p className="text-xs text-lime-200/65 mb-2">
                       Timelock: {Math.round(wizardData.manageableOracleTimelock / 86400)} {Math.round(wizardData.manageableOracleTimelock / 86400) === 1 ? 'day' : 'days'} ({wizardData.manageableOracleTimelock.toLocaleString()} seconds)
                     </p>
-                  )}
-                  {wizardData.manageableOracle && wizardData.manageableOracleOwnerAddress && (
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg mb-2">
-                      <div className="text-sm font-medium text-lime-50">Manageable Oracle Owner</div>
-                      <OwnerAddressRow address={wizardData.manageableOracleOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
-                    </div>
                   )}
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
@@ -369,11 +364,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     )}
                   </div>
                   <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-lime-50">IRM Owner</div>
-                    {wizardData.irmModelType === 'kink' && wizardData.hookOwnerAddress ? (
-                      <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
+                    <div className="text-sm font-medium text-lime-50">Oracle/IRM Owner</div>
+                    {wizardData.manageableOracleOwnerAddress ? (
+                      <OwnerAddressRow address={wizardData.manageableOracleOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-lime-300/45 mt-1">not available</div>
+                      <div className="text-xs text-lime-300/45 mt-1">—</div>
                     )}
                   </div>
                 </div>

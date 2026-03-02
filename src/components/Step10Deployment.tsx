@@ -457,9 +457,10 @@ export default function Step10Deployment() {
         validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
       }
 
-      // Validate Manageable Oracle owner when manageable is enabled
-      if (wizardData.manageableOracle && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
-        validationWarnings.push('Manageable Oracle owner is not set. Please complete Step 4 (Manageable Oracle) and select an owner.')
+      // Validate Oracle & IRM owner when manageable Oracle or Kink IRM is used
+      const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+      if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
+        validationWarnings.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
       }
 
       // Update warnings list - replace validation warnings but keep others
@@ -469,7 +470,7 @@ export default function Step10Deployment() {
           !w.includes('Hook implementation address') &&
           !w.includes('address not found') &&
           !w.includes('Hook owner address') &&
-          !w.includes('Manageable Oracle owner') &&
+          !w.includes('Oracle & IRM owner') &&
           !w.includes('SiloDeployer address') &&
           !w.includes('deployment data')
         )
@@ -507,8 +508,9 @@ export default function Step10Deployment() {
       validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
     }
 
-    if (wizardData.manageableOracle && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
-      validationErrors.push('Manageable Oracle owner is not set. Please complete Step 4 (Manageable Oracle) and select an owner.')
+    const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+    if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
+      validationErrors.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
     }
     
     if (deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress) {
@@ -696,7 +698,7 @@ export default function Step10Deployment() {
       // Wait for transaction confirmation
       await tx.wait()
 
-      markStepCompleted(11)
+      markStepCompleted(12)
       const argsHash =
         deployArgs && deployerAddress
           ? ethers.keccak256(generateDeployCalldata(deployerAddress, deployArgs) as `0x${string}`)
@@ -714,7 +716,7 @@ export default function Step10Deployment() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=10')
+    router.push('/wizard?step=11')
   }
 
   const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
@@ -731,7 +733,7 @@ export default function Step10Deployment() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 11: Market Deployment
+          Step 12: Market Deployment
         </h1>
         <p className="text-gray-300 text-lg">
           Review deployment arguments and deploy your market
@@ -789,7 +791,7 @@ export default function Step10Deployment() {
               !deployArgs ||
               !wizardData.hookOwnerAddress ||
               !ethers.isAddress(wizardData.hookOwnerAddress) ||
-              (wizardData.manageableOracle && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
+              ((wizardData.manageableOracle || wizardData.irmModelType === 'kink') && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
               (deployArgs && (
                 deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
                 deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
@@ -858,7 +860,7 @@ export default function Step10Deployment() {
           </div>
           <button
             type="button"
-            onClick={() => router.push(`/wizard?step=12&tx=${txHash}`)}
+            onClick={() => router.push(`/wizard?step=13&tx=${txHash}`)}
             className="bg-lime-800 hover:bg-lime-700 text-white cta-strong-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification

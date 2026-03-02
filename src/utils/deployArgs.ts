@@ -308,9 +308,10 @@ export function prepareDeployArgs(
     const timelock = Number(c.timelock) ?? 0
     const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
     const immutableArgsTuple = [timelock, rcompCap]
+    // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
     const initialOwner =
-      wizardData.hookOwnerAddress && wizardData.hookOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.hookOwnerAddress)
-        ? ethers.getAddress(wizardData.hookOwnerAddress)
+      wizardData.manageableOracleOwnerAddress && wizardData.manageableOracleOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress)
+        ? ethers.getAddress(wizardData.manageableOracleOwnerAddress)
         : ethers.ZeroAddress
     const abiCoder = ethers.AbiCoder.defaultAbiCoder()
     // Pass 3 separate types so AbiCoder expects 3 values (not 1 type string and 3 values)

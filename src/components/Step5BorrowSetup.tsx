@@ -360,19 +360,19 @@ export default function Step5BorrowSetup() {
 
     setAttemptedSubmit(false)
     updateBorrowConfiguration(borrowConfig)
-    markStepCompleted(6)
-    router.push('/wizard?step=7')
+    markStepCompleted(7)
+    router.push('/wizard?step=8')
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=5')
+    router.push('/wizard?step=6')
   }
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 6: Borrow Setup
+          Step 7: Borrow Setup
         </h1>
         <p className="text-gray-300 text-lg">
           Configure borrowing parameters for each token
