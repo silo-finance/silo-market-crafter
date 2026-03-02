@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - add support for manageable oracle
 
+### Updated
+- better validation
+
+### Removed
+- remove connected wallet as owner
+
 ## 0.8.0 - 2026-02-19
 ### Updated
 - general UI improvements

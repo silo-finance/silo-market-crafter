@@ -709,47 +709,40 @@ export default function Step3OracleConfiguration() {
       setSelectedScalers(prev => {
         const updated = { ...prev }
         
-        // Load from context - always check if saved config matches available scalers
         const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
         const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
         
-        // Update token0: ALWAYS prioritize saved config from context if it matches available scalers
-        if (savedScaler0 && token0Oracles.length > 0) {
-          const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
-          if (matchedScaler0) {
-            // Always use matched scaler from available list (has latest validation)
-            // Override any existing selection if context has a match
-            updated.token0 = matchedScaler0
-          } else if (savedScaler0.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token0 = savedScaler0
+        // Token0: when we have pre-deployed scalers, customCreate from "0 available" state is invalid – clear it
+        if (token0Oracles.length > 0) {
+          if (prev.token0?.customCreate) {
+            updated.token0 = null
           }
-        }
-        // If no saved config, update existing selection with new validation results
-        else if (prev.token0 && token0Oracles.length > 0) {
-          const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === prev.token0?.address.toLowerCase())
-          if (updatedOracle) {
-            updated.token0 = updatedOracle
+          // Restore from context when saved config matches an available scaler (e.g. user returned to step)
+          if (savedScaler0 && !savedScaler0.customCreate) {
+            const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
+            if (matchedScaler0) updated.token0 = matchedScaler0
+          } else if (savedScaler0?.customCreate) {
+            // customCreate only valid when no pre-deployed scalers
+          } else if (prev.token0 && !prev.token0.customCreate) {
+            const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === prev.token0?.address.toLowerCase())
+            if (updatedOracle) updated.token0 = updatedOracle
           }
         }
         
-        // Update token1: ALWAYS prioritize saved config from context if it matches available scalers
-        if (savedScaler1 && token1Oracles.length > 0) {
-          const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
-          if (matchedScaler1) {
-            // Always use matched scaler from available list (has latest validation)
-            // Override any existing selection if context has a match
-            updated.token1 = matchedScaler1
-          } else if (savedScaler1.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token1 = savedScaler1
+        // Token1: when we have pre-deployed scalers, customCreate from "0 available" state is invalid – clear it
+        if (token1Oracles.length > 0) {
+          if (prev.token1?.customCreate) {
+            updated.token1 = null
           }
-        }
-        // If no saved config, update existing selection with new validation results
-        else if (prev.token1 && token1Oracles.length > 0) {
-          const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === prev.token1?.address.toLowerCase())
-          if (updatedOracle) {
-            updated.token1 = updatedOracle
+          // Restore from context when saved config matches an available scaler (e.g. user returned to step)
+          if (savedScaler1 && !savedScaler1.customCreate) {
+            const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
+            if (matchedScaler1) updated.token1 = matchedScaler1
+          } else if (savedScaler1?.customCreate) {
+            // customCreate only valid when no pre-deployed scalers
+          } else if (prev.token1 && !prev.token1.customCreate) {
+            const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === prev.token1?.address.toLowerCase())
+            if (updatedOracle) updated.token1 = updatedOracle
           }
         }
         
@@ -775,32 +768,28 @@ export default function Step3OracleConfiguration() {
         const updated = { ...prev }
         let changed = false
         
-        // Match token0 scaler from saved config with available scalers
-        if (savedScaler0 && availableScalers.token0.length > 0) {
+        // Token0: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+        if (savedScaler0 && !savedScaler0.customCreate && availableScalers.token0.length > 0) {
           const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
           if (matchedScaler0) {
-            // ALWAYS set if we have a match from context - no conditions
             updated.token0 = matchedScaler0
             changed = true
-          } else if (savedScaler0.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token0 = savedScaler0
-            changed = true
           }
+        } else if (savedScaler0?.customCreate && availableScalers.token0.length === 0) {
+          updated.token0 = savedScaler0
+          changed = true
         }
         
-        // Match token1 scaler from saved config with available scalers
-        if (savedScaler1 && availableScalers.token1.length > 0) {
+        // Token1: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+        if (savedScaler1 && !savedScaler1.customCreate && availableScalers.token1.length > 0) {
           const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
           if (matchedScaler1) {
-            // ALWAYS set if we have a match from context - no conditions
             updated.token1 = matchedScaler1
             changed = true
-          } else if (savedScaler1.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token1 = savedScaler1
-            changed = true
           }
+        } else if (savedScaler1?.customCreate && availableScalers.token1.length === 0) {
+          updated.token1 = savedScaler1
+          changed = true
         }
         
         return changed ? updated : prev
@@ -810,63 +799,65 @@ export default function Step3OracleConfiguration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errors: string[] = []
+    if (!wizardData.oracleType0 || !wizardData.oracleType1) {
+      errors.push('Oracle types not selected. Please go back to Step 2.')
+    }
+    if (wizardData.oracleType0?.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) {
+      errors.push('Please select or configure a scaler oracle for Token 0')
+    }
+    if (wizardData.oracleType1?.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
+      errors.push('Please select or configure a scaler oracle for Token 1')
+    }
+    if (wizardData.oracleType0?.type === 'chainlink') {
+      if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
+        errors.push('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
+      } else if ((!chainlink0.normalizationDivider && !chainlink0.normalizationMultiplier) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0')) {
+        errors.push('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
+      }
+    }
+    if (wizardData.oracleType1?.type === 'chainlink') {
+      if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
+        errors.push('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
+      } else if ((!chainlink1.normalizationDivider && !chainlink1.normalizationMultiplier) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')) {
+        errors.push('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
+      }
+    }
+    if (wizardData.oracleType0?.type === 'ptLinear') {
+      const max0 = Number(ptLinear0.maxYieldPercent)
+      if (Number.isNaN(max0) || max0 <= 0) {
+        errors.push('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
+      }
+      if (!ptLinear0.useSecondTokenAsQuote) {
+        const addr0 = ptLinear0.hardcodedQuoteTokenAddress?.trim()
+        if (!addr0 || !ethers.isAddress(addr0)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 0 PT-Linear oracle')
+        }
+      }
+    }
+    if (wizardData.oracleType1?.type === 'ptLinear') {
+      const max1 = Number(ptLinear1.maxYieldPercent)
+      if (Number.isNaN(max1) || max1 <= 0) {
+        errors.push('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
+      }
+      if (!ptLinear1.useSecondTokenAsQuote) {
+        const addr1 = ptLinear1.hardcodedQuoteTokenAddress?.trim()
+        if (!addr1 || !ethers.isAddress(addr1)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 1 PT-Linear oracle')
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
+    }
+
     setError('')
     setLoading(true)
 
     try {
-      if (!wizardData.oracleType0 || !wizardData.oracleType1) {
-        throw new Error('Oracle types not selected. Please go back to Step 2.')
-      }
-
-      // Validate selections (pre-deployed or custom create)
-      if (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) {
-        throw new Error('Please select or configure a scaler oracle for Token 0')
-      }
-      if (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
-        throw new Error('Please select or configure a scaler oracle for Token 1')
-      }
-      if (wizardData.oracleType0.type === 'chainlink') {
-        if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
-          throw new Error('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
-        }
-        if (!chainlink0.normalizationDivider || !chainlink0.normalizationMultiplier) {
-          throw new Error('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
-        }
-      }
-      if (wizardData.oracleType1.type === 'chainlink') {
-        if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
-          throw new Error('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
-        }
-        if (!chainlink1.normalizationDivider || !chainlink1.normalizationMultiplier) {
-          throw new Error('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
-        }
-      }
-
-      if (wizardData.oracleType0.type === 'ptLinear') {
-        const max0 = Number(ptLinear0.maxYieldPercent)
-        if (Number.isNaN(max0) || max0 <= 0) {
-          throw new Error('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
-        }
-        if (!ptLinear0.useSecondTokenAsQuote) {
-          const addr0 = ptLinear0.hardcodedQuoteTokenAddress?.trim()
-          if (!addr0 || !ethers.isAddress(addr0)) {
-            throw new Error('Please enter or resolve a valid quote token address for Token 0 PT-Linear oracle')
-          }
-        }
-      }
-      if (wizardData.oracleType1.type === 'ptLinear') {
-        const max1 = Number(ptLinear1.maxYieldPercent)
-        if (Number.isNaN(max1) || max1 <= 0) {
-          throw new Error('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
-        }
-        if (!ptLinear1.useSecondTokenAsQuote) {
-          const addr1 = ptLinear1.hardcodedQuoteTokenAddress?.trim()
-          if (!addr1 || !ethers.isAddress(addr1)) {
-            throw new Error('Please enter or resolve a valid quote token address for Token 1 PT-Linear oracle')
-          }
-        }
-      }
-
       // Resolve quote address for PT-Linear when using second token
       const pt0QuoteAddress =
         wizardData.oracleType0.type === 'ptLinear'
@@ -1572,9 +1563,12 @@ export default function Step3OracleConfiguration() {
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 text-sm">
-              ✗ {error}
-            </div>
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {error.split('\n').map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -1592,13 +1586,7 @@ export default function Step3OracleConfiguration() {
           </button>
           <button
             type="submit"
-            disabled={loading ||
-              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) ||
-              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) ||
-              (wizardData.oracleType0.type === 'chainlink' && (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0'))) ||
-              (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0'))) ||
-              (wizardData.oracleType0.type === 'ptLinear' && (Number(ptLinear0.maxYieldPercent) <= 0 || (!ptLinear0.useSecondTokenAsQuote && (!ptLinear0.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear0.hardcodedQuoteTokenAddress))))) ||
-              (wizardData.oracleType1.type === 'ptLinear' && (Number(ptLinear1.maxYieldPercent) <= 0 || (!ptLinear1.useSecondTokenAsQuote && (!ptLinear1.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear1.hardcodedQuoteTokenAddress)))))}
+            disabled={loading}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

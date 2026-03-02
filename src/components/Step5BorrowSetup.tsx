@@ -127,6 +127,7 @@ export default function Step5BorrowSetup() {
     token0: {},
     token1: {}
   })
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
   // Local state for display values (strings) during input
   const [displayValues, setDisplayValues] = useState<{
@@ -324,6 +325,7 @@ export default function Step5BorrowSetup() {
       token0: {},
       token1: {}
     }))
+    setAttemptedSubmit(false)
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -347,6 +349,7 @@ export default function Step5BorrowSetup() {
 
     const hasErrors = Object.values(token0Errors).some(Boolean) || Object.values(token1Errors).some(Boolean)
     if (hasErrors) {
+      setAttemptedSubmit(true)
       setValidationErrors(prev => ({
         ...prev,
         token0: { ...prev.token0, ...token0Errors },
@@ -355,6 +358,7 @@ export default function Step5BorrowSetup() {
       return
     }
 
+    setAttemptedSubmit(false)
     updateBorrowConfiguration(borrowConfig)
     markStepCompleted(6)
     router.push('/wizard?step=7')
@@ -376,6 +380,22 @@ export default function Step5BorrowSetup() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {attemptedSubmit && (() => {
+          const errs = [
+            ...Object.values(validationErrors.token0).filter(Boolean),
+            ...Object.values(validationErrors.token1).filter(Boolean)
+          ].filter((v, i, a) => a.indexOf(v) === i) as string[]
+          return errs.length > 0 ? (
+            <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+              <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+              <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+                {errs.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        })()}
         {/* Borrow Configuration - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Token 0 Configuration */}

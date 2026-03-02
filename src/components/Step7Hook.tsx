@@ -49,15 +49,19 @@ export default function Step7Hook() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: string[] = []
+    if (!selectedHook) errors.push('Please select a hook implementation')
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
+    }
+
     setError('')
     setLoading(true)
 
     try {
-      if (!selectedHook) {
-        throw new Error('Please select a hook implementation')
-      }
-
-      updateSelectedHook(selectedHook)
+      updateSelectedHook(selectedHook!)
 
       // Mark step as completed
       markStepCompleted(8)
@@ -136,9 +140,12 @@ export default function Step7Hook() {
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 text-sm">
-              ✗ {error}
-            </div>
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {error.split('\n').map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -155,7 +162,7 @@ export default function Step7Hook() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedHook}
+            disabled={loading}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

@@ -29,6 +29,7 @@ export default function Step4ManageableOracle() {
   const [timelockRange, setTimelockRange] = useState<{ minDays: number; maxDays: number } | null>(null)
   const [selectedTimelockDays, setSelectedTimelockDays] = useState<number | undefined>(undefined)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   const SECONDS_PER_DAY = 86400
 
@@ -216,7 +217,17 @@ export default function Step4ManageableOracle() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (manageableEnabled && (timelockDayOptions.length === 0 || selectedTimelockDays === undefined || !hasValidOwner)) return
+    const errors: string[] = []
+    if (manageableEnabled) {
+      if (timelockDayOptions.length === 0) errors.push('Timelock options not loaded yet – please wait')
+      else if (selectedTimelockDays === undefined) errors.push('Please select a timelock duration (days)')
+      if (!hasValidOwner) errors.push('Please select a Manageable Oracle owner')
+    }
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+    setValidationErrors([])
     updateManageableOracle(manageableEnabled)
     if (manageableEnabled && selectedTimelockDays !== undefined) {
       updateManageableOracleTimelock(selectedTimelockDays * SECONDS_PER_DAY)
@@ -226,7 +237,6 @@ export default function Step4ManageableOracle() {
   }
 
   const hasValidOwner = !!(wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress) && wizardData.manageableOracleOwnerAddress !== ethers.ZeroAddress)
-  const canProceed = !manageableEnabled || (timelockDayOptions.length > 0 && selectedTimelockDays !== undefined && hasValidOwner)
 
   const goToPreviousStep = () => {
     router.push('/wizard?step=3')
@@ -254,6 +264,7 @@ export default function Step4ManageableOracle() {
                 setManageableEnabled(checked)
                 if (!checked) {
                   setSelectedTimelockDays(undefined)
+                  setValidationErrors([])
                   updateManageableOracleTimelock(undefined)
                   updateManageableOracleOwnerAddress(null)
                 }
@@ -364,6 +375,17 @@ export default function Step4ManageableOracle() {
           </div>
         )}
 
+        {validationErrors.length > 0 && (
+          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {validationErrors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {manageableEnabled && !manageableFactory?.address && wizardData.networkInfo?.chainId && (
           <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 mb-6">
             <p className="text-sm text-amber-200">
@@ -385,7 +407,6 @@ export default function Step4ManageableOracle() {
           </button>
           <button
             type="submit"
-            disabled={!canProceed}
             className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
           >
             IRM Selection

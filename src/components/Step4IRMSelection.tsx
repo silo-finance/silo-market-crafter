@@ -318,16 +318,17 @@ export default function Step4IRMSelection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: string[] = []
     if (activeTab === 'kink') {
-      if (!kinkToken0Config || !kinkToken0Immutable || !kinkToken1Config || !kinkToken1Immutable) {
-        setError('Please select both Config and Immutable for Token 0 and Token 1')
-        return
-      }
+      if (!kinkToken0Config || !kinkToken0Immutable) errors.push('Please select Config and Immutable for Token 0')
+      if (!kinkToken1Config || !kinkToken1Immutable) errors.push('Please select Config and Immutable for Token 1')
     } else {
-      if (!selectedIRM0 || !selectedIRM1) {
-        setError('Please select Interest Rate Models for both tokens')
-        return
-      }
+      if (!selectedIRM0) errors.push('Please select an Interest Rate Model for Token 0')
+      if (!selectedIRM1) errors.push('Please select an Interest Rate Model for Token 1')
+    }
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
     }
     setError('')
     markStepCompleted(5)
@@ -342,10 +343,6 @@ export default function Step4IRMSelection() {
     if (typeof value === 'object') return JSON.stringify(value, null, 2)
     return String(value)
   }
-
-  const canProceedKink = kinkToken0Config && kinkToken0Immutable && kinkToken1Config && kinkToken1Immutable
-  const canProceedIRM = selectedIRM0 && selectedIRM1
-  const canProceed = activeTab === 'kink' ? canProceedKink : canProceedIRM
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -383,7 +380,12 @@ export default function Step4IRMSelection() {
 
       {error && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-          <div className="text-red-400 text-sm">✗ {error}</div>
+          <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+          <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+            {error.split('\n').map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -727,7 +729,6 @@ export default function Step4IRMSelection() {
           </button>
           <button
             type="submit"
-            disabled={!canProceed}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Borrow Setup</span>

@@ -237,27 +237,28 @@ export default function Step1Assets() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    const errors: string[] = []
+
+    const normalizedToken0 = token0ResolvedAddress ?? normalizeAddress(token0Address)
+    const normalizedToken1 = token1ResolvedAddress ?? normalizeAddress(token1Address)
+
+    if (!normalizedToken0) errors.push('Invalid or missing Token 0 address')
+    if (!normalizedToken1) errors.push('Invalid or missing Token 1 address')
+    if (normalizedToken0 && normalizedToken1 && normalizedToken0.toLowerCase() === normalizedToken1.toLowerCase()) {
+      errors.push('Token addresses must be different')
+    }
+    if (token0Error) errors.push(`Token 0: ${token0Error}`)
+    if (token1Error) errors.push(`Token 1: ${token1Error}`)
+    if (!token0Metadata) errors.push('Token 0 metadata not loaded yet – wait for resolution')
+    if (!token1Metadata) errors.push('Token 1 metadata not loaded yet – wait for resolution')
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
+    }
+
     setLoading(true)
-
     try {
-      // Use resolved address (from hex input or symbol lookup); fallback to normalizing raw input
-      const normalizedToken0 = token0ResolvedAddress ?? normalizeAddress(token0Address)
-      const normalizedToken1 = token1ResolvedAddress ?? normalizeAddress(token1Address)
-
-      if (!normalizedToken0) {
-        throw new Error('Invalid Token 0 address')
-      }
-      if (!normalizedToken1) {
-        throw new Error('Invalid Token 1 address')
-      }
-      if (normalizedToken0.toLowerCase() === normalizedToken1.toLowerCase()) {
-        throw new Error('Token addresses must be different')
-      }
-
-      // Ensure we have metadata for both tokens
-      if (!token0Metadata || !token1Metadata) {
-        throw new Error('Please wait for token metadata to load')
-      }
 
       // Get network info
       const chainId = await window.ethereum!.request({ method: 'eth_chainId' }) as string
@@ -298,6 +299,7 @@ export default function Step1Assets() {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -399,9 +401,12 @@ export default function Step1Assets() {
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 text-sm">
-              ✗ {error}
-            </div>
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {error.split('\n').map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -418,7 +423,7 @@ export default function Step1Assets() {
            </button>
           <button
             type="submit"
-            disabled={loading || !token0Metadata || !token1Metadata || !!token0Error || !!token1Error}
+            disabled={loading}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

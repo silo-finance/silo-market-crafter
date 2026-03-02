@@ -364,9 +364,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, selectedHook: hook }))
   }
 
-  const updateHookOwnerAddress = (address: string | null) => {
+  const updateHookOwnerAddress = useCallback((address: string | null) => {
     setWizardData(prev => ({ ...prev, hookOwnerAddress: address }))
-  }
+  }, [])
 
   const updateManageableOracle = (value: boolean) => {
     setWizardData(prev => ({ ...prev, manageableOracle: value }))
@@ -376,9 +376,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, manageableOracleTimelock: seconds }))
   }
 
-  const updateManageableOracleOwnerAddress = (address: string | null) => {
+  const updateManageableOracleOwnerAddress = useCallback((address: string | null) => {
     setWizardData(prev => ({ ...prev, manageableOracleOwnerAddress: address }))
-  }
+  }, [])
 
   const generateJSONConfig = () => {
     const hookImplementation = wizardData.selectedHook 
