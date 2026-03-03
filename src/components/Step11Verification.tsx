@@ -649,6 +649,7 @@ export default function Step11Verification() {
     wizardData.borrowConfiguration,
     wizardData.feesConfiguration,
     wizardData.hookOwnerAddress,
+    wizardData.manageableOracleOwnerAddress,
     wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
     wizardData.token1?.address,
