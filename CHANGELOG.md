@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - add support for manageable oracle
+- add support for Silo V3
 
 ### Updated
 - better validation
