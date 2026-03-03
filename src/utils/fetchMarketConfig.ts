@@ -147,8 +147,23 @@ export async function fetchMarketConfig(
     // SILO_ID might not exist in older versions
   }
 
-  // Get silos
-  const [silo0Address, silo1Address] = await siloConfigContract.getSilos()
+  // Get silos – if this reverts, the address is likely not a Silo Config or contract state is invalid
+  let silo0Address: string
+  let silo1Address: string
+  try {
+    const silos = await siloConfigContract.getSilos()
+    silo0Address = silos[0]
+    silo1Address = silos[1]
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('CALL_EXCEPTION') || msg.includes('revert') || msg.includes('require(false)')) {
+      throw new Error(
+        'This address does not appear to be a valid Silo Config contract, or the contract reverted. ' +
+          'Check that the address is a Silo Config on this network and that the contract is initialized.'
+      )
+    }
+    throw err
+  }
 
   // Get configs for both silos
   const [config0, config1] = await Promise.all([

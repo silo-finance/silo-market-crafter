@@ -158,7 +158,7 @@ export default function Header() {
           {/* Navigation Menu */}
           <nav className="hidden md:flex space-x-8">
             <Link 
-              href="/wizard?step=13"
+              href="/wizard?step=verification"
               className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Verify Market
