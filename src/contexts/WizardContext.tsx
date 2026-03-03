@@ -41,6 +41,12 @@ export interface OracleType {
 /** Chainlink V3 oracle deployment config (one of normalizationDivider or normalizationMultiplier is non-zero). */
 export interface ChainlinkOracleConfig {
   baseToken: 'token0' | 'token1'
+  /** If true (default), use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display and normalization). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
   primaryAggregator: string
   secondaryAggregator: string
   normalizationDivider: string
@@ -414,6 +420,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         ? {
             chainlinkOracle0: {
               baseToken: wizardData.oracleConfiguration.token0.chainlinkOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.chainlinkOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.chainlinkOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.chainlinkOracle.customQuoteTokenMetadata,
               primaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.primaryAggregator,
               secondaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.secondaryAggregator || '',
               normalizationDivider: wizardData.oracleConfiguration.token0.chainlinkOracle.normalizationDivider,
@@ -453,6 +462,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         ? {
             chainlinkOracle1: {
               baseToken: wizardData.oracleConfiguration.token1.chainlinkOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.chainlinkOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.chainlinkOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.chainlinkOracle.customQuoteTokenMetadata,
               primaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.primaryAggregator,
               secondaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.secondaryAggregator || '',
               normalizationDivider: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationDivider,
@@ -499,6 +511,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            useOtherTokenAsQuote: config.chainlinkOracle0.useOtherTokenAsQuote !== false,
+            customQuoteTokenAddress: String(config.chainlinkOracle0.customQuoteTokenAddress ?? ''),
+            customQuoteTokenMetadata: config.chainlinkOracle0.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle0.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle0.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
             primaryAggregator: String(config.chainlinkOracle0.primaryAggregator ?? ''),
             secondaryAggregator: String(config.chainlinkOracle0.secondaryAggregator ?? ''),
             normalizationDivider: String(config.chainlinkOracle0.normalizationDivider ?? '0'),
@@ -509,6 +524,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       const chainlink1 = config.chainlinkOracle1 && oracleType1 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            useOtherTokenAsQuote: config.chainlinkOracle1.useOtherTokenAsQuote !== false,
+            customQuoteTokenAddress: String(config.chainlinkOracle1.customQuoteTokenAddress ?? ''),
+            customQuoteTokenMetadata: config.chainlinkOracle1.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle1.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle1.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
             primaryAggregator: String(config.chainlinkOracle1.primaryAggregator ?? ''),
             secondaryAggregator: String(config.chainlinkOracle1.secondaryAggregator ?? ''),
             normalizationDivider: String(config.chainlinkOracle1.normalizationDivider ?? '0'),

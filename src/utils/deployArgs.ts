@@ -150,7 +150,9 @@ export function prepareDeployArgs(
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
-      const quoteToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+      const quoteToken = (chainlink.useOtherTokenAsQuote !== false)
+        ? ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+        : ethers.getAddress(chainlink.customQuoteTokenAddress!.trim())
       const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator.trim() !== '' && chainlink.secondaryAggregator !== ethers.ZeroAddress ? ethers.getAddress(chainlink.secondaryAggregator) : ethers.ZeroAddress
       const primaryAggregator = ethers.getAddress(chainlink.primaryAggregator)
       // Encode config as single tuple (array form) so ethers does not expand it into multiple args; ABI order: baseToken, quoteToken, primaryAggregator, primaryHeartbeat, secondaryAggregator, secondaryHeartbeat, normalizationDivider, normalizationMultiplier, invertSecondPrice
@@ -220,14 +222,12 @@ export function prepareDeployArgs(
     const timelock = wizardData.manageableOracleTimelock ?? 86400 // fallback for old cached data
     const externalSalt = ethers.ZeroHash
 
-    // Pre-deployed oracle: use create(oracle, owner, timelock, salt)
+    // Pre-deployed oracle: use create(address,address,uint32,bytes32)
     if (txData.deployed !== ethers.ZeroAddress) {
-      const txInput = manageableFactoryInterface.encodeFunctionData('create', [
-        txData.deployed,
-        owner,
-        timelock,
-        externalSalt
-      ])
+      const txInput = manageableFactoryInterface.encodeFunctionData(
+        'create(address,address,uint32,bytes32)',
+        [txData.deployed, owner, timelock, externalSalt]
+      )
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.manageableOracleFactory,
@@ -235,15 +235,12 @@ export function prepareDeployArgs(
       }
     }
 
-    // Factory + txInput: use create(underlyingFactory, underlyingInitData, owner, timelock, salt)
+    // Factory + txInput: use create(address,bytes,address,uint32,bytes32)
     if (txData.factory !== ethers.ZeroAddress && txData.txInput !== '0x') {
-      const txInput = manageableFactoryInterface.encodeFunctionData('create', [
-        txData.factory,
-        txData.txInput,
-        owner,
-        timelock,
-        externalSalt
-      ])
+      const txInput = manageableFactoryInterface.encodeFunctionData(
+        'create(address,bytes,address,uint32,bytes32)',
+        [txData.factory, txData.txInput, owner, timelock, externalSalt]
+      )
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.manageableOracleFactory,

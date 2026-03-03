@@ -128,6 +128,7 @@ export default function Step3OracleConfiguration() {
     aggregatorLatestAnswer?: string
   }>({
     baseToken: 'token0',
+    useOtherTokenAsQuote: true,
     primaryAggregator: '',
     secondaryAggregator: '',
     normalizationDivider: '0',
@@ -142,12 +143,15 @@ export default function Step3OracleConfiguration() {
     aggregatorLatestAnswer?: string
   }>({
     baseToken: 'token0',
+    useOtherTokenAsQuote: true,
     primaryAggregator: '',
     secondaryAggregator: '',
     normalizationDivider: '0',
     normalizationMultiplier: '0',
     invertSecondPrice: false
   })
+  const [chainlink0QuoteInput, setChainlink0QuoteInput] = useState('')
+  const [chainlink1QuoteInput, setChainlink1QuoteInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [loadingOracles, setLoadingOracles] = useState(true)
@@ -438,6 +442,8 @@ export default function Step3OracleConfiguration() {
     if (wizardData.oracleType0?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
     const token0 = wizardData.token0
     const token1 = wizardData.token1
+    const useOther = chainlink0.useOtherTokenAsQuote !== false
+    const quoteDecimals = useOther ? token1.decimals : (chainlink0.customQuoteTokenMetadata?.decimals ?? 18)
     const addr = chainlink0.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink0(prev => ({
@@ -467,7 +473,7 @@ export default function Step3OracleConfiguration() {
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
         const base = token0.decimals
-        const quote = token1.decimals
+        const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink0(prev => ({
@@ -497,13 +503,15 @@ export default function Step3OracleConfiguration() {
     return () => { cancelled = true }
     // Intentionally narrow: avoid re-running on every wizardData reference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator])
+  }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator, chainlink0.useOtherTokenAsQuote, chainlink0.customQuoteTokenMetadata?.decimals])
 
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token1)
   useEffect(() => {
     if (wizardData.oracleType1?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
     const token0 = wizardData.token0
     const token1 = wizardData.token1
+    const useOther = chainlink1.useOtherTokenAsQuote !== false
+    const quoteDecimals = useOther ? token0.decimals : (chainlink1.customQuoteTokenMetadata?.decimals ?? 18)
     const addr = chainlink1.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink1(prev => ({
@@ -533,7 +541,7 @@ export default function Step3OracleConfiguration() {
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
         const base = token1.decimals
-        const quote = token0.decimals
+        const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink1(prev => ({
@@ -563,7 +571,7 @@ export default function Step3OracleConfiguration() {
     return () => { cancelled = true }
     // Intentionally narrow: avoid re-running on every wizardData reference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator])
+  }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator, chainlink1.useOtherTokenAsQuote, chainlink1.customQuoteTokenMetadata?.decimals])
 
   // Sync chainlink state from wizard when returning to step
   useEffect(() => {
@@ -572,12 +580,20 @@ export default function Step3OracleConfiguration() {
       setChainlink0(prev => ({
         ...prev,
         baseToken: c0.baseToken,
+        useOtherTokenAsQuote: c0.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: c0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: c0.customQuoteTokenMetadata,
         primaryAggregator: c0.primaryAggregator,
         secondaryAggregator: c0.secondaryAggregator || '',
         normalizationDivider: c0.normalizationDivider,
         normalizationMultiplier: c0.normalizationMultiplier,
         invertSecondPrice: c0.invertSecondPrice
       }))
+      if (!(c0.useOtherTokenAsQuote ?? true) && c0.customQuoteTokenAddress) {
+        setChainlink0QuoteInput(c0.customQuoteTokenAddress)
+      } else {
+        setChainlink0QuoteInput('')
+      }
       const hasSecondary = !!(c0.secondaryAggregator && c0.secondaryAggregator !== ethers.ZeroAddress && c0.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator0(hasSecondary)
     }
@@ -586,12 +602,20 @@ export default function Step3OracleConfiguration() {
       setChainlink1(prev => ({
         ...prev,
         baseToken: c1.baseToken,
+        useOtherTokenAsQuote: c1.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: c1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: c1.customQuoteTokenMetadata,
         primaryAggregator: c1.primaryAggregator,
         secondaryAggregator: c1.secondaryAggregator || '',
         normalizationDivider: c1.normalizationDivider,
         normalizationMultiplier: c1.normalizationMultiplier,
         invertSecondPrice: c1.invertSecondPrice
       }))
+      if (!(c1.useOtherTokenAsQuote ?? true) && c1.customQuoteTokenAddress) {
+        setChainlink1QuoteInput(c1.customQuoteTokenAddress)
+      } else {
+        setChainlink1QuoteInput('')
+      }
       const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator1(hasSecondary)
     }
@@ -816,12 +840,24 @@ export default function Step3OracleConfiguration() {
       } else if ((!chainlink0.normalizationDivider && !chainlink0.normalizationMultiplier) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0')) {
         errors.push('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
       }
+      if (!(chainlink0.useOtherTokenAsQuote ?? true)) {
+        const addr = chainlink0.customQuoteTokenAddress?.trim()
+        if (!addr || !ethers.isAddress(addr)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 0 Chainlink oracle')
+        }
+      }
     }
     if (wizardData.oracleType1?.type === 'chainlink') {
       if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
         errors.push('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
       } else if ((!chainlink1.normalizationDivider && !chainlink1.normalizationMultiplier) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')) {
         errors.push('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
+      }
+      if (!(chainlink1.useOtherTokenAsQuote ?? true)) {
+        const addr = chainlink1.customQuoteTokenAddress?.trim()
+        if (!addr || !ethers.isAddress(addr)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 1 Chainlink oracle')
+        }
       }
     }
     if (wizardData.oracleType0?.type === 'ptLinear') {
@@ -875,6 +911,9 @@ export default function Step3OracleConfiguration() {
           scalerOracle: wizardData.oracleType0.type === 'scaler' ? selectedScalers.token0! : undefined,
           chainlinkOracle: wizardData.oracleType0.type === 'chainlink' ? {
             baseToken: 'token0',
+            useOtherTokenAsQuote: chainlink0.useOtherTokenAsQuote ?? true,
+            customQuoteTokenAddress: chainlink0.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenMetadata: chainlink0.customQuoteTokenMetadata,
             primaryAggregator: chainlink0.primaryAggregator!.trim(),
             secondaryAggregator: chainlink0.secondaryAggregator?.trim() || ethers.ZeroAddress,
             normalizationDivider: chainlink0.normalizationDivider ?? '0',
@@ -892,6 +931,9 @@ export default function Step3OracleConfiguration() {
           scalerOracle: wizardData.oracleType1.type === 'scaler' ? selectedScalers.token1! : undefined,
           chainlinkOracle: wizardData.oracleType1.type === 'chainlink' ? {
             baseToken: 'token1',
+            useOtherTokenAsQuote: chainlink1.useOtherTokenAsQuote ?? true,
+            customQuoteTokenAddress: chainlink1.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenMetadata: chainlink1.customQuoteTokenMetadata,
             primaryAggregator: chainlink1.primaryAggregator!.trim(),
             secondaryAggregator: chainlink1.secondaryAggregator?.trim() || ethers.ZeroAddress,
             normalizationDivider: chainlink1.normalizationDivider ?? '0',
@@ -1072,11 +1114,58 @@ export default function Step3OracleConfiguration() {
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-2">
                 Base token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
-                {' · '}
-                Quote token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
               </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    id="chainlink0-quote-other"
+                    name="chainlink0-quote"
+                    checked={chainlink0.useOtherTokenAsQuote !== false}
+                    onChange={() => {
+                      setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
+                      setChainlink0QuoteInput('')
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="chainlink0-quote-other" className="text-sm text-gray-300">
+                    Use other token as quote — <span className="text-white font-medium">{wizardData.token1?.symbol}</span>
+                  </label>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="chainlink0-quote-custom"
+                      name="chainlink0-quote"
+                      checked={chainlink0.useOtherTokenAsQuote === false}
+                      onChange={() => setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
+                      className="rounded"
+                    />
+                    <label htmlFor="chainlink0-quote-custom" className="text-sm text-gray-300">
+                      Custom Quote Token
+                    </label>
+                  </div>
+                  {chainlink0.useOtherTokenAsQuote === false && (
+                    <TokenAddressInput
+                      value={chainlink0QuoteInput}
+                      onChange={setChainlink0QuoteInput}
+                      onResolve={(address, metadata) => {
+                        if (metadata && address) {
+                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
+                        } else {
+                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                        }
+                      }}
+                      chainId={wizardData.networkInfo?.chainId}
+                      label="Quote token (address or symbol)"
+                      placeholder="0x… or symbol from addresses JSON"
+                    />
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input
@@ -1367,11 +1456,58 @@ export default function Step3OracleConfiguration() {
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-2">
                 Base token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
-                {' · '}
-                Quote token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
               </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    id="chainlink1-quote-other"
+                    name="chainlink1-quote"
+                    checked={chainlink1.useOtherTokenAsQuote !== false}
+                    onChange={() => {
+                      setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
+                      setChainlink1QuoteInput('')
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="chainlink1-quote-other" className="text-sm text-gray-300">
+                    Use other token as quote — <span className="text-white font-medium">{wizardData.token0?.symbol}</span>
+                  </label>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="chainlink1-quote-custom"
+                      name="chainlink1-quote"
+                      checked={chainlink1.useOtherTokenAsQuote === false}
+                      onChange={() => setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
+                      className="rounded"
+                    />
+                    <label htmlFor="chainlink1-quote-custom" className="text-sm text-gray-300">
+                      Custom Quote Token
+                    </label>
+                  </div>
+                  {chainlink1.useOtherTokenAsQuote === false && (
+                    <TokenAddressInput
+                      value={chainlink1QuoteInput}
+                      onChange={setChainlink1QuoteInput}
+                      onResolve={(address, metadata) => {
+                        if (metadata && address) {
+                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
+                        } else {
+                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                        }
+                      }}
+                      chainId={wizardData.networkInfo?.chainId}
+                      label="Quote token (address or symbol)"
+                      placeholder="0x… or symbol from addresses JSON"
+                    />
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input

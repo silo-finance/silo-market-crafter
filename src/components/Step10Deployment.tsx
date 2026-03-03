@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
-import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
+import { getChainName, getExplorerBaseUrl, getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
+import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
@@ -70,6 +71,8 @@ export default function Step10Deployment() {
   const [deployerAddress, setDeployerAddress] = useState<string>('')
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [deployerVersion, setDeployerVersion] = useState<string>('')
+  const [siloImplementationAddress, setSiloImplementationAddress] = useState<string | null>(null)
+  const [siloImplementationVersion, setSiloImplementationVersion] = useState<string>('')
   const [siloCoreDeployments, setSiloCoreDeployments] = useState<SiloCoreDeployments>({})
   const [oracleDeployments, setOracleDeployments] = useState<OracleDeployments>({})
   const [loading, setLoading] = useState(true)
@@ -411,6 +414,57 @@ export default function Step10Deployment() {
     }
     fetchDeployerVersion()
   }, [deployerAddress, siloLensAddress, wizardData.networkInfo?.chainId])
+
+  // Fetch SILO_IMPL from SiloDeployer contract (SiloDeployer has public immutable SILO_IMPL)
+  useEffect(() => {
+    if (!deployerAddress || !window.ethereum) return
+
+    const siloImplAbi = ['function SILO_IMPL() view returns (address)']
+
+    const fetchSiloImpl = async () => {
+      const eth = window.ethereum
+      if (!eth) return
+      try {
+        const provider = new ethers.BrowserProvider(eth)
+        const contract = new ethers.Contract(deployerAddress, siloImplAbi, provider)
+        const impl = await contract.SILO_IMPL()
+        if (impl && ethers.isAddress(impl)) {
+          setSiloImplementationAddress(ethers.getAddress(impl))
+        } else {
+          setSiloImplementationAddress(null)
+        }
+      } catch (err) {
+        console.warn('Failed to fetch SILO_IMPL from SiloDeployer:', err)
+        setSiloImplementationAddress(null)
+      }
+    }
+    fetchSiloImpl()
+  }, [deployerAddress])
+
+  // Fetch Silo Implementation version via Silo Lens
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!siloLensAddress || !chainId || !siloImplementationAddress) return
+
+    const fetchImplVersion = async () => {
+      if (!window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses: [siloImplementationAddress]
+        })
+        const version = versionsByAddress.get(siloImplementationAddress.toLowerCase()) ?? ''
+        setSiloImplementationVersion(version || '—')
+      } catch (err) {
+        console.warn('Failed to fetch Silo Implementation version:', err)
+        setSiloImplementationVersion('—')
+      }
+    }
+    fetchImplVersion()
+  }, [siloImplementationAddress, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Prepare deploy arguments from JSON config (matching Solidity script logic)
   // Always prepare arguments even if deployer address is not available
@@ -757,13 +811,45 @@ export default function Step10Deployment() {
         {loading ? (
           <p className="text-white font-mono text-sm">Loading...</p>
         ) : deployerAddress ? (
-          <ContractInfo
-            contractName="SiloDeployer"
-            address={deployerAddress}
-            version={deployerVersion || '…'}
-            chainId={wizardData.networkInfo?.chainId}
-            isOracle={false}
-          />
+          <>
+            <ContractInfo
+              contractName="SiloDeployer"
+              address={deployerAddress}
+              version={deployerVersion || '…'}
+              chainId={wizardData.networkInfo?.chainId}
+              isOracle={false}
+            />
+            {siloImplementationAddress && (
+              <div className="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white">Silo Implementation</p>
+                  <span className="text-xs text-gray-400">
+                    Source (SiloDeployer): {' '}
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo?.chainId ?? 1, deployerAddress)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-gray-300 underline"
+                    >
+                      source
+                    </a>
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AddressDisplayLong
+                      address={siloImplementationAddress}
+                      chainId={wizardData.networkInfo?.chainId}
+                      linkClassName="text-lime-600 hover:text-lime-500"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-300 whitespace-nowrap">
+                    version: <span className="text-gray-400">{siloImplementationVersion || 'Loading…'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-white font-mono text-sm">Not available</p>
         )}

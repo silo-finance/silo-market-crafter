@@ -82,7 +82,7 @@ export default function Step11Verification() {
   const updateVerificationUrl = useCallback(
     (params: { txHash?: string; siloConfigAddress?: string }) => {
       const query = new URLSearchParams()
-      query.set('step', '12')
+      query.set('step', '13')
       if (params.txHash) {
         query.set('tx', params.txHash)
       } else if (params.siloConfigAddress) {

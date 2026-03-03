@@ -251,6 +251,33 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             </>
                           )
                         })()}
+                        {wizardData.oracleType0?.type === 'chainlink' && (() => {
+                          const chainlink = wizardData.oracleConfiguration?.token0?.chainlinkOracle
+                          const useOther = chainlink?.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token1?.address : chainlink?.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token1?.symbol : chainlink?.customQuoteTokenMetadata?.symbol
+                          if (!quoteAddress) return null
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2">
+                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <AddressDisplayShort
+                                  address={quoteAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                                {quoteSymbol && (
+                                  <>
+                                    <span className="text-xs text-lime-200/50">—</span>
+                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     )}
                     {wizardData.oracleType1 && (
@@ -282,6 +309,33 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
+                          )
+                        })()}
+                        {wizardData.oracleType1?.type === 'chainlink' && (() => {
+                          const chainlink = wizardData.oracleConfiguration?.token1?.chainlinkOracle
+                          const useOther = chainlink?.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token0?.address : chainlink?.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token0?.symbol : chainlink?.customQuoteTokenMetadata?.symbol
+                          if (!quoteAddress) return null
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2">
+                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <AddressDisplayShort
+                                  address={quoteAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                                {quoteSymbol && (
+                                  <>
+                                    <span className="text-xs text-lime-200/50">—</span>
+                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           )
                         })()}
                       </div>

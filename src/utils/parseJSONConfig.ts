@@ -58,6 +58,9 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
   const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
     ? {
         baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.chainlinkOracle0.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.chainlinkOracle0.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.chainlinkOracle0.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle0.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle0.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
         primaryAggregator: String(config.chainlinkOracle0.primaryAggregator ?? ''),
         secondaryAggregator: String(config.chainlinkOracle0.secondaryAggregator ?? ''),
         normalizationDivider: String(config.chainlinkOracle0.normalizationDivider ?? '0'),
@@ -68,6 +71,9 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
   const chainlink1 = config.chainlinkOracle1 && oracleType1 === 'chainlink'
     ? {
         baseToken: (config.chainlinkOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.chainlinkOracle1.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.chainlinkOracle1.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.chainlinkOracle1.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle1.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle1.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
         primaryAggregator: String(config.chainlinkOracle1.primaryAggregator ?? ''),
         secondaryAggregator: String(config.chainlinkOracle1.secondaryAggregator ?? ''),
         normalizationDivider: String(config.chainlinkOracle1.normalizationDivider ?? '0'),
