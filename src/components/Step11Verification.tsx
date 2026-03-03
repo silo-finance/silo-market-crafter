@@ -880,6 +880,7 @@ export default function Step11Verification() {
       setLoading(false)
     }
   }, [
+    siloLensAddress,
     wizardData.borrowConfiguration,
     wizardData.feesConfiguration,
     wizardData.hookOwnerAddress,
