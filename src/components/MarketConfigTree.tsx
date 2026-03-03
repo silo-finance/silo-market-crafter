@@ -180,6 +180,14 @@ interface MarketConfigTreeProps {
     gaugeAddress: string | null
     gaugeVersion: string | null
     ltMarginForDefaultingRaw?: string | null
+    gaugeVerification?: {
+      owner: string | null
+      ownerName: string | null
+      ownerInJson: boolean | null
+      ownerMatchesHookOwner: boolean | null
+      ownerMatchesWizard: boolean | null
+      notifierEqualsHook: boolean | null
+    } | null
   } | null
 }
 
@@ -867,24 +875,77 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                           )
                         })
                       } else {
+                        const gv = hookGaugeInfo.gaugeVerification
                         bullets.push({
                           key: 'hook.defaulting.gauge.ok',
                           text: (
-                            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                              <span>Silo Incentive Controller:</span>
-                              <a
-                                href={`${explorerUrl}/address/${hookGaugeInfo.gaugeAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                              >
-                                {formatAddress(hookGaugeInfo.gaugeAddress)}
-                              </a>
-                              <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
-                              <span className="text-gray-400 text-xs ml-1">
-                                ({hookGaugeInfo.gaugeVersion || '—'})
+                            <>
+                              <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                <span>Silo Incentive Controller:</span>
+                                <a
+                                  href={`${explorerUrl}/address/${hookGaugeInfo.gaugeAddress}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                                >
+                                  {formatAddress(hookGaugeInfo.gaugeAddress)}
+                                </a>
+                                <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+                                <span className="text-gray-400 text-xs ml-1">
+                                  ({hookGaugeInfo.gaugeVersion || '—'})
+                                </span>
                               </span>
-                            </span>
+                              {gv && (
+                                <ul className="gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner in repository list:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerInJson === null ? VERIFICATION_STATUS.PENDING
+                                        : gv.ownerInJson ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.WARNING
+                                    } />
+                                    {gv.ownerInJson === true && (
+                                      <span className="text-gray-500 ml-1">{gv.ownerName ? `yes (${gv.ownerName})` : 'yes'}</span>
+                                    )}
+                                    {gv.ownerInJson === false && (
+                                      <span className="text-gray-500 ml-1">not in Silo Finance repository list</span>
+                                    )}
+                                    {gv.ownerInJson === null && (
+                                      <span className="text-gray-500 ml-1">verification pending</span>
+                                    )}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner equals hook owner:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerMatchesHookOwner === null ? VERIFICATION_STATUS.NOT_AVAILABLE
+                                        : gv.ownerMatchesHookOwner ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.ownerMatchesHookOwner === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesHookOwner === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesHookOwner === null && <span className="text-gray-500 ml-1">N/A</span>}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner matches Wizard:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerMatchesWizard === null ? VERIFICATION_STATUS.NOT_AVAILABLE
+                                        : gv.ownerMatchesWizard ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.ownerMatchesWizard === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesWizard === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesWizard === null && <span className="text-gray-500 ml-1">N/A</span>}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Notifier equals hook address:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.notifierEqualsHook === null ? VERIFICATION_STATUS.PENDING
+                                        : gv.notifierEqualsHook ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.notifierEqualsHook === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.notifierEqualsHook === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.notifierEqualsHook === null && <span className="text-gray-500 ml-1">verification pending</span>}
+                                  </li>
+                                </ul>
+                              )}
+                            </>
                           )
                         })
                       }

@@ -643,3 +643,12 @@ body {
 .tree-item .tree-item-content {
   display: inline;
 }
+
+/* Nested bullet lists (e.g. gauge verification under Silo Incentive Controller) – ensure discs show */
+.gauge-verification-list {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+.gauge-verification-list li {
+  display: list-item;
+}
