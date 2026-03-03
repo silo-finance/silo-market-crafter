@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
-import { formatWizardBigIntToE18 } from '@/utils/formatting'
+import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { ethers } from 'ethers'
@@ -149,6 +149,12 @@ interface CallBeforeQuoteVerification {
   silo1?: { wizard: boolean | null }
 }
 
+/** Per-silo oracle owner verification (ManageableOracle): silo0 and silo1 Solvency Oracle owner checks */
+interface OracleOwnerVerificationPerSilo {
+  silo0?: OracleOwnerVerification | null
+  silo1?: OracleOwnerVerification | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
@@ -159,7 +165,7 @@ interface MarketConfigTreeProps {
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
-  oracleOwnerVerification?: OracleOwnerVerification
+  oracleOwnerVerification?: OracleOwnerVerificationPerSilo
   tokenVerification?: TokenVerification
   numericValueVerification?: NumericValueVerification
   addressInJsonVerification?: Map<string, boolean>
@@ -274,82 +280,54 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   // Normalize the address from item
   const normalizedItemAddress = ethers.getAddress(address).toLowerCase()
   
-  // Debug logging
-  console.log('OwnerBulletContent - hookOwnerVerification:', hookOwnerVerification)
-  console.log('OwnerBulletContent - irmOwnerVerification:', irmOwnerVerification)
-  console.log('OwnerBulletContent - item.address:', address)
-  console.log('OwnerBulletContent - normalizedItemAddress:', normalizedItemAddress)
-  
   // Use centralized verification functions from src/utils/verification/
   // Check 1: Verify that on-chain owner matches wizard owner (independent check)
   // This check compares: onChainOwner === wizardOwner
   let isVerified: boolean | null = null
   if (hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner) {
-    // Normalize addresses for comparison
     const normalizedOnChain = ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase()
     const normalizedItem = normalizedItemAddress
-    
-    console.log('OwnerBulletContent - hook verification check:')
-    console.log('  normalizedOnChain:', normalizedOnChain)
-    console.log('  normalizedItem:', normalizedItem)
-    console.log('  addresses match:', normalizedOnChain === normalizedItem)
-    
-    // Only verify if the displayed address matches the on-chain owner address
     if (normalizedOnChain === normalizedItem) {
-      // Verify that on-chain owner matches wizard owner using centralized function
-      // This is the independent check: onChainOwner === wizardOwner
       isVerified = verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyAddress (hook owner) result:', isVerified)
     }
   } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
-    // Normalize addresses for comparison
     const normalizedOnChain = ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase()
     const normalizedItem = normalizedItemAddress
-    
-    console.log('OwnerBulletContent - IRM verification check:')
-    console.log('  normalizedOnChain:', normalizedOnChain)
-    console.log('  normalizedItem:', normalizedItem)
-    console.log('  addresses match:', normalizedOnChain === normalizedItem)
-    
-    // Only verify if the displayed address matches the on-chain owner address
     if (normalizedOnChain === normalizedItem) {
-      // Verify that on-chain owner matches wizard owner using centralized function
-      // This is the independent check: onChainOwner === wizardOwner
       isVerified = verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyAddress (IRM owner) result:', isVerified)
     }
   }
   if (!isVerified && oracleOwnerVerification && oracleOwnerVerification.onChainOwner && oracleOwnerVerification.wizardOwner) {
     const normalizedOnChain = ethers.getAddress(oracleOwnerVerification.onChainOwner).toLowerCase()
-    const normalizedWizard = ethers.getAddress(oracleOwnerVerification.wizardOwner).toLowerCase()
     const normalizedItem = normalizedItemAddress
-
-    console.log('OwnerBulletContent - oracle verification check:')
-    console.log('  normalizedOnChain:', normalizedOnChain)
-    console.log('  normalizedWizard:', normalizedWizard)
-    console.log('  normalizedItem:', normalizedItem)
-
-    // Only verify if the displayed address matches the on-chain owner address
     if (normalizedOnChain === normalizedItem) {
       isVerified = verifyAddress(oracleOwnerVerification.onChainOwner, oracleOwnerVerification.wizardOwner)
     }
   }
-  
-  // Get JSON verification result - always available regardless of wizard data
-  const isInJson = addressInJsonVerification?.get(normalizedItemAddress) ?? null
-  
-  console.log('OwnerBulletContent - final values:')
-  console.log('  isVerified:', isVerified)
-  console.log('  isInJson:', isInJson)
+
+  // Oracle owner: when wizard did not provide owner, treat as N/A (not PENDING)
+  const isOracleOwnerBullet = Boolean(
+    oracleOwnerVerification?.onChainOwner &&
+    normalizedItemAddress === ethers.getAddress(oracleOwnerVerification.onChainOwner).toLowerCase()
+  )
+  const oracleWizardOwnerMissing = isOracleOwnerBullet && (oracleOwnerVerification?.wizardOwner == null || oracleOwnerVerification?.wizardOwner === '')
+
+  // Get JSON verification result - use oracleOwnerVerification.isInAddressesJson when this is the Oracle owner so status is never stuck on PENDING
+  const isInJsonFromOracle = isOracleOwnerBullet && oracleOwnerVerification?.isInAddressesJson != null
+    ? oracleOwnerVerification.isInAddressesJson
+    : null
+  const isInJson = isInJsonFromOracle !== null ? isInJsonFromOracle : (addressInJsonVerification?.get(normalizedItemAddress) ?? null)
   
   // Determine verification statuses
-  const wizardVsOnChainStatus = isVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner) && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner)
+  const wizardVsOnChainStatus = oracleWizardOwnerMissing
     ? VERIFICATION_STATUS.NOT_AVAILABLE
-    : isVerified === null 
-      ? VERIFICATION_STATUS.PENDING 
-      : isVerified === true 
-        ? VERIFICATION_STATUS.PASSED 
-        : VERIFICATION_STATUS.FAILED
+    : isVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner) && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner) && !isOracleOwnerBullet
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : isVerified === null 
+        ? VERIFICATION_STATUS.PENDING 
+        : isVerified === true 
+          ? VERIFICATION_STATUS.PASSED 
+          : VERIFICATION_STATUS.FAILED
   
   const addressInJsonStatus = isInJson === null 
     ? VERIFICATION_STATUS.PENDING 
@@ -912,9 +890,16 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                       }
                     }
                     if (hookGaugeInfo.ltMarginForDefaultingRaw) {
+                      const ltMarginBigInt = BigInt(hookGaugeInfo.ltMarginForDefaultingRaw)
                       bullets.push({
                         key: 'hook.defaulting.ltMargin',
-                        text: `LT margin for defaulting: ${formatRate18AsPercent(hookGaugeInfo.ltMarginForDefaultingRaw)}`
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>LT margin for defaulting:</span>
+                            <span className="text-white font-mono">{formatPercentage(ltMarginBigInt)}</span>
+                            <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(ltMarginBigInt, true)})</span>
+                          </span>
+                        )
                       })
                     }
                     return bullets
@@ -1017,7 +1002,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             explorerUrl={explorerUrl}
             addressVersions={addressVersions}
             ownerBullets={config.silo0.solvencyOracle.owner ? [{ address: config.silo0.solvencyOracle.owner, isContract: config.silo0.solvencyOracle.ownerIsContract, name: config.silo0.solvencyOracle.ownerName }] : undefined}
-            oracleOwnerVerification={oracleOwnerVerification}
+            oracleOwnerVerification={oracleOwnerVerification?.silo0 ?? undefined}
           />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
             <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
@@ -1232,6 +1217,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
             priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
             baseDiscountVerification={ptOracleBaseDiscountVerification?.silo1 ?? null}
+            ownerBullets={config.silo1.solvencyOracle.owner ? [{ address: config.silo1.solvencyOracle.owner, isContract: config.silo1.solvencyOracle.ownerIsContract, name: config.silo1.solvencyOracle.ownerName }] : undefined}
+            oracleOwnerVerification={oracleOwnerVerification?.silo1 ?? undefined}
             explorerUrl={explorerUrl}
             addressVersions={addressVersions}
           />

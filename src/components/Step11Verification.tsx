@@ -48,11 +48,10 @@ export default function Step11Verification() {
     wizardOwner: null,
     isInAddressesJson: null
   })
-  const [oracleOwnerVerification, setOracleOwnerVerification] = useState<{ onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null }>({
-    onChainOwner: null,
-    wizardOwner: null,
-    isInAddressesJson: null
-  })
+  const [oracleOwnerVerification, setOracleOwnerVerification] = useState<{
+    silo0: { onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null } | null
+    silo1: { onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null } | null
+  }>({ silo0: null, silo1: null })
   const [tokenVerification, setTokenVerification] = useState<{ 
     token0: { onChainToken: string | null; wizardToken: string | null } | null
     token1: { onChainToken: string | null; wizardToken: string | null } | null
@@ -538,11 +537,10 @@ export default function Step11Verification() {
             const providerForHook = new ethers.BrowserProvider(ethereum)
             const hookAddress = marketConfig.silo0.hookReceiver || marketConfig.silo1.hookReceiver
             if (hookAddress && ethers.isAddress(hookAddress)) {
-              const hookContract = new ethers.Contract(
-                hookAddress,
-                (siloHookV2Abi as unknown as { abi: ethers.InterfaceAbi }).abi,
-                providerForHook
-              )
+              const hookAbi = Array.isArray(siloHookV2Abi)
+                ? (siloHookV2Abi as ethers.InterfaceAbi)
+                : (siloHookV2Abi as unknown as { abi: ethers.InterfaceAbi }).abi
+              const hookContract = new ethers.Contract(hookAddress, hookAbi, providerForHook)
               
               // Read LT_MARGIN_FOR_DEFAULTING (18-decimal percentage) when available
               try {
@@ -567,13 +565,24 @@ export default function Step11Verification() {
               }
 
               // If exactly one asset is borrowable, check configured gauge (Silo Incentives Controller)
+              // Hook expects the silo address (collateral silo), not share token
               if (onlyOneBorrowable) {
-                const shareToken =
+                const siloAddress =
                   borrowableSilo === 0
-                    ? marketConfig.silo0.collateralShareToken
-                    : marketConfig.silo1.collateralShareToken
-                if (shareToken && ethers.isAddress(shareToken)) {
-                  const gaugeAddr: string = await hookContract.configuredGauges(shareToken)
+                    ? marketConfig.silo0.silo
+                    : marketConfig.silo1.silo
+                if (siloAddress && ethers.isAddress(siloAddress)) {
+                  const gaugeAddr: string = await hookContract.configuredGauges(siloAddress)
+                  // --- DEBUG: paste this block from console if gauge error appears incorrectly ---
+                  console.log('[SILO_HOOK_GAUGE_DEBUG]', JSON.stringify({
+                    borrowableSilo,
+                    argType: 'siloAddress',
+                    siloAddress,
+                    borrowableTokenSymbol: borrowableSilo === 0 ? marketConfig.silo0.tokenSymbol : marketConfig.silo1.tokenSymbol,
+                    configuredGaugesReturned: gaugeAddr || null,
+                    isZeroAddress: !gaugeAddr || gaugeAddr === ethers.ZeroAddress
+                  }, null, 2))
+                  // --- end SILO_HOOK_GAUGE_DEBUG ---
                   if (gaugeAddr && gaugeAddr !== ethers.ZeroAddress) {
                     const normalizedGauge = ethers.getAddress(gaugeAddr)
                     newHookGaugeInfo = {
@@ -672,6 +681,9 @@ export default function Step11Verification() {
       if (marketConfig.silo0.solvencyOracle.owner) {
         addressesToCheck.push(marketConfig.silo0.solvencyOracle.owner)
       }
+      if (marketConfig.silo1.solvencyOracle.owner) {
+        addressesToCheck.push(marketConfig.silo1.solvencyOracle.owner)
+      }
       // Add token addresses for JSON verification
       if (marketConfig.silo0.token) {
         addressesToCheck.push(marketConfig.silo0.token)
@@ -740,23 +752,23 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify Oracle owner (ManageableOracle) - always check on-chain address, wizard data is optional
-      if (marketConfig.silo0.solvencyOracle.owner) {
-        const onChainOwner = marketConfig.silo0.solvencyOracle.owner
-        const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null
-        const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
-        setOracleOwnerVerification({
-          onChainOwner,
-          wizardOwner,
-          isInAddressesJson: isInJson
-        })
-      } else {
-        setOracleOwnerVerification({
-          onChainOwner: null,
-          wizardOwner: null,
-          isInAddressesJson: null
-        })
-      }
+      // Verify Oracle owner (ManageableOracle) for both silos - same checks for silo0 and silo1
+      const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null
+      const silo0Oracle = marketConfig.silo0.solvencyOracle.owner
+        ? {
+            onChainOwner: marketConfig.silo0.solvencyOracle.owner,
+            wizardOwner,
+            isInAddressesJson: jsonVerificationMap.get(marketConfig.silo0.solvencyOracle.owner.toLowerCase()) ?? null
+          }
+        : null
+      const silo1Oracle = marketConfig.silo1.solvencyOracle.owner
+        ? {
+            onChainOwner: marketConfig.silo1.solvencyOracle.owner,
+            wizardOwner,
+            isInAddressesJson: jsonVerificationMap.get(marketConfig.silo1.solvencyOracle.owner.toLowerCase()) ?? null
+          }
+        : null
+      setOracleOwnerVerification({ silo0: silo0Oracle, silo1: silo1Oracle })
 
       // Verify tokens - check if we have wizard data (token0 and token1 addresses exist)
       if (wizardData.token0?.address && marketConfig.silo0.token) {
