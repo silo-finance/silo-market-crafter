@@ -110,6 +110,12 @@ interface IRMOwnerVerification {
   isInAddressesJson: boolean | null
 }
 
+interface OracleOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
 interface TokenVerification {
   token0: { onChainToken: string | null; wizardToken: string | null } | null
   token1: { onChainToken: string | null; wizardToken: string | null } | null
@@ -153,12 +159,22 @@ interface MarketConfigTreeProps {
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  oracleOwnerVerification?: OracleOwnerVerification
   tokenVerification?: TokenVerification
   numericValueVerification?: NumericValueVerification
   addressInJsonVerification?: Map<string, boolean>
   addressVersions?: Map<string, string>
   ptOracleBaseDiscountVerification?: PTOracleBaseDiscountVerification
   callBeforeQuoteVerification?: CallBeforeQuoteVerification
+  hookGaugeInfo?: {
+    hasDefaultingHook: boolean
+    onlyOneBorrowable: boolean | null
+    borrowableSilo: 0 | 1 | null
+    borrowableTokenSymbol: string | null
+    gaugeAddress: string | null
+    gaugeVersion: string | null
+    ltMarginForDefaultingRaw?: string | null
+  } | null
 }
 
 interface TokenMeta {
@@ -203,6 +219,7 @@ interface TreeNodeProps {
   callBeforeQuoteVerification?: { wizard: boolean | null } | null
   /** Top-level node (silo config / silo 0 / silo 1) – extra spacing + stronger label emphasis */
   isRoot?: boolean
+  oracleOwnerVerification?: OracleOwnerVerification
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -250,7 +267,7 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; oracleOwnerVerification?: OracleOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
@@ -302,6 +319,21 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       console.log('OwnerBulletContent - verifyAddress (IRM owner) result:', isVerified)
     }
   }
+  if (!isVerified && oracleOwnerVerification && oracleOwnerVerification.onChainOwner && oracleOwnerVerification.wizardOwner) {
+    const normalizedOnChain = ethers.getAddress(oracleOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedWizard = ethers.getAddress(oracleOwnerVerification.wizardOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+
+    console.log('OwnerBulletContent - oracle verification check:')
+    console.log('  normalizedOnChain:', normalizedOnChain)
+    console.log('  normalizedWizard:', normalizedWizard)
+    console.log('  normalizedItem:', normalizedItem)
+
+    // Only verify if the displayed address matches the on-chain owner address
+    if (normalizedOnChain === normalizedItem) {
+      isVerified = verifyAddress(oracleOwnerVerification.onChainOwner, oracleOwnerVerification.wizardOwner)
+    }
+  }
   
   // Get JSON verification result - always available regardless of wizard data
   const isInJson = addressInJsonVerification?.get(normalizedItemAddress) ?? null
@@ -325,7 +357,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       ? VERIFICATION_STATUS.PASSED 
       : VERIFICATION_STATUS.WARNING
   
-  const ownerLabel = irmOwnerVerification ? 'IRM owner' : 'Hook owner'
+  const ownerLabel = oracleOwnerVerification ? 'Oracle owner' : irmOwnerVerification ? 'IRM owner' : 'Hook owner'
   return (
     <>
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -384,7 +416,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -668,6 +700,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 explorerUrl={explorerUrl} 
                 hookOwnerVerification={hookOwnerVerification}
                 irmOwnerVerification={irmOwnerVerification}
+                oracleOwnerVerification={oracleOwnerVerification}
                 addressInJsonVerification={addressInJsonVerification}
               />
             </li>
@@ -679,7 +712,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, hookGaugeInfo }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -824,6 +857,70 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             hookOwnerVerification={hookOwnerVerification}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
+            bulletItems={
+              hookGaugeInfo && hookGaugeInfo.hasDefaultingHook
+                ? (() => {
+                    const bullets: OracleBulletItem[] = []
+                    if (hookGaugeInfo.onlyOneBorrowable === false) {
+                      bullets.push({
+                        key: 'hook.defaulting.borrowable.error',
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>Defaulting hook requires exactly one borrowable asset (non-zero LT on only one silo).</span>
+                            <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                          </span>
+                        )
+                      })
+                    } else if (hookGaugeInfo.onlyOneBorrowable && hookGaugeInfo.borrowableTokenSymbol) {
+                      bullets.push({
+                        key: 'hook.defaulting.borrowable.ok',
+                        text: `Defaulting hook ON, borrowable asset: ${hookGaugeInfo.borrowableTokenSymbol}`
+                      })
+                    }
+                    if (hookGaugeInfo.borrowableSilo !== null) {
+                      if (!hookGaugeInfo.gaugeAddress || hookGaugeInfo.gaugeAddress === ethers.ZeroAddress) {
+                        bullets.push({
+                          key: 'hook.defaulting.gauge.missing',
+                          text: (
+                            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                              <span>Missing Silo Incentives Controller (gauge not configured for borrowable silo).</span>
+                              <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                            </span>
+                          )
+                        })
+                      } else {
+                        bullets.push({
+                          key: 'hook.defaulting.gauge.ok',
+                          text: (
+                            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                              <span>Silo Incentive Controller:</span>
+                              <a
+                                href={`${explorerUrl}/address/${hookGaugeInfo.gaugeAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                              >
+                                {formatAddress(hookGaugeInfo.gaugeAddress)}
+                              </a>
+                              <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+                              <span className="text-gray-400 text-xs ml-1">
+                                ({hookGaugeInfo.gaugeVersion || '—'})
+                              </span>
+                            </span>
+                          )
+                        })
+                      }
+                    }
+                    if (hookGaugeInfo.ltMarginForDefaultingRaw) {
+                      bullets.push({
+                        key: 'hook.defaulting.ltMargin',
+                        text: `LT margin for defaulting: ${formatRate18AsPercent(hookGaugeInfo.ltMarginForDefaultingRaw)}`
+                      })
+                    }
+                    return bullets
+                  })()
+                : undefined
+            }
           />
         </TreeNode>
 
@@ -877,13 +974,50 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Solvency Oracle"
             address={config.silo0.solvencyOracle.address}
             suffixText={config.silo0.solvencyOracle.version}
-            bulletItems={buildOracleBullets(config.silo0.solvencyOracle.quotePrice, config.silo0.solvencyOracle.quoteTokenSymbol, config.silo0.solvencyOracle.type, config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)}
+            bulletItems={(() => {
+              const base = buildOracleBullets(
+                config.silo0.solvencyOracle.quotePrice,
+                config.silo0.solvencyOracle.quoteTokenSymbol,
+                config.silo0.solvencyOracle.type,
+                config.silo0.solvencyOracle.config as Record<string, unknown> | undefined
+              )
+              const underlying = config.silo0.solvencyOracle.underlying
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo0.solvency',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <span className="text-gray-400 text-xs ml-1">
+                        ({underlying.version || '—'})
+                      </span>
+                    </span>
+                  )
+                })
+              }
+              return base
+            })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
             priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.solvencyOracle.quotePrice)}
             priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.solvencyOracle.quotePrice)}
             baseDiscountVerification={ptOracleBaseDiscountVerification?.silo0 ?? null}
             explorerUrl={explorerUrl}
             addressVersions={addressVersions}
+            ownerBullets={config.silo0.solvencyOracle.owner ? [{ address: config.silo0.solvencyOracle.owner, isContract: config.silo0.solvencyOracle.ownerIsContract, name: config.silo0.solvencyOracle.ownerName }] : undefined}
+            oracleOwnerVerification={oracleOwnerVerification}
           />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
             <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
@@ -894,7 +1028,42 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               label="Max LTV Oracle"
               address={config.silo0.maxLtvOracle.address}
               suffixText={config.silo0.maxLtvOracle.version}
-              bulletItems={buildOracleBullets(config.silo0.maxLtvOracle.quotePrice, config.silo0.maxLtvOracle.quoteTokenSymbol, config.silo0.maxLtvOracle.type, config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              bulletItems={(() => {
+                const base = buildOracleBullets(
+                  config.silo0.maxLtvOracle.quotePrice,
+                  config.silo0.maxLtvOracle.quoteTokenSymbol,
+                  config.silo0.maxLtvOracle.type,
+                  config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined
+                )
+                const underlying = config.silo0.maxLtvOracle.underlying
+                if (underlying) {
+                  base.push({
+                    key: 'oracle.manageable.underlying.silo0.maxLtv',
+                    text: (
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <span className="text-gray-400 text-xs ml-1">
+                          ({underlying.version || '—'})
+                        </span>
+                      </span>
+                    )
+                  })
+                }
+                return base
+              })()}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo0.maxLtvOracle.quotePrice)}
               priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.maxLtvOracle.quotePrice)}
               priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.maxLtvOracle.quotePrice)}
@@ -1023,7 +1192,42 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Solvency Oracle"
             address={config.silo1.solvencyOracle.address}
             suffixText={config.silo1.solvencyOracle.version}
-            bulletItems={buildOracleBullets(config.silo1.solvencyOracle.quotePrice, config.silo1.solvencyOracle.quoteTokenSymbol, config.silo1.solvencyOracle.type, config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)}
+            bulletItems={(() => {
+              const base = buildOracleBullets(
+                config.silo1.solvencyOracle.quotePrice,
+                config.silo1.solvencyOracle.quoteTokenSymbol,
+                config.silo1.solvencyOracle.type,
+                config.silo1.solvencyOracle.config as Record<string, unknown> | undefined
+              )
+              const underlying = config.silo1.solvencyOracle.underlying
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo1.solvency',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <span className="text-gray-400 text-xs ml-1">
+                        ({underlying.version || '—'})
+                      </span>
+                    </span>
+                  )
+                })
+              }
+              return base
+            })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
             priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
             priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
@@ -1040,7 +1244,42 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               label="Max LTV Oracle"
               address={config.silo1.maxLtvOracle.address}
               suffixText={config.silo1.maxLtvOracle.version}
-              bulletItems={buildOracleBullets(config.silo1.maxLtvOracle.quotePrice, config.silo1.maxLtvOracle.quoteTokenSymbol, config.silo1.maxLtvOracle.type, config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              bulletItems={(() => {
+                const base = buildOracleBullets(
+                  config.silo1.maxLtvOracle.quotePrice,
+                  config.silo1.maxLtvOracle.quoteTokenSymbol,
+                  config.silo1.maxLtvOracle.type,
+                  config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined
+                )
+                const underlying = config.silo1.maxLtvOracle.underlying
+                if (underlying) {
+                  base.push({
+                    key: 'oracle.manageable.underlying.silo1.maxLtv',
+                    text: (
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <span className="text-gray-400 text-xs ml-1">
+                          ({underlying.version || '—'})
+                        </span>
+                      </span>
+                    )
+                  })
+                }
+                return base
+              })()}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo1.maxLtvOracle.quotePrice)}
               priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.maxLtvOracle.quotePrice)}
               priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.maxLtvOracle.quotePrice)}
