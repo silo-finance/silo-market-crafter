@@ -201,6 +201,8 @@ interface TreeNodeProps {
   baseDiscountVerification?: { onChain: bigint; wizard: bigint | null } | null
   /** Call Before Quote: compare on-chain value with wizard; show green/red icon */
   callBeforeQuoteVerification?: { wizard: boolean | null } | null
+  /** Top-level node (silo config / silo 0 / silo 1) – extra spacing + stronger label emphasis */
+  isRoot?: boolean
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -382,7 +384,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -395,9 +397,9 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   const hasSuffix = versionText != null && versionText !== ''
 
   return (
-    <li className="tree-item">
+    <li className={`tree-item${isRoot ? ' mt-2 mb-4' : ''}`}>
       <span className="tree-item-content">
-        <span className="text-gray-300 text-sm font-medium">{label}:</span>
+        <span className={`text-gray-300 text-sm ${isRoot ? 'font-semibold' : 'font-medium'}`}>{label}:</span>
         {' '}
         
         {hasAddress && (
@@ -737,7 +739,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
       </h3>
       
       <ol className="tree">
-        <TreeNode label="Silo Config" address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions}>
           <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
             {config.siloId !== null && (
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
@@ -825,7 +827,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           />
         </TreeNode>
 
-        <TreeNode label="Silo 0" address={config.silo0.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO 0" isRoot address={config.silo0.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
           <TreeNode 
             label="Token" 
             address={config.silo0.token} 
@@ -971,7 +973,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0 ?? null} />
         </TreeNode>
 
-        <TreeNode label="Silo 1" address={config.silo1.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO 1" isRoot address={config.silo1.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
           <TreeNode 
             label="Token" 
             address={config.silo1.token} 
