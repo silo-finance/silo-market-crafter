@@ -110,6 +110,12 @@ export interface OracleInfo {
   quotePrice?: string
   /** Symbol of the token in which quote price is denominated (when available, e.g. from QUOTE_TOKEN) */
   quoteTokenSymbol?: string
+  /** Set only for ManageableOracle wrappers when contract has owner() */
+  owner?: string
+  ownerIsContract?: boolean
+  ownerName?: string
+  /** For ManageableOracle: underlying oracle address + version (from SiloLens) */
+  underlying?: { address: string; version?: string }
 }
 
 export interface IRMInfo {
@@ -221,6 +227,78 @@ export async function fetchMarketConfig(
   config0.interestRateModel.owner = getIrmOwner(config0.interestRateModel.address, config0.interestRateModel.version)
   config1.interestRateModel.owner = getIrmOwner(config1.interestRateModel.address, config1.interestRateModel.version)
 
+  // Manageable oracle owner – determined by oracle version including "ManageableOracle"
+  const isManageableOracleByVersion = (v: string | undefined) => v != null && v !== '' && v.toLowerCase().includes('manageableoracle')
+  const uniqueManageableOracles = new Set<string>()
+  for (const c of [config0, config1]) {
+    if (c.solvencyOracle.address && c.solvencyOracle.address !== ethers.ZeroAddress && isManageableOracleByVersion(c.solvencyOracle.version)) {
+      uniqueManageableOracles.add(c.solvencyOracle.address.toLowerCase())
+    }
+    if (c.maxLtvOracle.address && c.maxLtvOracle.address !== ethers.ZeroAddress && isManageableOracleByVersion(c.maxLtvOracle.version)) {
+      uniqueManageableOracles.add(c.maxLtvOracle.address.toLowerCase())
+    }
+  }
+  const oracleOwnerByAddress = new Map<string, string>()
+  const underlyingByManageable = new Map<string, string>()
+  await Promise.all(Array.from(uniqueManageableOracles).map(async (addr) => {
+    try {
+      const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
+      const owner = await contract.owner()
+      if (owner && owner !== ethers.ZeroAddress) oracleOwnerByAddress.set(addr, typeof owner === 'string' ? owner : owner.toString())
+      // Try to read underlying oracle when available (ManageableOracle)
+      try {
+        const underlying = await contract.oracle?.()
+        if (underlying && underlying !== ethers.ZeroAddress) {
+          const u = typeof underlying === 'string' ? underlying : underlying.toString()
+          underlyingByManageable.set(addr, u)
+        }
+      } catch {
+        // Some oracle variants may not expose oracle(); ignore gracefully.
+      }
+    } catch {
+      // Oracle may not implement Ownable; ignore gracefully
+    }
+  }))
+  const getOracleOwner = (address: string, version: string | undefined) =>
+    address && isManageableOracleByVersion(version) ? oracleOwnerByAddress.get(address.toLowerCase()) : undefined
+  config0.solvencyOracle.owner = getOracleOwner(config0.solvencyOracle.address, config0.solvencyOracle.version)
+  config1.solvencyOracle.owner = getOracleOwner(config1.solvencyOracle.address, config1.solvencyOracle.version)
+  config0.maxLtvOracle.owner = getOracleOwner(config0.maxLtvOracle.address, config0.maxLtvOracle.version)
+  config1.maxLtvOracle.owner = getOracleOwner(config1.maxLtvOracle.address, config1.maxLtvOracle.version)
+
+  // Underlying oracle versions for ManageableOracle (when SiloLens is available)
+  if (siloLensAddress && underlyingByManageable.size > 0) {
+    const underlyingAddresses = Array.from(
+      new Set(Array.from(underlyingByManageable.values()).map((a) => a.toLowerCase()))
+    )
+    if (underlyingAddresses.length > 0) {
+      const versionByUnderlying = await fetchSiloLensVersionsWithCache({
+        provider,
+        lensAddress: siloLensAddress,
+        chainId,
+        addresses: underlyingAddresses
+      })
+      const getUnderlyingVersion = (address: string) =>
+        versionByUnderlying.get(address.toLowerCase()) ?? undefined
+
+      const setUnderlying = (oracle: OracleInfo) => {
+        const key = oracle.address?.toLowerCase?.() ?? ''
+        const underlyingAddr = underlyingByManageable.get(key)
+        if (underlyingAddr) {
+          oracle.underlying = {
+            address: underlyingAddr,
+            version: getUnderlyingVersion(underlyingAddr)
+          }
+        }
+      }
+
+      setUnderlying(config0.solvencyOracle)
+      setUnderlying(config1.solvencyOracle)
+      setUnderlying(config0.maxLtvOracle)
+      setUnderlying(config1.maxLtvOracle)
+    }
+  }
+
   // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
   // Deduplicate by owner address so we only fetch once when hook and IRM share the same owner.
   const allOwnerAddresses = new Set<string>()
@@ -228,7 +306,11 @@ export async function fetchMarketConfig(
     config0.hookReceiverOwner,
     config1.hookReceiverOwner,
     config0.interestRateModel.owner,
-    config1.interestRateModel.owner
+    config1.interestRateModel.owner,
+    config0.solvencyOracle.owner,
+    config1.solvencyOracle.owner,
+    config0.maxLtvOracle.owner,
+    config1.maxLtvOracle.owner
   ]) {
     if (owner && owner !== ethers.ZeroAddress) allOwnerAddresses.add(owner.toLowerCase())
   }
@@ -272,6 +354,27 @@ export async function fetchMarketConfig(
   if (irm1) {
     config1.interestRateModel.ownerIsContract = irm1.isContract
     config1.interestRateModel.ownerName = irm1.name
+  }
+
+  const oracle0Solvency = getOwnerMeta(config0.solvencyOracle.owner ?? '')
+  if (oracle0Solvency) {
+    config0.solvencyOracle.ownerIsContract = oracle0Solvency.isContract
+    config0.solvencyOracle.ownerName = oracle0Solvency.name
+  }
+  const oracle1Solvency = getOwnerMeta(config1.solvencyOracle.owner ?? '')
+  if (oracle1Solvency) {
+    config1.solvencyOracle.ownerIsContract = oracle1Solvency.isContract
+    config1.solvencyOracle.ownerName = oracle1Solvency.name
+  }
+  const oracle0MaxLtv = getOwnerMeta(config0.maxLtvOracle.owner ?? '')
+  if (oracle0MaxLtv) {
+    config0.maxLtvOracle.ownerIsContract = oracle0MaxLtv.isContract
+    config0.maxLtvOracle.ownerName = oracle0MaxLtv.name
+  }
+  const oracle1MaxLtv = getOwnerMeta(config1.maxLtvOracle.owner ?? '')
+  if (oracle1MaxLtv) {
+    config1.maxLtvOracle.ownerIsContract = oracle1MaxLtv.isContract
+    config1.maxLtvOracle.ownerName = oracle1MaxLtv.name
   }
 
   return {

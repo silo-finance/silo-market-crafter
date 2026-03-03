@@ -98,7 +98,7 @@ This is the normalization factor used to convert percentage values to 18 decimal
 
 **Usage examples:**
 - Hook Owner: `verifyAddress(marketConfig.silo0.hookReceiverOwner, wizardData.hookOwnerAddress)`
-- IRM Owner: `verifyAddress(marketConfig.silo0.interestRateModel.owner, wizardData.hookOwnerAddress)`
+- IRM Owner: `verifyAddress(marketConfig.silo0.interestRateModel.owner, wizardData.manageableOracleOwnerAddress)`
 - Token: `verifyAddress(config.silo0.token, wizardData.token0.address)`
 
 ### `verifySiloAddress(siloAddress: string, siloFactoryAddress: string, provider: ethers.Provider): Promise<boolean>`

@@ -186,6 +186,11 @@ body {
   color: #166534 !important;
 }
 
+/* Manageable oracle badge – white text on dark tag bg for readability */
+.light-market-theme .manageable-badge {
+  color: #ffffff !important;
+}
+
 .light-market-theme [class*="text-lime-300"] {
   color: #3f6212 !important;
 }
@@ -637,4 +642,13 @@ body {
 }
 .tree-item .tree-item-content {
   display: inline;
+}
+
+/* Nested bullet lists (e.g. gauge verification under Silo Incentive Controller) – ensure discs show */
+.gauge-verification-list {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+.gauge-verification-list li {
+  display: list-item;
 }

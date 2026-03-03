@@ -41,6 +41,12 @@ export interface OracleType {
 /** Chainlink V3 oracle deployment config (one of normalizationDivider or normalizationMultiplier is non-zero). */
 export interface ChainlinkOracleConfig {
   baseToken: 'token0' | 'token1'
+  /** If true (default), use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display and normalization). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
   primaryAggregator: string
   secondaryAggregator: string
   normalizationDivider: string
@@ -149,7 +155,13 @@ export interface WizardData {
   lastDeployTxHash: string | null
   /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
   lastDeployArgsHash: string | null
-  /** On step 11: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
+  /** If true, wrap solvency oracles in ManageableOracle to allow future updates. Default true. */
+  manageableOracle: boolean
+  /** Timelock duration in seconds for ManageableOracle (when manageableOracle is true). Undefined = not yet selected. */
+  manageableOracleTimelock: number | undefined
+  /** Owner address for ManageableOracle (when manageableOracle is true). Separate from hook owner. */
+  manageableOracleOwnerAddress: string | null
+  /** On step 12: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
   verificationFromWizard?: boolean
 }
 
@@ -181,6 +193,9 @@ interface WizardContextType {
   parseJSONConfig: (jsonString: string) => Promise<boolean>
   setLastDeployTxHash: (txHash: string | null, argsHash?: string | null) => void
   setVerificationFromWizard: (value: boolean) => void
+  updateManageableOracle: (value: boolean) => void
+  updateManageableOracleTimelock: (seconds: number | undefined) => void
+  updateManageableOracleOwnerAddress: (address: string | null) => void
   resetWizard: () => void
   resetWizardWithCache: () => void
 }
@@ -214,6 +229,9 @@ const initialWizardData: WizardData = {
   hookOwnerAddress: null,
   lastDeployTxHash: null,
   lastDeployArgsHash: null,
+  manageableOracle: true,
+  manageableOracleTimelock: undefined,
+  manageableOracleOwnerAddress: null,
   verificationFromWizard: false
 }
 
@@ -240,7 +258,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (saved) {
       try {
         const parsedData = JSON.parse(saved, bigintReviver) as WizardData
-        setWizardData({ ...parsedData, networkInfo: null, verificationFromWizard: false })
+        setWizardData({
+          ...parsedData,
+          networkInfo: null,
+          verificationFromWizard: false,
+          manageableOracle: parsedData.manageableOracle ?? true,
+          manageableOracleTimelock: parsedData.manageableOracleTimelock,
+          manageableOracleOwnerAddress: parsedData.manageableOracleOwnerAddress ?? null
+        })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }
@@ -248,7 +273,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Save wizard data to localStorage whenever it changes (client-side only).
-  // Do not persist networkInfo or verificationFromWizard (UI-only for step 11).
+  // Do not persist networkInfo or verificationFromWizard (UI-only for step 12).
   useEffect(() => {
     if (isClient) {
       const toSave = { ...wizardData, networkInfo: null }
@@ -345,9 +370,21 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, selectedHook: hook }))
   }
 
-  const updateHookOwnerAddress = (address: string | null) => {
+  const updateHookOwnerAddress = useCallback((address: string | null) => {
     setWizardData(prev => ({ ...prev, hookOwnerAddress: address }))
+  }, [])
+
+  const updateManageableOracle = (value: boolean) => {
+    setWizardData(prev => ({ ...prev, manageableOracle: value }))
   }
+
+  const updateManageableOracleTimelock = (seconds: number | undefined) => {
+    setWizardData(prev => ({ ...prev, manageableOracleTimelock: seconds }))
+  }
+
+  const updateManageableOracleOwnerAddress = useCallback((address: string | null) => {
+    setWizardData(prev => ({ ...prev, manageableOracleOwnerAddress: address }))
+  }, [])
 
   const generateJSONConfig = () => {
     const hookImplementation = wizardData.selectedHook 
@@ -383,6 +420,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         ? {
             chainlinkOracle0: {
               baseToken: wizardData.oracleConfiguration.token0.chainlinkOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.chainlinkOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.chainlinkOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.chainlinkOracle.customQuoteTokenMetadata,
               primaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.primaryAggregator,
               secondaryAggregator: wizardData.oracleConfiguration.token0.chainlinkOracle.secondaryAggregator || '',
               normalizationDivider: wizardData.oracleConfiguration.token0.chainlinkOracle.normalizationDivider,
@@ -422,6 +462,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         ? {
             chainlinkOracle1: {
               baseToken: wizardData.oracleConfiguration.token1.chainlinkOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.chainlinkOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.chainlinkOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.chainlinkOracle.customQuoteTokenMetadata,
               primaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.primaryAggregator,
               secondaryAggregator: wizardData.oracleConfiguration.token1.chainlinkOracle.secondaryAggregator || '',
               normalizationDivider: wizardData.oracleConfiguration.token1.chainlinkOracle.normalizationDivider,
@@ -468,6 +511,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            useOtherTokenAsQuote: config.chainlinkOracle0.useOtherTokenAsQuote !== false,
+            customQuoteTokenAddress: String(config.chainlinkOracle0.customQuoteTokenAddress ?? ''),
+            customQuoteTokenMetadata: config.chainlinkOracle0.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle0.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle0.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
             primaryAggregator: String(config.chainlinkOracle0.primaryAggregator ?? ''),
             secondaryAggregator: String(config.chainlinkOracle0.secondaryAggregator ?? ''),
             normalizationDivider: String(config.chainlinkOracle0.normalizationDivider ?? '0'),
@@ -478,6 +524,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       const chainlink1 = config.chainlinkOracle1 && oracleType1 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+            useOtherTokenAsQuote: config.chainlinkOracle1.useOtherTokenAsQuote !== false,
+            customQuoteTokenAddress: String(config.chainlinkOracle1.customQuoteTokenAddress ?? ''),
+            customQuoteTokenMetadata: config.chainlinkOracle1.customQuoteTokenMetadata ? { symbol: String(config.chainlinkOracle1.customQuoteTokenMetadata.symbol ?? ''), decimals: Number(config.chainlinkOracle1.customQuoteTokenMetadata.decimals ?? 18) } : undefined,
             primaryAggregator: String(config.chainlinkOracle1.primaryAggregator ?? ''),
             secondaryAggregator: String(config.chainlinkOracle1.secondaryAggregator ?? ''),
             normalizationDivider: String(config.chainlinkOracle1.normalizationDivider ?? '0'),
@@ -644,6 +693,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateFeesConfiguration,
         updateSelectedHook,
         updateHookOwnerAddress,
+        updateManageableOracle,
+        updateManageableOracleTimelock,
+        updateManageableOracleOwnerAddress,
         generateJSONConfig,
         parseJSONConfig,
         setLastDeployTxHash,

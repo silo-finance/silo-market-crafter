@@ -1,0 +1,1232 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "acceptOracle",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "acceptOwnership",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "acceptRenounceOwnership",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "acceptTimelock",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "baseToken",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "baseTokenDecimals",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "cancelOracle",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "cancelRenounceOwnership",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "cancelTimelock",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "cancelTransferOwnership",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "initialize",
+            "inputs": [
+                {
+                    "name": "_oracle",
+                    "type": "address",
+                    "internalType": "contract ISiloOracle"
+                },
+                {
+                    "name": "_owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_timelock",
+                    "type": "uint32",
+                    "internalType": "uint32"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "oracle",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "contract ISiloOracle"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "oracleVerification",
+            "inputs": [
+                {
+                    "name": "_oracle",
+                    "type": "address",
+                    "internalType": "contract ISiloOracle"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "owner",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "pendingOracle",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "validAt",
+                    "type": "uint64",
+                    "internalType": "uint64"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "pendingOwnership",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "validAt",
+                    "type": "uint64",
+                    "internalType": "uint64"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "pendingTimelock",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "uint192",
+                    "internalType": "uint192"
+                },
+                {
+                    "name": "validAt",
+                    "type": "uint64",
+                    "internalType": "uint64"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "proposeOracle",
+            "inputs": [
+                {
+                    "name": "_oracle",
+                    "type": "address",
+                    "internalType": "contract ISiloOracle"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "proposeRenounceOwnership",
+            "inputs": [],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "proposeTimelock",
+            "inputs": [
+                {
+                    "name": "_timelock",
+                    "type": "uint32",
+                    "internalType": "uint32"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "proposeTransferOwnership",
+            "inputs": [
+                {
+                    "name": "newOwner",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "timelock",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint32",
+                    "internalType": "uint32"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "event",
+            "name": "OracleProposalCanceled",
+            "inputs": [],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OracleProposed",
+            "inputs": [
+                {
+                    "name": "pendingOracle",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "contract ISiloOracle"
+                },
+                {
+                    "name": "availableAt",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OracleUpdated",
+            "inputs": [
+                {
+                    "name": "oracle",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "contract ISiloOracle"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OwnershipRenounceCanceled",
+            "inputs": [],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OwnershipRenounceProposed",
+            "inputs": [
+                {
+                    "name": "availableAt",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OwnershipTransferCanceled",
+            "inputs": [],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OwnershipTransferProposed",
+            "inputs": [
+                {
+                    "name": "newOwner",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "availableAt",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "OwnershipTransferred",
+            "inputs": [
+                {
+                    "name": "previousOwner",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                },
+                {
+                    "name": "newOwner",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "TimelockProposalCanceled",
+            "inputs": [],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "TimelockProposed",
+            "inputs": [
+                {
+                    "name": "pendingTimelock",
+                    "type": "uint32",
+                    "indexed": false,
+                    "internalType": "uint32"
+                },
+                {
+                    "name": "availableAt",
+                    "type": "uint256",
+                    "indexed": false,
+                    "internalType": "uint256"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "event",
+            "name": "TimelockUpdated",
+            "inputs": [
+                {
+                    "name": "timelock",
+                    "type": "uint32",
+                    "indexed": false,
+                    "internalType": "uint32"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "error",
+            "name": "BaseTokenDecimalsMustBeGreaterThanZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "BaseTokenMustBeTheSame",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "InvalidOwnershipChangeType",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "InvalidTimelock",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "NoChange",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "NoPendingUpdate",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "NoPendingUpdateToCancel",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OnlyOwner",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "OracleQuoteFailed",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "PendingOracleUpdate",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "PendingTimelockUpdate",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "PendingUpdate",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "QuoteTokenMustBeTheSame",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "TimelockNotExpired",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "UseRenounceOwnership",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroBaseToken",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroOracle",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroOwner",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "acceptOracle()": "7f2d9575",
+        "acceptOwnership()": "79ba5097",
+        "acceptRenounceOwnership()": "7b3c3487",
+        "acceptTimelock()": "8a2c7b39",
+        "baseToken()": "c55dae63",
+        "baseTokenDecimals()": "82aa1c88",
+        "cancelOracle()": "87898ca5",
+        "cancelRenounceOwnership()": "b451b812",
+        "cancelTimelock()": "7f93690a",
+        "cancelTransferOwnership()": "92fede00",
+        "initialize(address,address,uint32)": "6ecf2b22",
+        "oracle()": "7dc0d1d0",
+        "oracleVerification(address)": "425e5d70",
+        "owner()": "8da5cb5b",
+        "pendingOracle()": "0607e5bb",
+        "pendingOwnership()": "e47fd73a",
+        "pendingTimelock()": "7cc4d9a1",
+        "proposeOracle(address)": "adc565e1",
+        "proposeRenounceOwnership()": "e84de60a",
+        "proposeTimelock(uint32)": "7fe8a469",
+        "proposeTransferOwnership(address)": "69693489",
+        "timelock()": "d33219b4"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"BaseTokenDecimalsMustBeGreaterThanZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BaseTokenMustBeTheSame\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidOwnershipChangeType\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidTimelock\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoChange\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoPendingUpdate\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoPendingUpdateToCancel\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyOwner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OracleQuoteFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PendingOracleUpdate\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PendingTimelockUpdate\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PendingUpdate\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuoteTokenMustBeTheSame\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TimelockNotExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UseRenounceOwnership\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroBaseToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroOracle\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroOwner\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"OracleProposalCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"contract ISiloOracle\",\"name\":\"pendingOracle\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"availableAt\",\"type\":\"uint256\"}],\"name\":\"OracleProposed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"contract ISiloOracle\",\"name\":\"oracle\",\"type\":\"address\"}],\"name\":\"OracleUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"OwnershipRenounceCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"availableAt\",\"type\":\"uint256\"}],\"name\":\"OwnershipRenounceProposed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"OwnershipTransferCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"availableAt\",\"type\":\"uint256\"}],\"name\":\"OwnershipTransferProposed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"TimelockProposalCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"pendingTimelock\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"availableAt\",\"type\":\"uint256\"}],\"name\":\"TimelockProposed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"timelock\",\"type\":\"uint32\"}],\"name\":\"TimelockUpdated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"acceptOracle\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"acceptOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"acceptRenounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"acceptTimelock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"baseToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"baseTokenDecimals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelOracle\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelRenounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelTimelock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelTransferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"_oracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_timelock\",\"type\":\"uint32\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"oracle\",\"outputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"_oracle\",\"type\":\"address\"}],\"name\":\"oracleVerification\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pendingOracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"value\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"validAt\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pendingOwnership\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"value\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"validAt\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pendingTimelock\",\"outputs\":[{\"internalType\":\"uint192\",\"name\":\"value\",\"type\":\"uint192\"},{\"internalType\":\"uint64\",\"name\":\"validAt\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"_oracle\",\"type\":\"address\"}],\"name\":\"proposeOracle\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"proposeRenounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"_timelock\",\"type\":\"uint32\"}],\"name\":\"proposeTimelock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"proposeTransferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"timelock\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"acceptOwnership()\":{\"details\":\"Can only be called by the pending owner after timelock expires\"},\"acceptRenounceOwnership()\":{\"details\":\"Can only be called by the current owner after timelock expires      NOTE: Renouncing ownership will leave the contract without an owner,      thereby disabling any functionality that is only available to the owner.\"},\"baseToken()\":{\"returns\":{\"_0\":\"The base token address\"}},\"baseTokenDecimals()\":{\"returns\":{\"_0\":\"The base token decimals\"}},\"initialize(address,address,uint32)\":{\"params\":{\"_oracle\":\"Initial oracle address\",\"_owner\":\"Address that will own the contract\",\"_timelock\":\"Initial time lock duration\"}},\"oracle()\":{\"returns\":{\"_0\":\"The oracle used by the manageable oracle\"}},\"oracleVerification(address)\":{\"details\":\"This function checks that:      - Oracle address is not zero      - Oracle quote token matches the stored quote token      - Oracle can provide a valid quote for the base token\",\"params\":{\"_oracle\":\"Oracle address to verify\"}},\"owner()\":{\"returns\":{\"_0\":\"The address of the current owner\"}},\"pendingOracle()\":{\"returns\":{\"validAt\":\"The timestamp at which the pending oracle becomes valid\",\"value\":\"The pending oracle address\"}},\"pendingOwnership()\":{\"details\":\"If address is zero, it means pending renounce, otherwise pending transfer\",\"returns\":{\"validAt\":\"The timestamp at which the pending ownership change becomes valid\",\"value\":\"The pending owner address\"}},\"pendingTimelock()\":{\"returns\":{\"validAt\":\"The timestamp at which the pending timelock becomes valid\",\"value\":\"The pending timelock value\"}},\"proposeOracle(address)\":{\"params\":{\"_oracle\":\"The new oracle address to propose\"}},\"proposeTimelock(uint32)\":{\"params\":{\"_timelock\":\"The new time lock duration in seconds\"}},\"proposeTransferOwnership(address)\":{\"params\":{\"newOwner\":\"The new owner address to propose\"}},\"timelock()\":{\"returns\":{\"_0\":\"The time lock duration in seconds\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"acceptOracle()\":{\"notice\":\"Accept and execute the pending oracle update (can only be called by owner after time lock expires)\"},\"acceptOwnership()\":{\"notice\":\"The new owner accepts the ownership transfer\"},\"acceptRenounceOwnership()\":{\"notice\":\"Leaves the contract without owner\"},\"acceptTimelock()\":{\"notice\":\"Accept and execute the pending timelock update (can only be called by owner after time lock expires)\"},\"baseToken()\":{\"notice\":\"Get the base token address\"},\"baseTokenDecimals()\":{\"notice\":\"Get the base token decimals\"},\"cancelOracle()\":{\"notice\":\"Cancel the pending oracle update (can only be called by owner)\"},\"cancelRenounceOwnership()\":{\"notice\":\"Cancel the pending ownership renounce (can only be called by owner)\"},\"cancelTimelock()\":{\"notice\":\"Cancel the pending timelock update (can only be called by owner)\"},\"cancelTransferOwnership()\":{\"notice\":\"Cancel the pending ownership transfer (can only be called by owner)\"},\"initialize(address,address,uint32)\":{\"notice\":\"Initialize the ManageableOracle\"},\"oracle()\":{\"notice\":\"Get the current oracle used by the manageable oracle\"},\"oracleVerification(address)\":{\"notice\":\"Verify that the oracle is valid and can provide quotes for the base token\"},\"owner()\":{\"notice\":\"Get the current owner of the contract\"},\"pendingOracle()\":{\"notice\":\"Get the pending oracle address (if any)\"},\"pendingOwnership()\":{\"notice\":\"Get the pending ownership change (if any)\"},\"pendingTimelock()\":{\"notice\":\"Get the pending time lock duration (if any)\"},\"proposeOracle(address)\":{\"notice\":\"Propose a new oracle address (can only be called by owner)\"},\"proposeRenounceOwnership()\":{\"notice\":\"Propose ownership renounce (can only be called by owner)\"},\"proposeTimelock(uint32)\":{\"notice\":\"Propose a new time lock duration (can only be called by owner)\"},\"proposeTransferOwnership(address)\":{\"notice\":\"Propose a new ownership transfer (can only be called by owner)\"},\"timelock()\":{\"notice\":\"Get the current time lock duration\"}},\"notice\":\"Manageable oracle that allows updating the oracle address with time lock and two-owner approval\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/interfaces/IManageableOracle.sol\":\"IManageableOracle\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-oracles/contracts/interfaces/IManageableOracle.sol\":{\"keccak256\":\"0x01a0e4c68377ecb97020d025dcef34d0773717fd6c06b458db4b5f9997314d76\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://337e26f26af6276da045ae6eb0a396b363ac87da5a896c41482496279b8b4f11\",\"dweb:/ipfs/QmbUMBGwobVXnZX71KTC4DEzRMraRg7Rmhrs3Cy5XUsPjp\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "BaseTokenDecimalsMustBeGreaterThanZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "BaseTokenMustBeTheSame"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "InvalidOwnershipChangeType"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "InvalidTimelock"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "NoChange"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "NoPendingUpdate"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "NoPendingUpdateToCancel"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OnlyOwner"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "OracleQuoteFailed"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "PendingOracleUpdate"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "PendingTimelockUpdate"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "PendingUpdate"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "QuoteTokenMustBeTheSame"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "TimelockNotExpired"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "UseRenounceOwnership"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroBaseToken"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroOracle"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroOwner"
+                },
+                {
+                    "inputs": [],
+                    "type": "event",
+                    "name": "OracleProposalCanceled",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "pendingOracle",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "availableAt",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "OracleProposed",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "oracle",
+                            "type": "address",
+                            "indexed": true
+                        }
+                    ],
+                    "type": "event",
+                    "name": "OracleUpdated",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [],
+                    "type": "event",
+                    "name": "OwnershipRenounceCanceled",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "availableAt",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "OwnershipRenounceProposed",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [],
+                    "type": "event",
+                    "name": "OwnershipTransferCanceled",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "newOwner",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "availableAt",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "OwnershipTransferProposed",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "previousOwner",
+                            "type": "address",
+                            "indexed": true
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "newOwner",
+                            "type": "address",
+                            "indexed": true
+                        }
+                    ],
+                    "type": "event",
+                    "name": "OwnershipTransferred",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [],
+                    "type": "event",
+                    "name": "TimelockProposalCanceled",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint32",
+                            "name": "pendingTimelock",
+                            "type": "uint32",
+                            "indexed": false
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "availableAt",
+                            "type": "uint256",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "TimelockProposed",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint32",
+                            "name": "timelock",
+                            "type": "uint32",
+                            "indexed": false
+                        }
+                    ],
+                    "type": "event",
+                    "name": "TimelockUpdated",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "acceptOracle"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "acceptOwnership"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "acceptRenounceOwnership"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "acceptTimelock"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "baseToken",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "baseTokenDecimals",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "cancelOracle"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "cancelRenounceOwnership"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "cancelTimelock"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "cancelTransferOwnership"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "_oracle",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint32",
+                            "name": "_timelock",
+                            "type": "uint32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "initialize"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "oracle",
+                    "outputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "_oracle",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "oracleVerification"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "owner",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "pendingOracle",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "value",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint64",
+                            "name": "validAt",
+                            "type": "uint64"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "pendingOwnership",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "value",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint64",
+                            "name": "validAt",
+                            "type": "uint64"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "pendingTimelock",
+                    "outputs": [
+                        {
+                            "internalType": "uint192",
+                            "name": "value",
+                            "type": "uint192"
+                        },
+                        {
+                            "internalType": "uint64",
+                            "name": "validAt",
+                            "type": "uint64"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "_oracle",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "proposeOracle"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "proposeRenounceOwnership"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint32",
+                            "name": "_timelock",
+                            "type": "uint32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "proposeTimelock"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "newOwner",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "proposeTransferOwnership"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "timelock",
+                    "outputs": [
+                        {
+                            "internalType": "uint32",
+                            "name": "",
+                            "type": "uint32"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "acceptOwnership()": {
+                        "details": "Can only be called by the pending owner after timelock expires"
+                    },
+                    "acceptRenounceOwnership()": {
+                        "details": "Can only be called by the current owner after timelock expires      NOTE: Renouncing ownership will leave the contract without an owner,      thereby disabling any functionality that is only available to the owner."
+                    },
+                    "baseToken()": {
+                        "returns": {
+                            "_0": "The base token address"
+                        }
+                    },
+                    "baseTokenDecimals()": {
+                        "returns": {
+                            "_0": "The base token decimals"
+                        }
+                    },
+                    "initialize(address,address,uint32)": {
+                        "params": {
+                            "_oracle": "Initial oracle address",
+                            "_owner": "Address that will own the contract",
+                            "_timelock": "Initial time lock duration"
+                        }
+                    },
+                    "oracle()": {
+                        "returns": {
+                            "_0": "The oracle used by the manageable oracle"
+                        }
+                    },
+                    "oracleVerification(address)": {
+                        "details": "This function checks that:      - Oracle address is not zero      - Oracle quote token matches the stored quote token      - Oracle can provide a valid quote for the base token",
+                        "params": {
+                            "_oracle": "Oracle address to verify"
+                        }
+                    },
+                    "owner()": {
+                        "returns": {
+                            "_0": "The address of the current owner"
+                        }
+                    },
+                    "pendingOracle()": {
+                        "returns": {
+                            "validAt": "The timestamp at which the pending oracle becomes valid",
+                            "value": "The pending oracle address"
+                        }
+                    },
+                    "pendingOwnership()": {
+                        "details": "If address is zero, it means pending renounce, otherwise pending transfer",
+                        "returns": {
+                            "validAt": "The timestamp at which the pending ownership change becomes valid",
+                            "value": "The pending owner address"
+                        }
+                    },
+                    "pendingTimelock()": {
+                        "returns": {
+                            "validAt": "The timestamp at which the pending timelock becomes valid",
+                            "value": "The pending timelock value"
+                        }
+                    },
+                    "proposeOracle(address)": {
+                        "params": {
+                            "_oracle": "The new oracle address to propose"
+                        }
+                    },
+                    "proposeTimelock(uint32)": {
+                        "params": {
+                            "_timelock": "The new time lock duration in seconds"
+                        }
+                    },
+                    "proposeTransferOwnership(address)": {
+                        "params": {
+                            "newOwner": "The new owner address to propose"
+                        }
+                    },
+                    "timelock()": {
+                        "returns": {
+                            "_0": "The time lock duration in seconds"
+                        }
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "acceptOracle()": {
+                        "notice": "Accept and execute the pending oracle update (can only be called by owner after time lock expires)"
+                    },
+                    "acceptOwnership()": {
+                        "notice": "The new owner accepts the ownership transfer"
+                    },
+                    "acceptRenounceOwnership()": {
+                        "notice": "Leaves the contract without owner"
+                    },
+                    "acceptTimelock()": {
+                        "notice": "Accept and execute the pending timelock update (can only be called by owner after time lock expires)"
+                    },
+                    "baseToken()": {
+                        "notice": "Get the base token address"
+                    },
+                    "baseTokenDecimals()": {
+                        "notice": "Get the base token decimals"
+                    },
+                    "cancelOracle()": {
+                        "notice": "Cancel the pending oracle update (can only be called by owner)"
+                    },
+                    "cancelRenounceOwnership()": {
+                        "notice": "Cancel the pending ownership renounce (can only be called by owner)"
+                    },
+                    "cancelTimelock()": {
+                        "notice": "Cancel the pending timelock update (can only be called by owner)"
+                    },
+                    "cancelTransferOwnership()": {
+                        "notice": "Cancel the pending ownership transfer (can only be called by owner)"
+                    },
+                    "initialize(address,address,uint32)": {
+                        "notice": "Initialize the ManageableOracle"
+                    },
+                    "oracle()": {
+                        "notice": "Get the current oracle used by the manageable oracle"
+                    },
+                    "oracleVerification(address)": {
+                        "notice": "Verify that the oracle is valid and can provide quotes for the base token"
+                    },
+                    "owner()": {
+                        "notice": "Get the current owner of the contract"
+                    },
+                    "pendingOracle()": {
+                        "notice": "Get the pending oracle address (if any)"
+                    },
+                    "pendingOwnership()": {
+                        "notice": "Get the pending ownership change (if any)"
+                    },
+                    "pendingTimelock()": {
+                        "notice": "Get the pending time lock duration (if any)"
+                    },
+                    "proposeOracle(address)": {
+                        "notice": "Propose a new oracle address (can only be called by owner)"
+                    },
+                    "proposeRenounceOwnership()": {
+                        "notice": "Propose ownership renounce (can only be called by owner)"
+                    },
+                    "proposeTimelock(uint32)": {
+                        "notice": "Propose a new time lock duration (can only be called by owner)"
+                    },
+                    "proposeTransferOwnership(address)": {
+                        "notice": "Propose a new ownership transfer (can only be called by owner)"
+                    },
+                    "timelock()": {
+                        "notice": "Get the current time lock duration"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-oracles/contracts/interfaces/IManageableOracle.sol": "IManageableOracle"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IManageableOracle.sol": {
+                "keccak256": "0x01a0e4c68377ecb97020d025dcef34d0773717fd6c06b458db4b5f9997314d76",
+                "urls": [
+                    "bzz-raw://337e26f26af6276da045ae6eb0a396b363ac87da5a896c41482496279b8b4f11",
+                    "dweb:/ipfs/QmbUMBGwobVXnZX71KTC4DEzRMraRg7Rmhrs3Cy5XUsPjp"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 97
+}

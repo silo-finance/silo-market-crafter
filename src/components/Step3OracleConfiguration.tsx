@@ -128,6 +128,7 @@ export default function Step3OracleConfiguration() {
     aggregatorLatestAnswer?: string
   }>({
     baseToken: 'token0',
+    useOtherTokenAsQuote: true,
     primaryAggregator: '',
     secondaryAggregator: '',
     normalizationDivider: '0',
@@ -142,12 +143,15 @@ export default function Step3OracleConfiguration() {
     aggregatorLatestAnswer?: string
   }>({
     baseToken: 'token0',
+    useOtherTokenAsQuote: true,
     primaryAggregator: '',
     secondaryAggregator: '',
     normalizationDivider: '0',
     normalizationMultiplier: '0',
     invertSecondPrice: false
   })
+  const [chainlink0QuoteInput, setChainlink0QuoteInput] = useState('')
+  const [chainlink1QuoteInput, setChainlink1QuoteInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [loadingOracles, setLoadingOracles] = useState(true)
@@ -438,6 +442,8 @@ export default function Step3OracleConfiguration() {
     if (wizardData.oracleType0?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
     const token0 = wizardData.token0
     const token1 = wizardData.token1
+    const useOther = chainlink0.useOtherTokenAsQuote !== false
+    const quoteDecimals = useOther ? token1.decimals : (chainlink0.customQuoteTokenMetadata?.decimals ?? 18)
     const addr = chainlink0.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink0(prev => ({
@@ -467,7 +473,7 @@ export default function Step3OracleConfiguration() {
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
         const base = token0.decimals
-        const quote = token1.decimals
+        const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink0(prev => ({
@@ -497,13 +503,15 @@ export default function Step3OracleConfiguration() {
     return () => { cancelled = true }
     // Intentionally narrow: avoid re-running on every wizardData reference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator])
+  }, [wizardData.oracleType0?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink0.primaryAggregator, chainlink0.useOtherTokenAsQuote, chainlink0.customQuoteTokenMetadata?.decimals])
 
   // Fetch Chainlink primary aggregator: description, latestRoundData (answer), decimals; compute normalization (token1)
   useEffect(() => {
     if (wizardData.oracleType1?.type !== 'chainlink' || !wizardData.token0 || !wizardData.token1) return
     const token0 = wizardData.token0
     const token1 = wizardData.token1
+    const useOther = chainlink1.useOtherTokenAsQuote !== false
+    const quoteDecimals = useOther ? token0.decimals : (chainlink1.customQuoteTokenMetadata?.decimals ?? 18)
     const addr = chainlink1.primaryAggregator?.trim()
     if (!addr || !ethers.isAddress(addr)) {
       setChainlink1(prev => ({
@@ -533,7 +541,7 @@ export default function Step3OracleConfiguration() {
         if (cancelled) return
         const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
         const base = token1.decimals
-        const quote = token0.decimals
+        const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
         if (cancelled) return
         setChainlink1(prev => ({
@@ -563,7 +571,7 @@ export default function Step3OracleConfiguration() {
     return () => { cancelled = true }
     // Intentionally narrow: avoid re-running on every wizardData reference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator])
+  }, [wizardData.oracleType1?.type, wizardData.token0?.decimals, wizardData.token1?.decimals, chainlink1.primaryAggregator, chainlink1.useOtherTokenAsQuote, chainlink1.customQuoteTokenMetadata?.decimals])
 
   // Sync chainlink state from wizard when returning to step
   useEffect(() => {
@@ -572,12 +580,20 @@ export default function Step3OracleConfiguration() {
       setChainlink0(prev => ({
         ...prev,
         baseToken: c0.baseToken,
+        useOtherTokenAsQuote: c0.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: c0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: c0.customQuoteTokenMetadata,
         primaryAggregator: c0.primaryAggregator,
         secondaryAggregator: c0.secondaryAggregator || '',
         normalizationDivider: c0.normalizationDivider,
         normalizationMultiplier: c0.normalizationMultiplier,
         invertSecondPrice: c0.invertSecondPrice
       }))
+      if (!(c0.useOtherTokenAsQuote ?? true) && c0.customQuoteTokenAddress) {
+        setChainlink0QuoteInput(c0.customQuoteTokenAddress)
+      } else {
+        setChainlink0QuoteInput('')
+      }
       const hasSecondary = !!(c0.secondaryAggregator && c0.secondaryAggregator !== ethers.ZeroAddress && c0.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator0(hasSecondary)
     }
@@ -586,12 +602,20 @@ export default function Step3OracleConfiguration() {
       setChainlink1(prev => ({
         ...prev,
         baseToken: c1.baseToken,
+        useOtherTokenAsQuote: c1.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: c1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: c1.customQuoteTokenMetadata,
         primaryAggregator: c1.primaryAggregator,
         secondaryAggregator: c1.secondaryAggregator || '',
         normalizationDivider: c1.normalizationDivider,
         normalizationMultiplier: c1.normalizationMultiplier,
         invertSecondPrice: c1.invertSecondPrice
       }))
+      if (!(c1.useOtherTokenAsQuote ?? true) && c1.customQuoteTokenAddress) {
+        setChainlink1QuoteInput(c1.customQuoteTokenAddress)
+      } else {
+        setChainlink1QuoteInput('')
+      }
       const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator1(hasSecondary)
     }
@@ -709,47 +733,40 @@ export default function Step3OracleConfiguration() {
       setSelectedScalers(prev => {
         const updated = { ...prev }
         
-        // Load from context - always check if saved config matches available scalers
         const savedScaler0 = wizardData.oracleConfiguration?.token0.scalerOracle
         const savedScaler1 = wizardData.oracleConfiguration?.token1.scalerOracle
         
-        // Update token0: ALWAYS prioritize saved config from context if it matches available scalers
-        if (savedScaler0 && token0Oracles.length > 0) {
-          const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
-          if (matchedScaler0) {
-            // Always use matched scaler from available list (has latest validation)
-            // Override any existing selection if context has a match
-            updated.token0 = matchedScaler0
-          } else if (savedScaler0.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token0 = savedScaler0
+        // Token0: when we have pre-deployed scalers, customCreate from "0 available" state is invalid – clear it
+        if (token0Oracles.length > 0) {
+          if (prev.token0?.customCreate) {
+            updated.token0 = null
           }
-        }
-        // If no saved config, update existing selection with new validation results
-        else if (prev.token0 && token0Oracles.length > 0) {
-          const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === prev.token0?.address.toLowerCase())
-          if (updatedOracle) {
-            updated.token0 = updatedOracle
+          // Restore from context when saved config matches an available scaler (e.g. user returned to step)
+          if (savedScaler0 && !savedScaler0.customCreate) {
+            const matchedScaler0 = token0Oracles.find(o => o.address.toLowerCase() === savedScaler0.address.toLowerCase())
+            if (matchedScaler0) updated.token0 = matchedScaler0
+          } else if (savedScaler0?.customCreate) {
+            // customCreate only valid when no pre-deployed scalers
+          } else if (prev.token0 && !prev.token0.customCreate) {
+            const updatedOracle = token0Oracles.find(o => o.address.toLowerCase() === prev.token0?.address.toLowerCase())
+            if (updatedOracle) updated.token0 = updatedOracle
           }
         }
         
-        // Update token1: ALWAYS prioritize saved config from context if it matches available scalers
-        if (savedScaler1 && token1Oracles.length > 0) {
-          const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
-          if (matchedScaler1) {
-            // Always use matched scaler from available list (has latest validation)
-            // Override any existing selection if context has a match
-            updated.token1 = matchedScaler1
-          } else if (savedScaler1.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token1 = savedScaler1
+        // Token1: when we have pre-deployed scalers, customCreate from "0 available" state is invalid – clear it
+        if (token1Oracles.length > 0) {
+          if (prev.token1?.customCreate) {
+            updated.token1 = null
           }
-        }
-        // If no saved config, update existing selection with new validation results
-        else if (prev.token1 && token1Oracles.length > 0) {
-          const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === prev.token1?.address.toLowerCase())
-          if (updatedOracle) {
-            updated.token1 = updatedOracle
+          // Restore from context when saved config matches an available scaler (e.g. user returned to step)
+          if (savedScaler1 && !savedScaler1.customCreate) {
+            const matchedScaler1 = token1Oracles.find(o => o.address.toLowerCase() === savedScaler1.address.toLowerCase())
+            if (matchedScaler1) updated.token1 = matchedScaler1
+          } else if (savedScaler1?.customCreate) {
+            // customCreate only valid when no pre-deployed scalers
+          } else if (prev.token1 && !prev.token1.customCreate) {
+            const updatedOracle = token1Oracles.find(o => o.address.toLowerCase() === prev.token1?.address.toLowerCase())
+            if (updatedOracle) updated.token1 = updatedOracle
           }
         }
         
@@ -775,32 +792,28 @@ export default function Step3OracleConfiguration() {
         const updated = { ...prev }
         let changed = false
         
-        // Match token0 scaler from saved config with available scalers
-        if (savedScaler0 && availableScalers.token0.length > 0) {
+        // Token0: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+        if (savedScaler0 && !savedScaler0.customCreate && availableScalers.token0.length > 0) {
           const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
           if (matchedScaler0) {
-            // ALWAYS set if we have a match from context - no conditions
             updated.token0 = matchedScaler0
             changed = true
-          } else if (savedScaler0.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token0 = savedScaler0
-            changed = true
           }
+        } else if (savedScaler0?.customCreate && availableScalers.token0.length === 0) {
+          updated.token0 = savedScaler0
+          changed = true
         }
         
-        // Match token1 scaler from saved config with available scalers
-        if (savedScaler1 && availableScalers.token1.length > 0) {
+        // Token1: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+        if (savedScaler1 && !savedScaler1.customCreate && availableScalers.token1.length > 0) {
           const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
           if (matchedScaler1) {
-            // ALWAYS set if we have a match from context - no conditions
             updated.token1 = matchedScaler1
             changed = true
-          } else if (savedScaler1.customCreate) {
-            // Keep custom create scaler if no match found
-            updated.token1 = savedScaler1
-            changed = true
           }
+        } else if (savedScaler1?.customCreate && availableScalers.token1.length === 0) {
+          updated.token1 = savedScaler1
+          changed = true
         }
         
         return changed ? updated : prev
@@ -810,104 +823,124 @@ export default function Step3OracleConfiguration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errors: string[] = []
+    if (!wizardData.oracleType0 || !wizardData.oracleType1) {
+      errors.push('Oracle types not selected. Please go back to Step 2.')
+    }
+    if (wizardData.oracleType0?.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) {
+      errors.push('Please select or configure a scaler oracle for Token 0')
+    }
+    if (wizardData.oracleType1?.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
+      errors.push('Please select or configure a scaler oracle for Token 1')
+    }
+    if (wizardData.oracleType0?.type === 'chainlink') {
+      if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
+        errors.push('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
+      } else if ((!chainlink0.normalizationDivider && !chainlink0.normalizationMultiplier) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0')) {
+        errors.push('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
+      }
+      if (!(chainlink0.useOtherTokenAsQuote ?? true)) {
+        const addr = chainlink0.customQuoteTokenAddress?.trim()
+        if (!addr || !ethers.isAddress(addr)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 0 Chainlink oracle')
+        }
+      }
+    }
+    if (wizardData.oracleType1?.type === 'chainlink') {
+      if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
+        errors.push('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
+      } else if ((!chainlink1.normalizationDivider && !chainlink1.normalizationMultiplier) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')) {
+        errors.push('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
+      }
+      if (!(chainlink1.useOtherTokenAsQuote ?? true)) {
+        const addr = chainlink1.customQuoteTokenAddress?.trim()
+        if (!addr || !ethers.isAddress(addr)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 1 Chainlink oracle')
+        }
+      }
+    }
+    if (wizardData.oracleType0?.type === 'ptLinear') {
+      const max0 = Number(ptLinear0.maxYieldPercent)
+      if (Number.isNaN(max0) || max0 <= 0) {
+        errors.push('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
+      }
+      if (!ptLinear0.useSecondTokenAsQuote) {
+        const addr0 = ptLinear0.hardcodedQuoteTokenAddress?.trim()
+        if (!addr0 || !ethers.isAddress(addr0)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 0 PT-Linear oracle')
+        }
+      }
+    }
+    if (wizardData.oracleType1?.type === 'ptLinear') {
+      const max1 = Number(ptLinear1.maxYieldPercent)
+      if (Number.isNaN(max1) || max1 <= 0) {
+        errors.push('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
+      }
+      if (!ptLinear1.useSecondTokenAsQuote) {
+        const addr1 = ptLinear1.hardcodedQuoteTokenAddress?.trim()
+        if (!addr1 || !ethers.isAddress(addr1)) {
+          errors.push('Please enter or resolve a valid quote token address for Token 1 PT-Linear oracle')
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
+    }
+
     setError('')
     setLoading(true)
 
     try {
-      if (!wizardData.oracleType0 || !wizardData.oracleType1) {
-        throw new Error('Oracle types not selected. Please go back to Step 2.')
-      }
-
-      // Validate selections (pre-deployed or custom create)
-      if (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) {
-        throw new Error('Please select or configure a scaler oracle for Token 0')
-      }
-      if (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
-        throw new Error('Please select or configure a scaler oracle for Token 1')
-      }
-      if (wizardData.oracleType0.type === 'chainlink') {
-        if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
-          throw new Error('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
-        }
-        if (!chainlink0.normalizationDivider || !chainlink0.normalizationMultiplier) {
-          throw new Error('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
-        }
-      }
-      if (wizardData.oracleType1.type === 'chainlink') {
-        if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
-          throw new Error('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
-        }
-        if (!chainlink1.normalizationDivider || !chainlink1.normalizationMultiplier) {
-          throw new Error('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
-        }
-      }
-
-      if (wizardData.oracleType0.type === 'ptLinear') {
-        const max0 = Number(ptLinear0.maxYieldPercent)
-        if (Number.isNaN(max0) || max0 <= 0) {
-          throw new Error('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
-        }
-        if (!ptLinear0.useSecondTokenAsQuote) {
-          const addr0 = ptLinear0.hardcodedQuoteTokenAddress?.trim()
-          if (!addr0 || !ethers.isAddress(addr0)) {
-            throw new Error('Please enter or resolve a valid quote token address for Token 0 PT-Linear oracle')
-          }
-        }
-      }
-      if (wizardData.oracleType1.type === 'ptLinear') {
-        const max1 = Number(ptLinear1.maxYieldPercent)
-        if (Number.isNaN(max1) || max1 <= 0) {
-          throw new Error('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
-        }
-        if (!ptLinear1.useSecondTokenAsQuote) {
-          const addr1 = ptLinear1.hardcodedQuoteTokenAddress?.trim()
-          if (!addr1 || !ethers.isAddress(addr1)) {
-            throw new Error('Please enter or resolve a valid quote token address for Token 1 PT-Linear oracle')
-          }
-        }
-      }
-
       // Resolve quote address for PT-Linear when using second token
       const pt0QuoteAddress =
-        wizardData.oracleType0.type === 'ptLinear'
+        wizardData.oracleType0!.type === 'ptLinear'
           ? (ptLinear0.useSecondTokenAsQuote ? wizardData.token1!.address : ptLinear0.hardcodedQuoteTokenAddress!)
           : ''
       const pt1QuoteAddress =
-        wizardData.oracleType1.type === 'ptLinear'
+        wizardData.oracleType1!.type === 'ptLinear'
           ? (ptLinear1.useSecondTokenAsQuote ? wizardData.token0!.address : ptLinear1.hardcodedQuoteTokenAddress!)
           : ''
 
       // Create oracle configuration
       const config: OracleConfiguration = {
         token0: {
-          type: wizardData.oracleType0.type,
-          scalerOracle: wizardData.oracleType0.type === 'scaler' ? selectedScalers.token0! : undefined,
-          chainlinkOracle: wizardData.oracleType0.type === 'chainlink' ? {
+          type: wizardData.oracleType0!.type,
+          scalerOracle: wizardData.oracleType0!.type === 'scaler' ? selectedScalers.token0! : undefined,
+          chainlinkOracle: wizardData.oracleType0!.type === 'chainlink' ? {
             baseToken: 'token0',
+            useOtherTokenAsQuote: chainlink0.useOtherTokenAsQuote ?? true,
+            customQuoteTokenAddress: chainlink0.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenMetadata: chainlink0.customQuoteTokenMetadata,
             primaryAggregator: chainlink0.primaryAggregator!.trim(),
             secondaryAggregator: chainlink0.secondaryAggregator?.trim() || ethers.ZeroAddress,
             normalizationDivider: chainlink0.normalizationDivider ?? '0',
             normalizationMultiplier: chainlink0.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink0.invertSecondPrice ?? false
           } : undefined,
-          ptLinearOracle: wizardData.oracleType0.type === 'ptLinear' ? {
+          ptLinearOracle: wizardData.oracleType0!.type === 'ptLinear' ? {
             maxYieldPercent: Number(ptLinear0.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear0.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt0QuoteAddress
           } : undefined
         },
         token1: {
-          type: wizardData.oracleType1.type,
-          scalerOracle: wizardData.oracleType1.type === 'scaler' ? selectedScalers.token1! : undefined,
-          chainlinkOracle: wizardData.oracleType1.type === 'chainlink' ? {
+          type: wizardData.oracleType1!.type,
+          scalerOracle: wizardData.oracleType1!.type === 'scaler' ? selectedScalers.token1! : undefined,
+          chainlinkOracle: wizardData.oracleType1!.type === 'chainlink' ? {
             baseToken: 'token1',
+            useOtherTokenAsQuote: chainlink1.useOtherTokenAsQuote ?? true,
+            customQuoteTokenAddress: chainlink1.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenMetadata: chainlink1.customQuoteTokenMetadata,
             primaryAggregator: chainlink1.primaryAggregator!.trim(),
             secondaryAggregator: chainlink1.secondaryAggregator?.trim() || ethers.ZeroAddress,
             normalizationDivider: chainlink1.normalizationDivider ?? '0',
             normalizationMultiplier: chainlink1.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink1.invertSecondPrice ?? false
           } : undefined,
-          ptLinearOracle: wizardData.oracleType1.type === 'ptLinear' ? {
+          ptLinearOracle: wizardData.oracleType1!.type === 'ptLinear' ? {
             maxYieldPercent: Number(ptLinear1.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear1.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt1QuoteAddress
@@ -1081,11 +1114,58 @@ export default function Step3OracleConfiguration() {
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-2">
                 Base token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
-                {' · '}
-                Quote token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
               </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    id="chainlink0-quote-other"
+                    name="chainlink0-quote"
+                    checked={chainlink0.useOtherTokenAsQuote !== false}
+                    onChange={() => {
+                      setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
+                      setChainlink0QuoteInput('')
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="chainlink0-quote-other" className="text-sm text-gray-300">
+                    Use other token as quote — <span className="text-white font-medium">{wizardData.token1?.symbol}</span>
+                  </label>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="chainlink0-quote-custom"
+                      name="chainlink0-quote"
+                      checked={chainlink0.useOtherTokenAsQuote === false}
+                      onChange={() => setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
+                      className="rounded"
+                    />
+                    <label htmlFor="chainlink0-quote-custom" className="text-sm text-gray-300">
+                      Custom Quote Token
+                    </label>
+                  </div>
+                  {chainlink0.useOtherTokenAsQuote === false && (
+                    <TokenAddressInput
+                      value={chainlink0QuoteInput}
+                      onChange={setChainlink0QuoteInput}
+                      onResolve={(address, metadata) => {
+                        if (metadata && address) {
+                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
+                        } else {
+                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                        }
+                      }}
+                      chainId={wizardData.networkInfo?.chainId}
+                      label="Quote token (address or symbol)"
+                      placeholder="0x… or symbol from addresses JSON"
+                    />
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input
@@ -1376,11 +1456,58 @@ export default function Step3OracleConfiguration() {
               ) : (
                 <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
               )}
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-2">
                 Base token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
-                {' · '}
-                Quote token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
               </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    id="chainlink1-quote-other"
+                    name="chainlink1-quote"
+                    checked={chainlink1.useOtherTokenAsQuote !== false}
+                    onChange={() => {
+                      setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
+                      setChainlink1QuoteInput('')
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor="chainlink1-quote-other" className="text-sm text-gray-300">
+                    Use other token as quote — <span className="text-white font-medium">{wizardData.token0?.symbol}</span>
+                  </label>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="chainlink1-quote-custom"
+                      name="chainlink1-quote"
+                      checked={chainlink1.useOtherTokenAsQuote === false}
+                      onChange={() => setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
+                      className="rounded"
+                    />
+                    <label htmlFor="chainlink1-quote-custom" className="text-sm text-gray-300">
+                      Custom Quote Token
+                    </label>
+                  </div>
+                  {chainlink1.useOtherTokenAsQuote === false && (
+                    <TokenAddressInput
+                      value={chainlink1QuoteInput}
+                      onChange={setChainlink1QuoteInput}
+                      onResolve={(address, metadata) => {
+                        if (metadata && address) {
+                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
+                        } else {
+                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                        }
+                      }}
+                      chainId={wizardData.networkInfo?.chainId}
+                      label="Quote token (address or symbol)"
+                      placeholder="0x… or symbol from addresses JSON"
+                    />
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input
@@ -1572,9 +1699,12 @@ export default function Step3OracleConfiguration() {
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 text-sm">
-              ✗ {error}
-            </div>
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {error.split('\n').map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -1592,13 +1722,7 @@ export default function Step3OracleConfiguration() {
           </button>
           <button
             type="submit"
-            disabled={loading ||
-              (wizardData.oracleType0.type === 'scaler' && (!selectedScalers.token0 || (!selectedScalers.token0.customCreate && !selectedScalers.token0.valid))) ||
-              (wizardData.oracleType1.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) ||
-              (wizardData.oracleType0.type === 'chainlink' && (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0'))) ||
-              (wizardData.oracleType1.type === 'chainlink' && (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0'))) ||
-              (wizardData.oracleType0.type === 'ptLinear' && (Number(ptLinear0.maxYieldPercent) <= 0 || (!ptLinear0.useSecondTokenAsQuote && (!ptLinear0.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear0.hardcodedQuoteTokenAddress))))) ||
-              (wizardData.oracleType1.type === 'ptLinear' && (Number(ptLinear1.maxYieldPercent) <= 0 || (!ptLinear1.useSecondTokenAsQuote && (!ptLinear1.hardcodedQuoteTokenAddress?.trim() || !ethers.isAddress(ptLinear1.hardcodedQuoteTokenAddress)))))}
+            disabled={loading}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
@@ -1611,7 +1735,7 @@ export default function Step3OracleConfiguration() {
               </>
             ) : (
               <>
-                <span>IRM Selection</span>
+                <span>Manageable Oracle</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

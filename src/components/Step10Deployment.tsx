@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
-import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
+import { getChainName, getExplorerBaseUrl, getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
+import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
@@ -70,6 +71,8 @@ export default function Step10Deployment() {
   const [deployerAddress, setDeployerAddress] = useState<string>('')
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [deployerVersion, setDeployerVersion] = useState<string>('')
+  const [siloImplementationAddress, setSiloImplementationAddress] = useState<string | null>(null)
+  const [siloImplementationVersion, setSiloImplementationVersion] = useState<string>('')
   const [siloCoreDeployments, setSiloCoreDeployments] = useState<SiloCoreDeployments>({})
   const [oracleDeployments, setOracleDeployments] = useState<OracleDeployments>({})
   const [loading, setLoading] = useState(true)
@@ -366,6 +369,18 @@ export default function Step10Deployment() {
       } catch (err) {
         console.warn('Failed to fetch PTLinearOracleFactory:', err)
       }
+      try {
+        const manageableRes = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ManageableOracleFactory.sol.json`
+        )
+        if (manageableRes.ok) {
+          const data = await manageableRes.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) result.manageableOracleFactory = address
+        }
+      } catch (err) {
+        console.warn('Failed to fetch ManageableOracleFactory:', err)
+      }
       setOracleDeployments(result)
     }
 
@@ -399,6 +414,57 @@ export default function Step10Deployment() {
     }
     fetchDeployerVersion()
   }, [deployerAddress, siloLensAddress, wizardData.networkInfo?.chainId])
+
+  // Fetch SILO_IMPL from SiloDeployer contract (SiloDeployer has public immutable SILO_IMPL)
+  useEffect(() => {
+    if (!deployerAddress || !window.ethereum) return
+
+    const siloImplAbi = ['function SILO_IMPL() view returns (address)']
+
+    const fetchSiloImpl = async () => {
+      const eth = window.ethereum
+      if (!eth) return
+      try {
+        const provider = new ethers.BrowserProvider(eth)
+        const contract = new ethers.Contract(deployerAddress, siloImplAbi, provider)
+        const impl = await contract.SILO_IMPL()
+        if (impl && ethers.isAddress(impl)) {
+          setSiloImplementationAddress(ethers.getAddress(impl))
+        } else {
+          setSiloImplementationAddress(null)
+        }
+      } catch (err) {
+        console.warn('Failed to fetch SILO_IMPL from SiloDeployer:', err)
+        setSiloImplementationAddress(null)
+      }
+    }
+    fetchSiloImpl()
+  }, [deployerAddress])
+
+  // Fetch Silo Implementation version via Silo Lens
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!siloLensAddress || !chainId || !siloImplementationAddress) return
+
+    const fetchImplVersion = async () => {
+      if (!window.ethereum) return
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+          provider,
+          lensAddress: siloLensAddress,
+          chainId,
+          addresses: [siloImplementationAddress]
+        })
+        const version = versionsByAddress.get(siloImplementationAddress.toLowerCase()) ?? ''
+        setSiloImplementationVersion(version || '—')
+      } catch (err) {
+        console.warn('Failed to fetch Silo Implementation version:', err)
+        setSiloImplementationVersion('—')
+      }
+    }
+    fetchImplVersion()
+  }, [siloImplementationAddress, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Prepare deploy arguments from JSON config (matching Solidity script logic)
   // Always prepare arguments even if deployer address is not available
@@ -445,6 +511,12 @@ export default function Step10Deployment() {
         validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
       }
 
+      // Validate Oracle & IRM owner when manageable Oracle or Kink IRM is used
+      const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+      if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
+        validationWarnings.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
+      }
+
       // Update warnings list - replace validation warnings but keep others
       setWarnings(prevWarnings => {
         // Keep warnings from other sources (like fetchDeploymentData) that are not validation warnings
@@ -452,6 +524,7 @@ export default function Step10Deployment() {
           !w.includes('Hook implementation address') &&
           !w.includes('address not found') &&
           !w.includes('Hook owner address') &&
+          !w.includes('Oracle & IRM owner') &&
           !w.includes('SiloDeployer address') &&
           !w.includes('deployment data')
         )
@@ -487,6 +560,11 @@ export default function Step10Deployment() {
     
     if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
       validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+    }
+
+    const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+    if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
+      validationErrors.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
     }
     
     if (deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress) {
@@ -674,7 +752,7 @@ export default function Step10Deployment() {
       // Wait for transaction confirmation
       await tx.wait()
 
-      markStepCompleted(10)
+      markStepCompleted(12)
       const argsHash =
         deployArgs && deployerAddress
           ? ethers.keccak256(generateDeployCalldata(deployerAddress, deployArgs) as `0x${string}`)
@@ -692,7 +770,7 @@ export default function Step10Deployment() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=9')
+    router.push('/wizard?step=11')
   }
 
   const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
@@ -709,7 +787,7 @@ export default function Step10Deployment() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 10: Market Deployment
+          Step 12: Market Deployment
         </h1>
         <p className="text-gray-300 text-lg">
           Review deployment arguments and deploy your market
@@ -733,13 +811,45 @@ export default function Step10Deployment() {
         {loading ? (
           <p className="text-white font-mono text-sm">Loading...</p>
         ) : deployerAddress ? (
-          <ContractInfo
-            contractName="SiloDeployer"
-            address={deployerAddress}
-            version={deployerVersion || '…'}
-            chainId={wizardData.networkInfo?.chainId}
-            isOracle={false}
-          />
+          <>
+            <ContractInfo
+              contractName="SiloDeployer"
+              address={deployerAddress}
+              version={deployerVersion || '…'}
+              chainId={wizardData.networkInfo?.chainId}
+              isOracle={false}
+            />
+            {siloImplementationAddress && (
+              <div className="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white">Silo Implementation</p>
+                  <span className="text-xs text-gray-400">
+                    Source (SiloDeployer): {' '}
+                    <a
+                      href={getExplorerAddressUrl(wizardData.networkInfo?.chainId ?? 1, deployerAddress)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-gray-300 underline"
+                    >
+                      source
+                    </a>
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AddressDisplayLong
+                      address={siloImplementationAddress}
+                      chainId={wizardData.networkInfo?.chainId}
+                      linkClassName="text-lime-600 hover:text-lime-500"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-300 whitespace-nowrap">
+                    version: <span className="text-gray-400">{siloImplementationVersion || 'Loading…'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-white font-mono text-sm">Not available</p>
         )}
@@ -767,6 +877,7 @@ export default function Step10Deployment() {
               !deployArgs ||
               !wizardData.hookOwnerAddress ||
               !ethers.isAddress(wizardData.hookOwnerAddress) ||
+              ((wizardData.manageableOracle || wizardData.irmModelType === 'kink') && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
               (deployArgs && (
                 deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
                 deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
@@ -835,7 +946,7 @@ export default function Step10Deployment() {
           </div>
           <button
             type="button"
-            onClick={() => router.push(`/wizard?step=11&tx=${txHash}`)}
+            onClick={() => router.push(`/wizard?step=13&tx=${txHash}`)}
             className="bg-lime-800 hover:bg-lime-700 text-white cta-strong-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification

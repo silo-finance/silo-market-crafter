@@ -1,21 +1,42 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { bigintToDisplayNumber } from '@/utils/verification/normalization'
+import { resolveAddressToName } from '@/utils/symbolToAddress'
 
 function OwnerAddressRow({ address, chainId }: { address: string; chainId: number }) {
+  const [nameFromJson, setNameFromJson] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!address || !chainId) {
+      setNameFromJson(null)
+      return
+    }
+    let cancelled = false
+    resolveAddressToName(String(chainId), address).then((name) => {
+      if (!cancelled) setNameFromJson(name)
+    })
+    return () => { cancelled = true }
+  }, [address, chainId])
+
   return (
-    <div className="mt-1">
+    <div className="mt-1 flex items-center gap-2 flex-wrap">
       <AddressDisplayShort
         address={address}
         chainId={chainId}
         className="text-xs"
         showVersion={false}
       />
+      {nameFromJson != null && (
+        <>
+          <span className="text-xs text-lime-200/50">—</span>
+          <span className="text-xs text-lime-200/65">{nameFromJson}</span>
+        </>
+      )}
     </div>
   )
 }
@@ -36,7 +57,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     }
   }
 
-  const isStep11Standalone = wizardData.currentStep === 11 && !wizardData.verificationFromWizard
+  const isStep13Standalone = wizardData.currentStep === 13 && !wizardData.verificationFromWizard
 
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
@@ -47,7 +68,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     )
   }
 
-  const showSummarySidebar = !isStep11Standalone && isSummaryOpen
+  const showSummarySidebar = !isStep13Standalone && isSummaryOpen
 
   return (
     <div className="light-market-theme min-h-screen text-emerald-950">
@@ -79,7 +100,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
           </div>
         </div>
 
-        {/* Summary Sidebar - hidden on step 11 when verifying user-provided data (not from wizard) */}
+        {/* Summary Sidebar - hidden on step 12 when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
@@ -103,14 +124,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   { step: 1, title: 'Assets' },
                   { step: 2, title: 'Oracle Types' },
                   { step: 3, title: 'Oracle Config' },
-                  { step: 4, title: 'IRM Selection' },
-                  { step: 5, title: 'Borrow Setup' },
-                  { step: 6, title: 'Fees' },
-                  { step: 7, title: 'Hook' },
-                  { step: 8, title: 'Hook Owner' },
-                  { step: 9, title: 'JSON Config' },
-                  { step: 10, title: 'Deployment' },
-                  { step: 11, title: 'Verification' }
+                  { step: 4, title: 'Manageable Oracle' },
+                  { step: 5, title: 'IRM Selection' },
+                  { step: 6, title: 'Oracle/IRM Owner' },
+                  { step: 7, title: 'Borrow Setup' },
+                  { step: 8, title: 'Fees' },
+                  { step: 9, title: 'Hook' },
+                  { step: 10, title: 'Hook Owner' },
+                  { step: 11, title: 'JSON Config' },
+                  { step: 12, title: 'Deployment' },
+                  { step: 13, title: 'Verification' }
                 ].map((item) => {
                   const isCompleted = wizardData.currentStep > item.step
                   const isCurrent = wizardData.currentStep === item.step
@@ -187,14 +210,24 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 3: Oracle Configuration – not shown on step 11 (verification uses only on-chain data in the tree) */}
-              {wizardData.currentStep !== 11 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
+              {/* Step 3: Oracle Configuration – not shown on step 13 (verification uses only on-chain data in the tree) */}
+              {wizardData.currentStep !== 13 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
                   <h3 className="text-sm font-medium text-lime-200/80 mb-3">Oracle Configuration</h3>
+                  {wizardData.manageableOracle && wizardData.manageableOracleTimelock != null && wizardData.manageableOracleTimelock > 0 && (
+                    <p className="text-xs text-lime-200/65 mb-2">
+                      Timelock: {Math.round(wizardData.manageableOracleTimelock / 86400)} {Math.round(wizardData.manageableOracleTimelock / 86400) === 1 ? 'day' : 'days'} ({wizardData.manageableOracleTimelock.toLocaleString()} seconds)
+                    </p>
+                  )}
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
                       <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-lime-50">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-lime-50">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</span>
+                          {wizardData.manageableOracle && wizardData.oracleType0.type !== 'none' && (
+                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-lime-800/60 text-white font-medium">manageable</span>
+                          )}
+                        </div>
                         <div className="text-xs text-lime-200/65 capitalize mb-2">
                           Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
@@ -218,11 +251,43 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             </>
                           )
                         })()}
+                        {wizardData.oracleType0?.type === 'chainlink' && (() => {
+                          const chainlink = wizardData.oracleConfiguration?.token0?.chainlinkOracle
+                          const useOther = chainlink?.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token1?.address : chainlink?.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token1?.symbol : chainlink?.customQuoteTokenMetadata?.symbol
+                          if (!quoteAddress) return null
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2">
+                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <AddressDisplayShort
+                                  address={quoteAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                                {quoteSymbol && (
+                                  <>
+                                    <span className="text-xs text-lime-200/50">—</span>
+                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     )}
                     {wizardData.oracleType1 && (
                       <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-lime-50">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-lime-50">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</span>
+                          {wizardData.manageableOracle && wizardData.oracleType1.type !== 'none' && (
+                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-lime-800/60 text-white font-medium">manageable</span>
+                          )}
+                        </div>
                         <div className="text-xs text-lime-200/65 capitalize mb-2">
                           Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
                         </div>
@@ -244,6 +309,33 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
+                          )
+                        })()}
+                        {wizardData.oracleType1?.type === 'chainlink' && (() => {
+                          const chainlink = wizardData.oracleConfiguration?.token1?.chainlinkOracle
+                          const useOther = chainlink?.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token0?.address : chainlink?.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token0?.symbol : chainlink?.customQuoteTokenMetadata?.symbol
+                          if (!quoteAddress) return null
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2">
+                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <AddressDisplayShort
+                                  address={quoteAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                                {quoteSymbol && (
+                                  <>
+                                    <span className="text-xs text-lime-200/50">—</span>
+                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           )
                         })()}
                       </div>
@@ -347,11 +439,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                     )}
                   </div>
                   <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-lime-50">IRM Owner</div>
-                    {wizardData.irmModelType === 'kink' && wizardData.hookOwnerAddress ? (
-                      <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
+                    <div className="text-sm font-medium text-lime-50">Oracle/IRM Owner</div>
+                    {wizardData.manageableOracleOwnerAddress ? (
+                      <OwnerAddressRow address={wizardData.manageableOracleOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-lime-300/45 mt-1">not available</div>
+                      <div className="text-xs text-lime-300/45 mt-1">—</div>
                     )}
                   </div>
                 </div>
