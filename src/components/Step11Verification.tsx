@@ -15,6 +15,9 @@ import { verifySiloImplementation } from '@/utils/verification/siloImplementatio
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
+import { resolveAddressToName } from '@/utils/symbolToAddress'
+import { verifyAddress } from '@/utils/verification/addressVerification'
+import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -47,6 +50,10 @@ export default function Step11Verification() {
     wizardOwner: null,
     isInAddressesJson: null
   })
+  const [oracleOwnerVerification, setOracleOwnerVerification] = useState<{
+    silo0: { onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null } | null
+    silo1: { onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null } | null
+  }>({ silo0: null, silo1: null })
   const [tokenVerification, setTokenVerification] = useState<{ 
     token0: { onChainToken: string | null; wizardToken: string | null } | null
     token1: { onChainToken: string | null; wizardToken: string | null } | null
@@ -76,6 +83,23 @@ export default function Step11Verification() {
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
   const [addressVersions, setAddressVersions] = useState<Map<string, string>>(new Map())
+  const [hookGaugeInfo, setHookGaugeInfo] = useState<{
+    hasDefaultingHook: boolean
+    onlyOneBorrowable: boolean | null
+    borrowableSilo: 0 | 1 | null
+    borrowableTokenSymbol: string | null
+    gaugeAddress: string | null
+    gaugeVersion: string | null
+    ltMarginForDefaultingRaw: string | null
+    gaugeVerification?: {
+      owner: string | null
+      ownerName: string | null
+      ownerInJson: boolean | null
+      ownerMatchesHookOwner: boolean | null
+      ownerMatchesWizard: boolean | null
+      notifierEqualsHook: boolean | null
+    } | null
+  } | null>(null)
 
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
@@ -490,6 +514,173 @@ export default function Step11Verification() {
         siloConfigAddress: isTxHash ? undefined : siloConfigAddress
       })
       
+      // Defaulting hook (SiloHookV2 / SiloHookV3) and gauge verification
+      let newHookGaugeInfo: typeof hookGaugeInfo = null
+      const hookVersion = marketConfig.silo0.hookReceiverVersion || marketConfig.silo1.hookReceiverVersion || ''
+      const hookName = hookVersion.split(' ')[0] || ''
+      if (hookName === 'SiloHookV2' || hookName === 'SiloHookV3') {
+        const lt0NonZero = marketConfig.silo0.lt != null && String(marketConfig.silo0.lt) !== '0'
+        const lt1NonZero = marketConfig.silo1.lt != null && String(marketConfig.silo1.lt) !== '0'
+        let borrowableSilo: 0 | 1 | null = null
+        if (lt0NonZero && !lt1NonZero) borrowableSilo = 1
+        else if (lt1NonZero && !lt0NonZero) borrowableSilo = 0
+        const onlyOneBorrowable = borrowableSilo !== null
+
+        newHookGaugeInfo = {
+          hasDefaultingHook: true,
+          onlyOneBorrowable,
+          borrowableSilo,
+          borrowableTokenSymbol: (borrowableSilo === 0
+            ? marketConfig.silo0.tokenSymbol
+            : borrowableSilo === 1
+              ? marketConfig.silo1.tokenSymbol
+              : null) ?? null,
+          gaugeAddress: null,
+          gaugeVersion: null,
+          ltMarginForDefaultingRaw: null
+        }
+
+        // If we have a defaulting hook, try to read LT_MARGIN_FOR_DEFAULTING and (when applicable) configured gauge
+        if (typeof window !== 'undefined' && window.ethereum) {
+          try {
+            const ethereum = window.ethereum
+            const providerForHook = new ethers.BrowserProvider(ethereum)
+            const hookAddress = marketConfig.silo0.hookReceiver || marketConfig.silo1.hookReceiver
+            if (hookAddress && ethers.isAddress(hookAddress)) {
+              const hookAbi = Array.isArray(siloHookV2Abi)
+                ? (siloHookV2Abi as ethers.InterfaceAbi)
+                : (siloHookV2Abi as unknown as { abi: ethers.InterfaceAbi }).abi
+              const hookContract = new ethers.Contract(hookAddress, hookAbi, providerForHook)
+              
+              // Read LT_MARGIN_FOR_DEFAULTING (18-decimal percentage) when available
+              try {
+                const margin = await hookContract.LT_MARGIN_FOR_DEFAULTING()
+                if (margin != null) {
+                  newHookGaugeInfo = {
+                    hasDefaultingHook: true,
+                    onlyOneBorrowable,
+                    borrowableSilo,
+                    borrowableTokenSymbol: (borrowableSilo === 0
+                      ? marketConfig.silo0.tokenSymbol
+                      : borrowableSilo === 1
+                        ? marketConfig.silo1.tokenSymbol
+                        : null) ?? null,
+                    gaugeAddress: newHookGaugeInfo.gaugeAddress,
+                    gaugeVersion: newHookGaugeInfo.gaugeVersion,
+                    ltMarginForDefaultingRaw: String(margin)
+                  }
+                }
+              } catch (marginErr) {
+                console.warn('Failed to read LT_MARGIN_FOR_DEFAULTING from hook:', marginErr)
+              }
+
+              // If exactly one asset is borrowable, check configured gauge (Silo Incentives Controller)
+              // Hook expects the silo address (collateral silo), not share token
+              if (onlyOneBorrowable) {
+                const siloAddress =
+                  borrowableSilo === 0
+                    ? marketConfig.silo0.silo
+                    : marketConfig.silo1.silo
+                if (siloAddress && ethers.isAddress(siloAddress)) {
+                  const gaugeAddr: string = await hookContract.configuredGauges(siloAddress)
+                  if (gaugeAddr && gaugeAddr !== ethers.ZeroAddress) {
+                    const normalizedGauge = ethers.getAddress(gaugeAddr)
+                    newHookGaugeInfo = {
+                      hasDefaultingHook: true,
+                      onlyOneBorrowable,
+                      borrowableSilo,
+                      borrowableTokenSymbol: (borrowableSilo === 0
+                        ? marketConfig.silo0.tokenSymbol
+                        : borrowableSilo === 1
+                          ? marketConfig.silo1.tokenSymbol
+                          : null) ?? null,
+                      gaugeAddress: normalizedGauge,
+                      gaugeVersion: null,
+                      ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
+                    }
+                    // Try to resolve version via SiloLens when available
+                    const chainIdForGauge = wizardData.networkInfo?.chainId || network.chainId.toString()
+                    if (siloLensAddress && chainIdForGauge) {
+                      try {
+                        const versionsByAddress = await fetchSiloLensVersionsWithCache({
+                          provider: providerForHook,
+                          lensAddress: siloLensAddress,
+                          chainId: chainIdForGauge,
+                          addresses: [normalizedGauge]
+                        })
+                        const version = versionsByAddress.get(normalizedGauge.toLowerCase()) ?? null
+                        newHookGaugeInfo = {
+                          ...newHookGaugeInfo,
+                          gaugeVersion: version
+                        }
+                      } catch (verErr) {
+                        console.warn('Failed to fetch gauge version from SiloLens:', verErr)
+                      }
+                    }
+                    // Fetch gauge owner and notifier for verification (contract exposes NOTIFIER() not notifier())
+                    try {
+                      const gaugeAbi = ['function owner() view returns (address)', 'function NOTIFIER() view returns (address)'] as const
+                      const gaugeContract = new ethers.Contract(normalizedGauge, gaugeAbi, providerForHook)
+                      const [gaugeOwner, gaugeNotifier] = await Promise.all([
+                        gaugeContract.owner().catch(() => null),
+                        gaugeContract.NOTIFIER().catch(() => null)
+                      ])
+                      const hookOwnerOnChain = marketConfig.silo0.hookReceiverOwner ?? marketConfig.silo1.hookReceiverOwner ?? null
+                      const hookOwnerWizard = wizardData.hookOwnerAddress ?? null
+                      newHookGaugeInfo = {
+                        ...newHookGaugeInfo,
+                        gaugeVerification: {
+                          owner: gaugeOwner && gaugeOwner !== ethers.ZeroAddress ? String(gaugeOwner) : null,
+                          ownerName: null,
+                          ownerInJson: null,
+                          ownerMatchesHookOwner: hookOwnerOnChain && gaugeOwner
+                            ? verifyAddress(String(gaugeOwner), hookOwnerOnChain)
+                            : null,
+                          ownerMatchesWizard: hookOwnerWizard != null && gaugeOwner
+                            ? verifyAddress(String(gaugeOwner), hookOwnerWizard)
+                            : null,
+                          notifierEqualsHook: gaugeNotifier != null && hookAddress
+                            ? ethers.getAddress(String(gaugeNotifier)).toLowerCase() === ethers.getAddress(hookAddress).toLowerCase()
+                            : null
+                        }
+                      }
+                    } catch (gaugeVerErr) {
+                      console.warn('Failed to fetch gauge owner/notifier:', gaugeVerErr)
+                    }
+                  } else {
+                    newHookGaugeInfo = {
+                      hasDefaultingHook: true,
+                      onlyOneBorrowable,
+                      borrowableSilo,
+                      borrowableTokenSymbol: (borrowableSilo === 0
+                        ? marketConfig.silo0.tokenSymbol
+                        : borrowableSilo === 1
+                          ? marketConfig.silo1.tokenSymbol
+                          : null) ?? null,
+                      gaugeAddress: ethers.ZeroAddress,
+                      gaugeVersion: null,
+                      ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
+                    }
+                  }
+                }
+              }
+            }
+          } catch (gErr) {
+            console.warn('Failed to verify configured gauge on hook:', gErr)
+          }
+        }
+      } else {
+        newHookGaugeInfo = {
+          hasDefaultingHook: false,
+          onlyOneBorrowable: null,
+          borrowableSilo: null,
+          borrowableTokenSymbol: null,
+          gaugeAddress: null,
+          gaugeVersion: null,
+          ltMarginForDefaultingRaw: null
+        }
+      }
+
       // Get chain ID - use wizard data if available, otherwise get from provider
       const chainIdForVerification = wizardData.networkInfo?.chainId || network.chainId.toString()
       
@@ -501,11 +692,20 @@ export default function Step11Verification() {
       if (marketConfig.silo0.hookReceiverOwner) {
         addressesToCheck.push(marketConfig.silo0.hookReceiverOwner)
       }
+      if (newHookGaugeInfo?.gaugeVerification?.owner) {
+        addressesToCheck.push(newHookGaugeInfo.gaugeVerification.owner)
+      }
       if (marketConfig.silo0.interestRateModel.owner) {
         addressesToCheck.push(marketConfig.silo0.interestRateModel.owner)
       }
       if (marketConfig.silo1.interestRateModel.owner) {
         addressesToCheck.push(marketConfig.silo1.interestRateModel.owner)
+      }
+      if (marketConfig.silo0.solvencyOracle.owner) {
+        addressesToCheck.push(marketConfig.silo0.solvencyOracle.owner)
+      }
+      if (marketConfig.silo1.solvencyOracle.owner) {
+        addressesToCheck.push(marketConfig.silo1.solvencyOracle.owner)
       }
       // Add token addresses for JSON verification
       if (marketConfig.silo0.token) {
@@ -522,6 +722,22 @@ export default function Step11Verification() {
         jsonVerificationMap.set(address.toLowerCase(), isInJson)
       }
       setAddressInJsonVerification(jsonVerificationMap)
+
+      // Resolve gauge owner name and ownerInJson, then set hook gauge info
+      if (newHookGaugeInfo?.gaugeVerification?.owner) {
+        const go = newHookGaugeInfo.gaugeVerification.owner
+        const ownerInJson = jsonVerificationMap.get(go.toLowerCase()) ?? null
+        const ownerName = await resolveAddressToName(chainIdForVerification, go)
+        newHookGaugeInfo = {
+          ...newHookGaugeInfo,
+          gaugeVerification: {
+            ...newHookGaugeInfo.gaugeVerification,
+            ownerInJson,
+            ownerName: ownerName ?? null
+          }
+        }
+      }
+      setHookGaugeInfo(newHookGaugeInfo)
       
       // Verify hook owner - always check on-chain address, wizard data is optional
       // Hook owner address is always available from on-chain config
@@ -574,6 +790,24 @@ export default function Step11Verification() {
           isInAddressesJson: null
         })
       }
+
+      // Verify Oracle owner (ManageableOracle) for both silos - same checks for silo0 and silo1
+      const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null
+      const silo0Oracle = marketConfig.silo0.solvencyOracle.owner
+        ? {
+            onChainOwner: marketConfig.silo0.solvencyOracle.owner,
+            wizardOwner,
+            isInAddressesJson: jsonVerificationMap.get(marketConfig.silo0.solvencyOracle.owner.toLowerCase()) ?? null
+          }
+        : null
+      const silo1Oracle = marketConfig.silo1.solvencyOracle.owner
+        ? {
+            onChainOwner: marketConfig.silo1.solvencyOracle.owner,
+            wizardOwner,
+            isInAddressesJson: jsonVerificationMap.get(marketConfig.silo1.solvencyOracle.owner.toLowerCase()) ?? null
+          }
+        : null
+      setOracleOwnerVerification({ silo0: silo0Oracle, silo1: silo1Oracle })
 
       // Verify tokens - check if we have wizard data (token0 and token1 addresses exist)
       if (wizardData.token0?.address && marketConfig.silo0.token) {
@@ -646,6 +880,7 @@ export default function Step11Verification() {
       setLoading(false)
     }
   }, [
+    siloLensAddress,
     wizardData.borrowConfiguration,
     wizardData.feesConfiguration,
     wizardData.hookOwnerAddress,
@@ -898,6 +1133,7 @@ export default function Step11Verification() {
               siloVerification={siloVerification}
               hookOwnerVerification={hookOwnerVerification}
               irmOwnerVerification={irmOwnerVerification}
+               oracleOwnerVerification={oracleOwnerVerification}
               tokenVerification={tokenVerification}
               numericValueVerification={numericValueVerification}
               addressInJsonVerification={addressInJsonVerification}
@@ -910,6 +1146,7 @@ export default function Step11Verification() {
                   }
                 : undefined
               }
+              hookGaugeInfo={hookGaugeInfo}
             />
           </>
         )

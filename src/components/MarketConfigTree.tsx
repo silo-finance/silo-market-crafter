@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
-import { formatWizardBigIntToE18 } from '@/utils/formatting'
+import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { ethers } from 'ethers'
@@ -110,6 +110,12 @@ interface IRMOwnerVerification {
   isInAddressesJson: boolean | null
 }
 
+interface OracleOwnerVerification {
+  onChainOwner: string | null
+  wizardOwner: string | null
+  isInAddressesJson: boolean | null
+}
+
 interface TokenVerification {
   token0: { onChainToken: string | null; wizardToken: string | null } | null
   token1: { onChainToken: string | null; wizardToken: string | null } | null
@@ -143,6 +149,12 @@ interface CallBeforeQuoteVerification {
   silo1?: { wizard: boolean | null }
 }
 
+/** Per-silo oracle owner verification (ManageableOracle): silo0 and silo1 Solvency Oracle owner checks */
+interface OracleOwnerVerificationPerSilo {
+  silo0?: OracleOwnerVerification | null
+  silo1?: OracleOwnerVerification | null
+}
+
 interface MarketConfigTreeProps {
   config: MarketConfig
   explorerUrl: string
@@ -153,12 +165,30 @@ interface MarketConfigTreeProps {
   siloVerification?: SiloVerification
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
+  oracleOwnerVerification?: OracleOwnerVerificationPerSilo
   tokenVerification?: TokenVerification
   numericValueVerification?: NumericValueVerification
   addressInJsonVerification?: Map<string, boolean>
   addressVersions?: Map<string, string>
   ptOracleBaseDiscountVerification?: PTOracleBaseDiscountVerification
   callBeforeQuoteVerification?: CallBeforeQuoteVerification
+  hookGaugeInfo?: {
+    hasDefaultingHook: boolean
+    onlyOneBorrowable: boolean | null
+    borrowableSilo: 0 | 1 | null
+    borrowableTokenSymbol: string | null
+    gaugeAddress: string | null
+    gaugeVersion: string | null
+    ltMarginForDefaultingRaw?: string | null
+    gaugeVerification?: {
+      owner: string | null
+      ownerName: string | null
+      ownerInJson: boolean | null
+      ownerMatchesHookOwner: boolean | null
+      ownerMatchesWizard: boolean | null
+      notifierEqualsHook: boolean | null
+    } | null
+  } | null
 }
 
 interface TokenMeta {
@@ -203,6 +233,7 @@ interface TreeNodeProps {
   callBeforeQuoteVerification?: { wizard: boolean | null } | null
   /** Top-level node (silo config / silo 0 / silo 1) – extra spacing + stronger label emphasis */
   isRoot?: boolean
+  oracleOwnerVerification?: OracleOwnerVerification
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -250,74 +281,61 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; oracleOwnerVerification?: OracleOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
   // Normalize the address from item
   const normalizedItemAddress = ethers.getAddress(address).toLowerCase()
   
-  // Debug logging
-  console.log('OwnerBulletContent - hookOwnerVerification:', hookOwnerVerification)
-  console.log('OwnerBulletContent - irmOwnerVerification:', irmOwnerVerification)
-  console.log('OwnerBulletContent - item.address:', address)
-  console.log('OwnerBulletContent - normalizedItemAddress:', normalizedItemAddress)
-  
   // Use centralized verification functions from src/utils/verification/
   // Check 1: Verify that on-chain owner matches wizard owner (independent check)
   // This check compares: onChainOwner === wizardOwner
   let isVerified: boolean | null = null
   if (hookOwnerVerification && hookOwnerVerification.onChainOwner && hookOwnerVerification.wizardOwner) {
-    // Normalize addresses for comparison
     const normalizedOnChain = ethers.getAddress(hookOwnerVerification.onChainOwner).toLowerCase()
     const normalizedItem = normalizedItemAddress
-    
-    console.log('OwnerBulletContent - hook verification check:')
-    console.log('  normalizedOnChain:', normalizedOnChain)
-    console.log('  normalizedItem:', normalizedItem)
-    console.log('  addresses match:', normalizedOnChain === normalizedItem)
-    
-    // Only verify if the displayed address matches the on-chain owner address
     if (normalizedOnChain === normalizedItem) {
-      // Verify that on-chain owner matches wizard owner using centralized function
-      // This is the independent check: onChainOwner === wizardOwner
       isVerified = verifyAddress(hookOwnerVerification.onChainOwner, hookOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyAddress (hook owner) result:', isVerified)
     }
   } else if (irmOwnerVerification && irmOwnerVerification.onChainOwner && irmOwnerVerification.wizardOwner) {
-    // Normalize addresses for comparison
     const normalizedOnChain = ethers.getAddress(irmOwnerVerification.onChainOwner).toLowerCase()
     const normalizedItem = normalizedItemAddress
-    
-    console.log('OwnerBulletContent - IRM verification check:')
-    console.log('  normalizedOnChain:', normalizedOnChain)
-    console.log('  normalizedItem:', normalizedItem)
-    console.log('  addresses match:', normalizedOnChain === normalizedItem)
-    
-    // Only verify if the displayed address matches the on-chain owner address
     if (normalizedOnChain === normalizedItem) {
-      // Verify that on-chain owner matches wizard owner using centralized function
-      // This is the independent check: onChainOwner === wizardOwner
       isVerified = verifyAddress(irmOwnerVerification.onChainOwner, irmOwnerVerification.wizardOwner)
-      console.log('OwnerBulletContent - verifyAddress (IRM owner) result:', isVerified)
     }
   }
-  
-  // Get JSON verification result - always available regardless of wizard data
-  const isInJson = addressInJsonVerification?.get(normalizedItemAddress) ?? null
-  
-  console.log('OwnerBulletContent - final values:')
-  console.log('  isVerified:', isVerified)
-  console.log('  isInJson:', isInJson)
+  if (!isVerified && oracleOwnerVerification && oracleOwnerVerification.onChainOwner && oracleOwnerVerification.wizardOwner) {
+    const normalizedOnChain = ethers.getAddress(oracleOwnerVerification.onChainOwner).toLowerCase()
+    const normalizedItem = normalizedItemAddress
+    if (normalizedOnChain === normalizedItem) {
+      isVerified = verifyAddress(oracleOwnerVerification.onChainOwner, oracleOwnerVerification.wizardOwner)
+    }
+  }
+
+  // Oracle owner: when wizard did not provide owner, treat as N/A (not PENDING)
+  const isOracleOwnerBullet = Boolean(
+    oracleOwnerVerification?.onChainOwner &&
+    normalizedItemAddress === ethers.getAddress(oracleOwnerVerification.onChainOwner).toLowerCase()
+  )
+  const oracleWizardOwnerMissing = isOracleOwnerBullet && (oracleOwnerVerification?.wizardOwner == null || oracleOwnerVerification?.wizardOwner === '')
+
+  // Get JSON verification result - use oracleOwnerVerification.isInAddressesJson when this is the Oracle owner so status is never stuck on PENDING
+  const isInJsonFromOracle = isOracleOwnerBullet && oracleOwnerVerification?.isInAddressesJson != null
+    ? oracleOwnerVerification.isInAddressesJson
+    : null
+  const isInJson = isInJsonFromOracle !== null ? isInJsonFromOracle : (addressInJsonVerification?.get(normalizedItemAddress) ?? null)
   
   // Determine verification statuses
-  const wizardVsOnChainStatus = isVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner) && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner)
+  const wizardVsOnChainStatus = oracleWizardOwnerMissing
     ? VERIFICATION_STATUS.NOT_AVAILABLE
-    : isVerified === null 
-      ? VERIFICATION_STATUS.PENDING 
-      : isVerified === true 
-        ? VERIFICATION_STATUS.PASSED 
-        : VERIFICATION_STATUS.FAILED
+    : isVerified === null && (!hookOwnerVerification?.onChainOwner || !hookOwnerVerification?.wizardOwner) && (!irmOwnerVerification?.onChainOwner || !irmOwnerVerification?.wizardOwner) && !isOracleOwnerBullet
+      ? VERIFICATION_STATUS.NOT_AVAILABLE
+      : isVerified === null 
+        ? VERIFICATION_STATUS.PENDING 
+        : isVerified === true 
+          ? VERIFICATION_STATUS.PASSED 
+          : VERIFICATION_STATUS.FAILED
   
   const addressInJsonStatus = isInJson === null 
     ? VERIFICATION_STATUS.PENDING 
@@ -325,7 +343,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       ? VERIFICATION_STATUS.PASSED 
       : VERIFICATION_STATUS.WARNING
   
-  const ownerLabel = irmOwnerVerification ? 'IRM owner' : 'Hook owner'
+  const ownerLabel = oracleOwnerVerification ? 'Oracle owner' : irmOwnerVerification ? 'IRM owner' : 'Hook owner'
   return (
     <>
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -384,7 +402,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -668,6 +686,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 explorerUrl={explorerUrl} 
                 hookOwnerVerification={hookOwnerVerification}
                 irmOwnerVerification={irmOwnerVerification}
+                oracleOwnerVerification={oracleOwnerVerification}
                 addressInJsonVerification={addressInJsonVerification}
               />
             </li>
@@ -679,7 +698,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, hookGaugeInfo }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -824,6 +843,130 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             hookOwnerVerification={hookOwnerVerification}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
+            bulletItems={
+              hookGaugeInfo && hookGaugeInfo.hasDefaultingHook
+                ? (() => {
+                    const bullets: OracleBulletItem[] = []
+                    if (hookGaugeInfo.onlyOneBorrowable === false) {
+                      bullets.push({
+                        key: 'hook.defaulting.borrowable.error',
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>Defaulting hook requires exactly one borrowable asset (non-zero LT on only one silo).</span>
+                            <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                          </span>
+                        )
+                      })
+                    } else if (hookGaugeInfo.onlyOneBorrowable && hookGaugeInfo.borrowableTokenSymbol) {
+                      bullets.push({
+                        key: 'hook.defaulting.borrowable.ok',
+                        text: `Defaulting hook ON, borrowable asset: ${hookGaugeInfo.borrowableTokenSymbol}`
+                      })
+                    }
+                    if (hookGaugeInfo.borrowableSilo !== null) {
+                      if (!hookGaugeInfo.gaugeAddress || hookGaugeInfo.gaugeAddress === ethers.ZeroAddress) {
+                        bullets.push({
+                          key: 'hook.defaulting.gauge.missing',
+                          text: (
+                            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                              <span>Missing Silo Incentives Controller (gauge not configured for borrowable silo).</span>
+                              <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                            </span>
+                          )
+                        })
+                      } else {
+                        const gv = hookGaugeInfo.gaugeVerification
+                        bullets.push({
+                          key: 'hook.defaulting.gauge.ok',
+                          text: (
+                            <>
+                              <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                <span>Silo Incentive Controller:</span>
+                                <a
+                                  href={`${explorerUrl}/address/${hookGaugeInfo.gaugeAddress}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                                >
+                                  {formatAddress(hookGaugeInfo.gaugeAddress)}
+                                </a>
+                                <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+                                <span className="text-gray-400 text-xs ml-1">
+                                  ({hookGaugeInfo.gaugeVersion || '—'})
+                                </span>
+                              </span>
+                              {gv && (
+                                <ul className="gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner in repository list:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerInJson === null ? VERIFICATION_STATUS.PENDING
+                                        : gv.ownerInJson ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.WARNING
+                                    } />
+                                    {gv.ownerInJson === true && (
+                                      <span className="text-gray-500 ml-1">{gv.ownerName ? `yes (${gv.ownerName})` : 'yes'}</span>
+                                    )}
+                                    {gv.ownerInJson === false && (
+                                      <span className="text-gray-500 ml-1">not in Silo Finance repository list</span>
+                                    )}
+                                    {gv.ownerInJson === null && (
+                                      <span className="text-gray-500 ml-1">verification pending</span>
+                                    )}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner equals hook owner:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerMatchesHookOwner === null ? VERIFICATION_STATUS.NOT_AVAILABLE
+                                        : gv.ownerMatchesHookOwner ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.ownerMatchesHookOwner === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesHookOwner === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesHookOwner === null && <span className="text-gray-500 ml-1">N/A</span>}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Gauge owner matches Wizard:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerMatchesWizard === null ? VERIFICATION_STATUS.NOT_AVAILABLE
+                                        : gv.ownerMatchesWizard ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.ownerMatchesWizard === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesWizard === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesWizard === null && <span className="text-gray-500 ml-1">N/A</span>}
+                                  </li>
+                                  <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
+                                    <span>Notifier equals hook address:</span>
+                                    <VerificationStatusIconSmall status={
+                                      gv.notifierEqualsHook === null ? VERIFICATION_STATUS.PENDING
+                                        : gv.notifierEqualsHook ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
+                                    } />
+                                    {gv.notifierEqualsHook === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.notifierEqualsHook === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.notifierEqualsHook === null && <span className="text-gray-500 ml-1">verification pending</span>}
+                                  </li>
+                                </ul>
+                              )}
+                            </>
+                          )
+                        })
+                      }
+                    }
+                    if (hookGaugeInfo.ltMarginForDefaultingRaw) {
+                      const ltMarginBigInt = BigInt(hookGaugeInfo.ltMarginForDefaultingRaw)
+                      bullets.push({
+                        key: 'hook.defaulting.ltMargin',
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>LT margin for defaulting:</span>
+                            <span className="text-white font-mono">{formatPercentage(ltMarginBigInt)}</span>
+                            <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(ltMarginBigInt, true)})</span>
+                          </span>
+                        )
+                      })
+                    }
+                    return bullets
+                  })()
+                : undefined
+            }
           />
         </TreeNode>
 
@@ -877,13 +1020,50 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Solvency Oracle"
             address={config.silo0.solvencyOracle.address}
             suffixText={config.silo0.solvencyOracle.version}
-            bulletItems={buildOracleBullets(config.silo0.solvencyOracle.quotePrice, config.silo0.solvencyOracle.quoteTokenSymbol, config.silo0.solvencyOracle.type, config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)}
+            bulletItems={(() => {
+              const base = buildOracleBullets(
+                config.silo0.solvencyOracle.quotePrice,
+                config.silo0.solvencyOracle.quoteTokenSymbol,
+                config.silo0.solvencyOracle.type,
+                config.silo0.solvencyOracle.config as Record<string, unknown> | undefined
+              )
+              const underlying = config.silo0.solvencyOracle.underlying
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo0.solvency',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <span className="text-gray-400 text-xs ml-1">
+                        ({underlying.version || '—'})
+                      </span>
+                    </span>
+                  )
+                })
+              }
+              return base
+            })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
             priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.solvencyOracle.quotePrice)}
             priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.solvencyOracle.quotePrice)}
             baseDiscountVerification={ptOracleBaseDiscountVerification?.silo0 ?? null}
             explorerUrl={explorerUrl}
             addressVersions={addressVersions}
+            ownerBullets={config.silo0.solvencyOracle.owner ? [{ address: config.silo0.solvencyOracle.owner, isContract: config.silo0.solvencyOracle.ownerIsContract, name: config.silo0.solvencyOracle.ownerName }] : undefined}
+            oracleOwnerVerification={oracleOwnerVerification?.silo0 ?? undefined}
           />
           {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
             <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
@@ -894,7 +1074,42 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               label="Max LTV Oracle"
               address={config.silo0.maxLtvOracle.address}
               suffixText={config.silo0.maxLtvOracle.version}
-              bulletItems={buildOracleBullets(config.silo0.maxLtvOracle.quotePrice, config.silo0.maxLtvOracle.quoteTokenSymbol, config.silo0.maxLtvOracle.type, config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              bulletItems={(() => {
+                const base = buildOracleBullets(
+                  config.silo0.maxLtvOracle.quotePrice,
+                  config.silo0.maxLtvOracle.quoteTokenSymbol,
+                  config.silo0.maxLtvOracle.type,
+                  config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined
+                )
+                const underlying = config.silo0.maxLtvOracle.underlying
+                if (underlying) {
+                  base.push({
+                    key: 'oracle.manageable.underlying.silo0.maxLtv',
+                    text: (
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <span className="text-gray-400 text-xs ml-1">
+                          ({underlying.version || '—'})
+                        </span>
+                      </span>
+                    )
+                  })
+                }
+                return base
+              })()}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo0.maxLtvOracle.quotePrice)}
               priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.maxLtvOracle.quotePrice)}
               priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.maxLtvOracle.quotePrice)}
@@ -1023,11 +1238,48 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Solvency Oracle"
             address={config.silo1.solvencyOracle.address}
             suffixText={config.silo1.solvencyOracle.version}
-            bulletItems={buildOracleBullets(config.silo1.solvencyOracle.quotePrice, config.silo1.solvencyOracle.quoteTokenSymbol, config.silo1.solvencyOracle.type, config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)}
+            bulletItems={(() => {
+              const base = buildOracleBullets(
+                config.silo1.solvencyOracle.quotePrice,
+                config.silo1.solvencyOracle.quoteTokenSymbol,
+                config.silo1.solvencyOracle.type,
+                config.silo1.solvencyOracle.config as Record<string, unknown> | undefined
+              )
+              const underlying = config.silo1.solvencyOracle.underlying
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo1.solvency',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <span className="text-gray-400 text-xs ml-1">
+                        ({underlying.version || '—'})
+                      </span>
+                    </span>
+                  )
+                })
+              }
+              return base
+            })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
             priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
             priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
             baseDiscountVerification={ptOracleBaseDiscountVerification?.silo1 ?? null}
+            ownerBullets={config.silo1.solvencyOracle.owner ? [{ address: config.silo1.solvencyOracle.owner, isContract: config.silo1.solvencyOracle.ownerIsContract, name: config.silo1.solvencyOracle.ownerName }] : undefined}
+            oracleOwnerVerification={oracleOwnerVerification?.silo1 ?? undefined}
             explorerUrl={explorerUrl}
             addressVersions={addressVersions}
           />
@@ -1040,7 +1292,42 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               label="Max LTV Oracle"
               address={config.silo1.maxLtvOracle.address}
               suffixText={config.silo1.maxLtvOracle.version}
-              bulletItems={buildOracleBullets(config.silo1.maxLtvOracle.quotePrice, config.silo1.maxLtvOracle.quoteTokenSymbol, config.silo1.maxLtvOracle.type, config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)}
+              bulletItems={(() => {
+                const base = buildOracleBullets(
+                  config.silo1.maxLtvOracle.quotePrice,
+                  config.silo1.maxLtvOracle.quoteTokenSymbol,
+                  config.silo1.maxLtvOracle.type,
+                  config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined
+                )
+                const underlying = config.silo1.maxLtvOracle.underlying
+                if (underlying) {
+                  base.push({
+                    key: 'oracle.manageable.underlying.silo1.maxLtv',
+                    text: (
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <span className="text-gray-400 text-xs ml-1">
+                          ({underlying.version || '—'})
+                        </span>
+                      </span>
+                    )
+                  })
+                }
+                return base
+              })()}
               priceLowWarning={isPriceUnexpectedlyLow(config.silo1.maxLtvOracle.quotePrice)}
               priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.maxLtvOracle.quotePrice)}
               priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.maxLtvOracle.quotePrice)}
