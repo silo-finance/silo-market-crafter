@@ -896,20 +896,20 @@ export default function Step3OracleConfiguration() {
     try {
       // Resolve quote address for PT-Linear when using second token
       const pt0QuoteAddress =
-        wizardData.oracleType0.type === 'ptLinear'
+        wizardData.oracleType0!.type === 'ptLinear'
           ? (ptLinear0.useSecondTokenAsQuote ? wizardData.token1!.address : ptLinear0.hardcodedQuoteTokenAddress!)
           : ''
       const pt1QuoteAddress =
-        wizardData.oracleType1.type === 'ptLinear'
+        wizardData.oracleType1!.type === 'ptLinear'
           ? (ptLinear1.useSecondTokenAsQuote ? wizardData.token0!.address : ptLinear1.hardcodedQuoteTokenAddress!)
           : ''
 
       // Create oracle configuration
       const config: OracleConfiguration = {
         token0: {
-          type: wizardData.oracleType0.type,
-          scalerOracle: wizardData.oracleType0.type === 'scaler' ? selectedScalers.token0! : undefined,
-          chainlinkOracle: wizardData.oracleType0.type === 'chainlink' ? {
+          type: wizardData.oracleType0!.type,
+          scalerOracle: wizardData.oracleType0!.type === 'scaler' ? selectedScalers.token0! : undefined,
+          chainlinkOracle: wizardData.oracleType0!.type === 'chainlink' ? {
             baseToken: 'token0',
             useOtherTokenAsQuote: chainlink0.useOtherTokenAsQuote ?? true,
             customQuoteTokenAddress: chainlink0.customQuoteTokenAddress?.trim() || undefined,
@@ -920,16 +920,16 @@ export default function Step3OracleConfiguration() {
             normalizationMultiplier: chainlink0.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink0.invertSecondPrice ?? false
           } : undefined,
-          ptLinearOracle: wizardData.oracleType0.type === 'ptLinear' ? {
+          ptLinearOracle: wizardData.oracleType0!.type === 'ptLinear' ? {
             maxYieldPercent: Number(ptLinear0.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear0.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt0QuoteAddress
           } : undefined
         },
         token1: {
-          type: wizardData.oracleType1.type,
-          scalerOracle: wizardData.oracleType1.type === 'scaler' ? selectedScalers.token1! : undefined,
-          chainlinkOracle: wizardData.oracleType1.type === 'chainlink' ? {
+          type: wizardData.oracleType1!.type,
+          scalerOracle: wizardData.oracleType1!.type === 'scaler' ? selectedScalers.token1! : undefined,
+          chainlinkOracle: wizardData.oracleType1!.type === 'chainlink' ? {
             baseToken: 'token1',
             useOtherTokenAsQuote: chainlink1.useOtherTokenAsQuote ?? true,
             customQuoteTokenAddress: chainlink1.customQuoteTokenAddress?.trim() || undefined,
@@ -940,7 +940,7 @@ export default function Step3OracleConfiguration() {
             normalizationMultiplier: chainlink1.normalizationMultiplier ?? '0',
             invertSecondPrice: chainlink1.invertSecondPrice ?? false
           } : undefined,
-          ptLinearOracle: wizardData.oracleType1.type === 'ptLinear' ? {
+          ptLinearOracle: wizardData.oracleType1!.type === 'ptLinear' ? {
             maxYieldPercent: Number(ptLinear1.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear1.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt1QuoteAddress

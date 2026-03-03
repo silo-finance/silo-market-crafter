@@ -165,11 +165,16 @@ export default function OwnerSelectionBlock({
     let cancelled = false
     const run = async () => {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
+        const eth = window.ethereum
+        if (!eth) {
+          setNativeBalance(null)
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
         const balance = await provider.getBalance(resolvedOwnerAddress)
         if (cancelled) return
         setNativeBalance(ethers.formatEther(balance))
-        const hex = (await window.ethereum.request({ method: 'eth_chainId' })) as string
+        const hex = (await eth.request({ method: 'eth_chainId' })) as string
         setNativeBalanceSymbol(getNativeTokenSymbol(parseInt(hex, 16).toString()))
       } catch {
         if (!cancelled) setNativeBalance(null)

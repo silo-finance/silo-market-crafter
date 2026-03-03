@@ -25,8 +25,12 @@ const initialWizardData: WizardData = {
   feesConfiguration: null,
   selectedHook: null,
   hookOwnerAddress: null,
+  manageableOracle: true,
+  manageableOracleTimelock: undefined,
+  manageableOracleOwnerAddress: null,
   lastDeployTxHash: null,
-  lastDeployArgsHash: null
+  lastDeployArgsHash: null,
+  verificationFromWizard: false
 }
 
 /**

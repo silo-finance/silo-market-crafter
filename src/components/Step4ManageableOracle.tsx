@@ -134,7 +134,12 @@ export default function Step4ManageableOracle() {
 
     const fetchOracleImplementation = async () => {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
+        const eth = window.ethereum
+        if (!eth) {
+          setOracleImplementation(null)
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
         const contract = new ethers.Contract(
           manageableFactory.address,
           (manageableOracleFactoryAbi as { abi: ethers.InterfaceAbi }).abi,
@@ -165,7 +170,12 @@ export default function Step4ManageableOracle() {
 
     const fetchTimelockRange = async () => {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
+        const eth = window.ethereum
+        if (!eth) {
+          setTimelockRange(null)
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
         const contract = new ethers.Contract(oracleImplementation, implTimelockAbi, provider)
         const [minSec, maxSec] = await Promise.all([
           contract.MIN_TIMELOCK(),

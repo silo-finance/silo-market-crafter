@@ -259,6 +259,9 @@ export default function Step1Assets() {
 
     setLoading(true)
     try {
+      // At this point metadata objects are guaranteed to be non-null by the checks above
+      const meta0 = token0Metadata!
+      const meta1 = token1Metadata!
 
       // Get network info
       const chainId = await window.ethereum!.request({ method: 'eth_chainId' }) as string
@@ -274,17 +277,17 @@ export default function Step1Assets() {
 
       // Update wizard data with normalized addresses
       updateToken0({
-        address: normalizedToken0,
-        symbol: token0Metadata.symbol,
-        decimals: token0Metadata.decimals,
-        name: token0Metadata.name
+        address: normalizedToken0!,
+        symbol: meta0.symbol,
+        decimals: meta0.decimals,
+        name: meta0.name
       })
 
       updateToken1({
-        address: normalizedToken1,
-        symbol: token1Metadata.symbol,
-        decimals: token1Metadata.decimals,
-        name: token1Metadata.name
+        address: normalizedToken1!,
+        symbol: meta1.symbol,
+        decimals: meta1.decimals,
+        name: meta1.name
       })
 
       // Mark step as completed
