@@ -5,6 +5,7 @@ import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
+import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
@@ -18,6 +19,8 @@ const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).ab
 const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
 const ptLinearFactoryAbi = (ptLinearOracleFactoryAbi as FoundryArtifact).abi
 const ptLinearFactoryInterface = new ethers.Interface(ptLinearFactoryAbi)
+const manageableFactoryAbi = (manageableOracleFactoryAbi as FoundryArtifact).abi
+const manageableFactoryInterface = new ethers.Interface(manageableFactoryAbi)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -89,6 +92,7 @@ export interface DeployArgs {
 export interface OracleDeployments {
   chainlinkV3OracleFactory?: string
   ptLinearOracleFactory?: string
+  manageableOracleFactory?: string
 }
 
 /**
@@ -146,7 +150,9 @@ export function prepareDeployArgs(
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
-      const quoteToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+      const quoteToken = (chainlink.useOtherTokenAsQuote !== false)
+        ? ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+        : ethers.getAddress(chainlink.customQuoteTokenAddress!.trim())
       const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator.trim() !== '' && chainlink.secondaryAggregator !== ethers.ZeroAddress ? ethers.getAddress(chainlink.secondaryAggregator) : ethers.ZeroAddress
       const primaryAggregator = ethers.getAddress(chainlink.primaryAggregator)
       // Encode config as single tuple (array form) so ethers does not expand it into multiple args; ABI order: baseToken, quoteToken, primaryAggregator, primaryHeartbeat, secondaryAggregator, secondaryHeartbeat, normalizationDivider, normalizationMultiplier, invertSecondPrice
@@ -202,18 +208,64 @@ export function prepareDeployArgs(
     return getOracleTxData(scaler.address)
   }
 
+  /** Wrap oracle txData in ManageableOracle when manageableOracle is enabled. */
+  const wrapInManageableIfEnabled = (
+    txData: { deployed: string; factory: string; txInput: string }
+  ): { deployed: string; factory: string; txInput: string } => {
+    const manageable = wizardData.manageableOracle ?? true
+    if (!manageable || !oracleDeployments?.manageableOracleFactory) return txData
+
+    const owner =
+      wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress)
+        ? ethers.getAddress(wizardData.manageableOracleOwnerAddress)
+        : ethers.ZeroAddress
+    const timelock = wizardData.manageableOracleTimelock ?? 86400 // fallback for old cached data
+    const externalSalt = ethers.ZeroHash
+
+    // Pre-deployed oracle: use create(address,address,uint32,bytes32)
+    if (txData.deployed !== ethers.ZeroAddress) {
+      const txInput = manageableFactoryInterface.encodeFunctionData(
+        'create(address,address,uint32,bytes32)',
+        [txData.deployed, owner, timelock, externalSalt]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.manageableOracleFactory,
+        txInput
+      }
+    }
+
+    // Factory + txInput: use create(address,bytes,address,uint32,bytes32)
+    if (txData.factory !== ethers.ZeroAddress && txData.txInput !== '0x') {
+      const txInput = manageableFactoryInterface.encodeFunctionData(
+        'create(address,bytes,address,uint32,bytes32)',
+        [txData.factory, txData.txInput, owner, timelock, externalSalt]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.manageableOracleFactory,
+        txInput
+      }
+    }
+
+    return txData
+  }
+
+  const solvency0Raw = getSolvencyOracleTxData(
+    wizardData.oracleConfiguration?.token0?.scalerOracle,
+    wizardData.oracleConfiguration?.token0?.chainlinkOracle,
+    wizardData.oracleConfiguration?.token0?.ptLinearOracle
+  )
+  const solvency1Raw = getSolvencyOracleTxData(
+    wizardData.oracleConfiguration?.token1?.scalerOracle,
+    wizardData.oracleConfiguration?.token1?.chainlinkOracle,
+    wizardData.oracleConfiguration?.token1?.ptLinearOracle
+  )
+
   const _oracles = {
-    solvencyOracle0: getSolvencyOracleTxData(
-      wizardData.oracleConfiguration?.token0?.scalerOracle,
-      wizardData.oracleConfiguration?.token0?.chainlinkOracle,
-      wizardData.oracleConfiguration?.token0?.ptLinearOracle
-    ),
+    solvencyOracle0: wrapInManageableIfEnabled(solvency0Raw),
     maxLtvOracle0: getOracleTxData(ethers.ZeroAddress),
-    solvencyOracle1: getSolvencyOracleTxData(
-      wizardData.oracleConfiguration?.token1?.scalerOracle,
-      wizardData.oracleConfiguration?.token1?.chainlinkOracle,
-      wizardData.oracleConfiguration?.token1?.ptLinearOracle
-    ),
+    solvencyOracle1: wrapInManageableIfEnabled(solvency1Raw),
     maxLtvOracle1: getOracleTxData(ethers.ZeroAddress)
   }
 
@@ -253,9 +305,10 @@ export function prepareDeployArgs(
     const timelock = Number(c.timelock) ?? 0
     const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
     const immutableArgsTuple = [timelock, rcompCap]
+    // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
     const initialOwner =
-      wizardData.hookOwnerAddress && wizardData.hookOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.hookOwnerAddress)
-        ? ethers.getAddress(wizardData.hookOwnerAddress)
+      wizardData.manageableOracleOwnerAddress && wizardData.manageableOracleOwnerAddress !== ethers.ZeroAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress)
+        ? ethers.getAddress(wizardData.manageableOracleOwnerAddress)
         : ethers.ZeroAddress
     const abiCoder = ethers.AbiCoder.defaultAbiCoder()
     // Pass 3 separate types so AbiCoder expects 3 values (not 1 type string and 3 values)

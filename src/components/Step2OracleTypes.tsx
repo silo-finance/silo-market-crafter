@@ -109,61 +109,44 @@ export default function Step2OracleTypes() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
-    // Early return if button should be disabled
-    if (!selectedOracle0 || !selectedOracle1) {
-      setError('Please select oracle types for both tokens')
+
+    const errors: string[] = []
+    if (!selectedOracle0) errors.push('Please select an oracle type for Token 0')
+    if (!selectedOracle1) errors.push('Please select an oracle type for Token 1')
+    if (selectedOracle0 && selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink' && selectedOracle0 !== 'ptLinear') {
+      errors.push('Invalid oracle type selected for Token 0')
+    }
+    if (selectedOracle1 && selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink' && selectedOracle1 !== 'ptLinear') {
+      errors.push('Invalid oracle type selected for Token 1')
+    }
+    const token0IsNon18 = wizardData.token0 && wizardData.token0.decimals !== 18
+    const token1IsNon18 = wizardData.token1 && wizardData.token1.decimals !== 18
+    const bothAreNon18 = token0IsNon18 && token1IsNon18
+    if (bothAreNon18 && ((selectedOracle0 === 'none' && selectedOracle1 !== 'none') || (selectedOracle1 === 'none' && selectedOracle0 !== 'none'))) {
+      errors.push('For non-18 decimal tokens, if you select "No Oracle" for one token, you must also select "No Oracle" for the other')
+    }
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
       return
     }
-    
+
     setError('')
     setLoading(true)
 
     try {
-      // Validate selections exist (double check)
-      if (selectedOracle0 === null || selectedOracle0 === undefined) {
-        throw new Error('Please select an oracle type for Token 0')
-      }
-      if (selectedOracle1 === null || selectedOracle1 === undefined) {
-        throw new Error('Please select an oracle type for Token 1')
-      }
-      
-      // Validate selections are valid strings
-      if (selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink' && selectedOracle0 !== 'ptLinear') {
-        throw new Error('Invalid oracle type selected for Token 0')
-      }
-      if (selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink' && selectedOracle1 !== 'ptLinear') {
-        throw new Error('Invalid oracle type selected for Token 1')
-      }
 
-      // Validate: For non-18 decimal tokens, if one token has "none", the other must also have "none"
-      const token0IsNon18 = wizardData.token0 && wizardData.token0.decimals !== 18
-      const token1IsNon18 = wizardData.token1 && wizardData.token1.decimals !== 18
-      const bothAreNon18 = token0IsNon18 && token1IsNon18
-      
-      if (bothAreNon18) {
-        if ((selectedOracle0 === 'none' && selectedOracle1 !== 'none') || 
-            (selectedOracle1 === 'none' && selectedOracle0 !== 'none')) {
-          throw new Error('For non-18 decimal tokens, if you select "No Oracle" for one token, you must also select "No Oracle" for the other token')
-        }
-      }
-
-      // Update oracle types in context
+      // Update oracle types in context (we know they're set – validation passed)
       const oracleType0: OracleType = {
-        type: selectedOracle0,
+        type: selectedOracle0!,
         enabled: true,
         reason: oracleTypes0.find(ot => ot.type === selectedOracle0)?.reason
       }
 
       const oracleType1: OracleType = {
-        type: selectedOracle1,
+        type: selectedOracle1!,
         enabled: true,
         reason: oracleTypes1.find(ot => ot.type === selectedOracle1)?.reason
-      }
-
-      // Double-check validation before proceeding
-      if (!selectedOracle0 || !selectedOracle1) {
-        throw new Error('Please select oracle types for both tokens')
       }
 
       updateOracleType0(oracleType0)
@@ -343,9 +326,12 @@ export default function Step2OracleTypes() {
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 text-sm">
-              ✗ {error}
-            </div>
+            <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {error.split('\n').map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -362,14 +348,7 @@ export default function Step2OracleTypes() {
           </button>
           <button
             type="submit"
-            disabled={loading || selectedOracle0 === null || selectedOracle0 === undefined || selectedOracle1 === null || selectedOracle1 === undefined}
-            onClick={(e) => {
-              // Additional safety check on click
-              if (!selectedOracle0 || !selectedOracle1) {
-                e.preventDefault()
-                setError('Please select oracle types for both tokens')
-              }
-            }}
+            disabled={loading}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (

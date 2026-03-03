@@ -82,7 +82,7 @@ export default function Step11Verification() {
   const updateVerificationUrl = useCallback(
     (params: { txHash?: string; siloConfigAddress?: string }) => {
       const query = new URLSearchParams()
-      query.set('step', '11')
+      query.set('step', '13')
       if (params.txHash) {
         query.set('tx', params.txHash)
       } else if (params.siloConfigAddress) {
@@ -550,10 +550,10 @@ export default function Step11Verification() {
       }
 
       // Verify IRM owner - always check on-chain address, wizard data is optional
-      // IRM owner address is always available from on-chain config (for kink models)
+      // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
       if (marketConfig.silo0.interestRateModel.owner) {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress ?? null // IRM owner address from wizard state (optional)
+        const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null // IRM owner from wizard (same as Oracle owner)
         
         // Verification is performed in MarketConfigTree component using verifyAddress()
         // from src/utils/verification/addressVerification.ts
@@ -649,6 +649,7 @@ export default function Step11Verification() {
     wizardData.borrowConfiguration,
     wizardData.feesConfiguration,
     wizardData.hookOwnerAddress,
+    wizardData.manageableOracleOwnerAddress,
     wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
     wizardData.token1?.address,
@@ -726,14 +727,14 @@ export default function Step11Verification() {
     }
   }
 
-  const goToDeployment = () => router.push('/wizard?step=10')
+  const goToDeployment = () => router.push('/wizard?step=12')
   const goToNewMarket = () => router.push('/')
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 11: Verification
+          Step 13: Verification
         </h1>
         <p className="text-gray-300 text-lg">
           View complete market configuration tree

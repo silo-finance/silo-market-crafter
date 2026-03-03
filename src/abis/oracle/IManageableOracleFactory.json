@@ -1,0 +1,446 @@
+{
+    "abi": [
+        {
+            "type": "function",
+            "name": "ORACLE_IMPLEMENTATION",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address",
+                    "internalType": "contract IManageableOracle"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "create",
+            "inputs": [
+                {
+                    "name": "_oracle",
+                    "type": "address",
+                    "internalType": "contract ISiloOracle"
+                },
+                {
+                    "name": "_owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_timelock",
+                    "type": "uint32",
+                    "internalType": "uint32"
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "manageableOracle",
+                    "type": "address",
+                    "internalType": "contract IManageableOracle"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "create",
+            "inputs": [
+                {
+                    "name": "_underlyingOracleFactory",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_underlyingOracleInitData",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                },
+                {
+                    "name": "_owner",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_timelock",
+                    "type": "uint32",
+                    "internalType": "uint32"
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "manageableOracle",
+                    "type": "address",
+                    "internalType": "contract IManageableOracle"
+                }
+            ],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
+            "name": "predictAddress",
+            "inputs": [
+                {
+                    "name": "_deployer",
+                    "type": "address",
+                    "internalType": "address"
+                },
+                {
+                    "name": "_externalSalt",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "predictedAddress",
+                    "type": "address",
+                    "internalType": "address"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "event",
+            "name": "ManageableOracleCreated",
+            "inputs": [
+                {
+                    "name": "oracle",
+                    "type": "address",
+                    "indexed": true,
+                    "internalType": "address"
+                }
+            ],
+            "anonymous": false
+        },
+        {
+            "type": "error",
+            "name": "DeployerCannotBeZero",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "FailedToCreateUnderlyingOracle",
+            "inputs": []
+        },
+        {
+            "type": "error",
+            "name": "ZeroFactory",
+            "inputs": []
+        }
+    ],
+    "bytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "deployedBytecode": {
+        "object": "0x",
+        "sourceMap": "",
+        "linkReferences": {}
+    },
+    "methodIdentifiers": {
+        "ORACLE_IMPLEMENTATION()": "a8f39f66",
+        "create(address,address,uint32,bytes32)": "ceb3c64c",
+        "create(address,bytes,address,uint32,bytes32)": "d43fb0b2",
+        "predictAddress(address,bytes32)": "cb193942"
+    },
+    "rawMetadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"DeployerCannotBeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"FailedToCreateUnderlyingOracle\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroFactory\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oracle\",\"type\":\"address\"}],\"name\":\"ManageableOracleCreated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ORACLE_IMPLEMENTATION\",\"outputs\":[{\"internalType\":\"contract IManageableOracle\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ISiloOracle\",\"name\":\"_oracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_timelock\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"create\",\"outputs\":[{\"internalType\":\"contract IManageableOracle\",\"name\":\"manageableOracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_underlyingOracleFactory\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_underlyingOracleInitData\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_timelock\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"create\",\"outputs\":[{\"internalType\":\"contract IManageableOracle\",\"name\":\"manageableOracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_deployer\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_externalSalt\",\"type\":\"bytes32\"}],\"name\":\"predictAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"predictedAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"ORACLE_IMPLEMENTATION()\":{\"returns\":{\"_0\":\"The ManageableOracle implementation contract\"}},\"create(address,address,uint32,bytes32)\":{\"params\":{\"_externalSalt\":\"External salt for deterministic address generation\",\"_oracle\":\"Initial oracle address\",\"_owner\":\"Address that will own the contract\",\"_timelock\":\"Initial time lock duration\"},\"returns\":{\"manageableOracle\":\"The created ManageableOracle instance\"}},\"create(address,bytes,address,uint32,bytes32)\":{\"details\":\"This method is primarily used by SiloDeployer to create the oracle during deployment\",\"params\":{\"_externalSalt\":\"External salt for deterministic address generation\",\"_owner\":\"Address that will own the contract\",\"_timelock\":\"Initial time lock duration\",\"_underlyingOracleFactory\":\"Factory address to create the underlying oracle\",\"_underlyingOracleInitData\":\"Calldata to call the factory and create the underlying oracle\"},\"returns\":{\"manageableOracle\":\"The created ManageableOracle instance\"}},\"predictAddress(address,bytes32)\":{\"params\":{\"_deployer\":\"Address of the account that will deploy the oracle\",\"_externalSalt\":\"External salt for the CREATE2 deterministic deployment\"},\"returns\":{\"predictedAddress\":\"The address where the ManageableOracle would be deployed\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"ORACLE_IMPLEMENTATION()\":{\"notice\":\"Get the implementation contract that will be cloned\"},\"create(address,address,uint32,bytes32)\":{\"notice\":\"Create a new ManageableOracle\"},\"create(address,bytes,address,uint32,bytes32)\":{\"notice\":\"Create a new ManageableOracle with underlying oracle factory\"},\"predictAddress(address,bytes32)\":{\"notice\":\"Predict the deterministic address of a ManageableOracle that would be created\"}},\"notice\":\"Factory for creating ManageableOracle instances\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"silo-oracles/contracts/interfaces/IManageableOracleFactory.sol\":\"IManageableOracleFactory\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@ensdomains/=node_modules/@ensdomains/\",\":@openzeppelin/=gitmodules/openzeppelin-contracts-5/\",\":@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/\",\":@uniswap/v3-core/=gitmodules/uniswap/v3-core/\",\":ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/\",\":a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/\",\":chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/\",\":chainlink/=gitmodules/chainlink/contracts/src/\",\":createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/\",\":crytic/=gitmodules/crytic/\",\":ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/\",\":erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/\",\":forge-std/=gitmodules/forge-std/src/\",\":halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/\",\":hardhat/=node_modules/hardhat/\",\":morpho-blue/=gitmodules/morpho-blue/src/\",\":openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/\",\":openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/\",\":openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/\",\":openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/\",\":openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/\",\":openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/\",\":prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/\",\":properties/=gitmodules/crytic/properties/contracts/\",\":pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/\",\":silo-core/=silo-core/\",\":silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/\",\":silo-oracles/=silo-oracles/\",\":silo-vaults/=silo-vaults/\",\":solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/\",\":solmate/=gitmodules/crytic/properties/lib/solmate/src/\",\":uniswap/=gitmodules/uniswap/\",\":x-silo/=node_modules/x-silo/\"]},\"sources\":{\"silo-core/contracts/interfaces/ISiloOracle.sol\":{\"keccak256\":\"0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304\",\"dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu\"]},\"silo-oracles/contracts/interfaces/IManageableOracle.sol\":{\"keccak256\":\"0x01a0e4c68377ecb97020d025dcef34d0773717fd6c06b458db4b5f9997314d76\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://337e26f26af6276da045ae6eb0a396b363ac87da5a896c41482496279b8b4f11\",\"dweb:/ipfs/QmbUMBGwobVXnZX71KTC4DEzRMraRg7Rmhrs3Cy5XUsPjp\"]},\"silo-oracles/contracts/interfaces/IManageableOracleFactory.sol\":{\"keccak256\":\"0x58045e39dda3e2c9f0a32f5a0932e8efd7b4f743ed78881c2cae3e94b1328826\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://50d0e0bc94608ab40f39c26c31027ed392646d3b413bf475cbba4bc3485d03e1\",\"dweb:/ipfs/QmX7LfjiGHsAzVA3PEBNGU5X4kB6Cj7ogmjYS5UeCAiANJ\"]}},\"version\":1}",
+    "metadata": {
+        "compiler": {
+            "version": "0.8.28+commit.7893614a"
+        },
+        "language": "Solidity",
+        "output": {
+            "abi": [
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "DeployerCannotBeZero"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "FailedToCreateUnderlyingOracle"
+                },
+                {
+                    "inputs": [],
+                    "type": "error",
+                    "name": "ZeroFactory"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "oracle",
+                            "type": "address",
+                            "indexed": true
+                        }
+                    ],
+                    "type": "event",
+                    "name": "ManageableOracleCreated",
+                    "anonymous": false
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "ORACLE_IMPLEMENTATION",
+                    "outputs": [
+                        {
+                            "internalType": "contract IManageableOracle",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "contract ISiloOracle",
+                            "name": "_oracle",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint32",
+                            "name": "_timelock",
+                            "type": "uint32"
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "create",
+                    "outputs": [
+                        {
+                            "internalType": "contract IManageableOracle",
+                            "name": "manageableOracle",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_underlyingOracleFactory",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "bytes",
+                            "name": "_underlyingOracleInitData",
+                            "type": "bytes"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint32",
+                            "name": "_timelock",
+                            "type": "uint32"
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "nonpayable",
+                    "type": "function",
+                    "name": "create",
+                    "outputs": [
+                        {
+                            "internalType": "contract IManageableOracle",
+                            "name": "manageableOracle",
+                            "type": "address"
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_deployer",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "bytes32",
+                            "name": "_externalSalt",
+                            "type": "bytes32"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "name": "predictAddress",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "predictedAddress",
+                            "type": "address"
+                        }
+                    ]
+                }
+            ],
+            "devdoc": {
+                "kind": "dev",
+                "methods": {
+                    "ORACLE_IMPLEMENTATION()": {
+                        "returns": {
+                            "_0": "The ManageableOracle implementation contract"
+                        }
+                    },
+                    "create(address,address,uint32,bytes32)": {
+                        "params": {
+                            "_externalSalt": "External salt for deterministic address generation",
+                            "_oracle": "Initial oracle address",
+                            "_owner": "Address that will own the contract",
+                            "_timelock": "Initial time lock duration"
+                        },
+                        "returns": {
+                            "manageableOracle": "The created ManageableOracle instance"
+                        }
+                    },
+                    "create(address,bytes,address,uint32,bytes32)": {
+                        "details": "This method is primarily used by SiloDeployer to create the oracle during deployment",
+                        "params": {
+                            "_externalSalt": "External salt for deterministic address generation",
+                            "_owner": "Address that will own the contract",
+                            "_timelock": "Initial time lock duration",
+                            "_underlyingOracleFactory": "Factory address to create the underlying oracle",
+                            "_underlyingOracleInitData": "Calldata to call the factory and create the underlying oracle"
+                        },
+                        "returns": {
+                            "manageableOracle": "The created ManageableOracle instance"
+                        }
+                    },
+                    "predictAddress(address,bytes32)": {
+                        "params": {
+                            "_deployer": "Address of the account that will deploy the oracle",
+                            "_externalSalt": "External salt for the CREATE2 deterministic deployment"
+                        },
+                        "returns": {
+                            "predictedAddress": "The address where the ManageableOracle would be deployed"
+                        }
+                    }
+                },
+                "version": 1
+            },
+            "userdoc": {
+                "kind": "user",
+                "methods": {
+                    "ORACLE_IMPLEMENTATION()": {
+                        "notice": "Get the implementation contract that will be cloned"
+                    },
+                    "create(address,address,uint32,bytes32)": {
+                        "notice": "Create a new ManageableOracle"
+                    },
+                    "create(address,bytes,address,uint32,bytes32)": {
+                        "notice": "Create a new ManageableOracle with underlying oracle factory"
+                    },
+                    "predictAddress(address,bytes32)": {
+                        "notice": "Predict the deterministic address of a ManageableOracle that would be created"
+                    }
+                },
+                "version": 1
+            }
+        },
+        "settings": {
+            "remappings": [
+                "@ensdomains/=node_modules/@ensdomains/",
+                "@openzeppelin/=gitmodules/openzeppelin-contracts-5/",
+                "@solidity-parser/=node_modules/prettier-plugin-solidity/node_modules/@solidity-parser/",
+                "@uniswap/v3-core/=gitmodules/uniswap/v3-core/",
+                "ERC4626/=gitmodules/crytic/properties/lib/ERC4626/contracts/",
+                "a16z-erc4626-tests/=gitmodules/a16z-erc4626-tests/",
+                "chainlink-ccip/=gitmodules/chainlink-ccip/contracts/src/",
+                "chainlink/=gitmodules/chainlink/contracts/src/",
+                "createx/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/src/",
+                "crytic/=gitmodules/crytic/",
+                "ds-test/=gitmodules/openzeppelin-contracts-5/lib/forge-std/lib/ds-test/src/",
+                "erc4626-tests/=gitmodules/openzeppelin-contracts-5/lib/erc4626-tests/",
+                "forge-std/=gitmodules/forge-std/src/",
+                "halmos-cheatcodes/=gitmodules/morpho-blue/lib/halmos-cheatcodes/src/",
+                "hardhat/=node_modules/hardhat/",
+                "morpho-blue/=gitmodules/morpho-blue/src/",
+                "openzeppelin-contracts-5/=gitmodules/openzeppelin-contracts-5/",
+                "openzeppelin-contracts-upgradeable-5/=gitmodules/openzeppelin-contracts-upgradeable-5/",
+                "openzeppelin-contracts-upgradeable/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/openzeppelin-contracts-upgradeable/",
+                "openzeppelin-contracts/=gitmodules/openzeppelin-contracts-upgradeable-5/lib/openzeppelin-contracts/",
+                "openzeppelin5-upgradeable/=gitmodules/openzeppelin-contracts-upgradeable-5/contracts/",
+                "openzeppelin5/=gitmodules/openzeppelin-contracts-5/contracts/",
+                "prettier-plugin-solidity/=node_modules/prettier-plugin-solidity/",
+                "properties/=gitmodules/crytic/properties/contracts/",
+                "pyth-sdk-solidity/=gitmodules/pyth-sdk-solidity/target_chains/ethereum/sdk/solidity/",
+                "silo-core/=silo-core/",
+                "silo-foundry-utils/=gitmodules/silo-foundry-utils/contracts/",
+                "silo-oracles/=silo-oracles/",
+                "silo-vaults/=silo-vaults/",
+                "solady/=gitmodules/pyth-sdk-solidity/lazer/contracts/evm/lib/createx/lib/solady/",
+                "solmate/=gitmodules/crytic/properties/lib/solmate/src/",
+                "uniswap/=gitmodules/uniswap/",
+                "x-silo/=node_modules/x-silo/"
+            ],
+            "optimizer": {
+                "enabled": true,
+                "runs": 200
+            },
+            "metadata": {
+                "bytecodeHash": "ipfs"
+            },
+            "compilationTarget": {
+                "silo-oracles/contracts/interfaces/IManageableOracleFactory.sol": "IManageableOracleFactory"
+            },
+            "evmVersion": "cancun",
+            "libraries": {}
+        },
+        "sources": {
+            "silo-core/contracts/interfaces/ISiloOracle.sol": {
+                "keccak256": "0x6725b7651bfec1370f0f48886e6dcb2a45b852f2229d2edc6ed91fce334ba6f9",
+                "urls": [
+                    "bzz-raw://781d1ca91d4ab6c3eb8adcdce1778392a0f161dd01d41080c40bb91500e35304",
+                    "dweb:/ipfs/Qmd2L5R9Mtcum78p4jTtxk1vyMgrWUjaoaNXeWnPcqWcAu"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IManageableOracle.sol": {
+                "keccak256": "0x01a0e4c68377ecb97020d025dcef34d0773717fd6c06b458db4b5f9997314d76",
+                "urls": [
+                    "bzz-raw://337e26f26af6276da045ae6eb0a396b363ac87da5a896c41482496279b8b4f11",
+                    "dweb:/ipfs/QmbUMBGwobVXnZX71KTC4DEzRMraRg7Rmhrs3Cy5XUsPjp"
+                ],
+                "license": "MIT"
+            },
+            "silo-oracles/contracts/interfaces/IManageableOracleFactory.sol": {
+                "keccak256": "0x58045e39dda3e2c9f0a32f5a0932e8efd7b4f743ed78881c2cae3e94b1328826",
+                "urls": [
+                    "bzz-raw://50d0e0bc94608ab40f39c26c31027ed392646d3b413bf475cbba4bc3485d03e1",
+                    "dweb:/ipfs/QmX7LfjiGHsAzVA3PEBNGU5X4kB6Cj7ogmjYS5UeCAiANJ"
+                ],
+                "license": "MIT"
+            }
+        },
+        "version": 1
+    },
+    "id": 98
+}

@@ -318,24 +318,25 @@ export default function Step4IRMSelection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: string[] = []
     if (activeTab === 'kink') {
-      if (!kinkToken0Config || !kinkToken0Immutable || !kinkToken1Config || !kinkToken1Immutable) {
-        setError('Please select both Config and Immutable for Token 0 and Token 1')
-        return
-      }
+      if (!kinkToken0Config || !kinkToken0Immutable) errors.push('Please select Config and Immutable for Token 0')
+      if (!kinkToken1Config || !kinkToken1Immutable) errors.push('Please select Config and Immutable for Token 1')
     } else {
-      if (!selectedIRM0 || !selectedIRM1) {
-        setError('Please select Interest Rate Models for both tokens')
-        return
-      }
+      if (!selectedIRM0) errors.push('Please select an Interest Rate Model for Token 0')
+      if (!selectedIRM1) errors.push('Please select an Interest Rate Model for Token 1')
+    }
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+      return
     }
     setError('')
-    markStepCompleted(4)
-    router.push('/wizard?step=5')
+    markStepCompleted(5)
+    router.push('/wizard?step=6')
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=3')
+    router.push('/wizard?step=4')
   }
 
   const formatParameterValue = (value: string | number | boolean): string => {
@@ -343,15 +344,11 @@ export default function Step4IRMSelection() {
     return String(value)
   }
 
-  const canProceedKink = kinkToken0Config && kinkToken0Immutable && kinkToken1Config && kinkToken1Immutable
-  const canProceedIRM = selectedIRM0 && selectedIRM1
-  const canProceed = activeTab === 'kink' ? canProceedKink : canProceedIRM
-
   return (
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white">
-          Step 4: Interest Rate Model Selection
+          Step 5: Interest Rate Model Selection
         </h1>
       </div>
 
@@ -383,7 +380,12 @@ export default function Step4IRMSelection() {
 
       {error && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-          <div className="text-red-400 text-sm">✗ {error}</div>
+          <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
+          <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+            {error.split('\n').map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -723,11 +725,10 @@ export default function Step4IRMSelection() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Oracle Configuration</span>
+            <span>Manageable Oracle</span>
           </button>
           <button
             type="submit"
-            disabled={!canProceed}
             className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Borrow Setup</span>
