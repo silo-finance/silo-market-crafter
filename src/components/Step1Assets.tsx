@@ -341,7 +341,11 @@ export default function Step1Assets() {
               <PredefinedOptionButton
                 onClick={() => {
                   setToken0Address('USDC')
+                  setToken0ResolvedAddress(null)
+                  setToken0Metadata(null)
+                  setToken0Error('')
                   saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, 'USDC')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, null)
                 }}
               >
                 <span>USDC</span>
@@ -349,7 +353,11 @@ export default function Step1Assets() {
               <PredefinedOptionButton
                 onClick={() => {
                   setToken0Address('WETH')
+                  setToken0ResolvedAddress(null)
+                  setToken0Metadata(null)
+                  setToken0Error('')
                   saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, 'WETH')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN0_METADATA, null)
                 }}
               >
                 <span>WETH</span>
@@ -398,7 +406,11 @@ export default function Step1Assets() {
               <PredefinedOptionButton
                 onClick={() => {
                   setToken1Address('USDC')
+                  setToken1ResolvedAddress(null)
+                  setToken1Metadata(null)
+                  setToken1Error('')
                   saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, 'USDC')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, null)
                 }}
               >
                 <span>USDC</span>
@@ -406,7 +418,11 @@ export default function Step1Assets() {
               <PredefinedOptionButton
                 onClick={() => {
                   setToken1Address('WETH')
+                  setToken1ResolvedAddress(null)
+                  setToken1Metadata(null)
+                  setToken1Error('')
                   saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, 'WETH')
+                  saveMetadataToCache(CACHE_KEYS.TOKEN1_METADATA, null)
                 }}
               >
                 <span>WETH</span>

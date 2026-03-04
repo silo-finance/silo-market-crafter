@@ -229,7 +229,7 @@ const initialWizardData: WizardData = {
   lastDeployTxHash: null,
   lastDeployArgsHash: null,
   manageableOracle: true,
-  manageableOracleTimelock: undefined,
+  manageableOracleTimelock: 172800, // default 2 days (in seconds)
   manageableOracleOwnerAddress: null,
   verificationFromWizard: false
 }
@@ -262,7 +262,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           networkInfo: null,
           verificationFromWizard: false,
           manageableOracle: parsedData.manageableOracle ?? true,
-          manageableOracleTimelock: parsedData.manageableOracleTimelock,
+          manageableOracleTimelock: parsedData.manageableOracleTimelock ?? 172800,
           manageableOracleOwnerAddress: parsedData.manageableOracleOwnerAddress ?? null
         })
       } catch (err) {

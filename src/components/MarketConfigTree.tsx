@@ -172,6 +172,8 @@ interface MarketConfigTreeProps {
   addressVersions?: Map<string, string>
   ptOracleBaseDiscountVerification?: PTOracleBaseDiscountVerification
   callBeforeQuoteVerification?: CallBeforeQuoteVerification
+  /** Timelock in seconds for ManageableOracle (wizard value); shown in tree when oracle has underlying */
+  manageableOracleTimelockSeconds?: number
   hookGaugeInfo?: {
     hasDefaultingHook: boolean
     onlyOneBorrowable: boolean | null
@@ -698,7 +700,17 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, hookGaugeInfo }: MarketConfigTreeProps) {
+/** Version string contains "ManageableOracle" (e.g. "ManageableOracle 1.2.3") */
+function isManageableOracleByVersion(version: string | undefined): boolean {
+  return version != null && version !== '' && version.toLowerCase().includes('manageableoracle')
+}
+
+function formatTimelockBulletText(seconds: number): string {
+  const days = Math.round(seconds / 86400)
+  return `Timelock: ${seconds.toLocaleString()} seconds (${days} ${days === 1 ? 'day' : 'days'})`
+}
+
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, hookGaugeInfo }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -1054,6 +1066,14 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   )
                 })
               }
+              const solvency0Version = config.silo0.solvencyOracle.version
+              const timelockSeconds0Solvency = config.silo0.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+              if (isManageableOracleByVersion(solvency0Version) && timelockSeconds0Solvency != null && timelockSeconds0Solvency > 0) {
+                base.push({
+                  key: 'oracle.manageable.timelock.silo0.solvency',
+                  text: formatTimelockBulletText(timelockSeconds0Solvency)
+                })
+              }
               return base
             })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
@@ -1106,6 +1126,14 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         </span>
                       </span>
                     )
+                  })
+                }
+                const maxLtv0Version = config.silo0.maxLtvOracle.version
+                const timelockSeconds0MaxLtv = config.silo0.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+                if (isManageableOracleByVersion(maxLtv0Version) && timelockSeconds0MaxLtv != null && timelockSeconds0MaxLtv > 0) {
+                  base.push({
+                    key: 'oracle.manageable.timelock.silo0.maxLtv',
+                    text: formatTimelockBulletText(timelockSeconds0MaxLtv)
                   })
                 }
                 return base
@@ -1272,6 +1300,14 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   )
                 })
               }
+              const solvency1Version = config.silo1.solvencyOracle.version
+              const timelockSeconds1Solvency = config.silo1.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+              if (isManageableOracleByVersion(solvency1Version) && timelockSeconds1Solvency != null && timelockSeconds1Solvency > 0) {
+                base.push({
+                  key: 'oracle.manageable.timelock.silo1.solvency',
+                  text: formatTimelockBulletText(timelockSeconds1Solvency)
+                })
+              }
               return base
             })()}
             priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
@@ -1324,6 +1360,14 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         </span>
                       </span>
                     )
+                  })
+                }
+                const maxLtv1Version = config.silo1.maxLtvOracle.version
+                const timelockSeconds1MaxLtv = config.silo1.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+                if (isManageableOracleByVersion(maxLtv1Version) && timelockSeconds1MaxLtv != null && timelockSeconds1MaxLtv > 0) {
+                  base.push({
+                    key: 'oracle.manageable.timelock.silo1.maxLtv',
+                    text: formatTimelockBulletText(timelockSeconds1MaxLtv)
                   })
                 }
                 return base
