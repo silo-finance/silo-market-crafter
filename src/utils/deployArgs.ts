@@ -226,7 +226,7 @@ export function prepareDeployArgs(
       wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress)
         ? ethers.getAddress(wizardData.manageableOracleOwnerAddress)
         : ethers.ZeroAddress
-    const timelock = wizardData.manageableOracleTimelock ?? 86400 // fallback for old cached data
+    const timelock = wizardData.manageableOracleTimelock ?? 172800 // fallback 2 days (in seconds)
     const externalSalt = ethers.ZeroHash
 
     // Pre-deployed oracle: use create(address,address,uint32,bytes32)
