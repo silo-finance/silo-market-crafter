@@ -300,8 +300,10 @@ export default function Step4IRMSelection() {
                       filteredKinkConfigs.map((cfg) => (
                         <div
                           key={`t0-cfg-${cfg.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken0Config?.name === cfg.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
+                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                            kinkToken0Config?.name === cfg.name
+                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
+                              : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken0Config(cfg)}
                         >
@@ -323,8 +325,10 @@ export default function Step4IRMSelection() {
                       filteredKinkImmutables.map((imm) => (
                         <div
                           key={`t0-imm-${imm.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken0Immutable?.name === imm.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
+                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                            kinkToken0Immutable?.name === imm.name
+                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
+                              : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken0Immutable(imm)}
                         >
@@ -360,8 +364,10 @@ export default function Step4IRMSelection() {
                       filteredKinkConfigs.map((cfg) => (
                         <div
                           key={`t1-cfg-${cfg.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken1Config?.name === cfg.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
+                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                            kinkToken1Config?.name === cfg.name
+                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
+                              : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken1Config(cfg)}
                         >
@@ -383,8 +389,10 @@ export default function Step4IRMSelection() {
                       filteredKinkImmutables.map((imm) => (
                         <div
                           key={`t1-imm-${imm.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm ${
-                            kinkToken1Immutable?.name === imm.name ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
+                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                            kinkToken1Immutable?.name === imm.name
+                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
+                              : 'border-gray-700 hover:border-gray-600'
                           }`}
                           onClick={() => setKinkToken1Immutable(imm)}
                         >
