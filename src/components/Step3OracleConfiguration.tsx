@@ -184,6 +184,9 @@ export default function Step3OracleConfiguration() {
   // Optional virtual USD quote token (SILO_VIRTUAL_USD_8) – loaded from addresses JSON per chain.
   const [virtualUsdAddress, setVirtualUsdAddress] = useState<string | null>(null)
   const [virtualUsdLoadedChain, setVirtualUsdLoadedChain] = useState<string | null>(null)
+  // Optional USDC quote token – loaded from addresses JSON per chain (key: USDC).
+  const [usdcAddress, setUsdcAddress] = useState<string | null>(null)
+  const [usdcLoadedChain, setUsdcLoadedChain] = useState<string | null>(null)
 
   // Chain ID to chain name mapping - using centralized network config
   // getChainName is imported from @/utils/networks
@@ -196,7 +199,7 @@ export default function Step3OracleConfiguration() {
       setVirtualUsdLoadedChain(null)
       return
     }
-    if (virtualUsdLoadedChain === chainId && virtualUsdAddress != null) {
+    if (virtualUsdLoadedChain === chainId) {
       return
     }
     let cancelled = false
@@ -218,6 +221,37 @@ export default function Step3OracleConfiguration() {
       cancelled = true
     }
   }, [wizardData.networkInfo?.chainId, virtualUsdLoadedChain, virtualUsdAddress])
+
+  // Load USDC address if available in addresses JSON (key: USDC)
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) {
+      setUsdcAddress(null)
+      setUsdcLoadedChain(null)
+      return
+    }
+    if (usdcLoadedChain === chainId) {
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await resolveSymbolToAddress(chainId, 'USDC')
+        if (cancelled) return
+        setUsdcAddress(res?.address ?? null)
+        setUsdcLoadedChain(chainId)
+      } catch {
+        if (!cancelled) {
+          setUsdcAddress(null)
+          setUsdcLoadedChain(chainId)
+        }
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [wizardData.networkInfo?.chainId, usdcLoadedChain, usdcAddress])
 
 
   // Fetch oracle deployments from GitHub
@@ -1161,60 +1195,35 @@ export default function Step3OracleConfiguration() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    aria-pressed={chainlink0.useOtherTokenAsQuote !== false}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
-                      chainlink0.useOtherTokenAsQuote !== false
-                        ? 'bg-lime-400 text-emerald-950 border-lime-300 shadow-sm'
-                        : 'bg-gray-900 text-gray-200 border-gray-600 hover:border-lime-400 hover:text-lime-200'
-                    }`}
+                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
                     onClick={() => {
                       const otherTokenAddress = wizardData.token1?.address ?? ''
-                      setChainlink0(prev => ({
-                        ...prev,
-                        useOtherTokenAsQuote: true,
-                        customQuoteTokenAddress: undefined,
-                        customQuoteTokenMetadata: undefined
-                      }))
-                      if (otherTokenAddress) {
-                        setChainlink0QuoteInput(otherTokenAddress)
-                      } else {
-                        setChainlink0QuoteInput('')
-                      }
+                      setChainlink0QuoteInput(otherTokenAddress || '')
                     }}
                   >
-                    {chainlink0.useOtherTokenAsQuote !== false && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-900" />
-                    )}
-                    <span>Other token ({wizardData.token1?.symbol ?? 'Token 1'})</span>
+                    <span>Other token</span>
                   </button>
                   {virtualUsdAddress && (
                     <button
                       type="button"
-                      aria-pressed={
-                        chainlink0.customQuoteTokenAddress &&
-                        chainlink0.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase()
-                      }
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
-                        chainlink0.customQuoteTokenAddress &&
-                        chainlink0.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase()
-                          ? 'bg-lime-400 text-emerald-950 border-lime-300 shadow-sm'
-                          : 'bg-gray-900 text-gray-200 border-gray-600 hover:border-lime-400 hover:text-lime-200'
-                      }`}
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
                       onClick={() => {
-                        setChainlink0(prev => ({
-                          ...prev,
-                          useOtherTokenAsQuote: false,
-                          customQuoteTokenAddress: virtualUsdAddress,
-                          customQuoteTokenMetadata: prev.customQuoteTokenMetadata // metadata will be refreshed by TokenAddressInput
-                        }))
-                        setChainlink0QuoteInput(virtualUsdAddress)
+                        setChainlink0QuoteInput('SILO_VIRTUAL_USD_8')
                       }}
                     >
-                      {chainlink0.customQuoteTokenAddress &&
-                        chainlink0.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase() && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-900" />
-                        )}
+                      <span className="font-bold" aria-hidden>$</span>
                       <span>USD</span>
+                    </button>
+                  )}
+                  {usdcAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink0QuoteInput('USDC')
+                      }}
+                    >
+                      <span>USDC</span>
                     </button>
                   )}
                 </div>
@@ -1541,60 +1550,35 @@ export default function Step3OracleConfiguration() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    aria-pressed={chainlink1.useOtherTokenAsQuote !== false}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
-                      chainlink1.useOtherTokenAsQuote !== false
-                        ? 'bg-lime-400 text-emerald-950 border-lime-300 shadow-sm'
-                        : 'bg-gray-900 text-gray-200 border-gray-600 hover:border-lime-400 hover:text-lime-200'
-                    }`}
+                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
                     onClick={() => {
                       const otherTokenAddress = wizardData.token0?.address ?? ''
-                      setChainlink1(prev => ({
-                        ...prev,
-                        useOtherTokenAsQuote: true,
-                        customQuoteTokenAddress: undefined,
-                        customQuoteTokenMetadata: undefined
-                      }))
-                      if (otherTokenAddress) {
-                        setChainlink1QuoteInput(otherTokenAddress)
-                      } else {
-                        setChainlink1QuoteInput('')
-                      }
+                      setChainlink1QuoteInput(otherTokenAddress || '')
                     }}
                   >
-                    {chainlink1.useOtherTokenAsQuote !== false && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-900" />
-                    )}
-                    <span>Other token ({wizardData.token0?.symbol ?? 'Token 0'})</span>
+                    <span>Other token</span>
                   </button>
                   {virtualUsdAddress && (
                     <button
                       type="button"
-                      aria-pressed={
-                        chainlink1.customQuoteTokenAddress &&
-                        chainlink1.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase()
-                      }
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
-                        chainlink1.customQuoteTokenAddress &&
-                        chainlink1.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase()
-                          ? 'bg-lime-400 text-emerald-950 border-lime-300 shadow-sm'
-                          : 'bg-gray-900 text-gray-200 border-gray-600 hover-border-lime-200'
-                      }`}
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
                       onClick={() => {
-                        setChainlink1(prev => ({
-                          ...prev,
-                          useOtherTokenAsQuote: false,
-                          customQuoteTokenAddress: virtualUsdAddress,
-                          customQuoteTokenMetadata: prev.customQuoteTokenMetadata
-                        }))
-                        setChainlink1QuoteInput(virtualUsdAddress)
+                        setChainlink1QuoteInput('SILO_VIRTUAL_USD_8')
                       }}
                     >
-                      {chainlink1.customQuoteTokenAddress &&
-                        chainlink1.customQuoteTokenAddress.toLowerCase() === virtualUsdAddress.toLowerCase() && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-900" />
-                        )}
+                      <span className="font-bold" aria-hidden>$</span>
                       <span>USD</span>
+                    </button>
+                  )}
+                  {usdcAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink1QuoteInput('USDC')
+                      }}
+                    >
+                      <span>USDC</span>
                     </button>
                   )}
                 </div>

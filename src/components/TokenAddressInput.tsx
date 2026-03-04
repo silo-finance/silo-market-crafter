@@ -290,7 +290,7 @@ export default function TokenAddressInput({
     }
   }, [initialMetadata, initialResolvedAddress, value])
   
-  // Auto-validate when value changes from outside
+  // Auto-validate when value changes from outside (e.g. predefined button paste, or parent set value)
   useEffect(() => {
     // Skip if we already validated this exact value
     if (value === lastValidatedValueRef.current) {
@@ -303,24 +303,18 @@ export default function TokenAddressInput({
       return
     }
     
-    // Only auto-validate if:
-    // 1. Value exists
-    // 2. We don't have metadata yet (or metadata was cleared)
-    // 3. It's not currently loading
-    // 4. We have chainId (for symbol lookup) or value is a hex address
-    if (value.trim() && !metadata && !loading) {
-      if (isHexAddress(value) || chainId) {
-        lastValidatedValueRef.current = value
-        // Small delay to avoid race conditions and ensure processTokenInput is ready
-        const timer = setTimeout(() => {
-          processTokenInput(value)
-        }, 200)
-        return () => clearTimeout(timer)
-      }
-    } else if (!value.trim()) {
-      // Reset ref when value is cleared
+    if (!value.trim()) {
       lastValidatedValueRef.current = ''
       hasInitialDataRef.current = false
+      return
+    }
+    // Whenever value changed from outside and we can resolve (hex or have chainId), run process so that e.g. button-paste triggers lookup immediately
+    if ((isHexAddress(value) || chainId) && !loading) {
+      lastValidatedValueRef.current = value
+      const timer = setTimeout(() => {
+        processTokenInput(value)
+      }, 100)
+      return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, chainId]) // Only depend on value and chainId to avoid loops
