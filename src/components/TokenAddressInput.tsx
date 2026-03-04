@@ -7,6 +7,7 @@ import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import { getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import erc20Artifact from '@/abis/IERC20.json'
+import { extractHexAddressLike } from '@/utils/addressFromInput'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
@@ -326,7 +327,8 @@ export default function TokenAddressInput({
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
+    const rawValue = e.target.value
+    const newValue = extractHexAddressLike(rawValue)
     onChange(newValue)
     
     // Clear any existing errors when user starts typing

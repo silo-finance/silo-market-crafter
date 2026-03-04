@@ -8,6 +8,7 @@ import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
 import { getNativeTokenSymbol } from '@/utils/networks'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
+import { extractHexAddressLike } from '@/utils/addressFromInput'
 
 export default function Step8HookOwner() {
   const router = useRouter()
@@ -251,7 +252,7 @@ export default function Step8HookOwner() {
           <input
             type="text"
             value={manualAddress}
-            onChange={(e) => setManualAddress(e.target.value)}
+          onChange={(e) => setManualAddress(extractHexAddressLike(e.target.value))}
             placeholder="0x... or name (e.g. WETH)"
             className={`w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none font-mono text-sm ${
               manualAddress
