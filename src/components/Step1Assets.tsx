@@ -7,6 +7,7 @@ import { normalizeAddress } from '@/utils/addressValidation'
 import { getAddressesJsonUrl } from '@/utils/symbolToAddress'
 import { getNetworkDisplayName } from '@/utils/networks'
 import TokenAddressInput from '@/components/TokenAddressInput'
+import PredefinedOptionButton from '@/components/PredefinedOptionButton'
 
 interface TokenMetadata {
   symbol: string
@@ -336,6 +337,24 @@ export default function Step1Assets() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
           <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 mb-2">
+              <PredefinedOptionButton
+                onClick={() => {
+                  setToken0Address('USDC')
+                  saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, 'USDC')
+                }}
+              >
+                <span>USDC</span>
+              </PredefinedOptionButton>
+              <PredefinedOptionButton
+                onClick={() => {
+                  setToken0Address('WETH')
+                  saveToCache(CACHE_KEYS.TOKEN0_ADDRESS, 'WETH')
+                }}
+              >
+                <span>WETH</span>
+              </PredefinedOptionButton>
+            </div>
             <TokenAddressInput
               value={token0Address}
               onChange={(value) => {
@@ -375,6 +394,24 @@ export default function Step1Assets() {
               </button>
             </div>
 
+            <div className="flex flex-wrap gap-2 mb-2">
+              <PredefinedOptionButton
+                onClick={() => {
+                  setToken1Address('USDC')
+                  saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, 'USDC')
+                }}
+              >
+                <span>USDC</span>
+              </PredefinedOptionButton>
+              <PredefinedOptionButton
+                onClick={() => {
+                  setToken1Address('WETH')
+                  saveToCache(CACHE_KEYS.TOKEN1_ADDRESS, 'WETH')
+                }}
+              >
+                <span>WETH</span>
+              </PredefinedOptionButton>
+            </div>
             <TokenAddressInput
               value={token1Address}
               onChange={(value) => {

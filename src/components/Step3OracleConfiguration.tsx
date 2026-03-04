@@ -140,6 +140,7 @@ function ChainlinkOracleSection({
       <p className="text-sm text-gray-400 mb-2">
         Base token: <span className="text-white font-medium">{baseTokenSymbol}</span> <span className="text-gray-500">({baseTokenName})</span>
       </p>
+      <div className="mt-6" role="presentation" />
       <div className="space-y-2 mb-4">
         <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
           Quote token
@@ -147,7 +148,9 @@ function ChainlinkOracleSection({
         <div className="flex flex-wrap gap-2">
           <PredefinedOptionButton
             onClick={() => {
-              setQuoteInput(otherTokenAddress || '')
+              const addr = otherTokenAddress || ''
+              setQuoteInput(addr)
+              setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: addr }))
             }}
           >
             <span>Other token</span>
@@ -156,6 +159,7 @@ function ChainlinkOracleSection({
             <PredefinedOptionButton
               onClick={() => {
                 setQuoteInput('SILO_VIRTUAL_USD_8')
+                setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
               }}
             >
               <span className="font-bold" aria-hidden>$</span>
@@ -166,6 +170,7 @@ function ChainlinkOracleSection({
             <PredefinedOptionButton
               onClick={() => {
                 setQuoteInput('USDC')
+                setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
               }}
             >
               <span>USDC</span>
@@ -182,6 +187,7 @@ function ChainlinkOracleSection({
             if (metadata && address) {
               setChainlink(prev => ({
                 ...prev,
+                useOtherTokenAsQuote: false,
                 customQuoteTokenAddress: address,
                 customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
               }))
@@ -194,6 +200,7 @@ function ChainlinkOracleSection({
           placeholder="0x… or symbol from addresses JSON"
         />
       </div>
+      <div className="mt-6" role="presentation" />
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
         <div className="flex flex-wrap gap-2 mb-2">
@@ -238,6 +245,7 @@ function ChainlinkOracleSection({
           </div>
         )}
       </div>
+      <div className="mt-6" role="presentation" />
       <div>
         <div className="flex items-center gap-2 mb-1">
           <input
@@ -898,11 +906,7 @@ export default function Step3OracleConfiguration() {
         normalizationMultiplier: c0.normalizationMultiplier,
         invertSecondPrice: c0.invertSecondPrice
       }))
-      if (!(c0.useOtherTokenAsQuote ?? true) && c0.customQuoteTokenAddress) {
-        setChainlink0QuoteInput(c0.customQuoteTokenAddress)
-      } else {
-        setChainlink0QuoteInput('')
-      }
+      setChainlink0QuoteInput(c0.customQuoteTokenAddress ?? '')
       const hasSecondary = !!(c0.secondaryAggregator && c0.secondaryAggregator !== ethers.ZeroAddress && c0.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator0(hasSecondary)
     }
@@ -920,11 +924,7 @@ export default function Step3OracleConfiguration() {
         normalizationMultiplier: c1.normalizationMultiplier,
         invertSecondPrice: c1.invertSecondPrice
       }))
-      if (!(c1.useOtherTokenAsQuote ?? true) && c1.customQuoteTokenAddress) {
-        setChainlink1QuoteInput(c1.customQuoteTokenAddress)
-      } else {
-        setChainlink1QuoteInput('')
-      }
+      setChainlink1QuoteInput(c1.customQuoteTokenAddress ?? '')
       const hasSecondary = !!(c1.secondaryAggregator && c1.secondaryAggregator !== ethers.ZeroAddress && c1.secondaryAggregator.trim() !== '')
       setUseSecondaryAggregator1(hasSecondary)
     }
@@ -1144,29 +1144,27 @@ export default function Step3OracleConfiguration() {
       errors.push('Please select or configure a scaler oracle for Token 1')
     }
     if (wizardData.oracleType0?.type === 'chainlink') {
+      const quoteAddr0 = chainlink0.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
+      if (quoteEmpty0) {
+        errors.push('Chainlink (Token 0): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
+      }
       if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
         errors.push('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
       } else if ((!chainlink0.normalizationDivider && !chainlink0.normalizationMultiplier) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0')) {
         errors.push('Chainlink normalization not computed for Token 0. Enter a valid primary aggregator.')
       }
-      if (!(chainlink0.useOtherTokenAsQuote ?? true)) {
-        const addr = chainlink0.customQuoteTokenAddress?.trim()
-        if (!addr || !ethers.isAddress(addr)) {
-          errors.push('Please enter or resolve a valid quote token address for Token 0 Chainlink oracle')
-        }
-      }
     }
     if (wizardData.oracleType1?.type === 'chainlink') {
+      const quoteAddr1 = chainlink1.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
+      if (quoteEmpty1) {
+        errors.push('Chainlink (Token 1): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
+      }
       if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
         errors.push('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
       } else if ((!chainlink1.normalizationDivider && !chainlink1.normalizationMultiplier) || (chainlink1.normalizationDivider === '0' && chainlink1.normalizationMultiplier === '0')) {
         errors.push('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
-      }
-      if (!(chainlink1.useOtherTokenAsQuote ?? true)) {
-        const addr = chainlink1.customQuoteTokenAddress?.trim()
-        if (!addr || !ethers.isAddress(addr)) {
-          errors.push('Please enter or resolve a valid quote token address for Token 1 Chainlink oracle')
-        }
       }
     }
     if (wizardData.oracleType0?.type === 'ptLinear') {
@@ -1221,7 +1219,9 @@ export default function Step3OracleConfiguration() {
           chainlinkOracle: wizardData.oracleType0!.type === 'chainlink' ? {
             baseToken: 'token0',
             useOtherTokenAsQuote: chainlink0.useOtherTokenAsQuote ?? true,
-            customQuoteTokenAddress: chainlink0.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenAddress: (chainlink0.useOtherTokenAsQuote !== false && wizardData.token1?.address
+              ? wizardData.token1.address
+              : chainlink0.customQuoteTokenAddress?.trim()) || undefined,
             customQuoteTokenMetadata: chainlink0.customQuoteTokenMetadata,
             primaryAggregator: chainlink0.primaryAggregator!.trim(),
             secondaryAggregator: chainlink0.secondaryAggregator?.trim() || ethers.ZeroAddress,
@@ -1241,7 +1241,9 @@ export default function Step3OracleConfiguration() {
           chainlinkOracle: wizardData.oracleType1!.type === 'chainlink' ? {
             baseToken: 'token1',
             useOtherTokenAsQuote: chainlink1.useOtherTokenAsQuote ?? true,
-            customQuoteTokenAddress: chainlink1.customQuoteTokenAddress?.trim() || undefined,
+            customQuoteTokenAddress: (chainlink1.useOtherTokenAsQuote !== false && wizardData.token0?.address
+              ? wizardData.token0.address
+              : chainlink1.customQuoteTokenAddress?.trim()) || undefined,
             customQuoteTokenMetadata: chainlink1.customQuoteTokenMetadata,
             primaryAggregator: chainlink1.primaryAggregator!.trim(),
             secondaryAggregator: chainlink1.secondaryAggregator?.trim() || ethers.ZeroAddress,

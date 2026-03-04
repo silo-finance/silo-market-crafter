@@ -226,7 +226,7 @@ export default function Step8HookOwner() {
           Step 10: Hook Owner Selection
         </h1>
         <p className="text-gray-300 text-lg">
-          Enter the address of the hook owner. This applies to all hook types.
+          Enter the address of the hook owner. This applies to all hook types. The same owner will be used for Gauge (Silo Incentive Controllers).
         </p>
       </div>
 
