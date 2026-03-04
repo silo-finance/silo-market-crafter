@@ -59,6 +59,210 @@ function formatPowerOfTen(value: string): string {
   return value
 }
 
+interface ChainlinkOracleSectionProps {
+  baseTokenSymbol: string
+  baseTokenName: string
+  otherTokenAddress?: string
+  chainlink: Partial<ChainlinkOracleConfig> & {
+    primaryAggregatorDecimals?: number
+    mathLineMultiplier?: string
+    mathLineDivider?: string
+    aggregatorDescription?: string
+    aggregatorLatestAnswer?: string
+  }
+  setChainlink: React.Dispatch<React.SetStateAction<Partial<ChainlinkOracleConfig> & {
+    primaryAggregatorDecimals?: number
+    mathLineMultiplier?: string
+    mathLineDivider?: string
+    aggregatorDescription?: string
+    aggregatorLatestAnswer?: string
+  }>>
+  quoteInput: string
+  setQuoteInput: (value: string) => void
+  useSecondaryAggregator: boolean
+  setUseSecondaryAggregator: (value: boolean) => void
+  virtualUsdAddress: string | null
+  usdcAddress: string | null
+  chainlinkV3OracleFactory: { address: string; version: string } | null
+  networkChainId?: string
+  idSuffix: string
+}
+
+function ChainlinkOracleSection({
+  baseTokenSymbol,
+  baseTokenName,
+  otherTokenAddress,
+  chainlink,
+  setChainlink,
+  quoteInput,
+  setQuoteInput,
+  useSecondaryAggregator,
+  setUseSecondaryAggregator,
+  virtualUsdAddress,
+  usdcAddress,
+  chainlinkV3OracleFactory,
+  networkChainId,
+  idSuffix
+}: ChainlinkOracleSectionProps) {
+  return (
+    <div className="space-y-4">
+      {chainlinkV3OracleFactory ? (
+        <ContractInfo
+          contractName="ChainlinkV3OracleFactory"
+          address={chainlinkV3OracleFactory.address}
+          version={chainlinkV3OracleFactory.version || '…'}
+          chainId={networkChainId}
+          isOracle={true}
+        />
+      ) : (
+        <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
+      )}
+      <p className="text-sm text-gray-400 mb-2">
+        Base token: <span className="text-white font-medium">{baseTokenSymbol}</span> <span className="text-gray-500">({baseTokenName})</span>
+      </p>
+      <div className="space-y-2 mb-4">
+        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+          Quote token
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+            onClick={() => {
+              setQuoteInput(otherTokenAddress || '')
+            }}
+          >
+            <span>Other token</span>
+          </button>
+          {virtualUsdAddress && (
+            <button
+              type="button"
+              className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+              onClick={() => {
+                setQuoteInput('SILO_VIRTUAL_USD_8')
+              }}
+            >
+              <span className="font-bold" aria-hidden>$</span>
+              <span>USD</span>
+            </button>
+          )}
+          {usdcAddress && (
+            <button
+              type="button"
+              className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+              onClick={() => {
+                setQuoteInput('USDC')
+              }}
+            >
+              <span>USDC</span>
+            </button>
+          )}
+        </div>
+        <TokenAddressInput
+          value={quoteInput}
+          onChange={(value) => {
+            setQuoteInput(value)
+            setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+          }}
+          onResolve={(address, metadata) => {
+            if (metadata && address) {
+              setChainlink(prev => ({
+                ...prev,
+                customQuoteTokenAddress: address,
+                customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
+              }))
+            } else {
+              setChainlink(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+            }
+          }}
+          chainId={networkChainId}
+          label="Quote token address or symbol"
+          placeholder="0x… or symbol from addresses JSON"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
+        <input
+          type="text"
+          value={chainlink.primaryAggregator}
+          onChange={(e) => setChainlink(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
+          placeholder="0x..."
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+        />
+        {(chainlink.aggregatorDescription != null || chainlink.aggregatorLatestAnswer != null || chainlink.primaryAggregatorDecimals != null) && (
+          <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+            <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
+            {chainlink.aggregatorDescription != null && (
+              <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink.aggregatorDescription || '—'}</span></p>
+            )}
+            {chainlink.primaryAggregatorDecimals != null && (
+              <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink.primaryAggregatorDecimals}</span></p>
+            )}
+            {chainlink.aggregatorLatestAnswer != null && (
+              <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink.aggregatorLatestAnswer}</span></p>
+            )}
+          </div>
+        )}
+      </div>
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <input
+            type="checkbox"
+            id={`useSecondary-${idSuffix}`}
+            checked={useSecondaryAggregator}
+            onChange={(e) => {
+              const checked = e.target.checked
+              setUseSecondaryAggregator(checked)
+              if (!checked) setChainlink(prev => ({ ...prev, secondaryAggregator: '', invertSecondPrice: false }))
+            }}
+            className="rounded"
+          />
+          <label htmlFor={`useSecondary-${idSuffix}`} className="text-sm font-medium text-gray-300">Secondary aggregator (optional)</label>
+        </div>
+        {useSecondaryAggregator && (
+          <input
+            type="text"
+            value={chainlink.secondaryAggregator}
+            onChange={(e) => setChainlink(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
+            placeholder="0x..."
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+          />
+        )}
+      </div>
+      {useSecondaryAggregator && chainlink.secondaryAggregator?.trim() && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id={`invert-${idSuffix}`}
+            checked={chainlink.invertSecondPrice}
+            onChange={(e) => setChainlink(prev => ({ ...prev, invertSecondPrice: e.target.checked }))}
+            className="rounded"
+          />
+          <label htmlFor={`invert-${idSuffix}`} className="text-sm text-gray-300">Invert second price</label>
+        </div>
+      )}
+      {(chainlink.normalizationDivider !== '0' || chainlink.normalizationMultiplier !== '0') && (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+          <div className={chainlink.normalizationMultiplier === '0' ? 'opacity-60' : ''}>
+            <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink.normalizationMultiplier === '0' ? 'line-through' : ''}`}>normalizationMultiplier</p>
+            <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink.normalizationMultiplier ?? '0')}</p>
+            {chainlink.normalizationMultiplier !== '0' && chainlink.mathLineMultiplier && (
+              <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink.mathLineMultiplier}</p>
+            )}
+          </div>
+          <div className={chainlink.normalizationDivider === '0' ? 'opacity-60' : ''}>
+            <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink.normalizationDivider === '0' ? 'line-through' : ''}`}>normalizationDivider</p>
+            <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink.normalizationDivider ?? '0')}</p>
+            {chainlink.normalizationDivider !== '0' && chainlink.mathLineDivider && (
+              <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink.mathLineDivider}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /**
  * Normalization so oracle output is 18 decimals.
  * Equation: base decimals + aggregator decimals ± normalization = 18.
@@ -1173,163 +1377,22 @@ export default function Step3OracleConfiguration() {
               )}
             </div>
           ) : wizardData.oracleType0.type === 'chainlink' ? (
-            <div className="space-y-4">
-              {chainlinkV3OracleFactory ? (
-                <ContractInfo
-                  contractName="ChainlinkV3OracleFactory"
-                  address={chainlinkV3OracleFactory.address}
-                  version={chainlinkV3OracleFactory.version || '…'}
-                  chainId={wizardData.networkInfo?.chainId}
-                  isOracle={true}
-                />
-              ) : (
-                <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
-              )}
-              <p className="text-sm text-gray-400 mb-2">
-                Base token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
-              </p>
-              <div className="space-y-2 mb-4">
-                <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
-                  Quote token
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                    onClick={() => {
-                      const otherTokenAddress = wizardData.token1?.address ?? ''
-                      setChainlink0QuoteInput(otherTokenAddress || '')
-                    }}
-                  >
-                    <span>Other token</span>
-                  </button>
-                  {virtualUsdAddress && (
-                    <button
-                      type="button"
-                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                      onClick={() => {
-                        setChainlink0QuoteInput('SILO_VIRTUAL_USD_8')
-                      }}
-                    >
-                      <span className="font-bold" aria-hidden>$</span>
-                      <span>USD</span>
-                    </button>
-                  )}
-                  {usdcAddress && (
-                    <button
-                      type="button"
-                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                      onClick={() => {
-                        setChainlink0QuoteInput('USDC')
-                      }}
-                    >
-                      <span>USDC</span>
-                    </button>
-                  )}
-                </div>
-                <TokenAddressInput
-                  value={chainlink0QuoteInput}
-                  onChange={(value) => {
-                    setChainlink0QuoteInput(value)
-                    // Typing in the field means "custom quote"
-                    setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: false }))
-                  }}
-                  onResolve={(address, metadata) => {
-                    if (metadata && address) {
-                      setChainlink0(prev => ({
-                        ...prev,
-                        customQuoteTokenAddress: address,
-                        customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
-                      }))
-                    } else {
-                      setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
-                    }
-                  }}
-                  chainId={wizardData.networkInfo?.chainId}
-                  label="Quote token address or symbol"
-                  placeholder="0x… or symbol from addresses JSON"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
-                <input
-                  type="text"
-                  value={chainlink0.primaryAggregator}
-                  onChange={(e) => setChainlink0(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
-                  placeholder="0x..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
-                />
-                {(chainlink0.aggregatorDescription != null || chainlink0.aggregatorLatestAnswer != null || chainlink0.primaryAggregatorDecimals != null) && (
-                  <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
-                    {chainlink0.aggregatorDescription != null && (
-                      <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink0.aggregatorDescription || '—'}</span></p>
-                    )}
-                    {chainlink0.primaryAggregatorDecimals != null && (
-                      <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink0.primaryAggregatorDecimals}</span></p>
-                    )}
-                    {chainlink0.aggregatorLatestAnswer != null && (
-                      <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink0.aggregatorLatestAnswer}</span></p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <input
-                    type="checkbox"
-                    id="useSecondary0"
-                    checked={useSecondaryAggregator0}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setUseSecondaryAggregator0(checked)
-                      if (!checked) setChainlink0(prev => ({ ...prev, secondaryAggregator: '', invertSecondPrice: false }))
-                    }}
-                    className="rounded"
-                  />
-                  <label htmlFor="useSecondary0" className="text-sm font-medium text-gray-300">Secondary aggregator (optional)</label>
-                </div>
-                {useSecondaryAggregator0 && (
-                  <input
-                    type="text"
-                    value={chainlink0.secondaryAggregator}
-                    onChange={(e) => setChainlink0(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
-                    placeholder="0x..."
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
-                  />
-                )}
-              </div>
-              {useSecondaryAggregator0 && chainlink0.secondaryAggregator?.trim() && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="invert0"
-                    checked={chainlink0.invertSecondPrice}
-                    onChange={(e) => setChainlink0(prev => ({ ...prev, invertSecondPrice: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <label htmlFor="invert0" className="text-sm text-gray-300">Invert second price</label>
-                </div>
-              )}
-              {(chainlink0.normalizationDivider !== '0' || chainlink0.normalizationMultiplier !== '0') && (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
-                  <div className={chainlink0.normalizationMultiplier === '0' ? 'opacity-60' : ''}>
-                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink0.normalizationMultiplier === '0' ? 'line-through' : ''}`}>normalizationMultiplier</p>
-                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink0.normalizationMultiplier ?? '0')}</p>
-                    {chainlink0.normalizationMultiplier !== '0' && chainlink0.mathLineMultiplier && (
-                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink0.mathLineMultiplier}</p>
-                    )}
-                  </div>
-                  <div className={chainlink0.normalizationDivider === '0' ? 'opacity-60' : ''}>
-                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink0.normalizationDivider === '0' ? 'line-through' : ''}`}>normalizationDivider</p>
-                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink0.normalizationDivider ?? '0')}</p>
-                    {chainlink0.normalizationDivider !== '0' && chainlink0.mathLineDivider && (
-                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink0.mathLineDivider}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ChainlinkOracleSection
+              baseTokenSymbol={wizardData.token0.symbol}
+              baseTokenName={wizardData.token0.name}
+              otherTokenAddress={wizardData.token1?.address}
+              chainlink={chainlink0}
+              setChainlink={setChainlink0}
+              quoteInput={chainlink0QuoteInput}
+              setQuoteInput={setChainlink0QuoteInput}
+              useSecondaryAggregator={useSecondaryAggregator0}
+              setUseSecondaryAggregator={setUseSecondaryAggregator0}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              chainlinkV3OracleFactory={chainlinkV3OracleFactory}
+              networkChainId={wizardData.networkInfo?.chainId}
+              idSuffix="0"
+            />
           ) : (
             <div>
               {loadingOracles ? (
@@ -1528,162 +1591,22 @@ export default function Step3OracleConfiguration() {
               )}
             </div>
           ) : wizardData.oracleType1.type === 'chainlink' ? (
-            <div className="space-y-4">
-              {chainlinkV3OracleFactory ? (
-                <ContractInfo
-                  contractName="ChainlinkV3OracleFactory"
-                  address={chainlinkV3OracleFactory.address}
-                  version={chainlinkV3OracleFactory.version || '…'}
-                  chainId={wizardData.networkInfo?.chainId}
-                  isOracle={true}
-                />
-              ) : (
-                <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
-              )}
-              <p className="text-sm text-gray-400 mb-2">
-                Base token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
-              </p>
-              <div className="space-y-2 mb-4">
-                <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
-                  Quote token
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                    onClick={() => {
-                      const otherTokenAddress = wizardData.token0?.address ?? ''
-                      setChainlink1QuoteInput(otherTokenAddress || '')
-                    }}
-                  >
-                    <span>Other token</span>
-                  </button>
-                  {virtualUsdAddress && (
-                    <button
-                      type="button"
-                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                      onClick={() => {
-                        setChainlink1QuoteInput('SILO_VIRTUAL_USD_8')
-                      }}
-                    >
-                      <span className="font-bold" aria-hidden>$</span>
-                      <span>USD</span>
-                    </button>
-                  )}
-                  {usdcAddress && (
-                    <button
-                      type="button"
-                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
-                      onClick={() => {
-                        setChainlink1QuoteInput('USDC')
-                      }}
-                    >
-                      <span>USDC</span>
-                    </button>
-                  )}
-                </div>
-                <TokenAddressInput
-                  value={chainlink1QuoteInput}
-                  onChange={(value) => {
-                    setChainlink1QuoteInput(value)
-                    setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: false }))
-                  }}
-                  onResolve={(address, metadata) => {
-                    if (metadata && address) {
-                      setChainlink1(prev => ({
-                        ...prev,
-                        customQuoteTokenAddress: address,
-                        customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
-                      }))
-                    } else {
-                      setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
-                    }
-                  }}
-                  chainId={wizardData.networkInfo?.chainId}
-                  label="Quote token address or symbol"
-                  placeholder="0x… or symbol from addresses JSON"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
-                <input
-                  type="text"
-                  value={chainlink1.primaryAggregator}
-                  onChange={(e) => setChainlink1(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
-                  placeholder="0x..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
-                />
-                {(chainlink1.aggregatorDescription != null || chainlink1.aggregatorLatestAnswer != null || chainlink1.primaryAggregatorDecimals != null) && (
-                  <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
-                    {chainlink1.aggregatorDescription != null && (
-                      <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink1.aggregatorDescription || '—'}</span></p>
-                    )}
-                    {chainlink1.primaryAggregatorDecimals != null && (
-                      <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink1.primaryAggregatorDecimals}</span></p>
-                    )}
-                    {chainlink1.aggregatorLatestAnswer != null && (
-                      <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink1.aggregatorLatestAnswer}</span></p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <input
-                    type="checkbox"
-                    id="useSecondary1"
-                    checked={useSecondaryAggregator1}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setUseSecondaryAggregator1(checked)
-                      if (!checked) setChainlink1(prev => ({ ...prev, secondaryAggregator: '', invertSecondPrice: false }))
-                    }}
-                    className="rounded"
-                  />
-                  <label htmlFor="useSecondary1" className="text-sm font-medium text-gray-300">Secondary aggregator (optional)</label>
-                </div>
-                {useSecondaryAggregator1 && (
-                  <input
-                    type="text"
-                    value={chainlink1.secondaryAggregator}
-                    onChange={(e) => setChainlink1(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
-                    placeholder="0x..."
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
-                  />
-                )}
-              </div>
-              {useSecondaryAggregator1 && chainlink1.secondaryAggregator?.trim() && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="invert1"
-                    checked={chainlink1.invertSecondPrice}
-                    onChange={(e) => setChainlink1(prev => ({ ...prev, invertSecondPrice: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <label htmlFor="invert1" className="text-sm text-gray-300">Invert second price</label>
-                </div>
-              )}
-              {(chainlink1.normalizationDivider !== '0' || chainlink1.normalizationMultiplier !== '0') && (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
-                  <div className={chainlink1.normalizationMultiplier === '0' ? 'opacity-60' : ''}>
-                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink1.normalizationMultiplier === '0' ? 'line-through' : ''}`}>normalizationMultiplier</p>
-                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink1.normalizationMultiplier ?? '0')}</p>
-                    {chainlink1.normalizationMultiplier !== '0' && chainlink1.mathLineMultiplier && (
-                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink1.mathLineMultiplier}</p>
-                    )}
-                  </div>
-                  <div className={chainlink1.normalizationDivider === '0' ? 'opacity-60' : ''}>
-                    <p className={`text-sm font-medium text-gray-300 mb-0.5 ${chainlink1.normalizationDivider === '0' ? 'line-through' : ''}`}>normalizationDivider</p>
-                    <p className="text-sm text-white font-mono">{formatPowerOfTen(chainlink1.normalizationDivider ?? '0')}</p>
-                    {chainlink1.normalizationDivider !== '0' && chainlink1.mathLineDivider && (
-                      <p className="text-xs text-gray-400 mt-1 font-mono">{chainlink1.mathLineDivider}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ChainlinkOracleSection
+              baseTokenSymbol={wizardData.token1.symbol}
+              baseTokenName={wizardData.token1.name}
+              otherTokenAddress={wizardData.token0?.address}
+              chainlink={chainlink1}
+              setChainlink={setChainlink1}
+              quoteInput={chainlink1QuoteInput}
+              setQuoteInput={setChainlink1QuoteInput}
+              useSecondaryAggregator={useSecondaryAggregator1}
+              setUseSecondaryAggregator={setUseSecondaryAggregator1}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              chainlinkV3OracleFactory={chainlinkV3OracleFactory}
+              networkChainId={wizardData.networkInfo?.chainId}
+              idSuffix="1"
+            />
           ) : (
             <div>
               {loadingOracles ? (
