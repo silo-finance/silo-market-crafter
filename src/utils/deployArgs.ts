@@ -1,7 +1,6 @@
 import { ethers } from 'ethers'
 import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
-import irmV2Artifact from '@/abis/silo/IInterestRateModelV2.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
@@ -12,7 +11,6 @@ import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
 
 const deployerAbi = (deployerArtifact as FoundryArtifact).abi
-const irmV2Abi = (irmV2Artifact as FoundryArtifact).abi
 const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
 const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
 const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).abi
@@ -121,10 +119,8 @@ export function prepareDeployArgs(
   // This matches how SiloCoreDeployments.get() works in Solidity
   const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
 
-  // Resolve IRM factory address by model type: Kink vs legacy IRM
-  const irmFactoryName = wizardData.irmModelType === 'kink'
-    ? 'DynamicKinkModelFactory.sol'
-    : 'InterestRateModelV2Factory.sol'
+  // Dynamic Kink model only
+  const irmFactoryName = 'DynamicKinkModelFactory.sol'
   const irmFactoryAddress = siloCoreDeployments[irmFactoryName] || ethers.ZeroAddress
 
   // Prepare Oracles struct: either deployed address or factory + createOracleScaler calldata
@@ -293,8 +289,8 @@ export function prepareDeployArgs(
       toBigIntSafe(c.u2),
       toBigIntSafe(c.ucrit),
       toBigIntSafe(c.rmin),
-      BigInt(Number(c.kmin) ?? 0), // int96
-      BigInt(Number(c.kmax) ?? 0), // int96
+      toBigIntSafe(c.kmin), // int96
+      toBigIntSafe(c.kmax), // int96
       toBigIntSafe(c.alpha),
       toBigIntSafe(c.cminus),
       toBigIntSafe(c.cplus),
@@ -302,8 +298,8 @@ export function prepareDeployArgs(
       toBigIntSafe(c.c2),
       toBigIntSafe(c.dmax)
     ]
-    const timelock = Number(c.timelock) ?? 0
-    const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
+    const timelock = Number.isFinite(Number(c.timelock)) ? Number(c.timelock) : 0
+    const rcompCap = toBigIntSafe(c.rcompCap) // int96
     const immutableArgsTuple = [timelock, rcompCap]
     // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
     const initialOwner =
@@ -320,77 +316,8 @@ export function prepareDeployArgs(
     return abiCoder.encode(types, [configTuple, immutableArgsTuple, initialOwner])
   }
 
-  // Prepare IRM config data as bytes
-  // IRM (legacy) config is ABI-encoded as IInterestRateModelV2.Config (tuple from Foundry artifact, never modified)
-  // Validation mirrors InterestRateModelV2Factory.verifyConfig() so we fail early with a clear message
-  const DP = BigInt(1e18)
-  const encodeIRMConfig = (irmConfig: { config?: { [key: string]: string | number | boolean } } | null): string => {
-    if (!irmConfig || !irmConfig.config) {
-      return '0x'
-    }
-
-    const config = irmConfig.config
-
-    const toBigInt = toBigIntSafe
-
-    const uopt = toBigInt(config.uopt)
-    const ucrit = toBigInt(config.ucrit)
-    const ulow = toBigInt(config.ulow)
-    const ki = toBigInt(config.ki)
-    const kcrit = toBigInt(config.kcrit)
-    const klow = toBigInt(config.klow)
-    const klin = toBigInt(config.klin)
-    const beta = toBigInt(config.beta)
-    const ri = toBigInt(config.ri)
-    const Tcrit = toBigInt(config.Tcrit)
-
-    // Same checks as InterestRateModelV2Factory.verifyConfig()
-    const zero = BigInt(0)
-    if (uopt <= zero || uopt >= DP) {
-      throw new Error(`IRM config invalid: uopt must be in (0, 1e18), got ${uopt}`)
-    }
-    if (ucrit <= uopt || ucrit >= DP) {
-      throw new Error(`IRM config invalid: ucrit must be in (uopt, 1e18), got ucrit=${ucrit} uopt=${uopt}`)
-    }
-    if (ulow <= zero || ulow >= uopt) {
-      throw new Error(`IRM config invalid: ulow must be in (0, uopt), got ulow=${ulow} uopt=${uopt}`)
-    }
-    if (ki < zero) throw new Error('IRM config invalid: ki must be >= 0')
-    if (kcrit < zero) throw new Error('IRM config invalid: kcrit must be >= 0')
-    if (klow < zero) throw new Error('IRM config invalid: klow must be >= 0')
-    if (klin < zero) throw new Error('IRM config invalid: klin must be >= 0')
-    if (beta < zero) throw new Error('IRM config invalid: beta must be >= 0')
-    if (ri < zero) throw new Error('IRM config invalid: ri must be >= 0')
-    if (Tcrit < zero) throw new Error('IRM config invalid: Tcrit must be >= 0')
-
-    try {
-      const getConfigFn = (irmV2Abi as ethers.Fragment[]).find(
-        (x): x is ethers.FunctionFragment => x.type === 'function' && (x as ethers.FunctionFragment).name === 'getConfig'
-      )
-      const configParamType = getConfigFn?.outputs?.[0]
-      if (!configParamType) {
-        console.error('IInterestRateModelV2.Config type not found in ABI')
-        return '0x'
-      }
-
-      const abiCoder = ethers.AbiCoder.defaultAbiCoder()
-      const encoded = abiCoder.encode([configParamType], [[
-        uopt, ucrit, ulow, ki, kcrit, klow, klin, beta, ri, Tcrit
-      ]])
-      return encoded
-    } catch (err) {
-      console.error('Error encoding IRM config:', err)
-      throw err
-    }
-  }
-
-  const isKink = wizardData.irmModelType === 'kink'
-  const irmConfigData0Encoded = isKink
-    ? encodeKinkConfig(wizardData.selectedIRM0)
-    : encodeIRMConfig(wizardData.selectedIRM0)
-  const irmConfigData1Encoded = isKink
-    ? encodeKinkConfig(wizardData.selectedIRM1)
-    : encodeIRMConfig(wizardData.selectedIRM1)
+  const irmConfigData0Encoded = encodeKinkConfig(wizardData.selectedIRM0)
+  const irmConfigData1Encoded = encodeKinkConfig(wizardData.selectedIRM1)
 
   // Prepare ClonableHookReceiver
   // Matching: _getClonableHookReceiverConfig(hookReceiverImplementation)

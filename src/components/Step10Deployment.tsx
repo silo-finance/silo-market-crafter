@@ -282,7 +282,7 @@ export default function Step10Deployment() {
           // Handle different possible structures
           if (typeof data === 'object' && data !== null) {
             // If it's already a flat object with contract names as keys
-            if (data['SiloHookV1.sol'] || data['InterestRateModelV2Factory.sol']) {
+            if (data['SiloHookV1.sol'] || data['DynamicKinkModelFactory.sol']) {
               setSiloCoreDeployments(data as SiloCoreDeployments)
               return
             }
@@ -311,9 +311,8 @@ export default function Step10Deployment() {
       // Contract names match SiloCoreContracts constants (the actual .sol file names)
       const contractsToFetch = [
         'SiloHookV1.sol',
-        'SiloHookV2.sol', 
+        'SiloHookV2.sol',
         'SiloHookV3.sol',
-        'InterestRateModelV2Factory.sol',
         'DynamicKinkModelFactory.sol'
       ]
 
@@ -481,9 +480,7 @@ export default function Step10Deployment() {
         ? `${wizardData.selectedHook}.sol` 
         : 'SiloHookV1.sol'
       const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
-      const irmFactoryName = wizardData.irmModelType === 'kink'
-        ? 'DynamicKinkModelFactory.sol'
-        : 'InterestRateModelV2Factory.sol'
+      const irmFactoryName = 'DynamicKinkModelFactory.sol'
       const irmFactoryAddress = siloCoreDeployments[irmFactoryName] || ethers.ZeroAddress
 
       console.log(`Looking up hook implementation: ${hookImplementationName}`, {
@@ -512,7 +509,7 @@ export default function Step10Deployment() {
       }
 
       // Validate Oracle & IRM owner when manageable Oracle or Kink IRM is used
-      const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+      const needsOracleIrmOwner = wizardData.manageableOracle || true
       if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
         validationWarnings.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
       }
@@ -562,7 +559,7 @@ export default function Step10Deployment() {
       validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
     }
 
-    const needsOracleIrmOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+    const needsOracleIrmOwner = wizardData.manageableOracle || true
     if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
       validationErrors.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
     }
@@ -877,14 +874,14 @@ export default function Step10Deployment() {
               !deployArgs ||
               !wizardData.hookOwnerAddress ||
               !ethers.isAddress(wizardData.hookOwnerAddress) ||
-              ((wizardData.manageableOracle || wizardData.irmModelType === 'kink') && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
+              ((wizardData.manageableOracle || true) && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
               (deployArgs && (
                 deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
                 deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
                 deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
               ))
             }
-            className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {deploying ? (
               <>
