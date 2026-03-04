@@ -231,6 +231,17 @@ function ChainlinkOracleSection({
         {(chainlink.aggregatorDescription != null || chainlink.aggregatorLatestAnswer != null || chainlink.primaryAggregatorDecimals != null) && (
           <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
             <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
+            {chainlink.primaryAggregator?.trim() && (
+              <p className="flex items-center gap-2 flex-wrap">
+                <span className="text-gray-500">Address:</span>
+                <AddressDisplayShort
+                  address={chainlink.primaryAggregator}
+                  chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
+                  className="text-sm"
+                  showVersion={false}
+                />
+              </p>
+            )}
             {chainlink.aggregatorDescription != null && (
               <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink.aggregatorDescription || '—'}</span></p>
             )}
