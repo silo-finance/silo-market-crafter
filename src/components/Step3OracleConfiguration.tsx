@@ -6,11 +6,13 @@ import { ethers } from 'ethers'
 import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
+import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import TokenAddressInput from '@/components/TokenAddressInput'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
+import { extractHexAddressLike } from '@/utils/addressFromInput'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -179,8 +181,77 @@ export default function Step3OracleConfiguration() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
 
+  // Optional virtual USD quote token (SILO_VIRTUAL_USD_8) – loaded from addresses JSON per chain.
+  const [virtualUsdAddress, setVirtualUsdAddress] = useState<string | null>(null)
+  const [virtualUsdLoadedChain, setVirtualUsdLoadedChain] = useState<string | null>(null)
+  // Optional USDC quote token – loaded from addresses JSON per chain (key: USDC).
+  const [usdcAddress, setUsdcAddress] = useState<string | null>(null)
+  const [usdcLoadedChain, setUsdcLoadedChain] = useState<string | null>(null)
+
   // Chain ID to chain name mapping - using centralized network config
   // getChainName is imported from @/utils/networks
+
+  // Load virtual USD address if available in addresses JSON (key: SILO_VIRTUAL_USD_8)
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) {
+      setVirtualUsdAddress(null)
+      setVirtualUsdLoadedChain(null)
+      return
+    }
+    if (virtualUsdLoadedChain === chainId) {
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await resolveSymbolToAddress(chainId, 'SILO_VIRTUAL_USD_8')
+        if (cancelled) return
+        setVirtualUsdAddress(res?.address ?? null)
+        setVirtualUsdLoadedChain(chainId)
+      } catch {
+        if (!cancelled) {
+          setVirtualUsdAddress(null)
+          setVirtualUsdLoadedChain(chainId)
+        }
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [wizardData.networkInfo?.chainId, virtualUsdLoadedChain, virtualUsdAddress])
+
+  // Load USDC address if available in addresses JSON (key: USDC)
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) {
+      setUsdcAddress(null)
+      setUsdcLoadedChain(null)
+      return
+    }
+    if (usdcLoadedChain === chainId) {
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await resolveSymbolToAddress(chainId, 'USDC')
+        if (cancelled) return
+        setUsdcAddress(res?.address ?? null)
+        setUsdcLoadedChain(chainId)
+      } catch {
+        if (!cancelled) {
+          setUsdcAddress(null)
+          setUsdcLoadedChain(chainId)
+        }
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [wizardData.networkInfo?.chainId, usdcLoadedChain, usdcAddress])
 
 
   // Fetch oracle deployments from GitHub
@@ -1118,60 +1189,73 @@ export default function Step3OracleConfiguration() {
                 Base token: <span className="text-white font-medium">{wizardData.token0.symbol}</span>
               </p>
               <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    id="chainlink0-quote-other"
-                    name="chainlink0-quote"
-                    checked={chainlink0.useOtherTokenAsQuote !== false}
-                    onChange={() => {
-                      setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
-                      setChainlink0QuoteInput('')
+                <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+                  Quote token
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                    onClick={() => {
+                      const otherTokenAddress = wizardData.token1?.address ?? ''
+                      setChainlink0QuoteInput(otherTokenAddress || '')
                     }}
-                    className="rounded"
-                  />
-                  <label htmlFor="chainlink0-quote-other" className="text-sm text-gray-300">
-                    Use other token as quote — <span className="text-white font-medium">{wizardData.token1?.symbol}</span>
-                  </label>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      id="chainlink0-quote-custom"
-                      name="chainlink0-quote"
-                      checked={chainlink0.useOtherTokenAsQuote === false}
-                      onChange={() => setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
-                      className="rounded"
-                    />
-                    <label htmlFor="chainlink0-quote-custom" className="text-sm text-gray-300">
-                      Custom Quote Token
-                    </label>
-                  </div>
-                  {chainlink0.useOtherTokenAsQuote === false && (
-                    <TokenAddressInput
-                      value={chainlink0QuoteInput}
-                      onChange={setChainlink0QuoteInput}
-                      onResolve={(address, metadata) => {
-                        if (metadata && address) {
-                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
-                        } else {
-                          setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
-                        }
+                  >
+                    <span>Other token</span>
+                  </button>
+                  {virtualUsdAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink0QuoteInput('SILO_VIRTUAL_USD_8')
                       }}
-                      chainId={wizardData.networkInfo?.chainId}
-                      label="Quote token (address or symbol)"
-                      placeholder="0x… or symbol from addresses JSON"
-                    />
+                    >
+                      <span className="font-bold" aria-hidden>$</span>
+                      <span>USD</span>
+                    </button>
+                  )}
+                  {usdcAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink0QuoteInput('USDC')
+                      }}
+                    >
+                      <span>USDC</span>
+                    </button>
                   )}
                 </div>
+                <TokenAddressInput
+                  value={chainlink0QuoteInput}
+                  onChange={(value) => {
+                    setChainlink0QuoteInput(value)
+                    // Typing in the field means "custom quote"
+                    setChainlink0(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+                  }}
+                  onResolve={(address, metadata) => {
+                    if (metadata && address) {
+                      setChainlink0(prev => ({
+                        ...prev,
+                        customQuoteTokenAddress: address,
+                        customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
+                      }))
+                    } else {
+                      setChainlink0(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token address or symbol"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input
                   type="text"
                   value={chainlink0.primaryAggregator}
-                  onChange={(e) => setChainlink0(prev => ({ ...prev, primaryAggregator: e.target.value }))}
+                  onChange={(e) => setChainlink0(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
                   placeholder="0x..."
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
                 />
@@ -1209,7 +1293,7 @@ export default function Step3OracleConfiguration() {
                   <input
                     type="text"
                     value={chainlink0.secondaryAggregator}
-                    onChange={(e) => setChainlink0(prev => ({ ...prev, secondaryAggregator: e.target.value }))}
+                    onChange={(e) => setChainlink0(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
                     placeholder="0x..."
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
                   />
@@ -1460,60 +1544,72 @@ export default function Step3OracleConfiguration() {
                 Base token: <span className="text-white font-medium">{wizardData.token1.symbol}</span>
               </p>
               <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    id="chainlink1-quote-other"
-                    name="chainlink1-quote"
-                    checked={chainlink1.useOtherTokenAsQuote !== false}
-                    onChange={() => {
-                      setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: undefined, customQuoteTokenMetadata: undefined }))
-                      setChainlink1QuoteInput('')
+                <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+                  Quote token
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                    onClick={() => {
+                      const otherTokenAddress = wizardData.token0?.address ?? ''
+                      setChainlink1QuoteInput(otherTokenAddress || '')
                     }}
-                    className="rounded"
-                  />
-                  <label htmlFor="chainlink1-quote-other" className="text-sm text-gray-300">
-                    Use other token as quote — <span className="text-white font-medium">{wizardData.token0?.symbol}</span>
-                  </label>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      id="chainlink1-quote-custom"
-                      name="chainlink1-quote"
-                      checked={chainlink1.useOtherTokenAsQuote === false}
-                      onChange={() => setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: false }))}
-                      className="rounded"
-                    />
-                    <label htmlFor="chainlink1-quote-custom" className="text-sm text-gray-300">
-                      Custom Quote Token
-                    </label>
-                  </div>
-                  {chainlink1.useOtherTokenAsQuote === false && (
-                    <TokenAddressInput
-                      value={chainlink1QuoteInput}
-                      onChange={setChainlink1QuoteInput}
-                      onResolve={(address, metadata) => {
-                        if (metadata && address) {
-                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
-                        } else {
-                          setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
-                        }
+                  >
+                    <span>Other token</span>
+                  </button>
+                  {virtualUsdAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink1QuoteInput('SILO_VIRTUAL_USD_8')
                       }}
-                      chainId={wizardData.networkInfo?.chainId}
-                      label="Quote token (address or symbol)"
-                      placeholder="0x… or symbol from addresses JSON"
-                    />
+                    >
+                      <span className="font-bold" aria-hidden>$</span>
+                      <span>USD</span>
+                    </button>
+                  )}
+                  {usdcAddress && (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5"
+                      onClick={() => {
+                        setChainlink1QuoteInput('USDC')
+                      }}
+                    >
+                      <span>USDC</span>
+                    </button>
                   )}
                 </div>
+                <TokenAddressInput
+                  value={chainlink1QuoteInput}
+                  onChange={(value) => {
+                    setChainlink1QuoteInput(value)
+                    setChainlink1(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+                  }}
+                  onResolve={(address, metadata) => {
+                    if (metadata && address) {
+                      setChainlink1(prev => ({
+                        ...prev,
+                        customQuoteTokenAddress: address,
+                        customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals }
+                      }))
+                    } else {
+                      setChainlink1(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+                    }
+                  }}
+                  chainId={wizardData.networkInfo?.chainId}
+                  label="Quote token address or symbol"
+                  placeholder="0x… or symbol from addresses JSON"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
                 <input
                   type="text"
                   value={chainlink1.primaryAggregator}
-                  onChange={(e) => setChainlink1(prev => ({ ...prev, primaryAggregator: e.target.value }))}
+                  onChange={(e) => setChainlink1(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
                   placeholder="0x..."
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
                 />
@@ -1551,7 +1647,7 @@ export default function Step3OracleConfiguration() {
                   <input
                     type="text"
                     value={chainlink1.secondaryAggregator}
-                    onChange={(e) => setChainlink1(prev => ({ ...prev, secondaryAggregator: e.target.value }))}
+                    onChange={(e) => setChainlink1(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
                     placeholder="0x..."
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
                   />

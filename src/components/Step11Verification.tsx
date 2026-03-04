@@ -18,6 +18,7 @@ import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { verifyAddress } from '@/utils/verification/addressVerification'
 import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
+import { extractHexAddressLike } from '@/utils/addressFromInput'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -929,21 +930,9 @@ export default function Step11Verification() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    setInput(value)
+    const normalized = extractHexAddressLike(value)
+    setInput(normalized)
     setError(null)
-    
-    // Auto-detect if it's a URL with hash or address
-    if (value.includes('tx/') || value.includes('transaction/')) {
-      const hashMatch = value.match(/0x[a-fA-F0-9]{64}/)
-      if (hashMatch) {
-        setInput(hashMatch[0])
-      }
-    } else if (value.includes('address/')) {
-      const addressMatch = value.match(/0x[a-fA-F0-9]{40}/)
-      if (addressMatch) {
-        setInput(addressMatch[0])
-      }
-    }
   }
 
   const goToDeployment = () => router.push('/wizard?step=12')

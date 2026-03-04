@@ -5,6 +5,7 @@ import { ethers } from 'ethers'
 import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
 import { getNativeTokenSymbol } from '@/utils/networks'
+import { extractHexAddressLike } from '@/utils/addressFromInput'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 
 interface OwnerSelectionBlockProps {
@@ -212,7 +213,7 @@ export default function OwnerSelectionBlock({
         <input
           type="text"
           value={manualAddress}
-          onChange={(e) => setManualAddress(e.target.value)}
+          onChange={(e) => setManualAddress(extractHexAddressLike(e.target.value))}
           placeholder="0x... or name (e.g. WETH)"
           disabled={disabled}
           className={`w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none font-mono text-sm ${
