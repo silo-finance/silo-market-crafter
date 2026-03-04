@@ -146,9 +146,20 @@ export function prepareDeployArgs(
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
-      const quoteToken = (chainlink.useOtherTokenAsQuote !== false)
-        ? ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
-        : ethers.getAddress(chainlink.customQuoteTokenAddress!.trim())
+      // Chainlink: quote token is required and must not be empty
+      let quoteToken: string
+      if (chainlink.useOtherTokenAsQuote !== false) {
+        quoteToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token1!.address : wizardData.token0!.address)
+      } else {
+        const customAddr = chainlink.customQuoteTokenAddress?.trim()
+        if (!customAddr || !ethers.isAddress(customAddr)) {
+          throw new Error('Chainlink oracle requires a valid custom quote token address. Please set the quote token in Oracle Configuration (Step 3).')
+        }
+        quoteToken = ethers.getAddress(customAddr)
+      }
+      if (!quoteToken || quoteToken === ethers.ZeroAddress) {
+        throw new Error('Chainlink oracle quote token is required and cannot be zero.')
+      }
       const secondaryAgg = chainlink.secondaryAggregator && chainlink.secondaryAggregator.trim() !== '' && chainlink.secondaryAggregator !== ethers.ZeroAddress ? ethers.getAddress(chainlink.secondaryAggregator) : ethers.ZeroAddress
       const primaryAggregator = ethers.getAddress(chainlink.primaryAggregator)
       // Encode config as single tuple (array form) so ethers does not expand it into multiple args; ABI order: baseToken, quoteToken, primaryAggregator, primaryHeartbeat, secondaryAggregator, secondaryHeartbeat, normalizationDivider, normalizationMultiplier, invertSecondPrice

@@ -532,6 +532,7 @@ export default function Step10Deployment() {
       })
     } catch (error) {
       console.error('Error preparing deploy args:', error)
+      setDeployArgs(null)
       setError(error instanceof Error ? error.message : 'Failed to prepare deployment arguments')
     }
   }, [wizardData, siloCoreDeployments, oracleDeployments])
