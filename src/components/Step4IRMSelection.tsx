@@ -729,9 +729,9 @@ export default function Step4IRMSelection() {
           </button>
           <button
             type="submit"
-            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
-            <span>Borrow Setup</span>
+            <span>Oracle/IRM Owner</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

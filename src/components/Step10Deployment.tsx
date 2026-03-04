@@ -884,7 +884,7 @@ export default function Step10Deployment() {
                 deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
               ))
             }
-            className="bg-emerald-900 hover:bg-emerald-800 disabled:bg-emerald-900 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {deploying ? (
               <>
@@ -896,7 +896,7 @@ export default function Step10Deployment() {
               </>
             ) : (
               <>
-                <span>Execute Transaction</span>
+                <span>Verification</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
