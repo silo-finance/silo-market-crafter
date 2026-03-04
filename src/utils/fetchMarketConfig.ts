@@ -116,6 +116,8 @@ export interface OracleInfo {
   ownerName?: string
   /** For ManageableOracle: underlying oracle address + version (from SiloLens) */
   underlying?: { address: string; version?: string }
+  /** For ManageableOracle: timelock duration in seconds (from contract timelock()) */
+  timelockSeconds?: number
 }
 
 export interface IRMInfo {
@@ -253,14 +255,19 @@ export async function fetchMarketConfig(
       uniqueManageableOracles.add(c.maxLtvOracle.address.toLowerCase())
     }
   }
+  const manageableOracleAbi = [
+    { type: 'function' as const, name: 'owner', inputs: [], outputs: [{ name: '', type: 'address', internalType: 'address' }], stateMutability: 'view' as const },
+    { type: 'function' as const, name: 'oracle', inputs: [], outputs: [{ name: '', type: 'address', internalType: 'address' }], stateMutability: 'view' as const },
+    { type: 'function' as const, name: 'timelock', inputs: [], outputs: [{ name: '', type: 'uint32', internalType: 'uint32' }], stateMutability: 'view' as const }
+  ]
   const oracleOwnerByAddress = new Map<string, string>()
   const underlyingByManageable = new Map<string, string>()
+  const timelockByManageable = new Map<string, number>()
   await Promise.all(Array.from(uniqueManageableOracles).map(async (addr) => {
     try {
-      const contract = new ethers.Contract(addr, ownerAbi as ethers.InterfaceAbi, provider)
+      const contract = new ethers.Contract(addr, manageableOracleAbi as ethers.InterfaceAbi, provider)
       const owner = await contract.owner()
       if (owner && owner !== ethers.ZeroAddress) oracleOwnerByAddress.set(addr, typeof owner === 'string' ? owner : owner.toString())
-      // Try to read underlying oracle when available (ManageableOracle)
       try {
         const underlying = await contract.oracle?.()
         if (underlying && underlying !== ethers.ZeroAddress) {
@@ -270,16 +277,28 @@ export async function fetchMarketConfig(
       } catch {
         // Some oracle variants may not expose oracle(); ignore gracefully.
       }
+      try {
+        const tl = await contract.timelock?.()
+        if (tl != null) timelockByManageable.set(addr, Number(tl))
+      } catch {
+        // timelock() may not exist on some variants; ignore.
+      }
     } catch {
-      // Oracle may not implement Ownable; ignore gracefully
+      // Oracle may not implement ManageableOracle; ignore gracefully
     }
   }))
   const getOracleOwner = (address: string, version: string | undefined) =>
     address && isManageableOracleByVersion(version) ? oracleOwnerByAddress.get(address.toLowerCase()) : undefined
+  const getOracleTimelock = (address: string, version: string | undefined) =>
+    address && isManageableOracleByVersion(version) ? timelockByManageable.get(address.toLowerCase()) : undefined
   config0.solvencyOracle.owner = getOracleOwner(config0.solvencyOracle.address, config0.solvencyOracle.version)
+  config0.solvencyOracle.timelockSeconds = getOracleTimelock(config0.solvencyOracle.address, config0.solvencyOracle.version)
   config1.solvencyOracle.owner = getOracleOwner(config1.solvencyOracle.address, config1.solvencyOracle.version)
+  config1.solvencyOracle.timelockSeconds = getOracleTimelock(config1.solvencyOracle.address, config1.solvencyOracle.version)
   config0.maxLtvOracle.owner = getOracleOwner(config0.maxLtvOracle.address, config0.maxLtvOracle.version)
+  config0.maxLtvOracle.timelockSeconds = getOracleTimelock(config0.maxLtvOracle.address, config0.maxLtvOracle.version)
   config1.maxLtvOracle.owner = getOracleOwner(config1.maxLtvOracle.address, config1.maxLtvOracle.version)
+  config1.maxLtvOracle.timelockSeconds = getOracleTimelock(config1.maxLtvOracle.address, config1.maxLtvOracle.version)
 
   // Underlying oracle versions for ManageableOracle (when SiloLens is available)
   if (siloLensAddress && underlyingByManageable.size > 0) {

@@ -1119,6 +1119,7 @@ export default function Step11Verification() {
                   }
                 : undefined
               }
+              manageableOracleTimelockSeconds={wizardData.manageableOracleTimelock}
               hookGaugeInfo={hookGaugeInfo}
             />
           </>
