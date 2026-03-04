@@ -289,8 +289,8 @@ export function prepareDeployArgs(
       toBigIntSafe(c.u2),
       toBigIntSafe(c.ucrit),
       toBigIntSafe(c.rmin),
-      BigInt(Number(c.kmin) ?? 0), // int96
-      BigInt(Number(c.kmax) ?? 0), // int96
+      toBigIntSafe(c.kmin), // int96
+      toBigIntSafe(c.kmax), // int96
       toBigIntSafe(c.alpha),
       toBigIntSafe(c.cminus),
       toBigIntSafe(c.cplus),
@@ -298,8 +298,8 @@ export function prepareDeployArgs(
       toBigIntSafe(c.c2),
       toBigIntSafe(c.dmax)
     ]
-    const timelock = Number(c.timelock) ?? 0
-    const rcompCap = BigInt(Number(c.rcompCap) ?? 0) // int96
+    const timelock = Number.isFinite(Number(c.timelock)) ? Number(c.timelock) : 0
+    const rcompCap = toBigIntSafe(c.rcompCap) // int96
     const immutableArgsTuple = [timelock, rcompCap]
     // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
     const initialOwner =
