@@ -946,7 +946,7 @@ export default function Step10Deployment() {
           </div>
           <button
             type="button"
-            onClick={() => router.push(`/wizard?step=13&tx=${txHash}`)}
+            onClick={() => router.push(`/wizard?step=verification&tx=${txHash}`)}
             className="bg-lime-800 hover:bg-lime-700 text-white cta-strong-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification

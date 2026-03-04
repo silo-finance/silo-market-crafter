@@ -50,10 +50,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const { wizardData } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
-  const handleStepClick = (step: number) => {
+  const handleStepClick = (step: number, stepId?: string) => {
     // Only allow navigation to completed steps (steps that are before current step)
     if (wizardData.currentStep > step) {
-      router.push(`/wizard?step=${step}`)
+      router.push(stepId === 'verification' ? '/wizard?step=verification' : `/wizard?step=${step}`)
     }
   }
 
@@ -100,7 +100,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
           </div>
         </div>
 
-        {/* Summary Sidebar - hidden on step 12 when verifying user-provided data (not from wizard) */}
+        {/* Summary Sidebar - hidden on verification step when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
@@ -133,16 +133,17 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   { step: 10, title: 'Hook Owner' },
                   { step: 11, title: 'JSON Config' },
                   { step: 12, title: 'Deployment' },
-                  { step: 13, title: 'Verification' }
+                  { step: 13, id: 'verification', title: 'Verification' }
                 ].map((item) => {
+                  const itemId = 'id' in item ? item.id : String(item.step)
                   const isCompleted = wizardData.currentStep > item.step
                   const isCurrent = wizardData.currentStep === item.step
                   const isClickable = isCompleted
                   
                   return (
                     <div
-                      key={item.step}
-                      onClick={() => isClickable && handleStepClick(item.step)}
+                      key={itemId}
+                      onClick={() => isClickable && handleStepClick(item.step, 'id' in item ? item.id : undefined)}
                       className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
                         wizardData.currentStep >= item.step
                           ? 'bg-lime-900/20 border border-lime-700/50'
@@ -160,7 +161,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             : 'bg-lime-950/70 text-lime-300/50'
                         }`}
                       >
-                        {isCompleted ? '✓' : item.step}
+                        {isCompleted ? '✓' : (itemId === 'verification' ? 'V' : item.step)}
                       </div>
                       <div className={`text-xs font-medium ${
                         wizardData.currentStep >= item.step ? 'text-lime-50' : 'text-lime-200/60'
@@ -210,7 +211,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 </div>
               )}
 
-              {/* Step 3: Oracle Configuration – not shown on step 13 (verification uses only on-chain data in the tree) */}
+              {/* Step 3: Oracle Configuration – not shown on verification (verification uses only on-chain data in the tree) */}
               {wizardData.currentStep !== 13 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
                   <h3 className="text-sm font-medium text-lime-200/80 mb-3">Oracle Configuration</h3>
