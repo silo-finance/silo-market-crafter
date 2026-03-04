@@ -212,9 +212,6 @@ export default function OwnerSelectionBlock({
           .
         </p>
         <div className="flex flex-wrap gap-2 mb-2">
-          <PredefinedOptionButton disabled={disabled} onClick={() => setManualAddress('DAO')}>
-            <span>DAO</span>
-          </PredefinedOptionButton>
           <PredefinedOptionButton disabled={disabled} onClick={() => setManualAddress('DAO_ORACLE')}>
             <span>DAO Oracle</span>
           </PredefinedOptionButton>
