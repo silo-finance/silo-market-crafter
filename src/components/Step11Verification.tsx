@@ -106,7 +106,7 @@ export default function Step11Verification() {
   const updateVerificationUrl = useCallback(
     (params: { txHash?: string; siloConfigAddress?: string }) => {
       const query = new URLSearchParams()
-      query.set('step', '13')
+      query.set('step', 'verification')
       if (params.txHash) {
         query.set('tx', params.txHash)
       } else if (params.siloConfigAddress) {
@@ -504,6 +504,14 @@ export default function Step11Verification() {
         setTxHash(null)
       }
 
+      // Only compare with wizard when we're verifying the wizard's deployment (same tx hash)
+      const effectiveTxHash = isTxHash ? value.trim() : null
+      const isFromWizard = !!(
+        effectiveTxHash &&
+        wizardData.lastDeployTxHash &&
+        effectiveTxHash.toLowerCase() === wizardData.lastDeployTxHash.toLowerCase()
+      )
+
       // Fetch market configuration
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       setConfig(marketConfig)
@@ -626,7 +634,7 @@ export default function Step11Verification() {
                         gaugeContract.NOTIFIER().catch(() => null)
                       ])
                       const hookOwnerOnChain = marketConfig.silo0.hookReceiverOwner ?? marketConfig.silo1.hookReceiverOwner ?? null
-                      const hookOwnerWizard = wizardData.hookOwnerAddress ?? null
+                      const hookOwnerWizard = isFromWizard ? (wizardData.hookOwnerAddress ?? null) : null
                       newHookGaugeInfo = {
                         ...newHookGaugeInfo,
                         gaugeVerification: {
@@ -739,14 +747,10 @@ export default function Step11Verification() {
       }
       setHookGaugeInfo(newHookGaugeInfo)
       
-      // Verify hook owner - always check on-chain address, wizard data is optional
-      // Hook owner address is always available from on-chain config
+      // Verify hook owner - always check on-chain address; wizard comparison only when from wizard
       if (marketConfig.silo0.hookReceiverOwner) {
         const onChainOwner = marketConfig.silo0.hookReceiverOwner // Hook owner address from on-chain contract
-        const wizardOwner = wizardData.hookOwnerAddress ?? null // Hook owner address from wizard state (optional)
-        
-        // Verification is performed in MarketConfigTree component using verifyAddress()
-        // from src/utils/verification/addressVerification.ts
+        const wizardOwner = isFromWizard ? (wizardData.hookOwnerAddress ?? null) : null
         
         // Get JSON verification result from the map (already checked above)
         const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
@@ -765,14 +769,10 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify IRM owner - always check on-chain address, wizard data is optional
-      // IRM owner = same as Oracle owner (manageableOracleOwnerAddress); hook owner is separate
+      // Verify IRM owner - always check on-chain address; wizard comparison only when from wizard
       if (marketConfig.silo0.interestRateModel.owner) {
         const onChainOwner = marketConfig.silo0.interestRateModel.owner // IRM owner address from on-chain contract
-        const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null // IRM owner from wizard (same as Oracle owner)
-        
-        // Verification is performed in MarketConfigTree component using verifyAddress()
-        // from src/utils/verification/addressVerification.ts
+        const wizardOwner = isFromWizard ? (wizardData.manageableOracleOwnerAddress ?? null) : null
         
         // Get JSON verification result from the map (already checked above)
         const isInJson = jsonVerificationMap.get(onChainOwner.toLowerCase()) ?? null
@@ -791,65 +791,49 @@ export default function Step11Verification() {
         })
       }
 
-      // Verify Oracle owner (ManageableOracle) for both silos - same checks for silo0 and silo1
-      const wizardOwner = wizardData.manageableOracleOwnerAddress ?? null
+      // Verify Oracle owner (ManageableOracle) for both silos; wizard comparison only when from wizard
+      const oracleWizardOwner = isFromWizard ? (wizardData.manageableOracleOwnerAddress ?? null) : null
       const silo0Oracle = marketConfig.silo0.solvencyOracle.owner
         ? {
             onChainOwner: marketConfig.silo0.solvencyOracle.owner,
-            wizardOwner,
+            wizardOwner: oracleWizardOwner,
             isInAddressesJson: jsonVerificationMap.get(marketConfig.silo0.solvencyOracle.owner.toLowerCase()) ?? null
           }
         : null
       const silo1Oracle = marketConfig.silo1.solvencyOracle.owner
         ? {
             onChainOwner: marketConfig.silo1.solvencyOracle.owner,
-            wizardOwner,
+            wizardOwner: oracleWizardOwner,
             isInAddressesJson: jsonVerificationMap.get(marketConfig.silo1.solvencyOracle.owner.toLowerCase()) ?? null
           }
         : null
       setOracleOwnerVerification({ silo0: silo0Oracle, silo1: silo1Oracle })
 
-      // Verify tokens - check if we have wizard data (token0 and token1 addresses exist)
-      if (wizardData.token0?.address && marketConfig.silo0.token) {
-        const onChainToken0 = marketConfig.silo0.token // Token 0 address from on-chain contract
-        const wizardToken0 = wizardData.token0.address // Token 0 address from wizard state
-        
+      // Verify tokens - on-chain always; wizard comparison only when from wizard
+      if (marketConfig.silo0.token) {
+        const onChainToken0 = marketConfig.silo0.token
+        const wizardToken0 = isFromWizard && wizardData.token0?.address ? wizardData.token0.address : null
         setTokenVerification(prev => ({
           ...prev,
-          token0: {
-            onChainToken: onChainToken0,
-            wizardToken: wizardToken0
-          }
+          token0: { onChainToken: onChainToken0, wizardToken: wizardToken0 }
         }))
       } else {
-        setTokenVerification(prev => ({
-          ...prev,
-          token0: null
-        }))
+        setTokenVerification(prev => ({ ...prev, token0: null }))
       }
 
-      if (wizardData.token1?.address && marketConfig.silo1.token) {
-        const onChainToken1 = marketConfig.silo1.token // Token 1 address from on-chain contract
-        const wizardToken1 = wizardData.token1.address // Token 1 address from wizard state
-        
+      if (marketConfig.silo1.token) {
+        const onChainToken1 = marketConfig.silo1.token
+        const wizardToken1 = isFromWizard && wizardData.token1?.address ? wizardData.token1.address : null
         setTokenVerification(prev => ({
           ...prev,
-          token1: {
-            onChainToken: onChainToken1,
-            wizardToken: wizardToken1
-          }
+          token1: { onChainToken: onChainToken1, wizardToken: wizardToken1 }
         }))
       } else {
-        setTokenVerification(prev => ({
-          ...prev,
-          token1: null
-        }))
+        setTokenVerification(prev => ({ ...prev, token1: null }))
       }
 
-      // Verify numeric values - check if we have wizard data
-      // Only perform verification if wizard data is available (verificationFromWizard will be set later)
-      if (wizardData.borrowConfiguration && wizardData.feesConfiguration) {
-        // Silo 0 numeric values
+      // Verify numeric values - only when from wizard and wizard data is available
+      if (isFromWizard && wizardData.borrowConfiguration && wizardData.feesConfiguration) {
         setNumericValueVerification({
           silo0: {
             maxLtv: wizardData.borrowConfiguration.token0?.maxLTV ?? null,
@@ -867,14 +851,15 @@ export default function Step11Verification() {
           }
         })
       } else {
-        // Reset verification state if we don't have wizard data
-        setNumericValueVerification({
-          silo0: null,
-          silo1: null
-        })
+        setNumericValueVerification({ silo0: null, silo1: null })
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch market configuration')
+      const msg = e instanceof Error ? e.message : String(e)
+      const friendly =
+        msg.includes('CALL_EXCEPTION') || msg.includes('execution reverted')
+          ? 'Contract call failed: the address may not be a Silo Config, or the contract reverted. Check the address and network.'
+          : msg
+      setError(friendly)
       setShowForm(true)
     } finally {
       setLoading(false)
@@ -884,6 +869,7 @@ export default function Step11Verification() {
     wizardData.borrowConfiguration,
     wizardData.feesConfiguration,
     wizardData.hookOwnerAddress,
+    wizardData.lastDeployTxHash,
     wizardData.manageableOracleOwnerAddress,
     wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
@@ -903,7 +889,7 @@ export default function Step11Verification() {
     }
   }, [txHash, wizardData.lastDeployTxHash, wizardData.verificationFromWizard, setVerificationFromWizard])
 
-  // Extract hash from URL if present
+  // When URL has tx= or address=, run verification once. When URL has neither, only show form (never auto-run with lastDeployTxHash so we don't overwrite user input).
   useEffect(() => {
     const urlHash = searchParams.get('tx')
     const urlAddress = searchParams.get('address') || searchParams.get('contract')
@@ -914,15 +900,13 @@ export default function Step11Verification() {
       setInput(urlAddress)
       handleVerify(urlAddress, false)
     } else {
-      // Check if we have saved transaction hash
+      // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
       const savedHash = wizardData.lastDeployTxHash
       if (savedHash) {
-        setTxHash(savedHash)
-        handleVerify(savedHash, true)
-      } else {
-        setShowForm(true)
-        setVerificationFromWizard(false)
+        setInput(savedHash)
       }
+      setShowForm(true)
+      setVerificationFromWizard(false)
     }
   }, [searchParams, wizardData.lastDeployTxHash, handleVerify, setVerificationFromWizard])
 
@@ -969,7 +953,7 @@ export default function Step11Verification() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 13: Verification
+          Verification
         </h1>
         <p className="text-gray-300 text-lg">
           View complete market configuration tree

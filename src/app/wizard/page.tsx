@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import WizardLayout from '@/components/WizardLayout'
 import LandingPage from '@/components/LandingPage'
@@ -21,15 +21,25 @@ import Step3OracleConfiguration from '@/components/Step3OracleConfiguration'
 
 function WizardPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { wizardData, updateStep } = useWizard()
 
-  // Get current step from URL or default to 0
+  // Get current step from URL (step=verification is the verification step; we never use step=13 in URL).
   const urlStep = searchParams.get('step')
-  const currentStep = urlStep ? parseInt(urlStep, 10) : 0
-  
+  const currentStep = urlStep === 'verification' ? 13 : (urlStep ? parseInt(urlStep, 10) : 0)
+
+  // Redirect step=13 to step=verification so URL never shows step 13
+  useEffect(() => {
+    if (urlStep === '13') {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('step', 'verification')
+      router.replace(`/wizard?${params.toString()}`, { scroll: false })
+    }
+  }, [urlStep, searchParams, router])
+
   // Update wizard state when URL changes
   useEffect(() => {
-    if (currentStep >= 0 && currentStep <= 13 && currentStep !== wizardData.currentStep) {
+    if (currentStep >= 0 && currentStep <= 13 && !Number.isNaN(currentStep) && currentStep !== wizardData.currentStep) {
       console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
       updateStep(currentStep)
     }
