@@ -3,19 +3,12 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { useWizard, IRMConfig, IRMModelType } from '@/contexts/WizardContext'
+import { useWizard, IRMConfig } from '@/contexts/WizardContext'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import ContractInfo from '@/components/ContractInfo'
-
-interface IRMConfigItem {
-  name: string
-  config: {
-    [key: string]: string | number | boolean
-  }
-}
-
-type IRMDeployments = IRMConfigItem[]
+import { getChainName } from '@/utils/networks'
+import { formatToE18 } from '@/utils/formatting'
 
 interface KinkConfigItem {
   name: string
@@ -28,35 +21,14 @@ interface KinkImmutableItem {
   rcompCap: number
 }
 
-// Kink configs: always fetched from repo (do not copy locally – they may change).
 const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
 const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
 const KINK_FACTORY_NAME = 'DynamicKinkModelFactory.sol'
-const IRM_V2_FACTORY_NAME = 'InterestRateModelV2Factory.sol'
-
-import { getChainName } from '@/utils/networks'
-
-
-
-import { formatToE18 } from '@/utils/formatting'
 
 export default function Step4IRMSelection() {
   const router = useRouter()
-  const { wizardData, updateSelectedIRM0, updateSelectedIRM1, updateIRMModelType, markStepCompleted } = useWizard()
+  const { wizardData, updateSelectedIRM0, updateSelectedIRM1, markStepCompleted } = useWizard()
 
-  // Tab: Kink (default) | IRM
-  const [activeTab, setActiveTab] = useState<IRMModelType>(wizardData.irmModelType)
-
-  // ----- IRM (legacy) state -----
-  const [, setIrmDeployments] = useState<IRMDeployments | null>(null)
-  const [availableIRMs, setAvailableIRMs] = useState<IRMConfig[]>([])
-  const [filteredIRMs, setFilteredIRMs] = useState<IRMConfig[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedIRM0, setSelectedIRM0] = useState<IRMConfig | null>(wizardData.selectedIRM0)
-  const [selectedIRM1, setSelectedIRM1] = useState<IRMConfig | null>(wizardData.selectedIRM1)
-  const [irmV2Factory, setIrmV2Factory] = useState<{ address: string; version: string } | null>(null)
-
-  // ----- Kink state -----
   const [kinkConfigs, setKinkConfigs] = useState<KinkConfigItem[]>([])
   const [kinkImmutables, setKinkImmutables] = useState<KinkImmutableItem[]>([])
   const [filteredKinkConfigs, setFilteredKinkConfigs] = useState<KinkConfigItem[]>([])
@@ -69,26 +41,10 @@ export default function Step4IRMSelection() {
   const [kinkToken0Immutable, setKinkToken0Immutable] = useState<KinkImmutableItem | null>(null)
   const [kinkToken1Config, setKinkToken1Config] = useState<KinkConfigItem | null>(null)
   const [kinkToken1Immutable, setKinkToken1Immutable] = useState<KinkImmutableItem | null>(null)
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Sync tab with context
-  useEffect(() => {
-    if (activeTab !== wizardData.irmModelType) {
-      updateIRMModelType(activeTab)
-    }
-  }, [activeTab, updateIRMModelType, wizardData.irmModelType])
-
-  // Sync local IRM selection with context when on IRM tab (and when returning to step – restore from context)
-  useEffect(() => {
-    if (activeTab === 'irm') {
-      setSelectedIRM0(wizardData.selectedIRM0)
-      setSelectedIRM1(wizardData.selectedIRM1)
-    }
-  }, [activeTab, wizardData.selectedIRM0, wizardData.selectedIRM1])
-
-  // Rehydrate Kink selection from context when returning to step 4 (lists must be loaded first)
+  // Rehydrate Kink selection from context when returning to step (lists must be loaded first)
   useEffect(() => {
     if (kinkConfigs.length === 0 || kinkImmutables.length === 0) return
     const name0 = wizardData.selectedIRM0?.name ?? ''
@@ -113,32 +69,7 @@ export default function Step4IRMSelection() {
     }
   }, [kinkConfigs, kinkImmutables, wizardData.selectedIRM0?.name, wizardData.selectedIRM1?.name])
 
-  // ----- Fetch IRM (legacy) configs from repo once on mount (so IRM tab has data when switching) -----
-  useEffect(() => {
-    const fetchIRMConfigs = async () => {
-      try {
-        const response = await fetch(
-          'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/InterestRateModelConfigs.json'
-        )
-        if (!response.ok) throw new Error(`Failed to fetch IRM configs: ${response.statusText}`)
-        const rawText = await response.text()
-        const data: IRMDeployments = parseJsonPreservingBigInt(rawText)
-        setIrmDeployments(data)
-        const irmConfigs: IRMConfig[] = data.map(item => ({
-          name: item.name,
-          config: item.config
-        }))
-        setAvailableIRMs(irmConfigs)
-        setFilteredIRMs(irmConfigs)
-      } catch (err) {
-        console.error('Error fetching IRM configs:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch IRM configurations')
-      }
-    }
-    fetchIRMConfigs()
-  }, [])
-
-  // ----- Fetch Kink configs and immutables from repo once on mount (so both tabs have data when switching) -----
+  // Fetch Kink configs and immutables from repo once on mount
   useEffect(() => {
     const fetchKink = async () => {
       try {
@@ -161,20 +92,18 @@ export default function Step4IRMSelection() {
     fetchKink()
   }, [])
 
-  // ----- Fetch both factory addresses + Silo Lens once when chainId is set (so both tabs have data when switching) -----
+  // Fetch Kink factory address + Silo Lens once when chainId is set
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
     if (!chainId) return
     const chainName = getChainName(chainId)
     const fetchAll = async () => {
       try {
-        const [kinkResResult, irmV2ResResult, lensResResult] = await Promise.allSettled([
+        const [kinkResResult, lensResResult] = await Promise.allSettled([
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${KINK_FACTORY_NAME}.json`),
-          fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/${IRM_V2_FACTORY_NAME}.json`),
           fetch(`https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`)
         ])
         const kinkRes = kinkResResult.status === 'fulfilled' ? kinkResResult.value : null
-        const irmV2Res = irmV2ResResult.status === 'fulfilled' ? irmV2ResResult.value : null
         const lensRes = lensResResult.status === 'fulfilled' ? lensResResult.value : null
 
         let kinkAddr = ''
@@ -183,13 +112,6 @@ export default function Step4IRMSelection() {
           kinkAddr = data.address && ethers.isAddress(data.address) ? data.address : ''
         }
         setKinkFactory(kinkAddr ? { address: kinkAddr, version: '' } : null)
-
-        let irmV2Addr = ''
-        if (irmV2Res?.ok) {
-          const data = await irmV2Res.json()
-          irmV2Addr = data.address && ethers.isAddress(data.address) ? data.address : ''
-        }
-        setIrmV2Factory(irmV2Addr ? { address: irmV2Addr, version: '' } : null)
 
         let lensAddr = ''
         if (lensRes?.ok) {
@@ -200,21 +122,16 @@ export default function Step4IRMSelection() {
       } catch (err) {
         console.warn('Failed to fetch factory or Lens:', err)
         setKinkFactory(null)
-        setIrmV2Factory(null)
         setSiloLensAddress('')
       }
     }
     fetchAll()
   }, [wizardData.networkInfo?.chainId])
 
-  // ----- Fetch both factory versions via one Silo Lens getVersions call -----
+  // Fetch Kink factory version via Silo Lens getVersions
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
-    if (!siloLensAddress || !chainId) return
-    const addresses = [kinkFactory?.address, irmV2Factory?.address].filter(
-      (value): value is string => !!value
-    )
-    if (addresses.length === 0) return
+    if (!siloLensAddress || !chainId || !kinkFactory?.address) return
 
     const fetchVersions = async () => {
       if (!window.ethereum) return
@@ -224,29 +141,19 @@ export default function Step4IRMSelection() {
           provider,
           lensAddress: siloLensAddress,
           chainId,
-          addresses
+          addresses: [kinkFactory.address]
         })
-
-        const getVersion = (address?: string) =>
-          address ? versionsByAddress.get(address.toLowerCase()) ?? '' : ''
-
-        setKinkFactory(prev =>
-          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
-        )
-        setIrmV2Factory(prev =>
-          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
-        )
+        const version = versionsByAddress.get(kinkFactory.address.toLowerCase()) ?? ''
+        setKinkFactory(prev => prev ? { ...prev, version: version || '—' } : null)
       } catch (err) {
-        console.warn('Failed to fetch factory versions from Silo Lens:', err)
+        console.warn('Failed to fetch factory version from Silo Lens:', err)
         setKinkFactory(prev => (prev ? { ...prev, version: '—' } : null))
-        setIrmV2Factory(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
     fetchVersions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kinkFactory?.address, irmV2Factory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+  }, [kinkFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
-  // ----- Kink filters -----
+  // Kink filters
   useEffect(() => {
     const c = kinkConfigSearch.trim().toLowerCase()
     const i = kinkImmutableSearch.trim().toLowerCase()
@@ -258,22 +165,6 @@ export default function Step4IRMSelection() {
     )
   }, [kinkConfigSearch, kinkImmutableSearch, kinkConfigs, kinkImmutables])
 
-  // ----- IRM filter -----
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredIRMs(availableIRMs)
-    } else {
-      const filtered = availableIRMs.filter(irm =>
-        irm.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      const selectedItems = []
-      if (selectedIRM0 && !filtered.find(irm => irm.name === selectedIRM0.name)) selectedItems.push(selectedIRM0)
-      if (selectedIRM1 && !filtered.find(irm => irm.name === selectedIRM1.name)) selectedItems.push(selectedIRM1)
-      setFilteredIRMs([...filtered, ...selectedItems])
-    }
-  }, [searchTerm, availableIRMs, selectedIRM0, selectedIRM1])
-
-  // ----- Sync Kink selection to context -----
   const buildKinkIRMConfig = (config: KinkConfigItem | null, immutable: KinkImmutableItem | null): IRMConfig | null => {
     if (!config || !immutable) return null
     const name = `${config.name}:${immutable.name}`
@@ -285,9 +176,8 @@ export default function Step4IRMSelection() {
     return { name, config: merged }
   }
 
-  // Sync Kink selection to context when Kink selections change. Do not overwrite context with empty when returning to step (context still has valid "config:immutable" – rehydration will restore local state).
+  // Sync Kink selection to context when selections change
   useEffect(() => {
-    if (activeTab !== 'kink') return
     const irm0 = buildKinkIRMConfig(kinkToken0Config, kinkToken0Immutable)
     const irm1 = buildKinkIRMConfig(kinkToken1Config, kinkToken1Immutable)
     const existing0 = wizardData.selectedIRM0?.name ?? ''
@@ -296,36 +186,18 @@ export default function Step4IRMSelection() {
     else if (!existing0.includes(':')) updateSelectedIRM0({ name: '', config: {} })
     if (irm1) updateSelectedIRM1(irm1)
     else if (!existing1.includes(':')) updateSelectedIRM1({ name: '', config: {} })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when kink selection state changes
-  }, [activeTab, kinkToken0Config, kinkToken0Immutable, kinkToken1Config, kinkToken1Immutable])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when kink selection state changes
+  }, [kinkToken0Config, kinkToken0Immutable, kinkToken1Config, kinkToken1Immutable])
 
-  // Loading per tab (for inline "Loading…" in lists only; we no longer block the whole page)
   useEffect(() => {
-    const irmReady = availableIRMs.length > 0
-    const kinkReady = kinkConfigs.length > 0 && kinkImmutables.length > 0
-    setLoading(activeTab === 'irm' ? !irmReady : !kinkReady)
-  }, [activeTab, availableIRMs.length, kinkConfigs.length, kinkImmutables.length])
-
-  const handleIRMSelection = (tokenIndex: 0 | 1, irm: IRMConfig) => {
-    if (tokenIndex === 0) {
-      setSelectedIRM0(irm)
-      updateSelectedIRM0(irm)
-    } else {
-      setSelectedIRM1(irm)
-      updateSelectedIRM1(irm)
-    }
-  }
+    setLoading(!(kinkConfigs.length > 0 && kinkImmutables.length > 0))
+  }, [kinkConfigs.length, kinkImmutables.length])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const errors: string[] = []
-    if (activeTab === 'kink') {
-      if (!kinkToken0Config || !kinkToken0Immutable) errors.push('Please select Config and Immutable for Token 0')
-      if (!kinkToken1Config || !kinkToken1Immutable) errors.push('Please select Config and Immutable for Token 1')
-    } else {
-      if (!selectedIRM0) errors.push('Please select an Interest Rate Model for Token 0')
-      if (!selectedIRM1) errors.push('Please select an Interest Rate Model for Token 1')
-    }
+    if (!kinkToken0Config || !kinkToken0Immutable) errors.push('Please select Config and Immutable for Token 0')
+    if (!kinkToken1Config || !kinkToken1Immutable) errors.push('Please select Config and Immutable for Token 1')
     if (errors.length > 0) {
       setError(errors.join('\n'))
       return
@@ -339,43 +211,13 @@ export default function Step4IRMSelection() {
     router.push('/wizard?step=4')
   }
 
-  const formatParameterValue = (value: string | number | boolean): string => {
-    if (typeof value === 'object') return JSON.stringify(value, null, 2)
-    return String(value)
-  }
-
   return (
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white">
           Step 5: Interest Rate Model Selection
         </h1>
-      </div>
-
-      {/* Tabs: Dynamic IRM (default) | IRM V2 */}
-      <div className="flex border-b border-gray-700 mb-6">
-        <button
-          type="button"
-          onClick={() => { setActiveTab('kink'); setError('') }}
-          className={`px-6 py-3 font-medium rounded-t-lg transition-colors ${
-            activeTab === 'kink'
-              ? 'bg-gray-800 text-white border-b-2 border-lime-700'
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Dynamic IRM
-        </button>
-        <button
-          type="button"
-          onClick={() => { setActiveTab('irm'); setError('') }}
-          className={`px-6 py-3 font-medium rounded-t-lg transition-colors ${
-            activeTab === 'irm'
-              ? 'bg-gray-800 text-white border-b-2 border-lime-700'
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          IRM V2 (old)
-        </button>
+        <p className="text-gray-400 mt-2">Dynamic Kink model only</p>
       </div>
 
       {error && (
@@ -390,9 +232,7 @@ export default function Step4IRMSelection() {
       )}
 
       <form onSubmit={handleSubmit}>
-        {activeTab === 'kink' && (
-          <>
-            {/* Dynamic IRM factory + address (explorer link) + version at top */}
+        {/* Dynamic Kink factory + address (explorer link) + version at top */}
             <div className="mb-6">
               {kinkFactory?.address && wizardData.networkInfo?.chainId ? (
                 <ContractInfo
@@ -563,158 +403,6 @@ export default function Step4IRMSelection() {
                 )}
               </div>
             </div>
-          </>
-        )}
-
-        {activeTab === 'irm' && (
-          <>
-            {/* IRM V2 (old) factory + address (explorer link) + version at top */}
-            <div className="mb-6">
-              {irmV2Factory?.address && wizardData.networkInfo?.chainId ? (
-                <ContractInfo
-                  contractName={IRM_V2_FACTORY_NAME}
-                  address={irmV2Factory.address}
-                  version={irmV2Factory.version === '' ? 'Loading…' : irmV2Factory.version}
-                  chainId={wizardData.networkInfo.chainId}
-                  isOracle={false}
-                />
-              ) : wizardData.networkInfo?.chainId ? (
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-                  <p className="text-xs text-amber-400">Factory address not found for this network.</p>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2">
-                Search Interest Rate Models
-              </label>
-              <input
-                type="text"
-                id="search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name (case insensitive)..."
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent"
-              />
-              <p className="text-xs text-gray-400 mt-2">
-                Found {filteredIRMs.length} IRM{filteredIRMs.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* IRM Token 0 */}
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Interest Rate Model for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
-                </h3>
-                {loading && filteredIRMs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    Loading configurations…
-                  </div>
-                ) : filteredIRMs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    {searchTerm ? 'No IRMs found matching your search.' : 'No IRMs available.'}
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {filteredIRMs.map((irm) => {
-                      const isSelected = selectedIRM0?.name === irm.name
-                      return (
-                        <div
-                          key={`token0-${irm.name}`}
-                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                            isSelected ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
-                          }`}
-                          onClick={() => handleIRMSelection(0, irm)}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="radio"
-                              name="irm0"
-                              value={irm.name}
-                              checked={isSelected}
-                              onChange={() => handleIRMSelection(0, irm)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-white">{irm.name}</h4>
-                              {isSelected && (
-                                <div className="mt-3 bg-gray-800 rounded p-3 text-xs text-gray-300 space-y-1">
-                                  {Object.entries(irm.config).map(([key, value]) => (
-                                    <div key={key} className="flex justify-between">
-                                      <span className="text-lime-600">{key}:</span>
-                                      <span className="text-gray-200">{formatParameterValue(value)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* IRM Token 1 */}
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Interest Rate Model for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
-                </h3>
-                {loading && filteredIRMs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    Loading configurations…
-                  </div>
-                ) : filteredIRMs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    {searchTerm ? 'No IRMs found matching your search.' : 'No IRMs available.'}
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {filteredIRMs.map((irm) => {
-                      const isSelected = selectedIRM1?.name === irm.name
-                      return (
-                        <div
-                          key={`token1-${irm.name}`}
-                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                            isSelected ? 'border-lime-700 bg-lime-900/20' : 'border-gray-700 hover:border-gray-600'
-                          }`}
-                          onClick={() => handleIRMSelection(1, irm)}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="radio"
-                              name="irm1"
-                              value={irm.name}
-                              checked={isSelected}
-                              onChange={() => handleIRMSelection(1, irm)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-white">{irm.name}</h4>
-                              {isSelected && (
-                                <div className="mt-3 bg-gray-800 rounded p-3 text-xs text-gray-300 space-y-1">
-                                  {Object.entries(irm.config).map(([key, value]) => (
-                                    <div key={key} className="flex justify-between">
-                                      <span className="text-lime-600">{key}:</span>
-                                      <span className="text-gray-200">{formatParameterValue(value)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
 
         <div className="flex justify-between">
           <button

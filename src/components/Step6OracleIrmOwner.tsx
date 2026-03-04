@@ -10,7 +10,7 @@ export default function Step6OracleIrmOwner() {
   const router = useRouter()
   const { wizardData, updateManageableOracleOwnerAddress, markStepCompleted } = useWizard()
 
-  const needsOwner = wizardData.manageableOracle || wizardData.irmModelType === 'kink'
+  const needsOwner = wizardData.manageableOracle || true
   const hasValidOwner = !!(wizardData.manageableOracleOwnerAddress && ethers.isAddress(wizardData.manageableOracleOwnerAddress) && wizardData.manageableOracleOwnerAddress !== ethers.ZeroAddress)
 
   const handleSubmit = (e: React.FormEvent) => {
