@@ -7,6 +7,7 @@ import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } fro
 import { getNativeTokenSymbol } from '@/utils/networks'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
+import PredefinedOptionButton from '@/components/PredefinedOptionButton'
 
 interface OwnerSelectionBlockProps {
   value: string | null
@@ -210,6 +211,14 @@ export default function OwnerSelectionBlock({
           </a>
           .
         </p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          <PredefinedOptionButton disabled={disabled} onClick={() => setManualAddress('DAO')}>
+            <span>DAO</span>
+          </PredefinedOptionButton>
+          <PredefinedOptionButton disabled={disabled} onClick={() => setManualAddress('DAO_ORACLE')}>
+            <span>DAO Oracle</span>
+          </PredefinedOptionButton>
+        </div>
         <input
           type="text"
           value={manualAddress}

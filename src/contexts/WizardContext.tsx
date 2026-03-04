@@ -144,7 +144,7 @@ export interface WizardData {
   oracleType0: OracleType | null
   oracleType1: OracleType | null
   oracleConfiguration: OracleConfiguration | null
-  /** Which IRM model is active: Kink (default) or legacy IRM (InterestRateModelV2). */
+  /** Always 'kink' (Dynamic Kink model). Kept for backward compatibility with saved/parsed config. */
   irmModelType: IRMModelType
   selectedIRM0: IRMConfig | null
   selectedIRM1: IRMConfig | null
@@ -182,7 +182,6 @@ interface WizardContextType {
   updateOracleType0: (oracleType: OracleType) => void
   updateOracleType1: (oracleType: OracleType) => void
   updateOracleConfiguration: (config: OracleConfiguration) => void
-  updateIRMModelType: (type: IRMModelType) => void
   updateSelectedIRM0: (irm: IRMConfig) => void
   updateSelectedIRM1: (irm: IRMConfig) => void
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
@@ -346,10 +345,6 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, oracleConfiguration: config }))
   }
 
-  const updateIRMModelType = (type: IRMModelType) => {
-    setWizardData(prev => ({ ...prev, irmModelType: type }))
-  }
-
   const updateSelectedIRM0 = (irm: IRMConfig) => {
     setWizardData(prev => ({ ...prev, selectedIRM0: irm }))
   }
@@ -407,7 +402,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle0: "NO_ORACLE",
-      interestRateModel0: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
+      interestRateModel0: 'DynamicKinkModelFactory.sol',
       interestRateModelConfig0: wizardData.selectedIRM0?.name || "",
       // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
       maxLtv0: wizardData.borrowConfiguration?.token0.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token0.maxLTV) * 100) : 0,
@@ -449,7 +444,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
       maxLtvOracle1: "NO_ORACLE",
-      interestRateModel1: wizardData.irmModelType === 'kink' ? 'DynamicKinkModelFactory.sol' : 'InterestRateModelV2Factory.sol',
+      interestRateModel1: 'DynamicKinkModelFactory.sol',
       interestRateModelConfig1: wizardData.selectedIRM1?.name || "",
       // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100
       maxLtv1: wizardData.borrowConfiguration?.token1.maxLTV ? Math.trunc(bigintToDisplayNumber(wizardData.borrowConfiguration.token1.maxLTV) * 100) : 0,
@@ -575,11 +570,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Parse IRM model type from factory name in config
-      const irmModelType: IRMModelType =
-        config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
+      // Only Dynamic Kink is supported; treat any config as kink
+      const irmModelType: IRMModelType = 'kink'
 
-      // Parse IRM configuration
+      // Parse IRM configuration (config names are used as-is for kink "configName:immutableName")
       const irm0: IRMConfig = {
         name: config.interestRateModelConfig0 || '',
         config: {} // Will be fetched from the IRM configs
@@ -686,7 +680,6 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateOracleType0,
         updateOracleType1,
         updateOracleConfiguration,
-        updateIRMModelType,
         updateSelectedIRM0,
         updateSelectedIRM1,
         updateBorrowConfiguration,

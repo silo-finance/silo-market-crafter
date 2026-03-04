@@ -110,8 +110,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     }
   }
 
-  // Parse IRM model type from factory name in config
-  const irmModelType = config.interestRateModel0 === 'DynamicKinkModelFactory.sol' ? 'kink' : 'irm'
+  // Only Dynamic Kink is supported
+  const irmModelType = 'kink' as const
 
   // Parse IRM configuration; optional irmConfig0/irmConfig1 allow full config in JSON (e.g. for tests)
   const irm0: IRMConfig = {

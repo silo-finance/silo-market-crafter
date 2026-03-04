@@ -967,7 +967,7 @@ export default function Step11Verification() {
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+                className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
               >
                 {loading ? 'Loading...' : 'Verify'}
               </button>

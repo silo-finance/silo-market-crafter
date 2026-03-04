@@ -8,6 +8,7 @@ import { normalizeAddress, isHexAddress } from '@/utils/addressValidation'
 import { resolveSymbolToAddress, getAddressesJsonUrl, resolveAddressToName } from '@/utils/symbolToAddress'
 import { getNativeTokenSymbol } from '@/utils/networks'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
+import PredefinedOptionButton from '@/components/PredefinedOptionButton'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
 
 export default function Step8HookOwner() {
@@ -249,10 +250,15 @@ export default function Step8HookOwner() {
             </a>
             .
           </p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <PredefinedOptionButton onClick={() => setManualAddress('DAO')}>
+              <span>DAO</span>
+            </PredefinedOptionButton>
+          </div>
           <input
             type="text"
             value={manualAddress}
-          onChange={(e) => setManualAddress(extractHexAddressLike(e.target.value))}
+            onChange={(e) => setManualAddress(extractHexAddressLike(e.target.value))}
             placeholder="0x... or name (e.g. WETH)"
             className={`w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none font-mono text-sm ${
               manualAddress
@@ -339,12 +345,12 @@ export default function Step8HookOwner() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Hook Selection</span>
+            <span>Hook</span>
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="bg-lime-800 hover:bg-lime-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>
