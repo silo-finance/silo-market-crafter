@@ -33,7 +33,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
   enabled: boolean
   reason?: string
 }
@@ -64,6 +64,20 @@ export interface PTLinearOracleConfig {
   hardcodedQuoteTokenAddress: string
 }
 
+/** ERC4626 vault-based oracle config (ERC4626OracleHardcodeQuote). */
+export interface VaultOracleConfig {
+  /** Which token is the base (token0 or token1). */
+  baseToken: 'token0' | 'token1'
+  /** ERC4626 vault address. */
+  vaultAddress: string
+  /** If true, use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
+}
+
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
 export interface CustomScalerCreate {
   factoryAddress: string
@@ -83,16 +97,18 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
+    vaultOracle?: VaultOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
+    vaultOracle?: VaultOracleConfig
   }
 }
 
@@ -398,6 +414,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         const t = wizardData.oracleConfiguration?.token0?.type
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
+        if (t === 'vault') return 'VaultOracle'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -435,11 +452,23 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'vault' && wizardData.oracleConfiguration?.token0?.vaultOracle
+        ? {
+            vaultOracle0: {
+              baseToken: wizardData.oracleConfiguration.token0.vaultOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.vaultOracle.useOtherTokenAsQuote ?? true,
+              vaultAddress: wizardData.oracleConfiguration.token0.vaultOracle.vaultAddress,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.vaultOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.vaultOracle.customQuoteTokenMetadata
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
         const t = wizardData.oracleConfiguration?.token1?.type
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
+        if (t === 'vault') return 'VaultOracle'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -476,6 +505,17 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               hardcodedQuoteTokenAddress: wizardData.oracleConfiguration.token1.ptLinearOracle.hardcodedQuoteTokenAddress
             }
           }
+        : {}),
+      ...(wizardData.oracleConfiguration?.token1?.type === 'vault' && wizardData.oracleConfiguration?.token1?.vaultOracle
+        ? {
+            vaultOracle1: {
+              baseToken: wizardData.oracleConfiguration.token1.vaultOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.vaultOracle.useOtherTokenAsQuote ?? true,
+              vaultAddress: wizardData.oracleConfiguration.token1.vaultOracle.vaultAddress,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenMetadata
+            }
+          }
         : {})
     }
     return JSON.stringify(config, null, 4)
@@ -501,8 +541,26 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       }
       
       // Parse oracle configuration
-      const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : config.solvencyOracle0 === 'PT-Linear' ? 'ptLinear' : 'scaler'
-      const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : config.solvencyOracle1 === 'PT-Linear' ? 'ptLinear' : 'scaler'
+      const oracleType0 =
+        config.solvencyOracle0 === 'NO_ORACLE'
+          ? 'none'
+          : config.solvencyOracle0 === 'Chainlink'
+          ? 'chainlink'
+          : config.solvencyOracle0 === 'PT-Linear'
+          ? 'ptLinear'
+          : config.solvencyOracle0 === 'VaultOracle'
+          ? 'vault'
+          : 'scaler'
+      const oracleType1 =
+        config.solvencyOracle1 === 'NO_ORACLE'
+          ? 'none'
+          : config.solvencyOracle1 === 'Chainlink'
+          ? 'chainlink'
+          : config.solvencyOracle1 === 'PT-Linear'
+          ? 'ptLinear'
+          : config.solvencyOracle1 === 'VaultOracle'
+          ? 'vault'
+          : 'scaler'
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
             baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
@@ -543,6 +601,51 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             hardcodedQuoteTokenAddress: String(config.ptLinearOracle1.hardcodedQuoteTokenAddress ?? '')
           }
         : undefined
+      const vault0 =
+        config.vaultOracle0 && oracleType0 === 'vault'
+          ? {
+              baseToken: (config.vaultOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote:
+                config.vaultOracle0.useOtherTokenAsQuote !== false,
+              vaultAddress: String(config.vaultOracle0.vaultAddress ?? ''),
+              customQuoteTokenAddress: String(
+                config.vaultOracle0.customQuoteTokenAddress ?? ''
+              ),
+              customQuoteTokenMetadata: config.vaultOracle0.customQuoteTokenMetadata
+                ? {
+                    symbol: String(
+                      config.vaultOracle0.customQuoteTokenMetadata.symbol ?? ''
+                    ),
+                    decimals: Number(
+                      config.vaultOracle0.customQuoteTokenMetadata.decimals ?? 18
+                    )
+                  }
+                : undefined
+            }
+          : undefined
+      const vault1 =
+        config.vaultOracle1 && oracleType1 === 'vault'
+          ? {
+              baseToken: (config.vaultOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote:
+                config.vaultOracle1.useOtherTokenAsQuote !== false,
+              vaultAddress: String(config.vaultOracle1.vaultAddress ?? ''),
+              customQuoteTokenAddress: String(
+                config.vaultOracle1.customQuoteTokenAddress ?? ''
+              ),
+              customQuoteTokenMetadata: config.vaultOracle1.customQuoteTokenMetadata
+                ? {
+                    symbol: String(
+                      config.vaultOracle1.customQuoteTokenMetadata.symbol ?? ''
+                    ),
+                    decimals: Number(
+                      config.vaultOracle1.customQuoteTokenMetadata.decimals ?? 18
+                    )
+                  }
+                : undefined
+            }
+          : undefined
+
       const oracleConfig: OracleConfiguration = {
         token0: {
           type: oracleType0,
@@ -554,7 +657,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             scaleFactor: '1'
           } : undefined,
           chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
-          ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined
+          ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined,
+          vaultOracle: oracleType0 === 'vault' ? vault0 : undefined
         },
         token1: {
           type: oracleType1,
@@ -566,7 +670,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             scaleFactor: '1'
           } : undefined,
           chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
-          ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined
+          ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined,
+          vaultOracle: oracleType1 === 'vault' ? vault1 : undefined
         }
       }
       

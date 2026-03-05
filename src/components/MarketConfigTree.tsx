@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
@@ -8,6 +8,7 @@ import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
+import { VersionStatus } from '@/components/VersionStatus'
 
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
@@ -432,11 +433,11 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
     <li className={`tree-item relative${isRoot ? ' mt-4 mb-6 pt-4 pb-4' : ''}`}>
       {sectionMain && (
         <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end text-gray-500 opacity-5 select-none">
-          <span className={`leading-none font-extrabold ${isSiloConfigRoot ? 'text-[150px]' : 'text-[300px]'}`}>
+          <span className={`leading-none font-extrabold ${isSiloConfigRoot ? 'text-[135px]' : 'text-[300px]'}`}>
             {sectionMain}
           </span>
           {sectionTokenLabel && !isSiloConfigRoot && (
-            <span className={`leading-none font-extrabold mr-2 ${isSiloRoot ? 'text-[190px] mt-1' : 'text-[300px] mt-4'}`}>
+            <span className={`leading-none font-extrabold mr-2 ${isSiloRoot ? 'text-[152px] mt-1' : 'text-[300px] mt-4'}`}>
               {sectionTokenLabel}
             </span>
           )}
@@ -463,12 +464,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
               </span>
             )}
-            {hasSuffix && (
-              <span className="text-version-muted text-sm ml-1">
-                {' '}
-                ({versionText})
-              </span>
-            )}
+            {hasSuffix && <VersionStatus version={versionText} />}
           </>
         )}
         {/* Token verification details as sub-items */}
@@ -937,10 +933,12 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                 >
                                   {formatAddress(hookGaugeInfo.gaugeAddress)}
                                 </a>
-                                <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
-                                <span className="text-version-muted text-sm ml-1">
-                                  ({hookGaugeInfo.gaugeVersion || '—'})
-                                </span>
+                                <CopyButton
+                                  value={hookGaugeInfo.gaugeAddress}
+                                  title="Copy address"
+                                  iconClassName="w-3.5 h-3.5 inline align-middle"
+                                />
+                                <VersionStatus version={hookGaugeInfo.gaugeVersion || '—'} />
                               </span>
                               {gv && (
                                 <ul className="gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
@@ -1095,9 +1093,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         title="Copy address"
                         iconClassName="w-3.5 h-3.5 inline align-middle"
                       />
-                      <span className="text-version-muted text-sm ml-1">
-                        ({underlying.version || '—'})
-                      </span>
+                      <VersionStatus version={underlying.version} />
                     </span>
                   )
                 })
@@ -1138,32 +1134,30 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined
                 )
                 const underlying = config.silo0.maxLtvOracle.underlying
-                if (underlying) {
-                  base.push({
-                    key: 'oracle.manageable.underlying.silo0.maxLtv',
-                    text: (
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <span className="text-version-muted text-sm ml-1">
-                          ({underlying.version || '—'})
-                        </span>
-                      </span>
-                    )
-                  })
-                }
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo0.maxLtv',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <VersionStatus version={underlying.version} />
+                    </span>
+                  )
+                })
+              }
                 const maxLtv0Version = config.silo0.maxLtvOracle.version
                 const timelockSeconds0MaxLtv = config.silo0.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
                 if (isManageableOracleByVersion(maxLtv0Version) && timelockSeconds0MaxLtv != null && timelockSeconds0MaxLtv > 0) {
@@ -1372,9 +1366,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         title="Copy address"
                         iconClassName="w-3.5 h-3.5 inline align-middle"
                       />
-                      <span className="text-version-muted text-sm ml-1">
-                        ({underlying.version || '—'})
-                      </span>
+                      <VersionStatus version={underlying.version} />
                     </span>
                   )
                 })
@@ -1415,32 +1407,30 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined
                 )
                 const underlying = config.silo1.maxLtvOracle.underlying
-                if (underlying) {
-                  base.push({
-                    key: 'oracle.manageable.underlying.silo1.maxLtv',
-                    text: (
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <span className="text-version-muted text-sm ml-1">
-                          ({underlying.version || '—'})
-                        </span>
-                      </span>
-                    )
-                  })
-                }
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo1.maxLtv',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <VersionStatus version={underlying.version} />
+                    </span>
+                  )
+                })
+              }
                 const maxLtv1Version = config.silo1.maxLtvOracle.version
                 const timelockSeconds1MaxLtv = config.silo1.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
                 if (isManageableOracleByVersion(maxLtv1Version) && timelockSeconds1MaxLtv != null && timelockSeconds1MaxLtv > 0) {

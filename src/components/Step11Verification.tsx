@@ -14,6 +14,7 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
+import { verifyReleaseVersionsBatch, ReleaseVersionCheckResult } from '@/utils/verification/releaseVersionVerification'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { verifyAddress } from '@/utils/verification/addressVerification'
@@ -106,6 +107,9 @@ export default function Step11Verification() {
     silo0: null,
     silo1: null
   })
+  const [releaseVersionChecks, setReleaseVersionChecks] = useState<Map<string, ReleaseVersionCheckResult>>(
+    () => new Map()
+  )
 
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
@@ -891,6 +895,35 @@ export default function Step11Verification() {
         setNumericValueVerification({ silo0: null, silo1: null })
       }
 
+      // Release version verification – compare on-chain "Name 1.2.3" strings
+      // with Solidity contract releases from the Silo contracts repository.
+      try {
+        const versionsToCheck: Array<string | undefined> = [
+          // Hook receiver implementation
+          marketConfig.silo0.hookReceiverVersion,
+          marketConfig.silo1.hookReceiverVersion,
+          // Solvency + MaxLTV oracles (outer and underlying)
+          marketConfig.silo0.solvencyOracle.version,
+          marketConfig.silo0.maxLtvOracle.version,
+          marketConfig.silo1.solvencyOracle.version,
+          marketConfig.silo1.maxLtvOracle.version,
+          marketConfig.silo0.solvencyOracle.underlying?.version,
+          marketConfig.silo0.maxLtvOracle.underlying?.version,
+          marketConfig.silo1.solvencyOracle.underlying?.version,
+          marketConfig.silo1.maxLtvOracle.underlying?.version,
+          // Interest Rate Models
+          marketConfig.silo0.interestRateModel.version,
+          marketConfig.silo1.interestRateModel.version
+        ]
+
+        verifyReleaseVersionsBatch(versionsToCheck).then(map => {
+          setReleaseVersionChecks(map)
+        })
+      } catch {
+        // Release verification is best-effort; never block the rest of the flow.
+        setReleaseVersionChecks(new Map())
+      }
+
       // Resolve Dynamic Kink IRM configuration names by comparing on-chain config with JSON configs/immutables
       try {
         const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
@@ -905,7 +938,8 @@ export default function Step11Verification() {
         ])
         if (cfgRes.ok && immRes.ok) {
           const cfgJson: KinkConfigItem[] = parseJsonPreservingBigInt(await cfgRes.text())
-          const immJson: KinkImmutableItem[] = parseJsonPreservingBigInt(await immRes.text())
+          // Immutable data is currently not needed here; keep parse for validation side‑effects only.
+          parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
 
           const findKinkConfigName = (irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined): string | null => {
             // Only match against the "config" part (DKinkIRMConfigs.json), ignore immutables.
@@ -1228,6 +1262,7 @@ export default function Step11Verification() {
               manageableOracleTimelockSeconds={wizardData.manageableOracleTimelock}
               irmConfigNames={irmConfigNames}
               hookGaugeInfo={hookGaugeInfo}
+              releaseVersionChecks={releaseVersionChecks}
             />
           </>
         )

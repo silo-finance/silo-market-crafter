@@ -33,6 +33,8 @@ export interface ContractInfoProps {
   className?: string
   /** Verification icon to display next to address */
   verificationIcon?: React.ReactNode
+  /** When provided, renders this instead of the default "version: …" line (e.g. VersionStatus) */
+  renderVersion?: React.ReactNode
 }
 
 export default function ContractInfo({
@@ -43,7 +45,8 @@ export default function ContractInfo({
   isOracle = false,
   isImplementation = false,
   className = '',
-  verificationIcon
+  verificationIcon,
+  renderVersion
 }: ContractInfoProps) {
   const sourceUrl = getSourceUrl(chainId, contractName, isOracle, isImplementation)
 
@@ -75,7 +78,11 @@ export default function ContractInfo({
           {verificationIcon && verificationIcon}
         </div>
         <div className="text-sm text-gray-300 whitespace-nowrap">
-          version: <span className="text-version-muted">{version || '…'}</span>
+          {renderVersion !== undefined ? (
+            <>version: {renderVersion}</>
+          ) : (
+            <>version: <span className="text-version-muted">{version || '…'}</span></>
+          )}
         </div>
       </div>
     </div>
