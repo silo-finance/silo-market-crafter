@@ -54,7 +54,7 @@ export default function AddressDisplayShort({
       </a>
       <CopyButton value={normalizedAddress} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
       {showVersion && (
-        <span className="text-gray-400 text-xs">({version || '—'})</span>
+        <span className="text-version-muted text-xs">({version || '—'})</span>
       )}
     </div>
   )

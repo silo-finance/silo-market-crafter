@@ -75,7 +75,7 @@ export default function ContractInfo({
           {verificationIcon && verificationIcon}
         </div>
         <div className="text-sm text-gray-300 whitespace-nowrap">
-          version: <span className="text-gray-400">{version || '…'}</span>
+          version: <span className="text-version-muted">{version || '…'}</span>
         </div>
       </div>
     </div>
