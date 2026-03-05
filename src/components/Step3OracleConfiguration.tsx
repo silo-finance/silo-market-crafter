@@ -3,12 +3,21 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { useWizard, OracleConfiguration, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
+import {
+  useWizard,
+  OracleConfiguration,
+  ScalerOracle,
+  ChainlinkOracleConfig,
+  PTLinearOracleConfig,
+  VaultOracleConfig
+} from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
+import iERC4526Artifact from '@/abis/IERC4526.json'
+import iERC20Artifact from '@/abis/IERC20.json'
 import TokenAddressInput from '@/components/TokenAddressInput'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
@@ -18,6 +27,8 @@ import { extractHexAddressLike } from '@/utils/addressFromInput'
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
+const ierc4526Abi = iERC4526Artifact as ethers.InterfaceAbi
+const ierc20Abi = (iERC20Artifact as { abi: ethers.InterfaceAbi }).abi
 
 
 interface OracleDeployments {
@@ -91,6 +102,38 @@ interface ChainlinkOracleSectionProps {
 
 const CHAINLINK_AGGREGATOR_KEY_DEFAULT = 'CHAINLINK_USDC_USD_aggregator'
 const CHAINLINK_AGGREGATOR_KEY_SONIC = 'CHAINLINK_USDC.e_USD_aggregator'
+
+interface VaultOracleSectionProps {
+  /** Token this oracle is for (for display). */
+  baseTokenSymbol: string
+  baseTokenName: string
+  /** The other market token's address – vault asset must match this. */
+  otherTokenAddress?: string
+  otherTokenSymbol?: string
+  vault: Partial<VaultOracleConfig> & {
+    vaultSymbol?: string
+    vaultAssetAddress?: string
+    vaultAssetSymbol?: string
+    assetMatchesBase?: boolean
+  }
+  setVault: React.Dispatch<
+    React.SetStateAction<
+      Partial<VaultOracleConfig> & {
+        vaultSymbol?: string
+        vaultAssetAddress?: string
+        vaultAssetSymbol?: string
+        assetMatchesBase?: boolean
+      }
+    >
+  >
+  quoteInput: string
+  setQuoteInput: (value: string) => void
+  virtualUsdAddress: string | null
+  usdcAddress: string | null
+  networkChainId?: string
+  vaultFactory: { address: string; version: string } | null
+  onValidationChange: (valid: boolean) => void
+}
 
 function ChainlinkOracleSection({
   baseTokenSymbol,
@@ -223,7 +266,7 @@ function ChainlinkOracleSection({
           <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
             <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
             {chainlink.primaryAggregator?.trim() && (
-              <p className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-gray-500">Address:</span>
                 <AddressDisplayShort
                   address={chainlink.primaryAggregator}
@@ -231,7 +274,7 @@ function ChainlinkOracleSection({
                   className="text-sm"
                   showVersion={false}
                 />
-              </p>
+              </div>
             )}
             {chainlink.aggregatorDescription != null && (
               <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink.aggregatorDescription || '—'}</span></p>
@@ -300,6 +343,273 @@ function ChainlinkOracleSection({
             )}
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function VaultOracleSection({
+  baseTokenSymbol,
+  baseTokenName,
+  otherTokenAddress,
+  otherTokenSymbol,
+  vault,
+  setVault,
+  quoteInput,
+  setQuoteInput,
+  virtualUsdAddress,
+  usdcAddress,
+  networkChainId,
+  vaultFactory,
+  onValidationChange
+}: VaultOracleSectionProps) {
+  const [vaultInput, setVaultInput] = useState(vault.vaultAddress ?? '')
+  const [loadingVault, setLoadingVault] = useState(false)
+  const [loadingAsset, setLoadingAsset] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  useEffect(() => {
+    onValidationChange(
+      !!vault.vaultAddress && ethers.isAddress(vault.vaultAddress)
+    )
+  }, [vault.vaultAddress, onValidationChange])
+
+  const resolveVault = async (address: string) => {
+    if (!address || !ethers.isAddress(address) || !window.ethereum) {
+      setVault(prev => ({
+        ...prev,
+        vaultAddress: '',
+        vaultSymbol: undefined,
+        vaultAssetAddress: undefined,
+        vaultAssetSymbol: undefined,
+        assetMatchesBase: undefined
+      }))
+      setLocalError(null)
+      return
+    }
+    setLoadingVault(true)
+    setLoadingAsset(true)
+    setLocalError(null)
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const vaultContract = new ethers.Contract(address, ierc4526Abi, provider)
+      const [symbol, assetAddress] = await Promise.all([
+        vaultContract.symbol(),
+        vaultContract.asset()
+      ])
+      const assetAddr = ethers.getAddress(assetAddress)
+      setVault(prev => ({
+        ...prev,
+        vaultAddress: ethers.getAddress(address),
+        vaultSymbol: String(symbol ?? ''),
+        vaultAssetAddress: assetAddr
+      }))
+      const erc20 = new ethers.Contract(assetAddr, ierc20Abi, provider)
+      const [assetSymbol] = await Promise.all([erc20.symbol()])
+      const assetNorm = assetAddr.toLowerCase()
+      let otherNorm = ''
+      if (otherTokenAddress != null && otherTokenAddress.trim() !== '') {
+        try {
+          otherNorm = ethers.getAddress(otherTokenAddress.trim()).toLowerCase()
+        } catch {
+          otherNorm = otherTokenAddress.trim().toLowerCase()
+        }
+      }
+      const matchesOtherToken = otherNorm !== '' && assetNorm === otherNorm
+      setVault(prev => ({
+        ...prev,
+        vaultAssetSymbol: String(assetSymbol ?? ''),
+        assetMatchesBase: matchesOtherToken
+      }))
+      if (otherNorm === '') {
+        setLocalError('Other token address is missing. Vault asset must match the other market token.')
+      } else {
+        setLocalError(null)
+      }
+    } catch (err) {
+      console.warn('Failed to resolve ERC4626 vault metadata:', err)
+      setVault(prev => ({
+        ...prev,
+        vaultSymbol: undefined,
+        vaultAssetAddress: undefined,
+        vaultAssetSymbol: undefined,
+        assetMatchesBase: undefined
+      }))
+      setLocalError('Failed to load vault metadata. Check address and network.')
+    } finally {
+      setLoadingVault(false)
+      setLoadingAsset(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-400 mb-2">
+        Base token:{' '}
+        <span className="text-white font-medium">{baseTokenSymbol}</span>{' '}
+        <span className="text-gray-500">({baseTokenName})</span>
+      </p>
+
+      {/* Factory info */}
+      {vaultFactory ? (
+        <ContractInfo
+          contractName="ERC4626OracleHardcodeQuoteFactory"
+          address={vaultFactory.address}
+          version={vaultFactory.version || '…'}
+          chainId={networkChainId}
+          isOracle={true}
+        />
+      ) : (
+        <p className="text-sm text-yellow-400">Loading ERC4626OracleHardcodeQuoteFactory for this chain…</p>
+      )}
+
+      {/* Vault address */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300 mb-1">
+          Vault address (ERC4626) *
+        </label>
+        <input
+          type="text"
+          value={vaultInput}
+          onChange={e => {
+            const v = e.target.value.trim()
+            setVaultInput(v)
+          }}
+          onBlur={() => resolveVault(vaultInput)}
+          placeholder="0x…"
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+        />
+      </div>
+
+      {/* Vault metadata */}
+      {(vault.vaultSymbol || vault.vaultAssetAddress) && (
+        <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+          <p className="text-gray-500 text-xs uppercase tracking-wide">
+            Vault metadata
+          </p>
+          {vault.vaultSymbol && (
+            <p>
+              <span className="text-gray-500">Vault symbol:</span>{' '}
+              <span className="text-gray-300">{vault.vaultSymbol}</span>
+            </p>
+          )}
+          {vault.vaultAssetAddress && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-gray-500">Asset address:</span>
+              <AddressDisplayShort
+                address={vault.vaultAssetAddress}
+                chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
+                className="text-sm"
+                showVersion={false}
+              />
+            </div>
+          )}
+          {vault.vaultAssetSymbol && (
+            <p>
+              <span className="text-gray-500">Asset symbol:</span>{' '}
+              <span className="text-gray-300">{vault.vaultAssetSymbol}</span>
+            </p>
+          )}
+          {vault.assetMatchesBase === true && (
+            <p className="text-xs status-muted-success flex items-center gap-1">
+              <span>✓</span>
+              <span>
+                Vault asset matches the other token{otherTokenSymbol ? ` (${otherTokenSymbol})` : ''}
+              </span>
+            </p>
+          )}
+          {vault.assetMatchesBase === false && (
+            <p className="text-xs text-yellow-400 flex items-center gap-1">
+              <span>⚠</span>
+              <span>
+                Vault asset does not match the other token. Symbol differs: vault asset is &quot;{vault.vaultAssetSymbol ?? '?'}&quot;, other token is &quot;{otherTokenSymbol ?? '?'}&quot;. The vault&apos;s underlying asset should be the other market token.
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Quote token – copy Chainlink pattern */}
+      <div className="mt-4 space-y-2">
+        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+          Quote token
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          <PredefinedOptionButton
+            onClick={() => {
+              const addr = otherTokenAddress || ''
+              setQuoteInput(addr)
+              setVault(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: true,
+                customQuoteTokenAddress: addr
+              }))
+            }}
+          >
+            <span>Other token</span>
+          </PredefinedOptionButton>
+          {virtualUsdAddress && (
+            <PredefinedOptionButton
+              onClick={() => {
+                setQuoteInput('SILO_VIRTUAL_USD_8')
+                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span className="font-bold" aria-hidden>
+                $
+              </span>
+              <span>USD</span>
+            </PredefinedOptionButton>
+          )}
+          {usdcAddress && (
+            <PredefinedOptionButton
+              onClick={() => {
+                setQuoteInput('USDC')
+                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>USDC</span>
+            </PredefinedOptionButton>
+          )}
+        </div>
+        <TokenAddressInput
+          value={quoteInput}
+          onChange={value => {
+            setQuoteInput(value)
+            setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+          }}
+          onResolve={(address, metadata) => {
+            if (metadata && address) {
+              setVault(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: false,
+                customQuoteTokenAddress: address,
+                customQuoteTokenMetadata: {
+                  symbol: metadata.symbol,
+                  decimals: metadata.decimals
+                }
+              }))
+            } else {
+              setVault(prev => ({
+                ...prev,
+                customQuoteTokenAddress: '',
+                customQuoteTokenMetadata: undefined
+              }))
+            }
+          }}
+          chainId={networkChainId}
+          label="Quote token address or symbol"
+          placeholder="0x… or symbol from addresses JSON"
+        />
+      </div>
+
+      {(loadingVault || loadingAsset) && (
+        <p className="text-xs text-gray-400">Loading vault metadata…</p>
+      )}
+      {localError && (
+        <p className="text-xs text-red-400">
+          {localError}
+        </p>
       )}
     </div>
   )
@@ -408,6 +718,36 @@ export default function Step3OracleConfiguration() {
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [useSecondaryAggregator0, setUseSecondaryAggregator0] = useState(false)
   const [useSecondaryAggregator1, setUseSecondaryAggregator1] = useState(false)
+  const [erc4626OracleFactory, setErc4626OracleFactory] = useState<{ address: string; version: string } | null>(null)
+
+  const [vault0, setVault0] = useState<
+    Partial<VaultOracleConfig> & {
+      vaultSymbol?: string
+      vaultAssetAddress?: string
+      vaultAssetSymbol?: string
+      assetMatchesBase?: boolean
+    }
+  >({
+    baseToken: 'token0',
+    useOtherTokenAsQuote: true,
+    vaultAddress: ''
+  })
+  const [vault1, setVault1] = useState<
+    Partial<VaultOracleConfig> & {
+      vaultSymbol?: string
+      vaultAssetAddress?: string
+      vaultAssetSymbol?: string
+      assetMatchesBase?: boolean
+    }
+  >({
+    baseToken: 'token1',
+    useOtherTokenAsQuote: true,
+    vaultAddress: ''
+  })
+  const [vault0QuoteInput, setVault0QuoteInput] = useState('')
+  const [vault1QuoteInput, setVault1QuoteInput] = useState('')
+  const [vault0Valid, setVault0Valid] = useState(false)
+  const [vault1Valid, setVault1Valid] = useState(false)
 
   const [ptLinear0, setPTLinear0] = useState<Partial<PTLinearOracleConfig>>({
     maxYieldPercent: 0,
@@ -590,6 +930,29 @@ export default function Step3OracleConfiguration() {
     fetchPTLinearFactory()
   }, [wizardData.networkInfo?.chainId])
 
+  // Fetch ERC4626OracleHardcodeQuoteFactory address for current chain
+  useEffect(() => {
+    const fetchVaultFactory = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ERC4626OracleHardcodeQuoteFactory.sol.json`
+        )
+        if (!response.ok) {
+          setErc4626OracleFactory(null)
+          return
+        }
+        const data = await response.json()
+        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        setErc4626OracleFactory(address ? { address, version: '' } : null)
+      } catch {
+        setErc4626OracleFactory(null)
+      }
+    }
+    fetchVaultFactory()
+  }, [wizardData.networkInfo?.chainId])
+
   // Fetch SiloLens address for current chain (same pattern as Step10)
   useEffect(() => {
     const fetchLens = async () => {
@@ -620,7 +983,8 @@ export default function Step3OracleConfiguration() {
     const addresses = [
       oracleScalerFactory?.address,
       chainlinkV3OracleFactory?.address,
-      ptLinearFactory?.address
+      ptLinearFactory?.address,
+      erc4626OracleFactory?.address
     ].filter((value): value is string => !!value)
     if (addresses.length === 0) return
 
@@ -647,11 +1011,15 @@ export default function Step3OracleConfiguration() {
         setPTLinearFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
+        setErc4626OracleFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
       } catch (err) {
         console.warn('Failed to fetch oracle factory versions from Silo Lens:', err)
         setOracleScalerFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setChainlinkV3OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setPTLinearFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setErc4626OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
     fetchFactoryVersions()
@@ -660,6 +1028,7 @@ export default function Step3OracleConfiguration() {
     oracleScalerFactory?.address,
     chainlinkV3OracleFactory?.address,
     ptLinearFactory?.address,
+    erc4626OracleFactory?.address,
     siloLensAddress,
     wizardData.networkInfo?.chainId
   ])
@@ -690,6 +1059,38 @@ export default function Step3OracleConfiguration() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle])
+
+  // Sync Vault oracle state from wizard when returning to step
+  useEffect(() => {
+    const v0 = wizardData.oracleConfiguration?.token0?.vaultOracle
+    if (v0) {
+      setVault0(prev => ({
+        ...prev,
+        baseToken: v0.baseToken,
+        useOtherTokenAsQuote: v0.useOtherTokenAsQuote ?? true,
+        vaultAddress: v0.vaultAddress,
+        customQuoteTokenAddress: v0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: v0.customQuoteTokenMetadata
+      }))
+      setVault0QuoteInput(v0.customQuoteTokenAddress ?? '')
+    }
+    const v1 = wizardData.oracleConfiguration?.token1?.vaultOracle
+    if (v1) {
+      setVault1(prev => ({
+        ...prev,
+        baseToken: v1.baseToken,
+        useOtherTokenAsQuote: v1.useOtherTokenAsQuote ?? true,
+        vaultAddress: v1.vaultAddress,
+        customQuoteTokenAddress: v1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: v1.customQuoteTokenMetadata
+      }))
+      setVault1QuoteInput(v1.customQuoteTokenAddress ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    wizardData.oracleConfiguration?.token0?.vaultOracle,
+    wizardData.oracleConfiguration?.token1?.vaultOracle
+  ])
 
 
   // When no pre-deployed scalers for token0 but we have factory, set custom scaler (quote = token0)
@@ -1191,6 +1592,38 @@ export default function Step3OracleConfiguration() {
         }
       }
     }
+    if (wizardData.oracleType0?.type === 'vault') {
+      const addr = vault0.vaultAddress?.trim() ?? ''
+      if (!addr || !ethers.isAddress(addr)) {
+        errors.push('Vault Oracle (Token 0): vault address is required and must be a valid address')
+      }
+      if (!vault0Valid) {
+        errors.push('Vault Oracle (Token 0): vault asset must match token asset to continue')
+      }
+      const quoteAddr0 = vault0.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
+      if (quoteEmpty0 && vault0.useOtherTokenAsQuote === false) {
+        errors.push(
+          'Vault Oracle (Token 0): quote token is required when not using the other token as quote'
+        )
+      }
+    }
+    if (wizardData.oracleType1?.type === 'vault') {
+      const addr = vault1.vaultAddress?.trim() ?? ''
+      if (!addr || !ethers.isAddress(addr)) {
+        errors.push('Vault Oracle (Token 1): vault address is required and must be a valid address')
+      }
+      if (!vault1Valid) {
+        errors.push('Vault Oracle (Token 1): vault asset must match token asset to continue')
+      }
+      const quoteAddr1 = vault1.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
+      if (quoteEmpty1 && vault1.useOtherTokenAsQuote === false) {
+        errors.push(
+          'Vault Oracle (Token 1): quote token is required when not using the other token as quote'
+        )
+      }
+    }
 
     if (errors.length > 0) {
       setError(errors.join('\n'))
@@ -1233,7 +1666,19 @@ export default function Step3OracleConfiguration() {
             maxYieldPercent: Number(ptLinear0.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear0.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt0QuoteAddress
-          } : undefined
+          } : undefined,
+          vaultOracle: wizardData.oracleType0!.type === 'vault'
+            ? {
+                baseToken: 'token0',
+                useOtherTokenAsQuote: vault0.useOtherTokenAsQuote ?? true,
+                vaultAddress: vault0.vaultAddress!.trim(),
+                customQuoteTokenAddress:
+                  vault0.useOtherTokenAsQuote !== false && wizardData.token1?.address
+                    ? wizardData.token1.address
+                    : vault0.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata: vault0.customQuoteTokenMetadata
+              }
+            : undefined
         },
         token1: {
           type: wizardData.oracleType1!.type,
@@ -1255,7 +1700,19 @@ export default function Step3OracleConfiguration() {
             maxYieldPercent: Number(ptLinear1.maxYieldPercent) || 0,
             useSecondTokenAsQuote: ptLinear1.useSecondTokenAsQuote ?? true,
             hardcodedQuoteTokenAddress: pt1QuoteAddress
-          } : undefined
+          } : undefined,
+          vaultOracle: wizardData.oracleType1!.type === 'vault'
+            ? {
+                baseToken: 'token1',
+                useOtherTokenAsQuote: vault1.useOtherTokenAsQuote ?? true,
+                vaultAddress: vault1.vaultAddress!.trim(),
+                customQuoteTokenAddress:
+                  vault1.useOtherTokenAsQuote !== false && wizardData.token0?.address
+                    ? wizardData.token0.address
+                    : vault1.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata: vault1.customQuoteTokenMetadata
+              }
+            : undefined
         }
       }
 
@@ -1330,7 +1787,16 @@ export default function Step3OracleConfiguration() {
             {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
+            Oracle Type:{' '}
+            {wizardData.oracleType0.type === 'none'
+              ? 'No Oracle'
+              : wizardData.oracleType0.type === 'scaler'
+              ? 'Scaler Oracle'
+              : wizardData.oracleType0.type === 'ptLinear'
+              ? 'PT-Linear'
+              : wizardData.oracleType0.type === 'vault'
+              ? 'Vault Oracle'
+              : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token0.decimals}
@@ -1428,6 +1894,22 @@ export default function Step3OracleConfiguration() {
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
               networkChainId={wizardData.networkInfo?.chainId}
               idSuffix="0"
+            />
+          ) : wizardData.oracleType0.type === 'vault' ? (
+            <VaultOracleSection
+              baseTokenSymbol={wizardData.token0.symbol}
+              baseTokenName={wizardData.token0.name}
+              otherTokenAddress={wizardData.token1?.address}
+              otherTokenSymbol={wizardData.token1?.symbol}
+              vault={vault0}
+              setVault={setVault0}
+              quoteInput={vault0QuoteInput}
+              setQuoteInput={setVault0QuoteInput}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              vaultFactory={erc4626OracleFactory}
+              onValidationChange={setVault0Valid}
             />
           ) : (
             <div>
@@ -1544,7 +2026,16 @@ export default function Step3OracleConfiguration() {
             {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
-            Oracle Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
+            Oracle Type:{' '}
+            {wizardData.oracleType1.type === 'none'
+              ? 'No Oracle'
+              : wizardData.oracleType1.type === 'scaler'
+              ? 'Scaler Oracle'
+              : wizardData.oracleType1.type === 'ptLinear'
+              ? 'PT-Linear'
+              : wizardData.oracleType1.type === 'vault'
+              ? 'Vault Oracle'
+              : 'Chainlink'}
           </p>
           <p className="text-sm text-gray-400 mb-4">
             Token Decimals: {wizardData.token1.decimals}
@@ -1642,6 +2133,22 @@ export default function Step3OracleConfiguration() {
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
               networkChainId={wizardData.networkInfo?.chainId}
               idSuffix="1"
+            />
+          ) : wizardData.oracleType1.type === 'vault' ? (
+            <VaultOracleSection
+              baseTokenSymbol={wizardData.token1.symbol}
+              baseTokenName={wizardData.token1.name}
+              otherTokenAddress={wizardData.token0?.address}
+              otherTokenSymbol={wizardData.token0?.symbol}
+              vault={vault1}
+              setVault={setVault1}
+              quoteInput={vault1QuoteInput}
+              setQuoteInput={setVault1QuoteInput}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              vaultFactory={erc4626OracleFactory}
+              onValidationChange={setVault1Valid}
             />
           ) : (
             <div>

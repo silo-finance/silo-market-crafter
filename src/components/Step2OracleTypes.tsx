@@ -8,8 +8,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,7 +23,14 @@ export default function Step2OracleTypes() {
     symbol.length >= 2 && symbol[0] === 'P' && symbol[1] === 'T'
 
   // Calculate oracle type availability based on token decimals and symbol
-  const getOracleTypes = (tokenDecimals: number, tokenSymbol: string): { type: 'none' | 'scaler' | 'chainlink' | 'ptLinear', enabled: boolean, reason: string }[] => {
+  const getOracleTypes = (
+    tokenDecimals: number,
+    tokenSymbol: string
+  ): {
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
+    enabled: boolean
+    reason: string
+  }[] => {
     const noneEnabled = tokenDecimals === 18 || tokensHaveSameDecimals
     let noneReason = ''
     if (tokenDecimals === 18 && tokensHaveSameDecimals) {
@@ -59,7 +66,14 @@ export default function Step2OracleTypes() {
       {
         type: 'ptLinear',
         enabled: ptLinearEnabled,
-        reason: ptLinearEnabled ? 'Available for PT tokens (symbol must start with PT)' : 'Only available when token symbol starts with two uppercase letters PT'
+        reason: ptLinearEnabled
+          ? 'Available for PT tokens (symbol must start with PT)'
+          : 'Only available when token symbol starts with two uppercase letters PT'
+      },
+      {
+        type: 'vault',
+        enabled: true,
+        reason: 'Use ERC4626 vault-based oracle (Vault Oracle)'
       }
     ]
   }
@@ -113,10 +127,24 @@ export default function Step2OracleTypes() {
     const errors: string[] = []
     if (!selectedOracle0) errors.push('Please select an oracle type for Token 0')
     if (!selectedOracle1) errors.push('Please select an oracle type for Token 1')
-    if (selectedOracle0 && selectedOracle0 !== 'none' && selectedOracle0 !== 'scaler' && selectedOracle0 !== 'chainlink' && selectedOracle0 !== 'ptLinear') {
+    if (
+      selectedOracle0 &&
+      selectedOracle0 !== 'none' &&
+      selectedOracle0 !== 'scaler' &&
+      selectedOracle0 !== 'chainlink' &&
+      selectedOracle0 !== 'ptLinear' &&
+      selectedOracle0 !== 'vault'
+    ) {
       errors.push('Invalid oracle type selected for Token 0')
     }
-    if (selectedOracle1 && selectedOracle1 !== 'none' && selectedOracle1 !== 'scaler' && selectedOracle1 !== 'chainlink' && selectedOracle1 !== 'ptLinear') {
+    if (
+      selectedOracle1 &&
+      selectedOracle1 !== 'none' &&
+      selectedOracle1 !== 'scaler' &&
+      selectedOracle1 !== 'chainlink' &&
+      selectedOracle1 !== 'ptLinear' &&
+      selectedOracle1 !== 'vault'
+    ) {
       errors.push('Invalid oracle type selected for Token 1')
     }
     const token0IsNon18 = wizardData.token0 && wizardData.token0.decimals !== 18
@@ -236,14 +264,31 @@ export default function Step2OracleTypes() {
                   name="oracle0"
                   value={oracleType.type}
                   checked={selectedOracle0 === oracleType.type}
-                  onChange={(e) => setSelectedOracle0(e.target.value as 'none' | 'scaler' | 'chainlink' | 'ptLinear')}
+                  onChange={(e) =>
+                    setSelectedOracle0(
+                      e.target.value as
+                        | 'none'
+                        | 'scaler'
+                        | 'chainlink'
+                        | 'ptLinear'
+                        | 'vault'
+                    )
+                  }
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
+                      {oracleType.type === 'none'
+                        ? 'No Oracle'
+                        : oracleType.type === 'scaler'
+                        ? 'Scaler Oracle'
+                        : oracleType.type === 'chainlink'
+                        ? 'Chainlink'
+                        : oracleType.type === 'ptLinear'
+                        ? 'PT-Linear'
+                        : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="status-muted-success text-sm">✓ Available</span>
@@ -251,7 +296,7 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && (
+                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
@@ -259,6 +304,11 @@ export default function Step2OracleTypes() {
                   {oracleType.type === 'chainlink' && (
                     <p className="text-sm text-gray-400 mt-1">
                       Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
+                    </p>
+                  )}
+                  {oracleType.type === 'vault' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
                     </p>
                   )}
                 </div>
@@ -293,14 +343,31 @@ export default function Step2OracleTypes() {
                   name="oracle1"
                   value={oracleType.type}
                   checked={selectedOracle1 === oracleType.type}
-                  onChange={(e) => setSelectedOracle1(e.target.value as 'none' | 'scaler' | 'chainlink' | 'ptLinear')}
+                  onChange={(e) =>
+                    setSelectedOracle1(
+                      e.target.value as
+                        | 'none'
+                        | 'scaler'
+                        | 'chainlink'
+                        | 'ptLinear'
+                        | 'vault'
+                    )
+                  }
                   disabled={!oracleType.enabled}
                   className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-white capitalize">
-                      {oracleType.type === 'none' ? 'No Oracle' : oracleType.type === 'scaler' ? 'Scaler Oracle' : oracleType.type === 'chainlink' ? 'Chainlink' : 'PT-Linear'}
+                      {oracleType.type === 'none'
+                        ? 'No Oracle'
+                        : oracleType.type === 'scaler'
+                        ? 'Scaler Oracle'
+                        : oracleType.type === 'chainlink'
+                        ? 'Chainlink'
+                        : oracleType.type === 'ptLinear'
+                        ? 'PT-Linear'
+                        : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
                       <span className="status-muted-success text-sm">✓ Available</span>
@@ -308,7 +375,7 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && (
+                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
@@ -317,6 +384,11 @@ export default function Step2OracleTypes() {
                     <p className="text-sm text-gray-400 mt-1">
                       Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
                       </p>
+                  )}
+                  {oracleType.type === 'vault' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                    </p>
                   )}
                 </div>
               </label>

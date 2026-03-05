@@ -9,6 +9,7 @@ import { fetchMarketConfig, MarketConfig } from '@/utils/fetchMarketConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
+import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
@@ -19,6 +20,7 @@ import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { verifyAddress } from '@/utils/verification/addressVerification'
 import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
+import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -101,7 +103,10 @@ export default function Step11Verification() {
       notifierEqualsHook: boolean | null
     } | null
   } | null>(null)
-
+  const [irmConfigNames, setIrmConfigNames] = useState<{ silo0: string | null; silo1: string | null }>({
+    silo0: null,
+    silo1: null
+  })
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
@@ -514,7 +519,38 @@ export default function Step11Verification() {
       )
 
       // Fetch market configuration
+      try {
+        console.log('[Step11Verification] Starting market config fetch', {
+          siloConfigAddress,
+          isTxHash,
+          fromWizard: isFromWizard
+        })
+      } catch {
+        // ignore console issues
+      }
+
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
+
+      try {
+        console.log('[Step11Verification] Market config fetched', {
+          siloConfigAddress,
+          siloId: marketConfig.siloId ? marketConfig.siloId.toString() : null,
+          irm0: {
+            address: marketConfig.silo0.interestRateModel.address,
+            version: marketConfig.silo0.interestRateModel.version,
+            type: marketConfig.silo0.interestRateModel.type,
+            hasConfig: !!marketConfig.silo0.interestRateModel.config
+          },
+          irm1: {
+            address: marketConfig.silo1.interestRateModel.address,
+            version: marketConfig.silo1.interestRateModel.version,
+            type: marketConfig.silo1.interestRateModel.type,
+            hasConfig: !!marketConfig.silo1.interestRateModel.config
+          }
+        })
+      } catch {
+        // ignore console issues
+      }
       setConfig(marketConfig)
       setInput(isTxHash ? value.trim() : siloConfigAddress)
       // Keep standalone verification URL shareable and reproducible.
@@ -854,6 +890,77 @@ export default function Step11Verification() {
       } else {
         setNumericValueVerification({ silo0: null, silo1: null })
       }
+
+      // Resolve Dynamic Kink IRM configuration names by comparing on-chain config with JSON configs/immutables
+      try {
+        const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
+        const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
+
+        type KinkConfigItem = { name: string; config: Record<string, unknown> }
+        type KinkImmutableItem = { name: string; timelock: unknown; rcompCap: unknown }
+
+        const [cfgRes, immRes] = await Promise.all([
+          fetch(KINK_CONFIGS_URL),
+          fetch(KINK_IMMUTABLE_URL)
+        ])
+        if (cfgRes.ok && immRes.ok) {
+          const cfgJson: KinkConfigItem[] = parseJsonPreservingBigInt(await cfgRes.text())
+          // Immutable data is currently not needed here; keep parse for validation side‑effects only.
+          parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
+
+          const findKinkConfigName = (irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined): string | null => {
+            // Only match against the "config" part (DKinkIRMConfigs.json), ignore immutables.
+            if (!irm || irm.type !== 'DynamicKinkModel' || !irm.config) return null
+            const irmCfg = irm.config as Record<string, unknown>
+
+            for (const cfg of cfgJson) {
+              let matches = true
+              for (const [key, val] of Object.entries(cfg.config)) {
+                if (String(irmCfg[key]) !== String(val)) {
+                  matches = false
+                  break
+                }
+              }
+              if (!matches) continue
+
+              // Immutable part (timelock / rcompCap) is displayed separately and is NOT used for matching.
+              // For display we only need a single human-friendly name, so use cfg.name directly.
+              return cfg.name
+            }
+            return null
+          }
+
+          const name0 = findKinkConfigName(marketConfig.silo0.interestRateModel)
+          const name1 = findKinkConfigName(marketConfig.silo1.interestRateModel)
+
+          try {
+            console.log('[Step11Verification] DynamicKinkModel IRM config name resolution', {
+              silo0: {
+                address: marketConfig.silo0.interestRateModel.address,
+                version: marketConfig.silo0.interestRateModel.version,
+                type: marketConfig.silo0.interestRateModel.type,
+                hasConfig: !!marketConfig.silo0.interestRateModel.config,
+                resolvedName: name0
+              },
+              silo1: {
+                address: marketConfig.silo1.interestRateModel.address,
+                version: marketConfig.silo1.interestRateModel.version,
+                type: marketConfig.silo1.interestRateModel.type,
+                hasConfig: !!marketConfig.silo1.interestRateModel.config,
+                resolvedName: name1
+              }
+            })
+          } catch {
+            // ignore console issues
+          }
+
+          setIrmConfigNames({ silo0: name0, silo1: name1 })
+        } else {
+          setIrmConfigNames({ silo0: null, silo1: null })
+        }
+      } catch {
+        setIrmConfigNames({ silo0: null, silo1: null })
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       const friendly =
@@ -1017,6 +1124,7 @@ export default function Step11Verification() {
             chainId={chainId}
             isOracle={false}
             isImplementation={true}
+            renderVersion={<VersionStatus version={implementationFromRepo.version || null} />}
             verificationIcon={implementationVerified === true ? (
               <div className="relative group inline-block">
                 <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
@@ -1120,6 +1228,7 @@ export default function Step11Verification() {
                 : undefined
               }
               manageableOracleTimelockSeconds={wizardData.manageableOracleTimelock}
+              irmConfigNames={irmConfigNames}
               hookGaugeInfo={hookGaugeInfo}
             />
           </>
