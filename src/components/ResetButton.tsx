@@ -16,8 +16,8 @@ export default function ResetButton() {
   const handleConfirmReset = () => {
     resetWizardWithCache()
     setShowConfirmDialog(false)
-    // Navigate to home page (wizard step 0)
-    router.push('/')
+    // Replace URL with only step=0 so tx= and address= are removed and nothing re-triggers verification
+    router.replace('/wizard?step=0', { scroll: false })
   }
 
   const handleCancelReset = () => {

@@ -37,10 +37,16 @@ function WizardPageContent() {
     }
   }, [urlStep, searchParams, router])
 
+  // On step 0 (landing), strip tx= and address= so nothing re-triggers verification after Reset
+  useEffect(() => {
+    if (currentStep === 0 && (searchParams.get('tx') || searchParams.get('address') || searchParams.get('contract'))) {
+      router.replace('/wizard?step=0', { scroll: false })
+    }
+  }, [currentStep, searchParams, router])
+
   // Update wizard state when URL changes
   useEffect(() => {
     if (currentStep >= 0 && currentStep <= 13 && !Number.isNaN(currentStep) && currentStep !== wizardData.currentStep) {
-      console.log('URL changed - updating step from', wizardData.currentStep, 'to', currentStep)
       updateStep(currentStep)
     }
   }, [currentStep, wizardData.currentStep, updateStep])
