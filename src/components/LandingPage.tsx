@@ -28,7 +28,6 @@ export default function LandingPage() {
 
 
   const handleStartWizard = () => {
-    console.log('Starting wizard - navigating to step 1')
     router.push('/wizard?step=1')
   }
 
@@ -42,11 +41,8 @@ export default function LandingPage() {
     setError('')
 
     try {
-      console.log('Loading JSON config...')
       const success = await parseJSONConfig(jsonInput)
-      console.log('JSON parsing result:', success)
       if (success) {
-        console.log('JSON loaded successfully - navigating to step 9')
         router.push('/wizard?step=11') // Go directly to Step 11 (JSON Config)
       } else {
         setError('Failed to parse JSON configuration. Please check the format and ensure all required fields are present.')

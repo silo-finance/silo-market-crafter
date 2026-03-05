@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
@@ -26,6 +26,7 @@ export default function Step11Verification() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { wizardData, setVerificationFromWizard } = useWizard()
+  const isMountedRef = useRef(true)
   const [input, setInput] = useState<string>('')
   const [txHash, setTxHash] = useState<string | null>(null)
   const [config, setConfig] = useState<MarketConfig | null>(null)
@@ -122,6 +123,14 @@ export default function Step11Verification() {
     },
     [router]
   )
+
+  // Avoid updating URL/state after user left verification (e.g. Reset → Landing → Create new market)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Fetch Silo Factory address and version
   // Always fetch - this is independent verification that doesn't require wizard data
@@ -518,42 +527,12 @@ export default function Step11Verification() {
         effectiveTxHash.toLowerCase() === wizardData.lastDeployTxHash.toLowerCase()
       )
 
-      // Fetch market configuration
-      try {
-        console.log('[Step11Verification] Starting market config fetch', {
-          siloConfigAddress,
-          isTxHash,
-          fromWizard: isFromWizard
-        })
-      } catch {
-        // ignore console issues
-      }
-
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
-
-      try {
-        console.log('[Step11Verification] Market config fetched', {
-          siloConfigAddress,
-          siloId: marketConfig.siloId ? marketConfig.siloId.toString() : null,
-          irm0: {
-            address: marketConfig.silo0.interestRateModel.address,
-            version: marketConfig.silo0.interestRateModel.version,
-            type: marketConfig.silo0.interestRateModel.type,
-            hasConfig: !!marketConfig.silo0.interestRateModel.config
-          },
-          irm1: {
-            address: marketConfig.silo1.interestRateModel.address,
-            version: marketConfig.silo1.interestRateModel.version,
-            type: marketConfig.silo1.interestRateModel.type,
-            hasConfig: !!marketConfig.silo1.interestRateModel.config
-          }
-        })
-      } catch {
-        // ignore console issues
-      }
+      if (!isMountedRef.current) return
       setConfig(marketConfig)
       setInput(isTxHash ? value.trim() : siloConfigAddress)
-      // Keep standalone verification URL shareable and reproducible.
+      // Keep standalone verification URL shareable and reproducible. Never update URL after user left (e.g. Reset).
+      if (!isMountedRef.current) return
       updateVerificationUrl({
         txHash: isTxHash ? value.trim() : undefined,
         siloConfigAddress: isTxHash ? undefined : siloConfigAddress
@@ -932,28 +911,6 @@ export default function Step11Verification() {
 
           const name0 = findKinkConfigName(marketConfig.silo0.interestRateModel)
           const name1 = findKinkConfigName(marketConfig.silo1.interestRateModel)
-
-          try {
-            console.log('[Step11Verification] DynamicKinkModel IRM config name resolution', {
-              silo0: {
-                address: marketConfig.silo0.interestRateModel.address,
-                version: marketConfig.silo0.interestRateModel.version,
-                type: marketConfig.silo0.interestRateModel.type,
-                hasConfig: !!marketConfig.silo0.interestRateModel.config,
-                resolvedName: name0
-              },
-              silo1: {
-                address: marketConfig.silo1.interestRateModel.address,
-                version: marketConfig.silo1.interestRateModel.version,
-                type: marketConfig.silo1.interestRateModel.type,
-                hasConfig: !!marketConfig.silo1.interestRateModel.config,
-                resolvedName: name1
-              }
-            })
-          } catch {
-            // ignore console issues
-          }
-
           setIrmConfigNames({ silo0: name0, silo1: name1 })
         } else {
           setIrmConfigNames({ silo0: null, silo1: null })
@@ -962,6 +919,7 @@ export default function Step11Verification() {
         setIrmConfigNames({ silo0: null, silo1: null })
       }
     } catch (e) {
+      if (!isMountedRef.current) return
       const msg = e instanceof Error ? e.message : String(e)
       const friendly =
         msg.includes('CALL_EXCEPTION') || msg.includes('execution reverted')
@@ -970,7 +928,7 @@ export default function Step11Verification() {
       setError(friendly)
       setShowForm(true)
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) setLoading(false)
     }
   }, [
     siloLensAddress,
