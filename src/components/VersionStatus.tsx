@@ -5,17 +5,6 @@ import { ReleaseVersionCheckResult, verifyReleaseVersion } from '@/utils/verific
 
 export function VersionStatus({ version }: { version?: string | null }) {
   const trimmed = version?.trim()
-
-  // Nothing to render when version is missing or placeholder
-  if (!trimmed || trimmed === '—') {
-    return (
-      <span className="text-version-muted text-sm ml-1">
-        {' '}
-        ({trimmed ?? '—'})
-      </span>
-    )
-  }
-
   const [result, setResult] = useState<ReleaseVersionCheckResult | null>(null)
 
   useEffect(() => {
@@ -40,6 +29,16 @@ export function VersionStatus({ version }: { version?: string | null }) {
       cancelled = true
     }
   }, [trimmed])
+
+  // Nothing to render when version is missing or placeholder
+  if (!trimmed || trimmed === '—') {
+    return (
+      <span className="text-version-muted text-sm ml-1">
+        {' '}
+        ({trimmed ?? '—'})
+      </span>
+    )
+  }
 
   const hasResult = result != null
   const sourceUrl = result?.sourceUrl

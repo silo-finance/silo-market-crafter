@@ -89,33 +89,6 @@ function parseOnChainVersion(version: string | undefined | null): {
   return { contractName, release: release || null }
 }
 
-/**
- * Very small helper to extract the first semantic version‑like token from Solidity source.
- * We intentionally do NOT split the on-chain version string into components – we only
- * compare the full "release" string to whatever we find in Solidity.
- */
-function extractReleaseFromSource(source: string): string | null {
-  if (!source) return null
-
-  // Common pattern used across Silo contracts:
-  //   string public constant VERSION = "1.2.3";
-  //   string public constant NAME = "DynamicKinkModel 1.2.3";
-  const versionLineMatch =
-    source.match(/VERSION\s*=\s*\"([^"]+)\"/) ||
-    source.match(/NAME\s*=\s*\"([^"]+)\"/)
-
-  if (versionLineMatch && versionLineMatch[1]) {
-    const token = versionLineMatch[1]
-    // If the token itself already looks like x.y.z, return it as-is.
-    const semverMatch = token.match(/\b\d+\.\d+\.\d+\b/)
-    if (semverMatch) return semverMatch[0]
-  }
-
-  // As a final fallback, scan entire file for the first x.y.z pattern.
-  const anySemverMatch = source.match(/\b\d+\.\d+\.\d+\b/)
-  return anySemverMatch ? anySemverMatch[0] : null
-}
-
 async function fetchSourceRelease(contractName: string): Promise<{
   sourceContents: string | null
   sourceUrl?: string
