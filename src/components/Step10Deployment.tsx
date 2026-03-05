@@ -9,6 +9,7 @@ import { getChainName, getExplorerBaseUrl, getExplorerAddressUrl } from '@/utils
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
+import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
@@ -367,6 +368,18 @@ export default function Step10Deployment() {
         }
       } catch (err) {
         console.warn('Failed to fetch PTLinearOracleFactory:', err)
+      }
+      try {
+        const erc4626Res = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ERC4626OracleHardcodeQuoteFactory.sol.json`
+        )
+        if (erc4626Res.ok) {
+          const data = await erc4626Res.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) result.erc4626OracleFactory = address
+        }
+      } catch (err) {
+        console.warn('Failed to fetch ERC4626OracleHardcodeQuoteFactory:', err)
       }
       try {
         const manageableRes = await fetch(
@@ -811,11 +824,12 @@ export default function Step10Deployment() {
         ) : deployerAddress ? (
           <>
             <ContractInfo
-              contractName="SiloDeployer"
+              contractName="Silo Deployer"
               address={deployerAddress}
               version={deployerVersion || '…'}
               chainId={wizardData.networkInfo?.chainId}
               isOracle={false}
+              renderVersion={<VersionStatus version={deployerVersion || null} />}
             />
             {siloImplementationAddress && (
               <div className="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
@@ -842,7 +856,7 @@ export default function Step10Deployment() {
                     />
                   </div>
                   <div className="text-sm text-gray-300 whitespace-nowrap">
-                    version: <span className="text-gray-400">{siloImplementationVersion || 'Loading…'}</span>
+                    version: <VersionStatus version={siloImplementationVersion || null} />
                   </div>
                 </div>
               </div>

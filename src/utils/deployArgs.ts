@@ -1,10 +1,11 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
+import erc4626OracleFactoryAbi from '@/abis/oracle/ERC4626OracleHardcodeQuoteFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
@@ -19,6 +20,9 @@ const ptLinearFactoryAbi = (ptLinearOracleFactoryAbi as FoundryArtifact).abi
 const ptLinearFactoryInterface = new ethers.Interface(ptLinearFactoryAbi)
 const manageableFactoryAbi = (manageableOracleFactoryAbi as FoundryArtifact).abi
 const manageableFactoryInterface = new ethers.Interface(manageableFactoryAbi)
+const erc4626FactoryInterface = new ethers.Interface(
+  (erc4626OracleFactoryAbi as unknown as ethers.InterfaceAbi)
+)
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -91,6 +95,7 @@ export interface OracleDeployments {
   chainlinkV3OracleFactory?: string
   ptLinearOracleFactory?: string
   manageableOracleFactory?: string
+  erc4626OracleFactory?: string
 }
 
 /**
@@ -142,7 +147,8 @@ export function prepareDeployArgs(
   const getSolvencyOracleTxData = (
     scaler: ScalerOracle | null | undefined,
     chainlink: ChainlinkOracleConfig | null | undefined,
-    ptLinear: PTLinearOracleConfig | null | undefined
+    ptLinear: PTLinearOracleConfig | null | undefined,
+    vault: VaultOracleConfig | null | undefined
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
@@ -178,6 +184,40 @@ export function prepareDeployArgs(
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.chainlinkV3OracleFactory,
+        txInput
+      }
+    }
+    if (vault && oracleDeployments?.erc4626OracleFactory) {
+      const baseToken =
+        vault.baseToken === 'token0'
+          ? ethers.getAddress(wizardData.token0!.address)
+          : ethers.getAddress(wizardData.token1!.address)
+      let quoteToken: string
+      if (vault.useOtherTokenAsQuote !== false) {
+        quoteToken =
+          vault.baseToken === 'token0'
+            ? ethers.getAddress(wizardData.token1!.address)
+            : ethers.getAddress(wizardData.token0!.address)
+      } else {
+        const customAddr = vault.customQuoteTokenAddress?.trim()
+        if (!customAddr || !ethers.isAddress(customAddr)) {
+          throw new Error(
+            'Vault oracle requires a valid custom quote token address. Please set the quote token in Oracle Configuration (Step 3).'
+          )
+        }
+        quoteToken = ethers.getAddress(customAddr)
+      }
+      if (!quoteToken || quoteToken === ethers.ZeroAddress) {
+        throw new Error('Vault oracle quote token is required and cannot be zero.')
+      }
+      const configTuple = [baseToken, quoteToken]
+      const txInput = erc4626FactoryInterface.encodeFunctionData(
+        'createERC4626Oracle',
+        [configTuple[0], configTuple[1], ethers.ZeroHash]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.erc4626OracleFactory,
         txInput
       }
     }
@@ -261,12 +301,14 @@ export function prepareDeployArgs(
   const solvency0Raw = getSolvencyOracleTxData(
     wizardData.oracleConfiguration?.token0?.scalerOracle,
     wizardData.oracleConfiguration?.token0?.chainlinkOracle,
-    wizardData.oracleConfiguration?.token0?.ptLinearOracle
+    wizardData.oracleConfiguration?.token0?.ptLinearOracle,
+    wizardData.oracleConfiguration?.token0?.vaultOracle
   )
   const solvency1Raw = getSolvencyOracleTxData(
     wizardData.oracleConfiguration?.token1?.scalerOracle,
     wizardData.oracleConfiguration?.token1?.chainlinkOracle,
-    wizardData.oracleConfiguration?.token1?.ptLinearOracle
+    wizardData.oracleConfiguration?.token1?.ptLinearOracle,
+    wizardData.oracleConfiguration?.token1?.vaultOracle
   )
 
   const _oracles = {

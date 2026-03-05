@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 import siloConfigAbi from '@/abis/silo/ISiloConfig.json'
-import dynamicKinkModelAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
+import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
@@ -201,6 +201,49 @@ export async function fetchMarketConfig(
     config1.maxLtvOracle.version = getVersion(config1.maxLtvOracle.address)
     config1.interestRateModel.version = getVersion(config1.interestRateModel.address)
     config1.hookReceiverVersion = getVersion(config1.hookReceiver)
+  }
+
+  // Derive IRM type from version string when available (e.g. "DynamicKinkModel 1.2.3")
+  const getIrmTypeFromVersion = (version: string | undefined): string | undefined => {
+    if (!version) return undefined
+    const [contractName] = version.split(' ')
+    if (contractName === 'DynamicKinkModel') return 'DynamicKinkModel'
+    return undefined
+  }
+
+  config0.interestRateModel.type = config0.interestRateModel.type ?? getIrmTypeFromVersion(config0.interestRateModel.version)
+  config1.interestRateModel.type = config1.interestRateModel.type ?? getIrmTypeFromVersion(config1.interestRateModel.version)
+
+  // Debug: log detected IRM types before fetching extra DynamicKinkModel config
+  try {
+    console.log('[fetchMarketConfig] IRM types after version detection', {
+      silo0: {
+        address: config0.interestRateModel.address,
+        version: config0.interestRateModel.version,
+        type: config0.interestRateModel.type
+      },
+      silo1: {
+        address: config1.interestRateModel.address,
+        version: config1.interestRateModel.version,
+        type: config1.interestRateModel.type
+      }
+    })
+  } catch {
+    // ignore console errors in non-browser environments
+  }
+
+  // After versions are known, fetch Dynamic Kink IRM configuration (config + immutables)
+  const [irm0Details, irm1Details] = await Promise.all([
+    fetchIRMInfo(provider, config0.interestRateModel.address, config0.interestRateModel.version),
+    fetchIRMInfo(provider, config1.interestRateModel.address, config1.interestRateModel.version)
+  ])
+  if (irm0Details.type || irm0Details.config) {
+    config0.interestRateModel.type = irm0Details.type ?? config0.interestRateModel.type
+    config0.interestRateModel.config = irm0Details.config ?? config0.interestRateModel.config
+  }
+  if (irm1Details.type || irm1Details.config) {
+    config1.interestRateModel.type = irm1Details.type ?? config1.interestRateModel.type
+    config1.interestRateModel.config = irm1Details.config ?? config1.interestRateModel.config
   }
 
   // Fetch hook owners (deduplicate: same hook address can be used in both silos)
@@ -452,8 +495,11 @@ async function fetchSiloConfig(
   const solvencyOracle = await fetchOracleInfo(provider, config.solvencyOracle)
   const maxLtvOracle = await fetchOracleInfo(provider, config.maxLtvOracle)
 
-  // Fetch IRM info
-  const interestRateModel = await fetchIRMInfo(provider, config.interestRateModel)
+  // IRM: basic info (address only) - detailed DynamicKink config fetched later,
+  // after global getVersions via SiloLens in fetchMarketConfig.
+  const interestRateModel: IRMInfo = {
+    address: config.interestRateModel
+  }
 
   // Fetch symbol and decimals for token and share tokens (ERC20)
   const fetchSymbolDecimals = async (address: string): Promise<{ symbol?: string; decimals?: number }> => {
@@ -675,49 +721,93 @@ async function fetchOracleInfo(
 
 async function fetchIRMInfo(
   provider: ethers.Provider,
-  irmAddress: string
-): Promise<IRMInfo> {
-  if (!irmAddress || irmAddress === ethers.ZeroAddress) {
-    return { address: irmAddress }
+  irmAddress: string,
+  version: string | undefined
+): Promise<Pick<IRMInfo, 'type' | 'config'>> {
+  // Only fetch details when version indicates DynamicKinkModel; do nothing otherwise.
+  if (!irmAddress || irmAddress === ethers.ZeroAddress || !version) {
+    return {}
   }
+  const [contractName] = version.split(' ')
+  if (contractName !== 'DynamicKinkModel') return {}
 
-  const info: IRMInfo = { address: irmAddress }
+  // Debug: we detected a DynamicKinkModel IRM and will attempt to read on-chain config
+  try {
+    console.log('[fetchIRMInfo] Detected DynamicKinkModel IRM, fetching config', {
+      irmAddress,
+      version
+    })
+  } catch {
+    // ignore in non-browser environments
+  }
 
   try {
-    // Try Dynamic Kink Model
     const dynamicKinkContract = new ethers.Contract(
       irmAddress,
-      dynamicKinkModelAbi.abi as ethers.InterfaceAbi,
+      dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
       provider
     )
-    try {
-      const [config, immutableConfig] = await dynamicKinkContract.getConfig()
-      info.type = 'DynamicKinkModel'
-      info.config = {
-        ulow: config.ulow.toString(),
-        u1: config.u1.toString(),
-        u2: config.u2.toString(),
-        ucrit: config.ucrit.toString(),
-        rmin: config.rmin.toString(),
-        kmin: config.kmin.toString(),
-        kmax: config.kmax.toString(),
-        alpha: config.alpha.toString(),
-        cminus: config.cminus.toString(),
-        cplus: config.cplus.toString(),
-        c1: config.c1.toString(),
-        c2: config.c2.toString(),
-        dmax: config.dmax.toString(),
-        timelock: immutableConfig.timelock.toString(),
-        rcompCapPerSecond: immutableConfig.rcompCapPerSecond.toString()
-      }
-    } catch {
-      // Not Dynamic Kink Model
-    }
-  } catch {
-    // Not Dynamic Kink Model or error fetching
-  }
 
-  return info
+    try {
+      // DynamicKinkModel exposes getModelStateAndConfig(bool includeState)
+      // We only need config + immutableConfig, so we pass false to omit state.
+      const [, config, immutableConfig] = await dynamicKinkContract.getModelStateAndConfig(false)
+      const result: Pick<IRMInfo, 'type' | 'config'> = {
+        type: 'DynamicKinkModel',
+        config: {
+          ulow: config.ulow.toString(),
+          u1: config.u1.toString(),
+          u2: config.u2.toString(),
+          ucrit: config.ucrit.toString(),
+          rmin: config.rmin.toString(),
+          kmin: config.kmin.toString(),
+          kmax: config.kmax.toString(),
+          alpha: config.alpha.toString(),
+          cminus: config.cminus.toString(),
+          cplus: config.cplus.toString(),
+          c1: config.c1.toString(),
+          c2: config.c2.toString(),
+          dmax: config.dmax.toString(),
+          timelock: immutableConfig.timelock.toString(),
+          rcompCapPerSecond: immutableConfig.rcompCapPerSecond.toString()
+        }
+      }
+
+      try {
+        console.log('[fetchIRMInfo] DynamicKinkModel config fetched via getModelStateAndConfig', {
+          irmAddress,
+          hasConfig: !!result.config,
+          keys: result.config ? Object.keys(result.config) : []
+        })
+      } catch {
+        // ignore console issues
+      }
+
+      return result
+    } catch (innerErr) {
+      try {
+        console.error('[fetchIRMInfo] Failed to call getModelStateAndConfig on DynamicKinkModel', {
+          irmAddress,
+          error: innerErr instanceof Error ? innerErr.message : String(innerErr)
+        })
+      } catch {
+        // ignore
+      }
+      // Method missing or call failed – treat as no extra info
+      return {}
+    }
+  } catch (outerErr) {
+    try {
+      console.error('[fetchIRMInfo] Error constructing DynamicKinkModel contract', {
+        irmAddress,
+        error: outerErr instanceof Error ? outerErr.message : String(outerErr)
+      })
+    } catch {
+      // ignore
+    }
+    // Not Dynamic Kink Model or error constructing contract – treat as no extra info
+    return {}
+  }
 }
 
 export function formatPercentage(value: bigint): string {

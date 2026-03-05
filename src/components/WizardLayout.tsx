@@ -230,7 +230,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           )}
                         </div>
                         <div className="text-xs text-lime-200/65 capitalize mb-2">
-                          Type: {wizardData.oracleType0.type === 'none' ? 'No Oracle' : wizardData.oracleType0.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType0.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
+                          Type:{' '}
+                          {wizardData.oracleType0.type === 'none'
+                            ? 'No Oracle'
+                            : wizardData.oracleType0.type === 'scaler'
+                            ? 'Scaler Oracle'
+                            : wizardData.oracleType0.type === 'ptLinear'
+                            ? 'PT-Linear'
+                            : wizardData.oracleType0.type === 'vault'
+                            ? 'Vault Oracle'
+                            : 'Chainlink'}
                         </div>
                         {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token0.scalerOracle
@@ -279,6 +288,46 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             </div>
                           )
                         })()}
+                        {wizardData.oracleType0?.type === 'vault' && (() => {
+                          const vault = wizardData.oracleConfiguration?.token0?.vaultOracle
+                          if (!vault) return null
+                          const useOther = vault.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token1?.address : vault.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token1?.symbol : vault.customQuoteTokenMetadata?.symbol
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2 space-y-2">
+                              <div>
+                                <div className="text-xs text-lime-200/65 mb-1">Vault</div>
+                                <AddressDisplayShort
+                                  address={vault.vaultAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                              </div>
+                              {quoteAddress && (
+                                <div>
+                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <AddressDisplayShort
+                                      address={quoteAddress}
+                                      chainId={chainId}
+                                      className="text-xs"
+                                      showVersion={false}
+                                    />
+                                    {quoteSymbol && (
+                                      <>
+                                        <span className="text-xs text-lime-200/50">—</span>
+                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
                     )}
                     {wizardData.oracleType1 && (
@@ -290,7 +339,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           )}
                         </div>
                         <div className="text-xs text-lime-200/65 capitalize mb-2">
-                          Type: {wizardData.oracleType1.type === 'none' ? 'No Oracle' : wizardData.oracleType1.type === 'scaler' ? 'Scaler Oracle' : wizardData.oracleType1.type === 'ptLinear' ? 'PT-Linear' : 'Chainlink'}
+                          Type:{' '}
+                          {wizardData.oracleType1.type === 'none'
+                            ? 'No Oracle'
+                            : wizardData.oracleType1.type === 'scaler'
+                            ? 'Scaler Oracle'
+                            : wizardData.oracleType1.type === 'ptLinear'
+                            ? 'PT-Linear'
+                            : wizardData.oracleType1.type === 'vault'
+                            ? 'Vault Oracle'
+                            : 'Chainlink'}
                         </div>
                         {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token1.scalerOracle
@@ -336,6 +394,46 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   </>
                                 )}
                               </div>
+                            </div>
+                          )
+                        })()}
+                        {wizardData.oracleType1?.type === 'vault' && (() => {
+                          const vault = wizardData.oracleConfiguration?.token1?.vaultOracle
+                          if (!vault) return null
+                          const useOther = vault.useOtherTokenAsQuote !== false
+                          const quoteAddress = useOther ? wizardData.token0?.address : vault.customQuoteTokenAddress
+                          const quoteSymbol = useOther ? wizardData.token0?.symbol : vault.customQuoteTokenMetadata?.symbol
+                          const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
+                          return (
+                            <div className="mt-2 space-y-2">
+                              <div>
+                                <div className="text-xs text-lime-200/65 mb-1">Vault</div>
+                                <AddressDisplayShort
+                                  address={vault.vaultAddress}
+                                  chainId={chainId}
+                                  className="text-xs"
+                                  showVersion={false}
+                                />
+                              </div>
+                              {quoteAddress && (
+                                <div>
+                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <AddressDisplayShort
+                                      address={quoteAddress}
+                                      chainId={chainId}
+                                      className="text-xs"
+                                      showVersion={false}
+                                    />
+                                    {quoteSymbol && (
+                                      <>
+                                        <span className="text-xs text-lime-200/50">—</span>
+                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )
                         })()}

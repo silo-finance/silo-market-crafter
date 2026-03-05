@@ -629,6 +629,7 @@ body {
   display: list-item;
   padding: 0.05rem 0;
   margin-left: 0;
+  line-height: 1.6;
 }
 /* List numbers – smaller, muted font (overrides base styles) */
 .tree .tree-item::marker {
@@ -642,6 +643,18 @@ body {
 }
 .tree-item .tree-item-content {
   display: inline;
+}
+
+/* Visual separators between main tree sections (SILO CONFIG / SILO 0 / SILO 1) */
+.tree-separator {
+  list-style: none;
+  border-top: 1px solid #9ca3af; /* gray-400 – much lighter on dark background */
+  margin: 1rem 0 1.1rem 0;
+}
+
+/* Neutral muted gray for contract versions (slightly lighter than default text, not tinted) */
+.text-version-muted {
+  color: #9ca3af; /* Tailwind gray-400 – slightly darker but still neutral */
 }
 
 /* Nested bullet lists (e.g. gauge verification under Silo Incentive Controller) – ensure discs show */

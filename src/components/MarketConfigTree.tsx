@@ -8,6 +8,7 @@ import AddressDisplayShort from '@/components/AddressDisplayShort'
 import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
+import { VersionStatus } from '@/components/VersionStatus'
 
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
@@ -174,6 +175,8 @@ interface MarketConfigTreeProps {
   callBeforeQuoteVerification?: CallBeforeQuoteVerification
   /** Timelock in seconds for ManageableOracle (wizard value); shown in tree when oracle has underlying */
   manageableOracleTimelockSeconds?: number
+   /** Dynamic Kink IRM configuration names resolved from JSON (silo0/silo1) */
+  irmConfigNames?: { silo0: string | null; silo1: string | null }
   hookGaugeInfo?: {
     hasDefaultingHook: boolean
     onlyOneBorrowable: boolean | null
@@ -236,6 +239,8 @@ interface TreeNodeProps {
   /** Top-level node (silo config / silo 0 / silo 1) – extra spacing + stronger label emphasis */
   isRoot?: boolean
   oracleOwnerVerification?: OracleOwnerVerification
+  /** Optional section token label shown in large background marker for root SILO nodes */
+  sectionTokenLabel?: string
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -404,7 +409,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification, sectionTokenLabel }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -416,9 +421,29 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       : (normalizedAddress ? addressVersions?.get(normalizedAddress) : undefined)
   const hasSuffix = versionText != null && versionText !== ''
 
+  const isSiloRoot = isRoot && (label === 'SILO 0' || label === 'SILO 1')
+  const isSiloConfigRoot = isRoot && label === 'SILO CONFIG'
+  const sectionMain = isSiloConfigRoot
+    ? 'config'
+    : isSiloRoot
+      ? (label === 'SILO 0' ? '0' : '1')
+      : null
+
   return (
-    <li className={`tree-item${isRoot ? ' mt-2 mb-4' : ''}`}>
-      <span className="tree-item-content">
+    <li className={`tree-item relative${isRoot ? ' mt-4 mb-6 pt-4 pb-4' : ''}`}>
+      {sectionMain && (
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end text-gray-500 opacity-5 select-none">
+          <span className={`leading-none font-extrabold ${isSiloConfigRoot ? 'text-[135px]' : 'text-[300px]'}`}>
+            {sectionMain}
+          </span>
+          {sectionTokenLabel && !isSiloConfigRoot && (
+            <span className={`leading-none font-extrabold mr-2 ${isSiloRoot ? 'text-[152px] mt-1' : 'text-[300px] mt-4'}`}>
+              {sectionTokenLabel}
+            </span>
+          )}
+        </span>
+      )}
+      <span className="tree-item-content relative z-10">
         <span className={`text-gray-300 text-sm ${isRoot ? 'font-semibold' : 'font-medium'}`}>{label}:</span>
         {' '}
         
@@ -439,12 +464,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
               </span>
             )}
-            {hasSuffix && (
-              <span className="text-gray-400 text-sm ml-1">
-                {' '}
-                ({versionText})
-              </span>
-            )}
+            {hasSuffix && <VersionStatus version={versionText} />}
           </>
         )}
         {/* Token verification details as sub-items */}
@@ -705,12 +725,20 @@ function isManageableOracleByVersion(version: string | undefined): boolean {
   return version != null && version !== '' && version.toLowerCase().includes('manageableoracle')
 }
 
-function formatTimelockBulletText(seconds: number): string {
+function formatTimelockBulletText(seconds: number): React.ReactNode {
   const days = Math.round(seconds / 86400)
-  return `Timelock: ${seconds.toLocaleString()} seconds (${days} ${days === 1 ? 'day' : 'days'})`
+  const daysLabel = `${days} ${days === 1 ? 'day' : 'days'}`
+  const secondsLabel = `${seconds.toLocaleString()} seconds`
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>Timelock:</span>
+      <span className="text-white text-sm font-mono">{daysLabel}</span>
+      <span className="text-gray-500 text-xs font-normal">({secondsLabel})</span>
+    </span>
+  )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, hookGaugeInfo }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, hookGaugeInfo }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -740,8 +768,11 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             address={siloFactoryAddress}
             chainId={chainId}
             className="text-sm"
-            version={version}
+            showVersion={false}
           />
+          <span className="text-version-muted text-sm ml-1">
+            ({version})
+          </span>
         </span>
         <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
           <li className="flex items-center">
@@ -770,7 +801,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
       </h3>
       
       <ol className="tree">
-        <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config">
           <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
             {config.siloId !== null && (
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
@@ -902,10 +933,12 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                 >
                                   {formatAddress(hookGaugeInfo.gaugeAddress)}
                                 </a>
-                                <CopyButton value={hookGaugeInfo.gaugeAddress} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
-                                <span className="text-gray-400 text-xs ml-1">
-                                  ({hookGaugeInfo.gaugeVersion || '—'})
-                                </span>
+                                <CopyButton
+                                  value={hookGaugeInfo.gaugeAddress}
+                                  title="Copy address"
+                                  iconClassName="w-3.5 h-3.5 inline align-middle"
+                                />
+                                <VersionStatus version={hookGaugeInfo.gaugeVersion || '—'} />
                               </span>
                               {gv && (
                                 <ul className="gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
@@ -981,8 +1014,9 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             }
           />
         </TreeNode>
+        <li className="tree-separator" aria-hidden="true" />
 
-        <TreeNode label="SILO 0" isRoot address={config.silo0.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO 0" isRoot address={config.silo0.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={asset0Symbol}>
           <TreeNode 
             label="Token" 
             address={config.silo0.token} 
@@ -1059,9 +1093,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         title="Copy address"
                         iconClassName="w-3.5 h-3.5 inline align-middle"
                       />
-                      <span className="text-gray-400 text-xs ml-1">
-                        ({underlying.version || '—'})
-                      </span>
+                      <VersionStatus version={underlying.version} />
                     </span>
                   )
                 })
@@ -1102,32 +1134,30 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined
                 )
                 const underlying = config.silo0.maxLtvOracle.underlying
-                if (underlying) {
-                  base.push({
-                    key: 'oracle.manageable.underlying.silo0.maxLtv',
-                    text: (
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <span className="text-gray-400 text-xs ml-1">
-                          ({underlying.version || '—'})
-                        </span>
-                      </span>
-                    )
-                  })
-                }
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo0.maxLtv',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <VersionStatus version={underlying.version} />
+                    </span>
+                  )
+                })
+              }
                 const maxLtv0Version = config.silo0.maxLtvOracle.version
                 const timelockSeconds0MaxLtv = config.silo0.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
                 if (isManageableOracleByVersion(maxLtv0Version) && timelockSeconds0MaxLtv != null && timelockSeconds0MaxLtv > 0) {
@@ -1149,25 +1179,67 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Interest Rate Model"
             address={config.silo0.interestRateModel.address}
             suffixText={config.silo0.interestRateModel.version}
+            bulletItems={(() => {
+              const bullets: OracleBulletItem[] = []
+              const irm = config.silo0.interestRateModel
+              const irmCfg = irm.config as Record<string, unknown> | undefined
+
+              const name = irmConfigNames?.silo0 ?? null
+              if (name) {
+                bullets.push({ key: 'irm.configName.silo0', text: `IRM config: ${name}` })
+              } else {
+                bullets.push({
+                  key: 'irm.configName.silo0',
+                  text: (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>IRM config: not able to match</span>
+                      <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                    </span>
+                  )
+                })
+              }
+
+              const timelockRaw = irmCfg?.timelock
+              if (timelockRaw != null) {
+                const seconds = Number(timelockRaw)
+                if (!Number.isNaN(seconds) && seconds > 0) {
+                  bullets.push({ key: 'irm.timelock.silo0', text: formatTimelockBulletText(seconds) })
+                }
+              }
+
+              const capRaw = (irmCfg?.rcompCapPerSecond ?? irmCfg?.rcompCap) as unknown
+              if (capRaw != null) {
+                const capStr = String(capRaw)
+                if (/^\d+$/.test(capStr)) {
+                  const secondsPerYear = BigInt(365 * 86400)
+                  const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
+                  bullets.push({
+                    key: 'irm.cap.silo0',
+                    text: (() => {
+                      const valueBigInt = BigInt(yearlyCapRaw)
+                      const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
+                      const percent = Number(valueBigInt / scale)
+                      const rounded = Math.round(percent)
+                      return (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span>CAP yearly:</span>
+                          <span className="text-gray-400 text-sm font-mono">{rounded}%</span>
+                        </span>
+                      )
+                    })()
+                  })
+                }
+              }
+
+              return bullets.length > 0 ? bullets : undefined
+            })()}
             ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
             hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
             irmOwnerVerification={irmOwnerVerification}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
-          >
-            {config.silo0.interestRateModel.type && (
-              <TreeNode label="Type" value={config.silo0.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
-            )}
-            {config.silo0.interestRateModel.config && Object.entries(config.silo0.interestRateModel.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
+          />
           <TreeNode 
             label="Max LTV" 
             value={config.silo0.maxLtv} 
@@ -1215,8 +1287,9 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           />
           <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0 ?? null} />
         </TreeNode>
+        <li className="tree-separator" aria-hidden="true" />
 
-        <TreeNode label="SILO 1" isRoot address={config.silo1.silo} explorerUrl={explorerUrl} addressVersions={addressVersions}>
+        <TreeNode label="SILO 1" isRoot address={config.silo1.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={asset1Symbol}>
           <TreeNode 
             label="Token" 
             address={config.silo1.token} 
@@ -1293,9 +1366,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         title="Copy address"
                         iconClassName="w-3.5 h-3.5 inline align-middle"
                       />
-                      <span className="text-gray-400 text-xs ml-1">
-                        ({underlying.version || '—'})
-                      </span>
+                      <VersionStatus version={underlying.version} />
                     </span>
                   )
                 })
@@ -1336,32 +1407,30 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined
                 )
                 const underlying = config.silo1.maxLtvOracle.underlying
-                if (underlying) {
-                  base.push({
-                    key: 'oracle.manageable.underlying.silo1.maxLtv',
-                    text: (
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <span className="text-gray-400 text-xs ml-1">
-                          ({underlying.version || '—'})
-                        </span>
-                      </span>
-                    )
-                  })
-                }
+              if (underlying) {
+                base.push({
+                  key: 'oracle.manageable.underlying.silo1.maxLtv',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <VersionStatus version={underlying.version} />
+                    </span>
+                  )
+                })
+              }
                 const maxLtv1Version = config.silo1.maxLtvOracle.version
                 const timelockSeconds1MaxLtv = config.silo1.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
                 if (isManageableOracleByVersion(maxLtv1Version) && timelockSeconds1MaxLtv != null && timelockSeconds1MaxLtv > 0) {
@@ -1383,25 +1452,67 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             label="Interest Rate Model"
             address={config.silo1.interestRateModel.address}
             suffixText={config.silo1.interestRateModel.version}
+            bulletItems={(() => {
+              const bullets: OracleBulletItem[] = []
+              const irm = config.silo1.interestRateModel
+              const irmCfg = irm.config as Record<string, unknown> | undefined
+
+              const name = irmConfigNames?.silo1 ?? null
+              if (name) {
+                bullets.push({ key: 'irm.configName.silo1', text: `IRM config: ${name}` })
+              } else {
+                bullets.push({
+                  key: 'irm.configName.silo1',
+                  text: (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>IRM config: not able to match</span>
+                      <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                    </span>
+                  )
+                })
+              }
+
+              const timelockRaw = irmCfg?.timelock
+              if (timelockRaw != null) {
+                const seconds = Number(timelockRaw)
+                if (!Number.isNaN(seconds) && seconds > 0) {
+                  bullets.push({ key: 'irm.timelock.silo1', text: formatTimelockBulletText(seconds) })
+                }
+              }
+
+              const capRaw = (irmCfg?.rcompCapPerSecond ?? irmCfg?.rcompCap) as unknown
+              if (capRaw != null) {
+                const capStr = String(capRaw)
+                if (/^\d+$/.test(capStr)) {
+                  const secondsPerYear = BigInt(365 * 86400)
+                  const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
+                  bullets.push({
+                    key: 'irm.cap.silo1',
+                    text: (() => {
+                      const valueBigInt = BigInt(yearlyCapRaw)
+                      const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
+                      const percent = Number(valueBigInt / scale)
+                      const rounded = Math.round(percent)
+                      return (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span>CAP yearly:</span>
+                          <span className="text-gray-400 text-sm font-mono">{rounded}%</span>
+                        </span>
+                      )
+                    })()
+                  })
+                }
+              }
+
+              return bullets.length > 0 ? bullets : undefined
+            })()}
             ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
             explorerUrl={explorerUrl}
             hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
             irmOwnerVerification={irmOwnerVerification}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
-          >
-            {config.silo1.interestRateModel.type && (
-              <TreeNode label="Type" value={config.silo1.interestRateModel.type} explorerUrl={explorerUrl} valueMuted />
-            )}
-            {config.silo1.interestRateModel.config && Object.entries(config.silo1.interestRateModel.config).map(([key, val]) => (
-              <TreeNode
-                key={key}
-                label={key}
-                value={typeof val === 'string' ? val : String(val)}
-                explorerUrl={explorerUrl}
-              />
-            ))}
-          </TreeNode>
+          />
           <TreeNode 
             label="Max LTV" 
             value={config.silo1.maxLtv} 
