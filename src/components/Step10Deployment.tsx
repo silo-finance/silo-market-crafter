@@ -145,45 +145,9 @@ export default function Step10Deployment() {
           if (response.ok) {
             const data = await response.json()
             address = data.address || ''
-            if (address && ethers.isAddress(address)) {
-              console.log(`Loaded SiloDeployer from ${deployerContractName}.json:`, address)
-            }
           }
         } catch (err) {
           console.warn(`Failed to fetch ${deployerContractName}.json:`, err)
-        }
-        
-        // Fallback: try to get from _deployments.json if available
-        if (!address) {
-          try {
-            const response = await fetch(
-              `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
-            )
-            if (response.ok) {
-              const data = await response.json()
-              // Try different possible keys in _deployments.json
-              if (typeof data === 'object' && data !== null) {
-                address = data[deployerContractName] || data['SiloDeployer'] || data.SiloDeployer || ''
-                // If nested structure, try to extract
-                if (!address || !ethers.isAddress(address)) {
-                  for (const key in data) {
-                    if (key.includes('SiloDeployer') && typeof data[key] === 'string' && ethers.isAddress(data[key])) {
-                      address = data[key]
-                      break
-                    } else if (typeof data[key] === 'object' && data[key]?.address && ethers.isAddress(data[key].address)) {
-                      address = data[key].address
-                      break
-                    }
-                  }
-                }
-                if (address && ethers.isAddress(address)) {
-                  console.log(`Loaded SiloDeployer from _deployments.json:`, address)
-                }
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch from _deployments.json:', err)
-          }
         }
 
         if (!address) {
@@ -206,46 +170,12 @@ export default function Step10Deployment() {
             const data = await response.json()
             lensAddress = data.address || ''
             if (lensAddress && ethers.isAddress(lensAddress)) {
-              console.log(`Loaded SiloLens from ${lensContractName}.json:`, lensAddress)
               setSiloLensAddress(lensAddress)
             }
           }
         } catch (err) {
           console.warn(`Failed to fetch ${lensContractName}.json:`, err)
         }
-        
-        // Fallback: try to get from _deployments.json if available
-        if (!lensAddress) {
-          try {
-            const response = await fetch(
-              `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
-            )
-            if (response.ok) {
-              const data = await response.json()
-              if (typeof data === 'object' && data !== null) {
-                lensAddress = data[lensContractName] || data['SiloLens'] || data.SiloLens || ''
-                if (!lensAddress || !ethers.isAddress(lensAddress)) {
-                  for (const key in data) {
-                    if (key.includes('SiloLens') && typeof data[key] === 'string' && ethers.isAddress(data[key])) {
-                      lensAddress = data[key]
-                      break
-                    } else if (typeof data[key] === 'object' && data[key]?.address && ethers.isAddress(data[key].address)) {
-                      lensAddress = data[key].address
-                      break
-                    }
-                  }
-                }
-                if (lensAddress && ethers.isAddress(lensAddress)) {
-                  console.log(`Loaded SiloLens from _deployments.json:`, lensAddress)
-                  setSiloLensAddress(lensAddress)
-                }
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch SiloLens from _deployments.json:', err)
-          }
-        }
-
 
       } catch (err) {
         console.error('Error fetching deployment data:', err)
@@ -271,44 +201,8 @@ export default function Step10Deployment() {
       if (!wizardData.networkInfo?.chainId) return
 
       const chainName = getChainName(wizardData.networkInfo.chainId)
-      
-      // Try to fetch _deployments.json first
-      // The structure might be an object with contract names as keys, or nested
-      try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/_deployments.json`
-        )
-        if (response.ok) {
-          const data = await response.json()
-          // Handle different possible structures
-          if (typeof data === 'object' && data !== null) {
-            // If it's already a flat object with contract names as keys
-            if (data['SiloHookV1.sol'] || data['DynamicKinkModelFactory.sol']) {
-              setSiloCoreDeployments(data as SiloCoreDeployments)
-              return
-            }
-            // If it's nested, try to extract addresses
-            // Some deployments might have nested structure
-            const flatDeployments: SiloCoreDeployments = {}
-            for (const key in data) {
-              if (typeof data[key] === 'string' && data[key].startsWith('0x')) {
-                flatDeployments[key] = data[key]
-              } else if (typeof data[key] === 'object' && data[key]?.address) {
-                flatDeployments[key] = data[key].address
-              }
-            }
-            if (Object.keys(flatDeployments).length > 0) {
-              console.log('Loaded deployments from _deployments.json:', flatDeployments)
-              setSiloCoreDeployments(flatDeployments)
-              return
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to fetch _deployments.json:', err)
-      }
 
-      // Fallback: fetch individual contract addresses
+      // Fetch individual contract addresses from per-contract JSON files
       // Contract names match SiloCoreContracts constants (the actual .sol file names)
       const contractsToFetch = [
         'SiloHookV1.sol',
@@ -328,7 +222,6 @@ export default function Step10Deployment() {
             const address = data.address || ''
             if (address) {
               deployments[contractName] = address
-              console.log(`Loaded ${contractName}:`, address)
             }
           }
         } catch (err) {
@@ -336,7 +229,6 @@ export default function Step10Deployment() {
         }
       }
       if (Object.keys(deployments).length > 0) {
-        console.log('Loaded individual deployments:', deployments)
         setSiloCoreDeployments(deployments)
       }
     }
@@ -418,7 +310,6 @@ export default function Step10Deployment() {
         })
         const version = versionsByAddress.get(deployerAddress.toLowerCase()) ?? ''
         setDeployerVersion(version)
-        console.log(`SiloDeployer version: ${version}`)
       } catch (err) {
         console.warn('Failed to fetch SiloDeployer version:', err)
         setDeployerVersion('—')
@@ -495,17 +386,6 @@ export default function Step10Deployment() {
       const hookReceiverImplementation = siloCoreDeployments[hookImplementationName] || ethers.ZeroAddress
       const irmFactoryName = 'DynamicKinkModelFactory.sol'
       const irmFactoryAddress = siloCoreDeployments[irmFactoryName] || ethers.ZeroAddress
-
-      console.log(`Looking up hook implementation: ${hookImplementationName}`, {
-        found: hookReceiverImplementation !== ethers.ZeroAddress,
-        address: hookReceiverImplementation,
-        availableDeployments: Object.keys(siloCoreDeployments)
-      })
-
-      console.log(`Looking up IRM factory: ${irmFactoryName}`, {
-        found: irmFactoryAddress !== ethers.ZeroAddress,
-        address: irmFactoryAddress
-      })
 
       let validationWarnings: string[] = []
       if (hookReceiverImplementation === ethers.ZeroAddress) {
@@ -663,75 +543,6 @@ export default function Step10Deployment() {
       const txIrmConfigData1 = deployArgs._irmConfigData1.encoded
       const txClonableHookReceiver = clonableHookReceiver
       const txSiloInitData = deployArgs._siloInitData
-
-      // Prepare transaction data object for detailed logging
-      // This matches exactly the arguments passed to deploy() function
-      const transactionData = {
-        functionName: 'deploy',
-        arguments: {
-          _oracles: {
-            solvencyOracle0: {
-              deployed: txOracles.solvencyOracle0.deployed,
-              factory: txOracles.solvencyOracle0.factory,
-              txInput: txOracles.solvencyOracle0.txInput
-            },
-            maxLtvOracle0: {
-              deployed: txOracles.maxLtvOracle0.deployed,
-              factory: txOracles.maxLtvOracle0.factory,
-              txInput: txOracles.maxLtvOracle0.txInput
-            },
-            solvencyOracle1: {
-              deployed: txOracles.solvencyOracle1.deployed,
-              factory: txOracles.solvencyOracle1.factory,
-              txInput: txOracles.solvencyOracle1.txInput
-            },
-            maxLtvOracle1: {
-              deployed: txOracles.maxLtvOracle1.deployed,
-              factory: txOracles.maxLtvOracle1.factory,
-              txInput: txOracles.maxLtvOracle1.txInput
-            }
-          },
-          _irmConfigData0: txIrmConfigData0,
-          _irmConfigData1: txIrmConfigData1,
-          _clonableHookReceiver: {
-            implementation: txClonableHookReceiver.implementation,
-            initializationData: txClonableHookReceiver.initializationData
-          },
-          _siloInitData: {
-            deployer: txSiloInitData.deployer,
-            hookReceiver: txSiloInitData.hookReceiver,
-            daoFee: txSiloInitData.daoFee.toString(),
-            deployerFee: txSiloInitData.deployerFee.toString(),
-            token0: txSiloInitData.token0,
-            solvencyOracle0: txSiloInitData.solvencyOracle0,
-            maxLtvOracle0: txSiloInitData.maxLtvOracle0,
-            interestRateModel0: txSiloInitData.interestRateModel0,
-            maxLtv0: txSiloInitData.maxLtv0.toString(),
-            lt0: txSiloInitData.lt0.toString(),
-            liquidationTargetLtv0: txSiloInitData.liquidationTargetLtv0.toString(),
-            liquidationFee0: txSiloInitData.liquidationFee0.toString(),
-            flashloanFee0: txSiloInitData.flashloanFee0.toString(),
-            callBeforeQuote0: txSiloInitData.callBeforeQuote0,
-            token1: txSiloInitData.token1,
-            solvencyOracle1: txSiloInitData.solvencyOracle1,
-            maxLtvOracle1: txSiloInitData.maxLtvOracle1,
-            interestRateModel1: txSiloInitData.interestRateModel1,
-            maxLtv1: txSiloInitData.maxLtv1.toString(),
-            lt1: txSiloInitData.lt1.toString(),
-            liquidationTargetLtv1: txSiloInitData.liquidationTargetLtv1.toString(),
-            liquidationFee1: txSiloInitData.liquidationFee1.toString(),
-            flashloanFee1: txSiloInitData.flashloanFee1.toString(),
-            callBeforeQuote1: txSiloInitData.callBeforeQuote1
-          }
-        },
-        deployerAddress: deployerAddress,
-        contractAddress: deployerAddress
-      }
-
-      // Log transaction data as formatted JSON for easy inspection
-      console.log('=== DEPLOY TRANSACTION DATA ===')
-      console.log(JSON.stringify(transactionData, null, 2))
-      console.log('=== END TRANSACTION DATA ===')
 
       // Validate with estimateGas first so we get a clear revert reason without sending tx
       try {
