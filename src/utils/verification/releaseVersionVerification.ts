@@ -35,7 +35,8 @@ const CONTRACT_SOURCE_PATHS: Record<string, string> = {
   // Manageable oracle wrapper
   ManageableOracle: 'silo-oracles/contracts/manageable/ManageableOracle.sol',
   SiloIncentivesController: 'silo-core/contracts/incentives/SiloIncentivesController.sol',
-  SiloDeployer: 'silo-core/contracts/SiloDeployer.sol'
+  SiloDeployer: 'silo-core/contracts/SiloDeployer.sol',
+  PTLinearOracle: 'silo-oracles/contracts/pendle/linear/PTLinearOracle.sol'
 }
 
 // Base URLs for Silo contracts V3 repository.

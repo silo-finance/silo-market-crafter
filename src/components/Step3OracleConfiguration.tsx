@@ -138,6 +138,7 @@ interface VaultOracleSectionProps {
 function ChainlinkOracleSection({
   baseTokenSymbol,
   baseTokenName,
+  baseTokenDecimals,
   otherTokenAddress,
   chainlink,
   setChainlink,
@@ -147,10 +148,9 @@ function ChainlinkOracleSection({
   setUseSecondaryAggregator,
   virtualUsdAddress,
   usdcAddress,
-  chainlinkV3OracleFactory,
   networkChainId,
   idSuffix
-}: ChainlinkOracleSectionProps) {
+}: ChainlinkOracleSectionProps & { baseTokenDecimals?: number }) {
   const [aggregatorPresetLoading, setAggregatorPresetLoading] = useState(false)
 
   const handleUsdcUsdAggregator = async () => {
@@ -168,23 +168,66 @@ function ChainlinkOracleSection({
   }
 
   return (
-    <div className="space-y-4">
-      {chainlinkV3OracleFactory ? (
-        <ContractInfo
-          contractName="ChainlinkV3OracleFactory"
-          address={chainlinkV3OracleFactory.address}
-          version={chainlinkV3OracleFactory.version || '…'}
-          chainId={networkChainId}
-          isOracle={true}
-        />
-      ) : (
-        <p className="text-sm text-yellow-400">Loading ChainlinkV3OracleFactory for this chain…</p>
-      )}
-      <p className="text-sm text-gray-400 mb-2">
+    <div className="space-y-6">
+      <p className="text-sm text-gray-400">
         Base token: <span className="text-white font-medium">{baseTokenSymbol}</span> <span className="text-gray-500">({baseTokenName})</span>
       </p>
-      <div className="mt-6" role="presentation" />
-      <div className="space-y-2 mb-4">
+      {typeof baseTokenDecimals === 'number' && (
+        <p className="text-sm text-gray-400 mb-2">
+          Token decimals: {baseTokenDecimals}
+        </p>
+      )}
+      {/* Primary aggregator */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Primary aggregator</h4>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <PredefinedOptionButton
+              disabled={!networkChainId || aggregatorPresetLoading}
+              loading={aggregatorPresetLoading}
+              onClick={handleUsdcUsdAggregator}
+            >
+              <span>USDC/USD</span>
+            </PredefinedOptionButton>
+          </div>
+          <input
+            type="text"
+            value={chainlink.primaryAggregator}
+            onChange={(e) => setChainlink(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
+            placeholder="0x..."
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+          />
+          {(chainlink.aggregatorDescription != null || chainlink.aggregatorLatestAnswer != null || chainlink.primaryAggregatorDecimals != null) && (
+            <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
+              {chainlink.primaryAggregator?.trim() && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-gray-500">Address:</span>
+                  <AddressDisplayShort
+                    address={chainlink.primaryAggregator}
+                    chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
+                    className="text-sm"
+                    showVersion={false}
+                  />
+                </div>
+              )}
+              {chainlink.aggregatorDescription != null && (
+                <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink.aggregatorDescription || '—'}</span></p>
+              )}
+              {chainlink.primaryAggregatorDecimals != null && (
+                <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink.primaryAggregatorDecimals}</span></p>
+              )}
+              {chainlink.aggregatorLatestAnswer != null && (
+                <p><span className="text-gray-500">Latest price (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink.aggregatorLatestAnswer}</span></p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quote token */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
         <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
           Quote token
         </h4>
@@ -205,8 +248,7 @@ function ChainlinkOracleSection({
                 setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
               }}
             >
-              <span className="font-bold" aria-hidden>$</span>
-              <span>USD</span>
+              <span>Virtual asset</span>
             </PredefinedOptionButton>
           )}
           {usdcAddress && (
@@ -243,53 +285,9 @@ function ChainlinkOracleSection({
           placeholder="0x… or symbol from addresses JSON"
         />
       </div>
-      <div className="mt-6" role="presentation" />
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
-        <div className="flex flex-wrap gap-2 mb-2">
-          <PredefinedOptionButton
-            disabled={!networkChainId || aggregatorPresetLoading}
-            loading={aggregatorPresetLoading}
-            onClick={handleUsdcUsdAggregator}
-          >
-            <span>USDC/USD</span>
-          </PredefinedOptionButton>
-        </div>
-        <input
-          type="text"
-          value={chainlink.primaryAggregator}
-          onChange={(e) => setChainlink(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
-          placeholder="0x..."
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
-        />
-        {(chainlink.aggregatorDescription != null || chainlink.aggregatorLatestAnswer != null || chainlink.primaryAggregatorDecimals != null) && (
-          <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
-            <p className="text-gray-500 text-xs uppercase tracking-wide">Aggregator verification</p>
-            {chainlink.primaryAggregator?.trim() && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-gray-500">Address:</span>
-                <AddressDisplayShort
-                  address={chainlink.primaryAggregator}
-                  chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
-                  className="text-sm"
-                  showVersion={false}
-                />
-              </div>
-            )}
-            {chainlink.aggregatorDescription != null && (
-              <p><span className="text-gray-500">Description:</span> <span className="text-gray-300">{chainlink.aggregatorDescription || '—'}</span></p>
-            )}
-            {chainlink.primaryAggregatorDecimals != null && (
-              <p><span className="text-gray-500">Decimals:</span> <span className="text-gray-300">{chainlink.primaryAggregatorDecimals}</span></p>
-            )}
-            {chainlink.aggregatorLatestAnswer != null && (
-              <p><span className="text-gray-500">Latest answer (with decimals):</span> <span className="text-gray-300 font-mono">{chainlink.aggregatorLatestAnswer}</span></p>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="mt-6" role="presentation" />
-      <div>
+
+      {/* Secondary aggregator */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <input
             type="checkbox"
@@ -555,10 +553,7 @@ function VaultOracleSection({
                 setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
               }}
             >
-              <span className="font-bold" aria-hidden>
-                $
-              </span>
-              <span>USD</span>
+              <span>Virtual asset</span>
             </PredefinedOptionButton>
           )}
           {usdcAddress && (
@@ -1550,6 +1545,12 @@ export default function Step3OracleConfiguration() {
       if (quoteEmpty0) {
         errors.push('Chainlink (Token 0): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
       }
+      const effectiveQuoteAddr0 = chainlink0.useOtherTokenAsQuote ? (wizardData.token1?.address?.trim() ?? '') : quoteAddr0
+      const baseAddr0 = wizardData.token0?.address?.trim() ?? ''
+      if (baseAddr0 && effectiveQuoteAddr0 && ethers.isAddress(baseAddr0) && ethers.isAddress(effectiveQuoteAddr0) &&
+          baseAddr0.toLowerCase() === effectiveQuoteAddr0.toLowerCase()) {
+        errors.push('Chainlink (Token 0): base token cannot be the same as quote token. Consider using virtual Quote Token if the oracle is required.')
+      }
       if (!chainlink0.primaryAggregator?.trim() || !ethers.isAddress(chainlink0.primaryAggregator)) {
         errors.push('Please enter a valid primary aggregator address for Token 0 Chainlink oracle')
       } else if ((!chainlink0.normalizationDivider && !chainlink0.normalizationMultiplier) || (chainlink0.normalizationDivider === '0' && chainlink0.normalizationMultiplier === '0')) {
@@ -1561,6 +1562,12 @@ export default function Step3OracleConfiguration() {
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
       if (quoteEmpty1) {
         errors.push('Chainlink (Token 1): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
+      }
+      const effectiveQuoteAddr1 = chainlink1.useOtherTokenAsQuote ? (wizardData.token0?.address?.trim() ?? '') : quoteAddr1
+      const baseAddr1 = wizardData.token1?.address?.trim() ?? ''
+      if (baseAddr1 && effectiveQuoteAddr1 && ethers.isAddress(baseAddr1) && ethers.isAddress(effectiveQuoteAddr1) &&
+          baseAddr1.toLowerCase() === effectiveQuoteAddr1.toLowerCase()) {
+        errors.push('Chainlink (Token 1): base token cannot be the same as quote token. Consider using virtual Quote Token if the oracle is required.')
       }
       if (!chainlink1.primaryAggregator?.trim() || !ethers.isAddress(chainlink1.primaryAggregator)) {
         errors.push('Please enter a valid primary aggregator address for Token 1 Chainlink oracle')
@@ -1798,10 +1805,6 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : 'Chainlink'}
           </p>
-          <p className="text-sm text-gray-400 mb-4">
-            Token Decimals: {wizardData.token0.decimals}
-          </p>
-          
           {wizardData.oracleType0.type === 'none' ? (
             <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
@@ -1859,29 +1862,67 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear0.useSecondTokenAsQuote && (
-                <TokenAddressInput
-                  value={pt0QuoteInput}
-                  onChange={(value) => {
-                    setPT0QuoteInput(value)
-                  }}
-                  onResolve={(address, metadata) => {
-                    setPT0QuoteMetadata(metadata)
-                    if (metadata && address) {
-                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
-                    } else {
-                      setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-                    }
-                  }}
-                  chainId={wizardData.networkInfo?.chainId}
-                  label="Quote token (address or symbol)"
-                  placeholder="0x… or symbol from addresses JSON"
-                />
+                <>
+                  <div className="space-y-2 mb-4">
+                    <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <PredefinedOptionButton
+                        onClick={() => {
+                          setPT0QuoteInput('')
+                          setPT0QuoteMetadata(null)
+                          setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: true }))
+                        }}
+                      >
+                        <span>Other token</span>
+                      </PredefinedOptionButton>
+                      {virtualUsdAddress && (
+                        <PredefinedOptionButton
+                          onClick={() => {
+                            setPT0QuoteInput('SILO_VIRTUAL_USD_8')
+                            setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualUsdAddress }))
+                          }}
+                        >
+                          <span>Virtual asset</span>
+                        </PredefinedOptionButton>
+                      )}
+                      {usdcAddress && (
+                        <PredefinedOptionButton
+                          onClick={() => {
+                            setPT0QuoteInput('USDC')
+                            setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: usdcAddress }))
+                          }}
+                        >
+                          <span>USDC</span>
+                        </PredefinedOptionButton>
+                      )}
+                    </div>
+                  </div>
+                  <TokenAddressInput
+                    value={pt0QuoteInput}
+                    onChange={(value) => {
+                      setPT0QuoteInput(value)
+                      setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: false }))
+                    }}
+                    onResolve={(address, metadata) => {
+                      setPT0QuoteMetadata(metadata)
+                      if (metadata && address) {
+                        setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                      } else {
+                        setPTLinear0(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                      }
+                    }}
+                    chainId={wizardData.networkInfo?.chainId}
+                    label="Quote token (address or symbol)"
+                    placeholder="0x… or symbol from addresses JSON"
+                  />
+                </>
               )}
             </div>
           ) : wizardData.oracleType0.type === 'chainlink' ? (
             <ChainlinkOracleSection
               baseTokenSymbol={wizardData.token0.symbol}
               baseTokenName={wizardData.token0.name}
+              baseTokenDecimals={wizardData.token0.decimals}
               otherTokenAddress={wizardData.token1?.address}
               chainlink={chainlink0}
               setChainlink={setChainlink0}
@@ -2037,10 +2078,6 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : 'Chainlink'}
           </p>
-          <p className="text-sm text-gray-400 mb-4">
-            Token Decimals: {wizardData.token1.decimals}
-          </p>
-          
           {wizardData.oracleType1.type === 'none' ? (
             <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
@@ -2098,29 +2135,67 @@ export default function Step3OracleConfiguration() {
                 </label>
               </div>
               {!ptLinear1.useSecondTokenAsQuote && (
-                <TokenAddressInput
-                  value={pt1QuoteInput}
-                  onChange={(value) => {
-                    setPT1QuoteInput(value)
-                  }}
-                  onResolve={(address, metadata) => {
-                    setPT1QuoteMetadata(metadata)
-                    if (metadata && address) {
-                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
-                    } else {
-                      setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
-                    }
-                  }}
-                  chainId={wizardData.networkInfo?.chainId}
-                  label="Quote token (address or symbol)"
-                  placeholder="0x… or symbol from addresses JSON"
-                />
+                <>
+                  <div className="space-y-2 mb-4">
+                    <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <PredefinedOptionButton
+                        onClick={() => {
+                          setPT1QuoteInput('')
+                          setPT1QuoteMetadata(null)
+                          setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: true }))
+                        }}
+                      >
+                        <span>Other token</span>
+                      </PredefinedOptionButton>
+                      {virtualUsdAddress && (
+                        <PredefinedOptionButton
+                          onClick={() => {
+                            setPT1QuoteInput('SILO_VIRTUAL_USD_8')
+                            setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualUsdAddress }))
+                          }}
+                        >
+                          <span>Virtual asset</span>
+                        </PredefinedOptionButton>
+                      )}
+                      {usdcAddress && (
+                        <PredefinedOptionButton
+                          onClick={() => {
+                            setPT1QuoteInput('USDC')
+                            setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: usdcAddress }))
+                          }}
+                        >
+                          <span>USDC</span>
+                        </PredefinedOptionButton>
+                      )}
+                    </div>
+                  </div>
+                  <TokenAddressInput
+                    value={pt1QuoteInput}
+                    onChange={(value) => {
+                      setPT1QuoteInput(value)
+                      setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: false }))
+                    }}
+                    onResolve={(address, metadata) => {
+                      setPT1QuoteMetadata(metadata)
+                      if (metadata && address) {
+                        setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: address }))
+                      } else {
+                        setPTLinear1(prev => ({ ...prev, hardcodedQuoteTokenAddress: '' }))
+                      }
+                    }}
+                    chainId={wizardData.networkInfo?.chainId}
+                    label="Quote token (address or symbol)"
+                    placeholder="0x… or symbol from addresses JSON"
+                  />
+                </>
               )}
             </div>
           ) : wizardData.oracleType1.type === 'chainlink' ? (
             <ChainlinkOracleSection
               baseTokenSymbol={wizardData.token1.symbol}
               baseTokenName={wizardData.token1.name}
+              baseTokenDecimals={wizardData.token1.decimals}
               otherTokenAddress={wizardData.token0?.address}
               chainlink={chainlink1}
               setChainlink={setChainlink1}
