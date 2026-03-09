@@ -17,6 +17,12 @@ interface OwnerSelectionBlockProps {
   disabled?: boolean
 }
 
+function getInitialOwnerValue(value: string | null): string {
+  if (value == null) return ''
+  const s = String(value).trim()
+  return s
+}
+
 export default function OwnerSelectionBlock({
   value,
   onChange,
@@ -24,22 +30,32 @@ export default function OwnerSelectionBlock({
   networkName,
   disabled = false
 }: OwnerSelectionBlockProps) {
-  const [manualAddress, setManualAddress] = useState<string>('')
-  const [resolvedOwnerAddress, setResolvedOwnerAddress] = useState<string | null>(null)
+  const [manualAddress, setManualAddress] = useState<string>(() => getInitialOwnerValue(value))
+  const [resolvedOwnerAddress, setResolvedOwnerAddress] = useState<string | null>(() => {
+    const v = getInitialOwnerValue(value)
+    if (!v) return null
+    return isHexAddress(v) ? normalizeAddress(v) : null
+  })
   const [ownerResolvedKey, setOwnerResolvedKey] = useState<string | null>(null)
   const [ownerNameFromJson, setOwnerNameFromJson] = useState<string | null>(null)
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean
     isContract: boolean | null
     error: string | null
-  }>({ isValid: false, isContract: null, error: null })
+  }>(() => {
+    const v = getInitialOwnerValue(value)
+    if (!v) return { isValid: false, isContract: null, error: null }
+    const norm = isHexAddress(v) ? normalizeAddress(v) : null
+    return norm ? { isValid: true, isContract: null, error: null } : { isValid: false, isContract: null, error: null }
+  })
   const [validatingAddress, setValidatingAddress] = useState(false)
   const [nativeBalance, setNativeBalance] = useState<string | null>(null)
   const [nativeBalanceSymbol, setNativeBalanceSymbol] = useState<string>('ETH')
 
+  // Sync from parent when value changes (e.g. when returning to step 6 with saved owner)
   useEffect(() => {
     if (value && value.trim()) {
-      setManualAddress(value)
+      setManualAddress(value.trim())
       const norm = isHexAddress(value.trim()) ? normalizeAddress(value.trim()) : null
       setResolvedOwnerAddress(norm)
       setOwnerResolvedKey(null)

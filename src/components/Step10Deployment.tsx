@@ -491,6 +491,9 @@ export default function Step10Deployment() {
     setError('')
     setTxHash('')
 
+    // For debugging deployment issues (eg. FailedToCreateAnOracle)
+    let debugCalldata: string | null = null
+
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
@@ -544,6 +547,13 @@ export default function Step10Deployment() {
       const txClonableHookReceiver = clonableHookReceiver
       const txSiloInitData = deployArgs._siloInitData
 
+      // Precompute full calldata for debugging purposes
+      try {
+        debugCalldata = generateDeployCalldata(deployerAddress, deployArgs)
+      } catch (encodeErr) {
+        console.warn('Failed to generate debug calldata for deploy():', encodeErr)
+      }
+
       // Validate with estimateGas first so we get a clear revert reason without sending tx
       try {
         await deployerContract.deploy.estimateGas(
@@ -555,6 +565,12 @@ export default function Step10Deployment() {
         )
       } catch (estimateErr: unknown) {
         const msg = formatContractError(estimateErr, deployerInterface)
+        // Helpful debug info for on-chain reverts
+        console.error('Silo deploy estimateGas failed', {
+          to: deployerAddress,
+          data: debugCalldata,
+          error: estimateErr
+        })
         setError('Transaction validation failed:\n' + msg)
         setDeploying(false)
         return
@@ -583,6 +599,12 @@ export default function Step10Deployment() {
       setError('')
     } catch (err: unknown) {
       console.error('Deployment error:', err)
+      if (debugCalldata) {
+        console.error('Silo deploy debug data', {
+          to: deployerAddress,
+          data: debugCalldata
+        })
+      }
       const errorMessage = formatContractError(err, deployerInterface)
       setError(errorMessage)
       setTxHash('')

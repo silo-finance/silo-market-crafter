@@ -464,7 +464,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
               </span>
             )}
-            {hasSuffix && <VersionStatus version={versionText} />}
+            {hasSuffix && !isSiloConfigRoot && <VersionStatus version={versionText} />}
           </>
         )}
         {/* Token verification details as sub-items */}
