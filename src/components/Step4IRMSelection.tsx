@@ -9,6 +9,10 @@ import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import ContractInfo from '@/components/ContractInfo'
 import { getChainName } from '@/utils/networks'
 import { formatToE18 } from '@/utils/formatting'
+import dynamicKinkModelFactoryArtifact from '@/abis/silo/DynamicKinkModelFactory.json'
+
+type FoundryArtifact = { abi: ethers.InterfaceAbi }
+const dynamicKinkModelFactoryAbi = (dynamicKinkModelFactoryArtifact as FoundryArtifact).abi
 
 interface KinkConfigItem {
   name: string
@@ -36,6 +40,7 @@ export default function Step4IRMSelection() {
   const [kinkConfigSearch, setKinkConfigSearch] = useState('')
   const [kinkImmutableSearch, setKinkImmutableSearch] = useState('')
   const [kinkFactory, setKinkFactory] = useState<{ address: string; version: string } | null>(null)
+  const [kinkImplementation, setKinkImplementation] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [kinkToken0Config, setKinkToken0Config] = useState<KinkConfigItem | null>(null)
   const [kinkToken0Immutable, setKinkToken0Immutable] = useState<KinkImmutableItem | null>(null)
@@ -128,10 +133,40 @@ export default function Step4IRMSelection() {
     fetchAll()
   }, [wizardData.networkInfo?.chainId])
 
-  // Fetch Kink factory version via Silo Lens getVersions
+  // Fetch IRM implementation address from factory (factory.IRM())
+  useEffect(() => {
+    const eth = typeof window !== 'undefined' ? window.ethereum : undefined
+    if (!kinkFactory?.address || !eth) {
+      setKinkImplementation(null)
+      return
+    }
+    const fetchImplementation = async () => {
+      try {
+        const provider = new ethers.BrowserProvider(eth)
+        const factoryContract = new ethers.Contract(kinkFactory.address, dynamicKinkModelFactoryAbi, provider)
+        const implAddress = await factoryContract.IRM()
+        const addr = typeof implAddress === 'string' ? implAddress : (implAddress as { toString: () => string }).toString()
+        if (addr && ethers.isAddress(addr)) {
+          setKinkImplementation({ address: ethers.getAddress(addr), version: '' })
+        } else {
+          setKinkImplementation(null)
+        }
+      } catch (err) {
+        console.warn('Failed to fetch IRM implementation from factory:', err)
+        setKinkImplementation(null)
+      }
+    }
+    fetchImplementation()
+  }, [kinkFactory?.address])
+
+  // Fetch Kink factory version and IRM implementation version via Silo Lens getVersions
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
-    if (!siloLensAddress || !chainId || !kinkFactory?.address) return
+    if (!siloLensAddress || !chainId) return
+    const addresses: string[] = []
+    if (kinkFactory?.address) addresses.push(kinkFactory.address)
+    if (kinkImplementation?.address) addresses.push(kinkImplementation.address)
+    if (addresses.length === 0) return
 
     const fetchVersions = async () => {
       if (!window.ethereum) return
@@ -141,17 +176,24 @@ export default function Step4IRMSelection() {
           provider,
           lensAddress: siloLensAddress,
           chainId,
-          addresses: [kinkFactory.address]
+          addresses
         })
-        const version = versionsByAddress.get(kinkFactory.address.toLowerCase()) ?? ''
-        setKinkFactory(prev => prev ? { ...prev, version: version || '—' } : null)
+        if (kinkFactory?.address) {
+          const factoryVersion = versionsByAddress.get(kinkFactory.address.toLowerCase()) ?? ''
+          setKinkFactory(prev => prev ? { ...prev, version: factoryVersion || '—' } : null)
+        }
+        if (kinkImplementation?.address) {
+          const implVersion = versionsByAddress.get(kinkImplementation.address.toLowerCase()) ?? ''
+          setKinkImplementation(prev => prev ? { ...prev, version: implVersion || '—' } : null)
+        }
       } catch (err) {
-        console.warn('Failed to fetch factory version from Silo Lens:', err)
+        console.warn('Failed to fetch versions from Silo Lens:', err)
         setKinkFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setKinkImplementation(prev => (prev ? { ...prev, version: '—' } : null))
       }
     }
     fetchVersions()
-  }, [kinkFactory?.address, siloLensAddress, wizardData.networkInfo?.chainId])
+  }, [kinkFactory?.address, kinkImplementation?.address, siloLensAddress, wizardData.networkInfo?.chainId])
 
   // Kink filters
   useEffect(() => {
@@ -217,7 +259,6 @@ export default function Step4IRMSelection() {
         <h1 className="text-4xl font-bold text-white">
           Step 5: Interest Rate Model Selection
         </h1>
-        <p className="text-gray-400 mt-2">Dynamic Kink model only</p>
       </div>
 
       {error && (
@@ -232,16 +273,21 @@ export default function Step4IRMSelection() {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Dynamic Kink factory + address (explorer link) + version at top */}
+        {/* Interest Rate Model (implementation from factory.IRM()) */}
             <div className="mb-6">
-              {kinkFactory?.address && wizardData.networkInfo?.chainId ? (
+              {kinkImplementation?.address && wizardData.networkInfo?.chainId ? (
                 <ContractInfo
-                  contractName={KINK_FACTORY_NAME}
-                  address={kinkFactory.address}
-                  version={kinkFactory.version === '' ? 'Loading…' : kinkFactory.version}
+                  contractName="Interest Rate Model"
+                  address={kinkImplementation.address}
+                  version={kinkImplementation.version === '' ? 'Loading…' : kinkImplementation.version}
                   chainId={wizardData.networkInfo.chainId}
                   isOracle={false}
+                  sourceContractName="DynamicKinkModelFactory"
                 />
+              ) : wizardData.networkInfo?.chainId && kinkFactory?.address ? (
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+                  <p className="text-xs text-amber-400">Loading Interest Rate Model implementation from factory…</p>
+                </div>
               ) : wizardData.networkInfo?.chainId ? (
                 <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
                   <p className="text-xs text-amber-400">Factory address not found for this network. Deploy may require manual config.</p>
