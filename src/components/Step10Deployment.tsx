@@ -780,11 +780,18 @@ export default function Step10Deployment() {
             </div>
           </div>
           {txErrorDebug && (
-            <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-4 mb-6">
-              <div className="text-yellow-400 font-medium text-sm mb-2">Provide this to developer</div>
-              <ul className="list-disc list-inside text-yellow-200/90 text-sm space-y-1 font-mono break-all">
-                <li><span className="text-yellow-400/90">to:</span> {txErrorDebug.to || '—'}</li>
-                <li><span className="text-yellow-400/90">data:</span> {txErrorDebug.data || '0x'}</li>
+            <div className="bg-amber-100 border border-amber-600 rounded-lg p-4 mb-6 text-amber-950">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-sm">Provide this to developer for debugging purposes</span>
+                <CopyButton
+                  value={JSON.stringify({ to: txErrorDebug.to, data: txErrorDebug.data })}
+                  iconClassName="w-3.5 h-3.5"
+                  title="Copy to + data as JSON"
+                />
+              </div>
+              <ul className="list-disc list-inside text-sm space-y-1 font-mono break-all">
+                <li><span className="font-medium">to:</span> {txErrorDebug.to || '—'}</li>
+                <li><span className="font-medium">data:</span> {txErrorDebug.data || '0x'}</li>
               </ul>
             </div>
           )}
