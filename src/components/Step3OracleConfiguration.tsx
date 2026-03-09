@@ -1604,6 +1604,9 @@ export default function Step3OracleConfiguration() {
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 0): vault address is required and must be a valid address')
       }
+      if (!vault0Valid) {
+        errors.push('Vault Oracle (Token 0): vault asset must match token asset to continue')
+      }
       const quoteAddr0 = vault0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
       if (quoteEmpty0 && vault0.useOtherTokenAsQuote === false) {
@@ -1616,6 +1619,9 @@ export default function Step3OracleConfiguration() {
       const addr = vault1.vaultAddress?.trim() ?? ''
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 1): vault address is required and must be a valid address')
+      }
+      if (!vault1Valid) {
+        errors.push('Vault Oracle (Token 1): vault asset must match token asset to continue')
       }
       const quoteAddr1 = vault1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
