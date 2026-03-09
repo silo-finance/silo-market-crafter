@@ -1037,7 +1037,7 @@ export default function Step3OracleConfiguration() {
         useSecondTokenAsQuote: p0.useSecondTokenAsQuote,
         hardcodedQuoteTokenAddress: p0.hardcodedQuoteTokenAddress
       })
-      if (!p0.useSecondTokenAsQuote && p0.hardcodedQuoteTokenAddress) {
+      if (p0.hardcodedQuoteTokenAddress) {
         setPT0QuoteInput(p0.hardcodedQuoteTokenAddress)
       }
     }
@@ -1048,7 +1048,7 @@ export default function Step3OracleConfiguration() {
         useSecondTokenAsQuote: p1.useSecondTokenAsQuote,
         hardcodedQuoteTokenAddress: p1.hardcodedQuoteTokenAddress
       })
-      if (!p1.useSecondTokenAsQuote && p1.hardcodedQuoteTokenAddress) {
+      if (p1.hardcodedQuoteTokenAddress) {
         setPT1QuoteInput(p1.hardcodedQuoteTokenAddress)
       }
     }
@@ -1604,9 +1604,6 @@ export default function Step3OracleConfiguration() {
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 0): vault address is required and must be a valid address')
       }
-      if (!vault0Valid) {
-        errors.push('Vault Oracle (Token 0): vault asset must match token asset to continue')
-      }
       const quoteAddr0 = vault0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
       if (quoteEmpty0 && vault0.useOtherTokenAsQuote === false) {
@@ -1620,9 +1617,6 @@ export default function Step3OracleConfiguration() {
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 1): vault address is required and must be a valid address')
       }
-      if (!vault1Valid) {
-        errors.push('Vault Oracle (Token 1): vault asset must match token asset to continue')
-      }
       const quoteAddr1 = vault1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
       if (quoteEmpty1 && vault1.useOtherTokenAsQuote === false) {
@@ -1630,6 +1624,35 @@ export default function Step3OracleConfiguration() {
           'Vault Oracle (Token 1): quote token is required when not using the other token as quote'
         )
       }
+    }
+
+    // Effective quote token address: none/scaler = token itself; chainlink/vault/ptLinear = stored quote address only.
+    // "Other token" is just a predefined option that fills the address field – we only read that field.
+    const getEffectiveQuoteAddress = (side: '0' | '1'): string => {
+      const type = side === '0' ? wizardData.oracleType0?.type : wizardData.oracleType1?.type
+      const token0Addr = wizardData.token0?.address?.trim() ?? ''
+      const token1Addr = wizardData.token1?.address?.trim() ?? ''
+      if (type === 'none' || type === 'scaler') {
+        return side === '0' ? token0Addr : token1Addr
+      }
+      if (type === 'chainlink') {
+        const c = side === '0' ? chainlink0 : chainlink1
+        return (c.customQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'ptLinear') {
+        const pt = side === '0' ? ptLinear0 : ptLinear1
+        return (pt.hardcodedQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'vault') {
+        const v = side === '0' ? vault0 : vault1
+        return (v.customQuoteTokenAddress?.trim() ?? '')
+      }
+      return ''
+    }
+    const quote0 = getEffectiveQuoteAddress('0').toLowerCase()
+    const quote1 = getEffectiveQuoteAddress('1').toLowerCase()
+    if (quote0 && quote1 && quote0 !== quote1) {
+      errors.push('Quote tokens for both oracles must be the same. Token 0 and Token 1 oracle quote tokens have different addresses.')
     }
 
     if (errors.length > 0) {
@@ -1849,9 +1872,14 @@ export default function Step3OracleConfiguration() {
                   checked={ptLinear0.useSecondTokenAsQuote}
                   onChange={(e) => {
                     const checked = e.target.checked
-                    setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: checked }))
+                    const otherAddr = wizardData.token1?.address ?? ''
+                    setPTLinear0(prev => ({
+                      ...prev,
+                      useSecondTokenAsQuote: checked,
+                      hardcodedQuoteTokenAddress: checked ? otherAddr : prev.hardcodedQuoteTokenAddress
+                    }))
                     if (checked) {
-                      setPT0QuoteInput('')
+                      setPT0QuoteInput(otherAddr)
                       setPT0QuoteMetadata(null)
                     }
                   }}
@@ -1868,9 +1896,10 @@ export default function Step3OracleConfiguration() {
                     <div className="flex flex-wrap gap-2">
                       <PredefinedOptionButton
                         onClick={() => {
-                          setPT0QuoteInput('')
+                          const otherAddr = wizardData.token1?.address ?? ''
+                          setPT0QuoteInput(otherAddr)
                           setPT0QuoteMetadata(null)
-                          setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: true }))
+                          setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: true, hardcodedQuoteTokenAddress: otherAddr }))
                         }}
                       >
                         <span>Other token</span>
@@ -2122,9 +2151,14 @@ export default function Step3OracleConfiguration() {
                   checked={ptLinear1.useSecondTokenAsQuote}
                   onChange={(e) => {
                     const checked = e.target.checked
-                    setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: checked }))
+                    const otherAddr = wizardData.token0?.address ?? ''
+                    setPTLinear1(prev => ({
+                      ...prev,
+                      useSecondTokenAsQuote: checked,
+                      hardcodedQuoteTokenAddress: checked ? otherAddr : prev.hardcodedQuoteTokenAddress
+                    }))
                     if (checked) {
-                      setPT1QuoteInput('')
+                      setPT1QuoteInput(otherAddr)
                       setPT1QuoteMetadata(null)
                     }
                   }}
@@ -2141,9 +2175,10 @@ export default function Step3OracleConfiguration() {
                     <div className="flex flex-wrap gap-2">
                       <PredefinedOptionButton
                         onClick={() => {
-                          setPT1QuoteInput('')
+                          const otherAddr = wizardData.token0?.address ?? ''
+                          setPT1QuoteInput(otherAddr)
                           setPT1QuoteMetadata(null)
-                          setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: true }))
+                          setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: true, hardcodedQuoteTokenAddress: otherAddr }))
                         }}
                       >
                         <span>Other token</span>

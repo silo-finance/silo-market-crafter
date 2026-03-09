@@ -79,6 +79,7 @@ export default function Step10Deployment() {
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState('')
+  const [txErrorDebug, setTxErrorDebug] = useState<{ to: string; data: string } | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
@@ -118,6 +119,7 @@ export default function Step10Deployment() {
       try {
         setLoading(true)
         setError('')
+        setTxErrorDebug(null)
         // Don't clear warnings here - they should persist
         
         if (!wizardData.networkInfo?.chainId) {
@@ -426,6 +428,7 @@ export default function Step10Deployment() {
     } catch (error) {
       console.error('Error preparing deploy args:', error)
       setDeployArgs(null)
+      setTxErrorDebug(null)
       setError(error instanceof Error ? error.message : 'Failed to prepare deployment arguments')
     }
   }, [wizardData, siloCoreDeployments, oracleDeployments])
@@ -489,6 +492,7 @@ export default function Step10Deployment() {
 
     setDeploying(true)
     setError('')
+    setTxErrorDebug(null)
     setTxHash('')
 
     // For debugging deployment issues (eg. FailedToCreateAnOracle)
@@ -571,6 +575,7 @@ export default function Step10Deployment() {
           data: debugCalldata,
           error: estimateErr
         })
+        setTxErrorDebug({ to: deployerAddress ?? '', data: debugCalldata ?? '0x' })
         setError('Transaction validation failed:\n' + msg)
         setDeploying(false)
         return
@@ -597,6 +602,7 @@ export default function Step10Deployment() {
           : null
       setLastDeployTxHash(tx.hash, argsHash)
       setError('')
+      setTxErrorDebug(null)
     } catch (err: unknown) {
       console.error('Deployment error:', err)
       if (debugCalldata) {
@@ -605,6 +611,7 @@ export default function Step10Deployment() {
           data: debugCalldata
         })
       }
+      setTxErrorDebug({ to: deployerAddress ?? '', data: debugCalldata ?? '0x' })
       const errorMessage = formatContractError(err, deployerInterface)
       setError(errorMessage)
       setTxHash('')
@@ -766,11 +773,22 @@ export default function Step10Deployment() {
       )}
 
       {error && (
-        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-          <div className="text-red-400 text-sm">
-            ✗ {error}
+        <>
+          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+            <div className="text-red-400 text-sm">
+              ✗ {error}
+            </div>
           </div>
-        </div>
+          {txErrorDebug && (
+            <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-4 mb-6">
+              <div className="text-yellow-400 font-medium text-sm mb-2">Provide this to developer</div>
+              <ul className="list-disc list-inside text-yellow-200/90 text-sm space-y-1 font-mono break-all">
+                <li><span className="text-yellow-400/90">to:</span> {txErrorDebug.to || '—'}</li>
+                <li><span className="text-yellow-400/90">data:</span> {txErrorDebug.data || '0x'}</li>
+              </ul>
+            </div>
+          )}
+        </>
       )}
 
       {configUnchangedAfterDeploy && txHash && (
