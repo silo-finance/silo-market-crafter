@@ -683,3 +683,11 @@ body {
   background-color: rgba(249, 250, 251, 0.95);
   border-color: rgba(156, 163, 175, 0.55);
 }
+
+/* Copy line for _siloDeployments.json – dedicated class to avoid theme overrides */
+.light-market-theme .silo-deployments-copy-line {
+  color: #111827 !important;
+}
+.theme-dark .light-market-theme .silo-deployments-copy-line {
+  color: #f3f4f6 !important;
+}
