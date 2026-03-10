@@ -629,7 +629,7 @@ body {
   display: list-item;
   padding: 0.05rem 0;
   margin-left: 0;
-  line-height: 1.6;
+  line-height: 1.9;
 }
 /* List numbers – smaller, muted font (overrides base styles) */
 .tree .tree-item::marker {
@@ -664,4 +664,22 @@ body {
 }
 .gauge-verification-list li {
   display: list-item;
+}
+
+/* IRM config name chip – only the name is highlighted, prefix text stays normal */
+.irm-config-name-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 9999px;
+  background-color: rgba(249, 250, 251, 0.95); /* almost white */
+  border: 1px solid rgba(156, 163, 175, 0.5);  /* gray-400 border */
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+}
+
+.theme-dark .irm-config-name-chip {
+  background-color: rgba(249, 250, 251, 0.95);
+  border-color: rgba(156, 163, 175, 0.55);
 }
