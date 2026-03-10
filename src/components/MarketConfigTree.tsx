@@ -722,6 +722,368 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
   )
 }
 
+interface SiloSectionProps {
+  side: 0 | 1
+  label: string
+  assetSymbol: string
+  siloConfig: MarketConfig['silo0']
+  explorerUrl: string
+  addressVersions: Map<string, string>
+  addressInJsonVerification: Map<string, boolean>
+  tokenVerification?: { onChainToken: string | null; wizardToken: string | null } | null
+  numericVerification?: NumericValueVerification['silo0']
+  ptOracleBaseDiscount?: { onChain: bigint; wizard: bigint | null }
+  callBeforeQuoteVerification?: { wizard: boolean | null } | null
+  oracleOwnerVerification?: OracleOwnerVerification | null
+  irmConfigName?: string | null
+  hookOwnerVerification?: HookOwnerVerification
+  irmOwnerVerification?: IRMOwnerVerification
+  wizardDaoFee?: bigint | null
+  wizardDeployerFee?: bigint | null
+  manageableOracleTimelockSeconds?: number
+}
+
+function SiloSection({
+  side,
+  label,
+  assetSymbol,
+  siloConfig,
+  explorerUrl,
+  addressVersions,
+  addressInJsonVerification,
+  tokenVerification,
+  numericVerification,
+  ptOracleBaseDiscount,
+  callBeforeQuoteVerification,
+  oracleOwnerVerification,
+  irmConfigName,
+  hookOwnerVerification,
+  irmOwnerVerification,
+  wizardDaoFee,
+  wizardDeployerFee,
+  manageableOracleTimelockSeconds
+}: SiloSectionProps) {
+  const numeric = numericVerification ?? null
+  const siloKey = side === 0 ? 'silo0' : 'silo1'
+
+  return (
+    <TreeNode label={label} isRoot address={siloConfig.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={assetSymbol}>
+      <TreeNode
+        label="Token"
+        address={siloConfig.token}
+        tokenMeta={{ symbol: siloConfig.tokenSymbol, decimals: siloConfig.tokenDecimals }}
+        explorerUrl={explorerUrl}
+        tokenVerification={tokenVerification || null}
+        addressInJsonVerification={addressInJsonVerification}
+        addressVersions={addressVersions}
+        showAddressVersion={false}
+      />
+      <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
+        <TreeNode
+          label="Protected Share Token"
+          address={siloConfig.protectedShareToken}
+          bulletItems={buildShareTokenMetaBullet(
+            siloConfig.protectedShareTokenSymbol,
+            siloConfig.protectedShareTokenDecimals,
+            siloConfig.protectedShareTokenOffset
+          )}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+        />
+        <TreeNode
+          label="Collateral Share Token"
+          address={siloConfig.collateralShareToken}
+          bulletItems={buildShareTokenMetaBullet(
+            siloConfig.collateralShareTokenSymbol,
+            siloConfig.collateralShareTokenDecimals,
+            siloConfig.collateralShareTokenOffset
+          )}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+        />
+        <TreeNode
+          label="Debt Share Token"
+          address={siloConfig.debtShareToken}
+          bulletItems={buildShareTokenMetaBullet(
+            siloConfig.debtShareTokenSymbol,
+            siloConfig.debtShareTokenDecimals,
+            siloConfig.debtShareTokenOffset
+          )}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+        />
+      </TreeNode>
+      <TreeNode
+        label="Solvency Oracle"
+        address={siloConfig.solvencyOracle.address}
+        suffixText={siloConfig.solvencyOracle.version}
+        bulletItems={(() => {
+          const base = buildOracleBullets(
+            siloConfig.solvencyOracle.quotePrice,
+            siloConfig.solvencyOracle.quoteTokenSymbol,
+            siloConfig.solvencyOracle.type,
+            siloConfig.solvencyOracle.underlying
+              ? undefined
+              : (siloConfig.solvencyOracle.config as Record<string, unknown> | undefined)
+          )
+          const underlying = siloConfig.solvencyOracle.underlying
+          if (underlying) {
+            base.push({
+              key: `oracle.manageable.underlying.${siloKey}.solvency`,
+              text: (
+                <>
+                  <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <span>Underlying oracle:</span>
+                    <a
+                      href={`${explorerUrl}/address/${underlying.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                    >
+                      {formatAddress(underlying.address)}
+                    </a>
+                    <CopyButton
+                      value={underlying.address}
+                      title="Copy address"
+                      iconClassName="w-3.5 h-3.5 inline align-middle"
+                    />
+                    <VersionStatus version={underlying.version} />
+                  </span>
+                  {renderChainlinkAggregatorsForConfig(
+                    siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
+                    explorerUrl
+                  )}
+                </>
+              )
+            })
+          }
+          const solvencyVersion = siloConfig.solvencyOracle.version
+          const timelockSecondsSolvency =
+            siloConfig.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+          if (isManageableOracleByVersion(solvencyVersion) && timelockSecondsSolvency != null && timelockSecondsSolvency > 0) {
+            base.push({
+              key: `oracle.manageable.timelock.${siloKey}.solvency`,
+              text: formatTimelockBulletText(timelockSecondsSolvency)
+            })
+          }
+          return base
+        })()}
+        priceLowWarning={isPriceUnexpectedlyLow(siloConfig.solvencyOracle.quotePrice)}
+        priceHighWarning={isPriceUnexpectedlyHigh(siloConfig.solvencyOracle.quotePrice)}
+        priceDecimalsWarning={isPriceDecimalsInvalid(siloConfig.solvencyOracle.quotePrice)}
+        baseDiscountVerification={ptOracleBaseDiscount ?? null}
+        explorerUrl={explorerUrl}
+        addressVersions={addressVersions}
+        ownerBullets={
+          siloConfig.solvencyOracle.owner
+            ? [
+                {
+                  address: siloConfig.solvencyOracle.owner,
+                  isContract: siloConfig.solvencyOracle.ownerIsContract,
+                  name: siloConfig.solvencyOracle.ownerName
+                }
+              ]
+            : undefined
+        }
+        oracleOwnerVerification={oracleOwnerVerification ?? undefined}
+      />
+      {!siloConfig.maxLtvOracle.address || siloConfig.maxLtvOracle.address === ethers.ZeroAddress ? (
+        <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+      ) : siloConfig.maxLtvOracle.address.toLowerCase() === siloConfig.solvencyOracle.address.toLowerCase() ? (
+        <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+      ) : (
+        <TreeNode
+          label="Max LTV Oracle"
+          address={siloConfig.maxLtvOracle.address}
+          suffixText={siloConfig.maxLtvOracle.version}
+          bulletItems={(() => {
+            const base = buildOracleBullets(
+              siloConfig.maxLtvOracle.quotePrice,
+              siloConfig.maxLtvOracle.quoteTokenSymbol,
+              siloConfig.maxLtvOracle.type,
+              siloConfig.maxLtvOracle.underlying
+                ? undefined
+                : (siloConfig.maxLtvOracle.config as Record<string, unknown> | undefined)
+            )
+            const underlying = siloConfig.maxLtvOracle.underlying
+            if (underlying) {
+              base.push({
+                key: `oracle.manageable.underlying.${siloKey}.maxLtv`,
+                text: (
+                  <>
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span>Underlying oracle:</span>
+                      <a
+                        href={`${explorerUrl}/address/${underlying.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      >
+                        {formatAddress(underlying.address)}
+                      </a>
+                      <CopyButton
+                        value={underlying.address}
+                        title="Copy address"
+                        iconClassName="w-3.5 h-3.5 inline align-middle"
+                      />
+                      <VersionStatus version={underlying.version} />
+                    </span>
+                    {renderChainlinkAggregatorsForConfig(
+                      siloConfig.maxLtvOracle.config as Record<string, unknown> | undefined,
+                      explorerUrl
+                    )}
+                  </>
+                )
+              })
+            }
+            const maxLtvVersion = siloConfig.maxLtvOracle.version
+            const timelockSecondsMaxLtv =
+              siloConfig.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
+            if (isManageableOracleByVersion(maxLtvVersion) && timelockSecondsMaxLtv != null && timelockSecondsMaxLtv > 0) {
+              base.push({
+                key: `oracle.manageable.timelock.${siloKey}.maxLtv`,
+                text: formatTimelockBulletText(timelockSecondsMaxLtv)
+              })
+            }
+            return base
+          })()}
+          priceLowWarning={isPriceUnexpectedlyLow(siloConfig.maxLtvOracle.quotePrice)}
+          priceHighWarning={isPriceUnexpectedlyHigh(siloConfig.maxLtvOracle.quotePrice)}
+          priceDecimalsWarning={isPriceDecimalsInvalid(siloConfig.maxLtvOracle.quotePrice)}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+        />
+      )}
+      <TreeNode
+        label="Interest Rate Model"
+        address={siloConfig.interestRateModel.address}
+        suffixText={siloConfig.interestRateModel.version}
+        bulletItems={(() => {
+          const bullets: OracleBulletItem[] = []
+          const irm = siloConfig.interestRateModel
+          const irmCfg = irm.config as Record<string, unknown> | undefined
+
+          const name = irmConfigName ?? null
+          if (name) {
+            bullets.push({ key: `irm.configName.${siloKey}`, text: `IRM config: ${name}` })
+          } else {
+            bullets.push({
+              key: `irm.configName.${siloKey}`,
+              text: (
+                <span className="inline-flex items-center gap-1.5">
+                  <span>IRM config: not able to match</span>
+                  <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                </span>
+              )
+            })
+          }
+
+          const timelockRaw = irmCfg?.timelock
+          if (timelockRaw != null) {
+            const seconds = Number(timelockRaw)
+            if (!Number.isNaN(seconds) && seconds > 0) {
+              bullets.push({ key: `irm.timelock.${siloKey}`, text: formatTimelockBulletText(seconds) })
+            }
+          }
+
+          const capRaw = (irmCfg?.rcompCapPerSecond ?? irmCfg?.rcompCap) as unknown
+          if (capRaw != null) {
+            const capStr = String(capRaw)
+            if (/^\d+$/.test(capStr)) {
+              const secondsPerYear = BigInt(365 * 86400)
+              const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
+              bullets.push({
+                key: `irm.cap.${siloKey}`,
+                text: (() => {
+                  const valueBigInt = BigInt(yearlyCapRaw)
+                  const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
+                  const percent = Number(valueBigInt / scale)
+                  const rounded = Math.round(percent)
+                  return (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>CAP yearly:</span>
+                      <span className="text-gray-400 text-sm font-mono">{rounded}%</span>
+                    </span>
+                  )
+                })()
+              })
+            }
+          }
+
+          return bullets.length > 0 ? bullets : undefined
+        })()}
+        ownerBullets={
+          siloConfig.interestRateModel.owner
+            ? [
+                {
+                  address: siloConfig.interestRateModel.owner,
+                  isContract: siloConfig.interestRateModel.ownerIsContract,
+                  name: siloConfig.interestRateModel.ownerName
+                }
+              ]
+            : undefined
+        }
+        explorerUrl={explorerUrl}
+        hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
+        irmOwnerVerification={irmOwnerVerification}
+        addressInJsonVerification={addressInJsonVerification}
+        addressVersions={addressVersions}
+      />
+      <TreeNode
+        label="Max LTV"
+        value={siloConfig.maxLtv}
+        explorerUrl={explorerUrl}
+        isPercentage
+        numericValueVerification={numeric ? { wizardValue: numeric.maxLtv } : undefined}
+        wizardDaoFee={wizardDaoFee ?? null}
+        wizardDeployerFee={wizardDeployerFee ?? null}
+      />
+      <TreeNode
+        label="Liquidation Threshold (LT)"
+        value={siloConfig.lt}
+        explorerUrl={explorerUrl}
+        isPercentage
+        numericValueVerification={numeric ? { wizardValue: numeric.lt } : undefined}
+        wizardDaoFee={wizardDaoFee ?? null}
+        wizardDeployerFee={wizardDeployerFee ?? null}
+      />
+      <TreeNode
+        label="Liquidation Target LTV"
+        value={siloConfig.liquidationTargetLtv}
+        explorerUrl={explorerUrl}
+        isPercentage
+        numericValueVerification={numeric ? { wizardValue: numeric.liquidationTargetLtv } : undefined}
+        wizardDaoFee={wizardDaoFee ?? null}
+        wizardDeployerFee={wizardDeployerFee ?? null}
+      />
+      <TreeNode
+        label="Liquidation Fee"
+        value={siloConfig.liquidationFee}
+        explorerUrl={explorerUrl}
+        isPercentage
+        numericValueVerification={numeric ? { wizardValue: numeric.liquidationFee, checkHighValue: true } : undefined}
+        wizardDaoFee={wizardDaoFee ?? null}
+        wizardDeployerFee={wizardDeployerFee ?? null}
+      />
+      <TreeNode
+        label="Flashloan Fee"
+        value={siloConfig.flashloanFee}
+        explorerUrl={explorerUrl}
+        isPercentage
+        numericValueVerification={numeric ? { wizardValue: numeric.flashloanFee, checkHighValue: true } : undefined}
+        wizardDaoFee={wizardDaoFee ?? null}
+        wizardDeployerFee={wizardDeployerFee ?? null}
+      />
+      <TreeNode
+        label="Call Before Quote"
+        value={siloConfig.callBeforeQuote}
+        explorerUrl={explorerUrl}
+        callBeforeQuoteVerification={callBeforeQuoteVerification ?? null}
+      />
+    </TreeNode>
+  )
+}
+
 /** Version string contains "ManageableOracle" (e.g. "ManageableOracle 1.2.3") */
 function isManageableOracleByVersion(version: string | undefined): boolean {
   return version != null && version !== '' && version.toLowerCase().includes('manageableoracle')
@@ -1087,582 +1449,48 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
         </TreeNode>
         <li className="tree-separator" aria-hidden="true" />
 
-        <TreeNode label="SILO 0" isRoot address={config.silo0.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={asset0Symbol}>
-          <TreeNode 
-            label="Token" 
-            address={config.silo0.token} 
-            tokenMeta={{ symbol: config.silo0.tokenSymbol, decimals: config.silo0.tokenDecimals }} 
-            explorerUrl={explorerUrl}
-            tokenVerification={tokenVerification?.token0 || null}
-            addressInJsonVerification={addressInJsonVerification}
-            addressVersions={addressVersions}
-            showAddressVersion={false}
-          />
-          <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode
-              label="Protected Share Token"
-              address={config.silo0.protectedShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo0.protectedShareTokenSymbol,
-                config.silo0.protectedShareTokenDecimals,
-                config.silo0.protectedShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-            <TreeNode
-              label="Collateral Share Token"
-              address={config.silo0.collateralShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo0.collateralShareTokenSymbol,
-                config.silo0.collateralShareTokenDecimals,
-                config.silo0.collateralShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-            <TreeNode
-              label="Debt Share Token"
-              address={config.silo0.debtShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo0.debtShareTokenSymbol,
-                config.silo0.debtShareTokenDecimals,
-                config.silo0.debtShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-          </TreeNode>
-          <TreeNode
-            label="Solvency Oracle"
-            address={config.silo0.solvencyOracle.address}
-            suffixText={config.silo0.solvencyOracle.version}
-            bulletItems={(() => {
-              const base = buildOracleBullets(
-                config.silo0.solvencyOracle.quotePrice,
-                config.silo0.solvencyOracle.quoteTokenSymbol,
-                config.silo0.solvencyOracle.type,
-                config.silo0.solvencyOracle.underlying
-                  ? undefined
-                  : (config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)
-              )
-              const underlying = config.silo0.solvencyOracle.underlying
-              if (underlying) {
-                base.push({
-                  key: 'oracle.manageable.underlying.silo0.solvency',
-                  text: (
-                    <>
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <VersionStatus version={underlying.version} />
-                      </span>
-                      {renderChainlinkAggregatorsForConfig(
-                        config.silo0.solvencyOracle.config as Record<string, unknown> | undefined,
-                        explorerUrl
-                      )}
-                    </>
-                  )
-                })
-              }
-              const solvency0Version = config.silo0.solvencyOracle.version
-              const timelockSeconds0Solvency = config.silo0.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
-              if (isManageableOracleByVersion(solvency0Version) && timelockSeconds0Solvency != null && timelockSeconds0Solvency > 0) {
-                base.push({
-                  key: 'oracle.manageable.timelock.silo0.solvency',
-                  text: formatTimelockBulletText(timelockSeconds0Solvency)
-                })
-              }
-              return base
-            })()}
-            priceLowWarning={isPriceUnexpectedlyLow(config.silo0.solvencyOracle.quotePrice)}
-            priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.solvencyOracle.quotePrice)}
-            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.solvencyOracle.quotePrice)}
-            baseDiscountVerification={ptOracleBaseDiscountVerification?.silo0 ?? null}
-            explorerUrl={explorerUrl}
-            addressVersions={addressVersions}
-            ownerBullets={config.silo0.solvencyOracle.owner ? [{ address: config.silo0.solvencyOracle.owner, isContract: config.silo0.solvencyOracle.ownerIsContract, name: config.silo0.solvencyOracle.ownerName }] : undefined}
-            oracleOwnerVerification={oracleOwnerVerification?.silo0 ?? undefined}
-          />
-          {!config.silo0.maxLtvOracle.address || config.silo0.maxLtvOracle.address === ethers.ZeroAddress ? (
-            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-          ) : config.silo0.maxLtvOracle.address.toLowerCase() === config.silo0.solvencyOracle.address.toLowerCase() ? (
-            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
-          ) : (
-            <TreeNode
-              label="Max LTV Oracle"
-              address={config.silo0.maxLtvOracle.address}
-              suffixText={config.silo0.maxLtvOracle.version}
-              bulletItems={(() => {
-                const base = buildOracleBullets(
-                  config.silo0.maxLtvOracle.quotePrice,
-                  config.silo0.maxLtvOracle.quoteTokenSymbol,
-                  config.silo0.maxLtvOracle.type,
-                  config.silo0.maxLtvOracle.underlying
-                    ? undefined
-                    : (config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)
-                )
-                const underlying = config.silo0.maxLtvOracle.underlying
-              if (underlying) {
-                base.push({
-                  key: 'oracle.manageable.underlying.silo0.maxLtv',
-                  text: (
-                    <>
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <VersionStatus version={underlying.version} />
-                      </span>
-                      {renderChainlinkAggregatorsForConfig(
-                        config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined,
-                        explorerUrl
-                      )}
-                    </>
-                  )
-                })
-              }
-                const maxLtv0Version = config.silo0.maxLtvOracle.version
-                const timelockSeconds0MaxLtv = config.silo0.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
-                if (isManageableOracleByVersion(maxLtv0Version) && timelockSeconds0MaxLtv != null && timelockSeconds0MaxLtv > 0) {
-                  base.push({
-                    key: 'oracle.manageable.timelock.silo0.maxLtv',
-                    text: formatTimelockBulletText(timelockSeconds0MaxLtv)
-                  })
-                }
-                return base
-              })()}
-              priceLowWarning={isPriceUnexpectedlyLow(config.silo0.maxLtvOracle.quotePrice)}
-              priceHighWarning={isPriceUnexpectedlyHigh(config.silo0.maxLtvOracle.quotePrice)}
-              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo0.maxLtvOracle.quotePrice)}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-          )}
-          <TreeNode
-            label="Interest Rate Model"
-            address={config.silo0.interestRateModel.address}
-            suffixText={config.silo0.interestRateModel.version}
-            bulletItems={(() => {
-              const bullets: OracleBulletItem[] = []
-              const irm = config.silo0.interestRateModel
-              const irmCfg = irm.config as Record<string, unknown> | undefined
-
-              const name = irmConfigNames?.silo0 ?? null
-              if (name) {
-                bullets.push({ key: 'irm.configName.silo0', text: `IRM config: ${name}` })
-              } else {
-                bullets.push({
-                  key: 'irm.configName.silo0',
-                  text: (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span>IRM config: not able to match</span>
-                      <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
-                    </span>
-                  )
-                })
-              }
-
-              const timelockRaw = irmCfg?.timelock
-              if (timelockRaw != null) {
-                const seconds = Number(timelockRaw)
-                if (!Number.isNaN(seconds) && seconds > 0) {
-                  bullets.push({ key: 'irm.timelock.silo0', text: formatTimelockBulletText(seconds) })
-                }
-              }
-
-              const capRaw = (irmCfg?.rcompCapPerSecond ?? irmCfg?.rcompCap) as unknown
-              if (capRaw != null) {
-                const capStr = String(capRaw)
-                if (/^\d+$/.test(capStr)) {
-                  const secondsPerYear = BigInt(365 * 86400)
-                  const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
-                  bullets.push({
-                    key: 'irm.cap.silo0',
-                    text: (() => {
-                      const valueBigInt = BigInt(yearlyCapRaw)
-                      const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
-                      const percent = Number(valueBigInt / scale)
-                      const rounded = Math.round(percent)
-                      return (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span>CAP yearly:</span>
-                          <span className="text-gray-400 text-sm font-mono">{rounded}%</span>
-                        </span>
-                      )
-                    })()
-                  })
-                }
-              }
-
-              return bullets.length > 0 ? bullets : undefined
-            })()}
-            ownerBullets={config.silo0.interestRateModel.owner ? [{ address: config.silo0.interestRateModel.owner, isContract: config.silo0.interestRateModel.ownerIsContract, name: config.silo0.interestRateModel.ownerName }] : undefined}
-            explorerUrl={explorerUrl}
-            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
-            irmOwnerVerification={irmOwnerVerification}
-            addressInJsonVerification={addressInJsonVerification}
-            addressVersions={addressVersions}
-          />
-          <TreeNode 
-            label="Max LTV" 
-            value={config.silo0.maxLtv} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.maxLtv } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Threshold (LT)" 
-            value={config.silo0.lt} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.lt } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Target LTV" 
-            value={config.silo0.liquidationTargetLtv} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationTargetLtv } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Fee" 
-            value={config.silo0.liquidationFee} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.liquidationFee, checkHighValue: true } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Flashloan Fee" 
-            value={config.silo0.flashloanFee} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo0 ? { wizardValue: numericValueVerification.silo0.flashloanFee, checkHighValue: true } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode label="Call Before Quote" value={config.silo0.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0 ?? null} />
-        </TreeNode>
+        <SiloSection
+          side={0}
+          label="SILO 0"
+          assetSymbol={asset0Symbol}
+          siloConfig={config.silo0}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+          addressInJsonVerification={addressInJsonVerification}
+          tokenVerification={tokenVerification?.token0 || null}
+          numericVerification={numericValueVerification?.silo0 ?? undefined}
+          ptOracleBaseDiscount={ptOracleBaseDiscountVerification?.silo0}
+          callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0}
+          oracleOwnerVerification={oracleOwnerVerification?.silo0 ?? null}
+          irmConfigName={irmConfigNames?.silo0 ?? null}
+          hookOwnerVerification={hookOwnerVerification}
+          irmOwnerVerification={irmOwnerVerification}
+          wizardDaoFee={wizardDaoFee ?? null}
+          wizardDeployerFee={wizardDeployerFee ?? null}
+          manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
+        />
         <li className="tree-separator" aria-hidden="true" />
 
-        <TreeNode label="SILO 1" isRoot address={config.silo1.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={asset1Symbol}>
-          <TreeNode 
-            label="Token" 
-            address={config.silo1.token} 
-            tokenMeta={{ symbol: config.silo1.tokenSymbol, decimals: config.silo1.tokenDecimals }} 
-            explorerUrl={explorerUrl}
-            tokenVerification={tokenVerification?.token1 || null}
-            addressInJsonVerification={addressInJsonVerification}
-            addressVersions={addressVersions}
-            showAddressVersion={false}
-          />
-          <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
-            <TreeNode
-              label="Protected Share Token"
-              address={config.silo1.protectedShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo1.protectedShareTokenSymbol,
-                config.silo1.protectedShareTokenDecimals,
-                config.silo1.protectedShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-            <TreeNode
-              label="Collateral Share Token"
-              address={config.silo1.collateralShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo1.collateralShareTokenSymbol,
-                config.silo1.collateralShareTokenDecimals,
-                config.silo1.collateralShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-            <TreeNode
-              label="Debt Share Token"
-              address={config.silo1.debtShareToken}
-              bulletItems={buildShareTokenMetaBullet(
-                config.silo1.debtShareTokenSymbol,
-                config.silo1.debtShareTokenDecimals,
-                config.silo1.debtShareTokenOffset
-              )}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-          </TreeNode>
-          <TreeNode
-            label="Solvency Oracle"
-            address={config.silo1.solvencyOracle.address}
-            suffixText={config.silo1.solvencyOracle.version}
-            bulletItems={(() => {
-              const base = buildOracleBullets(
-                config.silo1.solvencyOracle.quotePrice,
-                config.silo1.solvencyOracle.quoteTokenSymbol,
-                config.silo1.solvencyOracle.type,
-                config.silo1.solvencyOracle.underlying
-                  ? undefined
-                  : (config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)
-              )
-              const underlying = config.silo1.solvencyOracle.underlying
-              if (underlying) {
-                base.push({
-                  key: 'oracle.manageable.underlying.silo1.solvency',
-                  text: (
-                    <>
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <VersionStatus version={underlying.version} />
-                      </span>
-                      {renderChainlinkAggregatorsForConfig(
-                        config.silo1.solvencyOracle.config as Record<string, unknown> | undefined,
-                        explorerUrl
-                      )}
-                    </>
-                  )
-                })
-              }
-              const solvency1Version = config.silo1.solvencyOracle.version
-              const timelockSeconds1Solvency = config.silo1.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
-              if (isManageableOracleByVersion(solvency1Version) && timelockSeconds1Solvency != null && timelockSeconds1Solvency > 0) {
-                base.push({
-                  key: 'oracle.manageable.timelock.silo1.solvency',
-                  text: formatTimelockBulletText(timelockSeconds1Solvency)
-                })
-              }
-              return base
-            })()}
-            priceLowWarning={isPriceUnexpectedlyLow(config.silo1.solvencyOracle.quotePrice)}
-            priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.solvencyOracle.quotePrice)}
-            priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.solvencyOracle.quotePrice)}
-            baseDiscountVerification={ptOracleBaseDiscountVerification?.silo1 ?? null}
-            ownerBullets={config.silo1.solvencyOracle.owner ? [{ address: config.silo1.solvencyOracle.owner, isContract: config.silo1.solvencyOracle.ownerIsContract, name: config.silo1.solvencyOracle.ownerName }] : undefined}
-            oracleOwnerVerification={oracleOwnerVerification?.silo1 ?? undefined}
-            explorerUrl={explorerUrl}
-            addressVersions={addressVersions}
-          />
-          {!config.silo1.maxLtvOracle.address || config.silo1.maxLtvOracle.address === ethers.ZeroAddress ? (
-            <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
-          ) : config.silo1.maxLtvOracle.address.toLowerCase() === config.silo1.solvencyOracle.address.toLowerCase() ? (
-            <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
-          ) : (
-            <TreeNode
-              label="Max LTV Oracle"
-              address={config.silo1.maxLtvOracle.address}
-              suffixText={config.silo1.maxLtvOracle.version}
-              bulletItems={(() => {
-                const base = buildOracleBullets(
-                  config.silo1.maxLtvOracle.quotePrice,
-                  config.silo1.maxLtvOracle.quoteTokenSymbol,
-                  config.silo1.maxLtvOracle.type,
-                  config.silo1.maxLtvOracle.underlying
-                    ? undefined
-                    : (config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)
-                )
-                const underlying = config.silo1.maxLtvOracle.underlying
-              if (underlying) {
-                base.push({
-                  key: 'oracle.manageable.underlying.silo1.maxLtv',
-                  text: (
-                    <>
-                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        <span>Underlying oracle:</span>
-                        <a
-                          href={`${explorerUrl}/address/${underlying.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                        >
-                          {formatAddress(underlying.address)}
-                        </a>
-                        <CopyButton
-                          value={underlying.address}
-                          title="Copy address"
-                          iconClassName="w-3.5 h-3.5 inline align-middle"
-                        />
-                        <VersionStatus version={underlying.version} />
-                      </span>
-                      {renderChainlinkAggregatorsForConfig(
-                        config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined,
-                        explorerUrl
-                      )}
-                    </>
-                  )
-                })
-              }
-                const maxLtv1Version = config.silo1.maxLtvOracle.version
-                const timelockSeconds1MaxLtv = config.silo1.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
-                if (isManageableOracleByVersion(maxLtv1Version) && timelockSeconds1MaxLtv != null && timelockSeconds1MaxLtv > 0) {
-                  base.push({
-                    key: 'oracle.manageable.timelock.silo1.maxLtv',
-                    text: formatTimelockBulletText(timelockSeconds1MaxLtv)
-                  })
-                }
-                return base
-              })()}
-              priceLowWarning={isPriceUnexpectedlyLow(config.silo1.maxLtvOracle.quotePrice)}
-              priceHighWarning={isPriceUnexpectedlyHigh(config.silo1.maxLtvOracle.quotePrice)}
-              priceDecimalsWarning={isPriceDecimalsInvalid(config.silo1.maxLtvOracle.quotePrice)}
-              explorerUrl={explorerUrl}
-              addressVersions={addressVersions}
-            />
-          )}
-          <TreeNode
-            label="Interest Rate Model"
-            address={config.silo1.interestRateModel.address}
-            suffixText={config.silo1.interestRateModel.version}
-            bulletItems={(() => {
-              const bullets: OracleBulletItem[] = []
-              const irm = config.silo1.interestRateModel
-              const irmCfg = irm.config as Record<string, unknown> | undefined
-
-              const name = irmConfigNames?.silo1 ?? null
-              if (name) {
-                bullets.push({ key: 'irm.configName.silo1', text: `IRM config: ${name}` })
-              } else {
-                bullets.push({
-                  key: 'irm.configName.silo1',
-                  text: (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span>IRM config: not able to match</span>
-                      <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
-                    </span>
-                  )
-                })
-              }
-
-              const timelockRaw = irmCfg?.timelock
-              if (timelockRaw != null) {
-                const seconds = Number(timelockRaw)
-                if (!Number.isNaN(seconds) && seconds > 0) {
-                  bullets.push({ key: 'irm.timelock.silo1', text: formatTimelockBulletText(seconds) })
-                }
-              }
-
-              const capRaw = (irmCfg?.rcompCapPerSecond ?? irmCfg?.rcompCap) as unknown
-              if (capRaw != null) {
-                const capStr = String(capRaw)
-                if (/^\d+$/.test(capStr)) {
-                  const secondsPerYear = BigInt(365 * 86400)
-                  const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
-                  bullets.push({
-                    key: 'irm.cap.silo1',
-                    text: (() => {
-                      const valueBigInt = BigInt(yearlyCapRaw)
-                      const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
-                      const percent = Number(valueBigInt / scale)
-                      const rounded = Math.round(percent)
-                      return (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span>CAP yearly:</span>
-                          <span className="text-gray-400 text-sm font-mono">{rounded}%</span>
-                        </span>
-                      )
-                    })()
-                  })
-                }
-              }
-
-              return bullets.length > 0 ? bullets : undefined
-            })()}
-            ownerBullets={config.silo1.interestRateModel.owner ? [{ address: config.silo1.interestRateModel.owner, isContract: config.silo1.interestRateModel.ownerIsContract, name: config.silo1.interestRateModel.ownerName }] : undefined}
-            explorerUrl={explorerUrl}
-            hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
-            irmOwnerVerification={irmOwnerVerification}
-            addressInJsonVerification={addressInJsonVerification}
-            addressVersions={addressVersions}
-          />
-          <TreeNode 
-            label="Max LTV" 
-            value={config.silo1.maxLtv} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.maxLtv } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Threshold (LT)" 
-            value={config.silo1.lt} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.lt } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Target LTV" 
-            value={config.silo1.liquidationTargetLtv} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationTargetLtv } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Liquidation Fee" 
-            value={config.silo1.liquidationFee} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.liquidationFee, checkHighValue: true } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode 
-            label="Flashloan Fee" 
-            value={config.silo1.flashloanFee} 
-            explorerUrl={explorerUrl} 
-            isPercentage 
-            numericValueVerification={numericValueVerification?.silo1 ? { wizardValue: numericValueVerification.silo1.flashloanFee, checkHighValue: true } : undefined}
-            wizardDaoFee={wizardDaoFee ?? null}
-            wizardDeployerFee={wizardDeployerFee ?? null}
-          />
-          <TreeNode label="Call Before Quote" value={config.silo1.callBeforeQuote} explorerUrl={explorerUrl} callBeforeQuoteVerification={callBeforeQuoteVerification?.silo1 ?? null} />
-        </TreeNode>
+        <SiloSection
+          side={1}
+          label="SILO 1"
+          assetSymbol={asset1Symbol}
+          siloConfig={config.silo1}
+          explorerUrl={explorerUrl}
+          addressVersions={addressVersions}
+          addressInJsonVerification={addressInJsonVerification}
+          tokenVerification={tokenVerification?.token1 || null}
+          numericVerification={numericValueVerification?.silo1 ?? undefined}
+          ptOracleBaseDiscount={ptOracleBaseDiscountVerification?.silo1}
+          callBeforeQuoteVerification={callBeforeQuoteVerification?.silo1}
+          oracleOwnerVerification={oracleOwnerVerification?.silo1 ?? null}
+          irmConfigName={irmConfigNames?.silo1 ?? null}
+          hookOwnerVerification={hookOwnerVerification}
+          irmOwnerVerification={irmOwnerVerification}
+          wizardDaoFee={wizardDaoFee ?? null}
+          wizardDeployerFee={wizardDeployerFee ?? null}
+          manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
+        />
       </ol>
     </div>
   )
