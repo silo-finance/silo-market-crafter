@@ -62,8 +62,18 @@ function buildOracleBullets(
   const bullets: OracleBulletItem[] = []
   if (quotePrice != null && quotePrice !== '') {
     const priceStr = formatQuotePriceAs18Decimals(quotePrice)
-    const withSymbol = quoteTokenSymbol ? `${priceStr} ${quoteTokenSymbol}` : priceStr
-    bullets.push({ key: ORACLE_BULLET_KEYS.PRICE, text: `Price (1 token): ${withSymbol}` })
+    bullets.push({
+      key: ORACLE_BULLET_KEYS.PRICE,
+      text: (
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span>Price (1 token):</span>
+          <span className="irm-config-name-chip">{priceStr}</span>
+          {quoteTokenSymbol && (
+            <span className="text-gray-300 text-sm">{quoteTokenSymbol}</span>
+          )}
+        </span>
+      )
+    })
   }
   if (type) {
     bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
@@ -965,7 +975,15 @@ function SiloSection({
 
           const name = irmConfigName ?? null
           if (name) {
-            bullets.push({ key: `irm.configName.${siloKey}`, text: `IRM config: ${name}` })
+            bullets.push({
+              key: `irm.configName.${siloKey}`,
+              text: (
+                <span className="inline-flex items-center gap-1.5">
+                  <span>IRM config:</span>
+                  <span className="irm-config-name-chip">{name}</span>
+                </span>
+              )
+            })
           } else {
             bullets.push({
               key: `irm.configName.${siloKey}`,
@@ -1323,20 +1341,70 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               hookGaugeInfo && hookGaugeInfo.hasDefaultingHook
                 ? (() => {
                     const bullets: OracleBulletItem[] = []
-                    if (hookGaugeInfo.onlyOneBorrowable === false) {
+
+                    // 1) Defaulting hook state (ON) – value highlighted as chip
+                    bullets.push({
+                      key: 'hook.defaulting.state',
+                      text: (
+                        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <span>Liquidation by defaulting:</span>
+                          <span className="irm-config-name-chip">on</span>
+                        </span>
+                      )
+                    })
+
+                    const gaugeRequired = hookGaugeInfo.onlyOneBorrowable === true
+                    const gaugeConfigured =
+                      gaugeRequired &&
+                      hookGaugeInfo.gaugeAddress &&
+                      hookGaugeInfo.gaugeAddress !== ethers.ZeroAddress
+
+                    if (gaugeRequired) {
                       bullets.push({
-                        key: 'hook.defaulting.borrowable.error',
+                        key: 'hook.defaulting.gauge.required',
                         text: (
                           <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                            <span>Defaulting hook requires exactly one borrowable asset (non-zero LT on only one silo).</span>
+                            <span>
+                              Silo Incentive Controller:{' '}
+                              {gaugeConfigured
+                                ? 'required and configured correctly'
+                                : 'required and missing'}
+                            </span>
+                            <VerificationStatusIconSmall
+                              status={
+                                gaugeConfigured
+                                  ? VERIFICATION_STATUS.PASSED
+                                  : VERIFICATION_STATUS.FAILED
+                              }
+                            />
+                          </span>
+                        )
+                      })
+                    }
+
+                    // 2) Borrowable assets summary – value highlighted as chip
+                    if (hookGaugeInfo.onlyOneBorrowable === false) {
+                      const borrowableLabel = `both ${asset0Symbol}, ${asset1Symbol}`
+                      bullets.push({
+                        key: 'hook.defaulting.borrowable.assets',
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>Borrowable assets:</span>
+                            <span className="irm-config-name-chip">{borrowableLabel}</span>
                             <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
                           </span>
                         )
                       })
                     } else if (hookGaugeInfo.onlyOneBorrowable && hookGaugeInfo.borrowableTokenSymbol) {
+                      const borrowableLabel = `only ${hookGaugeInfo.borrowableTokenSymbol}`
                       bullets.push({
-                        key: 'hook.defaulting.borrowable.ok',
-                        text: `Defaulting hook ON, borrowable asset: ${hookGaugeInfo.borrowableTokenSymbol}`
+                        key: 'hook.defaulting.borrowable.assets',
+                        text: (
+                          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span>Borrowable assets:</span>
+                            <span className="irm-config-name-chip">{borrowableLabel}</span>
+                          </span>
+                        )
                       })
                     }
                     if (hookGaugeInfo.borrowableSilo !== null) {
