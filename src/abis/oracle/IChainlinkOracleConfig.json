@@ -1,0 +1,125 @@
+[
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "baseToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "quoteToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract AggregatorV3Interface",
+                        "name": "primaryAggregator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "primaryHeartbeat",
+                        "type": "uint32"
+                    },
+                    {
+                        "internalType": "contract AggregatorV3Interface",
+                        "name": "secondaryAggregator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "secondaryHeartbeat",
+                        "type": "uint32"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "normalizationDivider",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "normalizationMultiplier",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "invertSecondPrice",
+                        "type": "bool"
+                    }
+                ],
+                "internalType": "struct IChainlinkV3Oracle.ChainlinkV3DeploymentConfig",
+                "name": "_config",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "getConfig",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract AggregatorV3Interface",
+                        "name": "primaryAggregator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract AggregatorV3Interface",
+                        "name": "secondaryAggregator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "primaryHeartbeat",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "secondaryHeartbeat",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "normalizationDivider",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "normalizationMultiplier",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "baseToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "quoteToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "convertToQuote",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "invertSecondPrice",
+                        "type": "bool"
+                    }
+                ],
+                "internalType": "struct IChainlinkV3Oracle.ChainlinkV3Config",
+                "name": "config",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

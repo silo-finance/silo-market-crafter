@@ -1,11 +1,13 @@
 import { ethers } from 'ethers'
 import siloConfigAbi from '@/abis/silo/ISiloConfig.json'
 import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
-import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import oracleScalerAbi from '@/abis/oracle/OracleScaler.json'
 import siloOracleAbi from '@/abis/oracle/ISiloOracle.json'
 import erc20Abi from '@/abis/IERC20.json'
 import iShareTokenAbi from '@/abis/silo/IShareToken.json'
+import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
+import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
+import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -332,6 +334,28 @@ export async function fetchMarketConfig(
     }
   }
 
+  // After all versions (including underlying) are known, enrich ChainlinkV3 oracles
+  const chainlinkTargets: Array<{ oracle: OracleInfo; chainlinkAddress: string }> = []
+  const maybeAddChainlinkTarget = (oracle: OracleInfo) => {
+    if (isChainlinkOracleByVersion(oracle.version)) {
+      chainlinkTargets.push({ oracle, chainlinkAddress: oracle.address })
+    } else if (oracle.underlying && isChainlinkOracleByVersion(oracle.underlying.version)) {
+      chainlinkTargets.push({ oracle, chainlinkAddress: oracle.underlying.address })
+    }
+  }
+  maybeAddChainlinkTarget(config0.solvencyOracle)
+  maybeAddChainlinkTarget(config1.solvencyOracle)
+  maybeAddChainlinkTarget(config0.maxLtvOracle)
+  maybeAddChainlinkTarget(config1.maxLtvOracle)
+
+  if (chainlinkTargets.length > 0) {
+    await Promise.all(
+      chainlinkTargets.map(({ oracle, chainlinkAddress }) =>
+        enrichChainlinkOracle(provider, chainlinkAddress, oracle)
+      )
+    )
+  }
+
   // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
   // Deduplicate by owner address so we only fetch once when hook and IRM share the same owner.
   const allOwnerAddresses = new Set<string>()
@@ -607,6 +631,98 @@ async function fetchSiloConfig(
   }
 }
 
+const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
+
+function isChainlinkOracleByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  const [name] = version.split(' ')
+  return name === 'ChainlinkV3Oracle'
+}
+
+async function enrichChainlinkOracle(
+  provider: ethers.Provider,
+  chainlinkAddress: string,
+  target: OracleInfo
+): Promise<void> {
+  if (!chainlinkAddress || chainlinkAddress === ethers.ZeroAddress || !ethers.isAddress(chainlinkAddress)) return
+
+  try {
+    // Use on-chain oracle ABI from JSON; oracleConfig() returns ChainlinkV3OracleConfig address
+    const chainlinkContract = new ethers.Contract(
+      chainlinkAddress,
+      chainlinkV3OracleAbi as unknown as ethers.InterfaceAbi,
+      provider
+    )
+
+    const configAddressRaw: string = await chainlinkContract.oracleConfig()
+    if (!configAddressRaw || !ethers.isAddress(configAddressRaw) || configAddressRaw === ethers.ZeroAddress) {
+      return
+    }
+
+    // Use dedicated Chainlink config ABI JSON to read full ChainlinkV3Config
+    const configContract = new ethers.Contract(
+      configAddressRaw,
+      chainlinkOracleConfigAbi as unknown as ethers.InterfaceAbi,
+      provider
+    )
+    const rawConfig = await configContract.getConfig()
+    const cfgRecord = rawConfig as Record<string, unknown>
+
+    const primaryAggregator = cfgRecord.primaryAggregator as string | undefined
+    const secondaryAggregator = cfgRecord.secondaryAggregator as string | undefined
+
+    const baseConfig: Record<string, unknown> = {
+      ...(target.config ?? {}),
+      configAddress:
+        configAddressRaw && ethers.isAddress(configAddressRaw) && configAddressRaw !== ethers.ZeroAddress
+          ? configAddressRaw
+          : undefined,
+      primaryHeartbeat: cfgRecord.primaryHeartbeat != null ? String(cfgRecord.primaryHeartbeat) : undefined,
+      secondaryHeartbeat: cfgRecord.secondaryHeartbeat != null ? String(cfgRecord.secondaryHeartbeat) : undefined,
+      normalizationDivider: cfgRecord.normalizationDivider != null ? String(cfgRecord.normalizationDivider) : undefined,
+      normalizationMultiplier:
+        cfgRecord.normalizationMultiplier != null ? String(cfgRecord.normalizationMultiplier) : undefined,
+      baseToken: cfgRecord.baseToken,
+      quoteToken: cfgRecord.quoteToken,
+      convertToQuote: cfgRecord.convertToQuote,
+      invertSecondPrice: cfgRecord.invertSecondPrice
+    }
+
+    const chainlinkExtras: Record<string, unknown> = {}
+
+    if (primaryAggregator && primaryAggregator !== ethers.ZeroAddress && ethers.isAddress(primaryAggregator)) {
+      chainlinkExtras.primaryAggregator = primaryAggregator
+      try {
+        const agg = new ethers.Contract(primaryAggregator, aggregatorV3Abi, provider)
+        const description = await agg.description()
+        chainlinkExtras.primaryAggregatorDescription = String(description ?? '')
+      } catch {
+        // best-effort only
+      }
+    }
+
+    if (secondaryAggregator && secondaryAggregator !== ethers.ZeroAddress && ethers.isAddress(secondaryAggregator)) {
+      chainlinkExtras.secondaryAggregator = secondaryAggregator
+      try {
+        const agg2 = new ethers.Contract(secondaryAggregator, aggregatorV3Abi, provider)
+        const description2 = await agg2.description()
+        chainlinkExtras.secondaryAggregatorDescription = String(description2 ?? '')
+      } catch {
+        // best-effort only
+      }
+    } else {
+      chainlinkExtras.secondaryAggregatorDescription = 'Secondary aggregator: empty'
+    }
+
+    target.config = {
+      ...baseConfig,
+      ...chainlinkExtras
+    }
+  } catch {
+    // If anything fails, leave target as-is – detection is done via version, not try/catch.
+  }
+}
+
 async function fetchOracleInfo(
   provider: ethers.Provider,
   oracleAddress: string
@@ -616,24 +732,6 @@ async function fetchOracleInfo(
   }
 
   const info: OracleInfo = { address: oracleAddress }
-
-  try {
-    // Try Chainlink V3 Oracle
-    const chainlinkContract = new ethers.Contract(
-      oracleAddress,
-      chainlinkV3OracleAbi.abi as ethers.InterfaceAbi,
-      provider
-    )
-    try {
-      const configAddress = await chainlinkContract.config()
-      info.type = 'ChainlinkV3'
-      info.config = { configAddress }
-    } catch {
-      // Not Chainlink V3
-    }
-  } catch {
-    // Not Chainlink V3
-  }
 
   try {
     // Try Oracle Scaler

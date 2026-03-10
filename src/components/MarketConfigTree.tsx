@@ -68,6 +68,7 @@ function buildOracleBullets(
   if (type) {
     bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
   }
+
   if (config && typeof config === 'object') {
     for (const [configKey, val] of Object.entries(config)) {
       if (/quoteToken/i.test(configKey)) continue
@@ -90,6 +91,7 @@ function buildOracleBullets(
       bullets.push({ key: bulletKey, text })
     }
   }
+
   return bullets
 }
 
@@ -725,6 +727,75 @@ function isManageableOracleByVersion(version: string | undefined): boolean {
   return version != null && version !== '' && version.toLowerCase().includes('manageableoracle')
 }
 
+function renderChainlinkAggregatorsForConfig(
+  config: Record<string, unknown> | undefined,
+  explorerUrl: string
+): React.ReactNode | null {
+  if (!config || typeof config !== 'object') return null
+  if (!Object.prototype.hasOwnProperty.call(config, 'primaryAggregator')) return null
+
+  const cfg = config as Record<string, unknown>
+  const primaryAggregator = cfg.primaryAggregator as string | undefined
+  const primaryDesc = cfg.primaryAggregatorDescription as string | undefined
+  const secondaryAggregator = cfg.secondaryAggregator as string | undefined
+  const secondaryDesc = cfg.secondaryAggregatorDescription as string | undefined
+
+  if (!primaryAggregator && !secondaryAggregator) return null
+
+  return (
+    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+      {primaryAggregator && ethers.isAddress(primaryAggregator) && (
+        <li>
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>Primary Aggregator:</span>
+            <a
+              href={`${explorerUrl}/address/${primaryAggregator}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+            >
+              {formatAddress(primaryAggregator)}
+            </a>
+            <CopyButton
+              value={primaryAggregator}
+              title="Copy primary aggregator address"
+              iconClassName="w-3.5 h-3.5 inline align-middle"
+            />
+            {primaryDesc && primaryDesc !== '' && (
+              <span className="text-gray-400 text-sm">({primaryDesc})</span>
+            )}
+          </span>
+        </li>
+      )}
+      <li>
+        {secondaryAggregator && ethers.isAddress(secondaryAggregator) && secondaryAggregator !== ethers.ZeroAddress ? (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>Secondary Aggregator:</span>
+            <a
+              href={`${explorerUrl}/address/${secondaryAggregator}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+            >
+              {formatAddress(secondaryAggregator)}
+            </a>
+            <CopyButton
+              value={secondaryAggregator}
+              title="Copy secondary aggregator address"
+              iconClassName="w-3.5 h-3.5 inline align-middle"
+            />
+            {secondaryDesc && secondaryDesc !== '' && (
+              <span className="text-gray-400 text-sm">({secondaryDesc})</span>
+            )}
+          </span>
+        ) : (
+          <span>Secondary aggregator: empty</span>
+        )}
+      </li>
+    </ul>
+  )
+}
+
 function formatTimelockBulletText(seconds: number): React.ReactNode {
   const days = Math.round(seconds / 86400)
   const daysLabel = `${days} ${days === 1 ? 'day' : 'days'}`
@@ -1071,30 +1142,38 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                 config.silo0.solvencyOracle.quotePrice,
                 config.silo0.solvencyOracle.quoteTokenSymbol,
                 config.silo0.solvencyOracle.type,
-                config.silo0.solvencyOracle.config as Record<string, unknown> | undefined
+                config.silo0.solvencyOracle.underlying
+                  ? undefined
+                  : (config.silo0.solvencyOracle.config as Record<string, unknown> | undefined)
               )
               const underlying = config.silo0.solvencyOracle.underlying
               if (underlying) {
                 base.push({
                   key: 'oracle.manageable.underlying.silo0.solvency',
                   text: (
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span>Underlying oracle:</span>
-                      <a
-                        href={`${explorerUrl}/address/${underlying.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                      >
-                        {formatAddress(underlying.address)}
-                      </a>
-                      <CopyButton
-                        value={underlying.address}
-                        title="Copy address"
-                        iconClassName="w-3.5 h-3.5 inline align-middle"
-                      />
-                      <VersionStatus version={underlying.version} />
-                    </span>
+                    <>
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <VersionStatus version={underlying.version} />
+                      </span>
+                      {renderChainlinkAggregatorsForConfig(
+                        config.silo0.solvencyOracle.config as Record<string, unknown> | undefined,
+                        explorerUrl
+                      )}
+                    </>
                   )
                 })
               }
@@ -1131,30 +1210,38 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo0.maxLtvOracle.quotePrice,
                   config.silo0.maxLtvOracle.quoteTokenSymbol,
                   config.silo0.maxLtvOracle.type,
-                  config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined
+                  config.silo0.maxLtvOracle.underlying
+                    ? undefined
+                    : (config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined)
                 )
                 const underlying = config.silo0.maxLtvOracle.underlying
               if (underlying) {
                 base.push({
                   key: 'oracle.manageable.underlying.silo0.maxLtv',
                   text: (
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span>Underlying oracle:</span>
-                      <a
-                        href={`${explorerUrl}/address/${underlying.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                      >
-                        {formatAddress(underlying.address)}
-                      </a>
-                      <CopyButton
-                        value={underlying.address}
-                        title="Copy address"
-                        iconClassName="w-3.5 h-3.5 inline align-middle"
-                      />
-                      <VersionStatus version={underlying.version} />
-                    </span>
+                    <>
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <VersionStatus version={underlying.version} />
+                      </span>
+                      {renderChainlinkAggregatorsForConfig(
+                        config.silo0.maxLtvOracle.config as Record<string, unknown> | undefined,
+                        explorerUrl
+                      )}
+                    </>
                   )
                 })
               }
@@ -1344,30 +1431,38 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                 config.silo1.solvencyOracle.quotePrice,
                 config.silo1.solvencyOracle.quoteTokenSymbol,
                 config.silo1.solvencyOracle.type,
-                config.silo1.solvencyOracle.config as Record<string, unknown> | undefined
+                config.silo1.solvencyOracle.underlying
+                  ? undefined
+                  : (config.silo1.solvencyOracle.config as Record<string, unknown> | undefined)
               )
               const underlying = config.silo1.solvencyOracle.underlying
               if (underlying) {
                 base.push({
                   key: 'oracle.manageable.underlying.silo1.solvency',
                   text: (
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span>Underlying oracle:</span>
-                      <a
-                        href={`${explorerUrl}/address/${underlying.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                      >
-                        {formatAddress(underlying.address)}
-                      </a>
-                      <CopyButton
-                        value={underlying.address}
-                        title="Copy address"
-                        iconClassName="w-3.5 h-3.5 inline align-middle"
-                      />
-                      <VersionStatus version={underlying.version} />
-                    </span>
+                    <>
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <VersionStatus version={underlying.version} />
+                      </span>
+                      {renderChainlinkAggregatorsForConfig(
+                        config.silo1.solvencyOracle.config as Record<string, unknown> | undefined,
+                        explorerUrl
+                      )}
+                    </>
                   )
                 })
               }
@@ -1404,30 +1499,38 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   config.silo1.maxLtvOracle.quotePrice,
                   config.silo1.maxLtvOracle.quoteTokenSymbol,
                   config.silo1.maxLtvOracle.type,
-                  config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined
+                  config.silo1.maxLtvOracle.underlying
+                    ? undefined
+                    : (config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined)
                 )
                 const underlying = config.silo1.maxLtvOracle.underlying
               if (underlying) {
                 base.push({
                   key: 'oracle.manageable.underlying.silo1.maxLtv',
                   text: (
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span>Underlying oracle:</span>
-                      <a
-                        href={`${explorerUrl}/address/${underlying.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-                      >
-                        {formatAddress(underlying.address)}
-                      </a>
-                      <CopyButton
-                        value={underlying.address}
-                        title="Copy address"
-                        iconClassName="w-3.5 h-3.5 inline align-middle"
-                      />
-                      <VersionStatus version={underlying.version} />
-                    </span>
+                    <>
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Underlying oracle:</span>
+                        <a
+                          href={`${explorerUrl}/address/${underlying.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        >
+                          {formatAddress(underlying.address)}
+                        </a>
+                        <CopyButton
+                          value={underlying.address}
+                          title="Copy address"
+                          iconClassName="w-3.5 h-3.5 inline align-middle"
+                        />
+                        <VersionStatus version={underlying.version} />
+                      </span>
+                      {renderChainlinkAggregatorsForConfig(
+                        config.silo1.maxLtvOracle.config as Record<string, unknown> | undefined,
+                        explorerUrl
+                      )}
+                    </>
                   )
                 })
               }
