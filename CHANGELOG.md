@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.14.0 - 2026-03-10
+### Added
+- display chainlink info on verification page
+
 ## 0.13.0 - 2026-03-09
 ### Updated
 - add check for same quote token
