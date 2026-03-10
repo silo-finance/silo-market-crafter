@@ -17,6 +17,7 @@ import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerificat
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
+import { buildSiloDeploymentKey } from '@/utils/siloDeploymentsJson'
 import { verifyAddress } from '@/utils/verification/addressVerification'
 import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
@@ -108,6 +109,7 @@ export default function Step11Verification() {
     silo0: null,
     silo1: null
   })
+  const [deploymentLineNumber, setDeploymentLineNumber] = useState<number | null>(null)
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
@@ -1003,6 +1005,76 @@ export default function Step11Verification() {
   const goToDeployment = () => router.push('/wizard?step=12')
   const goToNewMarket = () => router.push('/')
 
+  // Line number in the actual _siloDeployments.json on develop (raw file, with opening brace on line 1).
+  useEffect(() => {
+    const fetchLineNumber = async () => {
+      if (!config || !chainId || config.siloId == null) {
+        setDeploymentLineNumber(null)
+        return
+      }
+      try {
+        const chainName = getChainName(chainId)
+        const key = buildSiloDeploymentKey(
+          config.silo0.tokenSymbol ?? 'ASSET0',
+          config.silo1.tokenSymbol ?? 'ASSET1',
+          config.siloId
+        )
+        const res = await fetch(
+          'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/silo-core/deploy/silo/_siloDeployments.json'
+        )
+        if (!res.ok) {
+          setDeploymentLineNumber(null)
+          return
+        }
+        const rawText = await res.text()
+        const lines = rawText.split(/\r?\n/)
+        // Find line containing "chainName": {
+        const chainHeaderIndex = lines.findIndex(
+          line => line.includes(`"${chainName}"`) && line.includes('{')
+        )
+        if (chainHeaderIndex < 0) {
+          setDeploymentLineNumber(null)
+          return
+        }
+        // Entry lines look like: "Silo_...": "0x...", or "Silo_...": "0x..."
+        const keyRe = /^\s*"([^"]+)":\s*"/
+        let insertAt = chainHeaderIndex + 1
+        for (let i = chainHeaderIndex + 1; i < lines.length; i++) {
+          const m = lines[i].match(keyRe)
+          if (m) {
+            const existingKey = m[1]
+            if (existingKey.localeCompare(key) >= 0) {
+              insertAt = i
+              break
+            }
+            insertAt = i + 1
+          } else {
+            // Closing brace or end of block
+            if (lines[i].trim().startsWith('}')) {
+              insertAt = i
+              break
+            }
+          }
+        }
+        setDeploymentLineNumber(insertAt + 1)
+      } catch (err) {
+        console.warn('Failed to resolve _siloDeployments.json line number:', err)
+        setDeploymentLineNumber(null)
+      }
+    }
+
+    fetchLineNumber()
+  }, [config, chainId])
+
+  const siloDeploymentsLine =
+    config && chainId && config.siloId != null
+      ? `"${buildSiloDeploymentKey(
+          config.silo0.tokenSymbol ?? 'ASSET0',
+          config.silo1.tokenSymbol ?? 'ASSET1',
+          config.siloId
+        )}": "${config.siloConfig.startsWith('0x') ? config.siloConfig : `0x${config.siloConfig}`}"`
+      : ''
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
@@ -1138,6 +1210,29 @@ export default function Step11Verification() {
               Try again with different input
             </button>
           )}
+        </div>
+      )}
+
+      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Copy this and provide to developer</h3>
+          <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700 p-4 text-sm flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="text-xs text-gray-500 w-10 text-right pr-2 select-none">
+                {deploymentLineNumber != null ? deploymentLineNumber : '—'}
+              </div>
+              <div
+                className="silo-deployments-copy-line break-all"
+                style={{ fontFamily: '"Courier New", Courier, monospace' }}
+              >
+                {siloDeploymentsLine}
+              </div>
+            </div>
+            <CopyButton
+              value={`${deploymentLineNumber != null ? deploymentLineNumber : '—'} # ${siloDeploymentsLine}`}
+              title="Copy line"
+            />
+          </div>
         </div>
       )}
 
