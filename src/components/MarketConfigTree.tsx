@@ -1503,7 +1503,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                         text: (
                           <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                             <span>LT margin for defaulting:</span>
-                            <span className="text-white font-mono">{formatPercentage(ltMarginBigInt)}</span>
+                            <span className="irm-config-name-chip">{formatPercentage(ltMarginBigInt)}</span>
                             <span className="text-gray-500 text-xs font-normal">({formatBigIntToE18(ltMarginBigInt, true)})</span>
                           </span>
                         )
