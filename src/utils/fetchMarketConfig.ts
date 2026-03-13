@@ -105,6 +105,8 @@ export interface IRMInfo {
   owner?: string
   ownerIsContract?: boolean
   ownerName?: string
+  /** Current IRM config contract address (DynamicKinkModel.irmConfig()), used for configsHistory chain */
+  irmConfigAddress?: string
 }
 
 export async function fetchMarketConfig(
@@ -136,8 +138,8 @@ export async function fetchMarketConfig(
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.includes('CALL_EXCEPTION') || msg.includes('revert') || msg.includes('require(false)')) {
       throw new Error(
-        'This address does not appear to be a valid Silo Config contract, or the contract reverted. ' +
-          'Check that the address is a Silo Config on this network and that the contract is initialized.'
+        'Could not load market configuration. If you entered a Silo Config address, Silo address, or transaction hash, ' +
+          'please verify it exists on the current network and is properly initialized.'
       )
     }
     throw err
@@ -195,13 +197,15 @@ export async function fetchMarketConfig(
     fetchIRMInfo(provider, config0.interestRateModel.address, config0.interestRateModel.version),
     fetchIRMInfo(provider, config1.interestRateModel.address, config1.interestRateModel.version)
   ])
-  if (irm0Details.type || irm0Details.config) {
+  if (irm0Details.type || irm0Details.config || irm0Details.irmConfigAddress) {
     config0.interestRateModel.type = irm0Details.type ?? config0.interestRateModel.type
     config0.interestRateModel.config = irm0Details.config ?? config0.interestRateModel.config
+    config0.interestRateModel.irmConfigAddress = irm0Details.irmConfigAddress ?? config0.interestRateModel.irmConfigAddress
   }
-  if (irm1Details.type || irm1Details.config) {
+  if (irm1Details.type || irm1Details.config || irm1Details.irmConfigAddress) {
     config1.interestRateModel.type = irm1Details.type ?? config1.interestRateModel.type
     config1.interestRateModel.config = irm1Details.config ?? config1.interestRateModel.config
+    config1.interestRateModel.irmConfigAddress = irm1Details.irmConfigAddress ?? config1.interestRateModel.irmConfigAddress
   }
 
   // Fetch hook owners (deduplicate: same hook address can be used in both silos)
@@ -777,7 +781,7 @@ async function fetchIRMInfo(
   provider: ethers.Provider,
   irmAddress: string,
   version: string | undefined
-): Promise<Pick<IRMInfo, 'type' | 'config'>> {
+): Promise<Pick<IRMInfo, 'type' | 'config' | 'irmConfigAddress'>> {
   // Only fetch details when version indicates DynamicKinkModel; do nothing otherwise.
   if (!irmAddress || irmAddress === ethers.ZeroAddress || !version) {
     return {}
@@ -796,7 +800,12 @@ async function fetchIRMInfo(
       // DynamicKinkModel exposes getModelStateAndConfig(bool includeState)
       // We only need config + immutableConfig, so we pass false to omit state.
       const [, config, immutableConfig] = await dynamicKinkContract.getModelStateAndConfig(false)
-      const result: Pick<IRMInfo, 'type' | 'config'> = {
+      const irmConfigRes = await dynamicKinkContract.irmConfig()
+      const irmConfigAddrRaw = (typeof irmConfigRes === 'object' && irmConfigRes != null && 'config' in irmConfigRes)
+        ? (irmConfigRes as { config: unknown }).config
+        : irmConfigRes
+      const irmConfigAddr = irmConfigAddrRaw != null ? String(irmConfigAddrRaw) : ''
+      const result: Pick<IRMInfo, 'type' | 'config' | 'irmConfigAddress'> = {
         type: 'DynamicKinkModel',
         config: {
           ulow: config.ulow.toString(),
@@ -814,7 +823,8 @@ async function fetchIRMInfo(
           dmax: config.dmax.toString(),
           timelock: immutableConfig.timelock.toString(),
           rcompCapPerSecond: immutableConfig.rcompCapPerSecond.toString()
-        }
+        },
+        irmConfigAddress: irmConfigAddr && irmConfigAddr !== ethers.ZeroAddress ? irmConfigAddr : undefined
       }
 
       return result
