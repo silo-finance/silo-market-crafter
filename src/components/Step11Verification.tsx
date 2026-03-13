@@ -22,6 +22,9 @@ import { verifyAddress } from '@/utils/verification/addressVerification'
 import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
+import { findKinkConfigName, type KinkConfigItem } from '@/utils/kinkConfigName'
+import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
+import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -109,6 +112,14 @@ export default function Step11Verification() {
     silo0: null,
     silo1: null
   })
+  const [pendingIrmInfo, setPendingIrmInfo] = useState<{
+    silo0: { name: string | null; activateAt: number | null } | null
+    silo1: { name: string | null; activateAt: number | null } | null
+  }>({ silo0: null, silo1: null })
+  const [irmConfigHistory, setIrmConfigHistory] = useState<{
+    silo0: string[] | null
+    silo1: string[] | null
+  }>({ silo0: null, silo1: null })
   const [deploymentLineNumber, setDeploymentLineNumber] = useState<number | null>(null)
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
@@ -473,6 +484,8 @@ export default function Step11Verification() {
     setError(null)
     setConfig(null)
     setShowForm(false)
+    setPendingIrmInfo({ silo0: null, silo1: null })
+    setIrmConfigHistory({ silo0: null, silo1: null })
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
@@ -873,11 +886,11 @@ export default function Step11Verification() {
       }
 
       // Resolve Dynamic Kink IRM configuration names by comparing on-chain config with JSON configs/immutables
+      // Also fetch pending IRM config (if any) for each silo
       try {
         const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
         const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
 
-        type KinkConfigItem = { name: string; config: Record<string, unknown> }
         type KinkImmutableItem = { name: string; timelock: unknown; rcompCap: unknown }
 
         const [cfgRes, immRes] = await Promise.all([
@@ -889,36 +902,164 @@ export default function Step11Verification() {
           // Immutable data is currently not needed here; keep parse for validation side‑effects only.
           parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
 
-          const findKinkConfigName = (irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined): string | null => {
-            // Only match against the "config" part (DKinkIRMConfigs.json), ignore immutables.
-            if (!irm || irm.type !== 'DynamicKinkModel' || !irm.config) return null
-            const irmCfg = irm.config as Record<string, unknown>
+          const name0 = findKinkConfigName(marketConfig.silo0.interestRateModel, cfgJson)
+          const name1 = findKinkConfigName(marketConfig.silo1.interestRateModel, cfgJson)
+          setIrmConfigNames({ silo0: name0, silo1: name1 })
 
-            for (const cfg of cfgJson) {
-              let matches = true
-              for (const [key, val] of Object.entries(cfg.config)) {
-                if (String(irmCfg[key]) !== String(val)) {
-                  matches = false
-                  break
-                }
-              }
-              if (!matches) continue
-
-              // Immutable part (timelock / rcompCap) is displayed separately and is NOT used for matching.
-              // For display we only need a single human-friendly name, so use cfg.name directly.
-              return cfg.name
+          // Fetch pending IRM config for each silo (DynamicKinkModel only)
+          const fetchPendingForSilo = async (
+            irmAddress: string,
+            version: string | undefined
+          ): Promise<{ name: string | null; activateAt: number | null }> => {
+            if (!irmAddress || irmAddress === ethers.ZeroAddress || !version) {
+              return { name: null, activateAt: null }
             }
-            return null
+            const [contractName] = version.split(' ')
+            if (contractName !== 'DynamicKinkModel') return { name: null, activateAt: null }
+
+            try {
+              const irmContract = new ethers.Contract(
+                irmAddress,
+                dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
+                provider
+              )
+              const pendingAddr: string = await irmContract.pendingIrmConfig()
+              if (!pendingAddr || pendingAddr === ethers.ZeroAddress) {
+                return { name: null, activateAt: null }
+              }
+
+              const configContract = new ethers.Contract(
+                pendingAddr,
+                (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi,
+                provider
+              )
+              const [config] = await configContract.getConfig()
+              const configObj: Record<string, unknown> = {
+                ulow: config.ulow.toString(),
+                u1: config.u1.toString(),
+                u2: config.u2.toString(),
+                ucrit: config.ucrit.toString(),
+                rmin: config.rmin.toString(),
+                kmin: config.kmin.toString(),
+                kmax: config.kmax.toString(),
+                alpha: config.alpha.toString(),
+                cminus: config.cminus.toString(),
+                cplus: config.cplus.toString(),
+                c1: config.c1.toString(),
+                c2: config.c2.toString(),
+                dmax: config.dmax.toString()
+              }
+              const pendingName = findKinkConfigName(
+                { type: 'DynamicKinkModel', config: configObj },
+                cfgJson
+              )
+              const activateAtBigInt: bigint = await irmContract.activateConfigAt()
+              const activateAt = Number(activateAtBigInt)
+              return { name: pendingName, activateAt }
+            } catch {
+              return { name: null, activateAt: null }
+            }
           }
 
-          const name0 = findKinkConfigName(marketConfig.silo0.interestRateModel)
-          const name1 = findKinkConfigName(marketConfig.silo1.interestRateModel)
-          setIrmConfigNames({ silo0: name0, silo1: name1 })
+          const [pending0, pending1] = await Promise.all([
+            fetchPendingForSilo(
+              marketConfig.silo0.interestRateModel.address,
+              marketConfig.silo0.interestRateModel.version
+            ),
+            fetchPendingForSilo(
+              marketConfig.silo1.interestRateModel.address,
+              marketConfig.silo1.interestRateModel.version
+            )
+          ])
+          if (isMountedRef.current) {
+            setPendingIrmInfo({ silo0: pending0, silo1: pending1 })
+          }
+
+          const fetchHistoryForSilo = async (
+            irmAddress: string,
+            version: string | undefined,
+            currentConfigAddress: string | undefined
+          ): Promise<string[]> => {
+            if (!irmAddress || irmAddress === ethers.ZeroAddress || !version || !currentConfigAddress || currentConfigAddress === ethers.ZeroAddress) {
+              return []
+            }
+            const [contractName] = version.split(' ')
+            if (contractName !== 'DynamicKinkModel') return []
+
+            try {
+              const irmContract = new ethers.Contract(
+                irmAddress,
+                dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
+                provider
+              )
+              // Start with current config address (already fetched with market config)
+              let currentAddr: string = ethers.getAddress(currentConfigAddress)
+              const names: string[] = []
+              while (currentAddr && currentAddr !== ethers.ZeroAddress) {
+                // configsHistory(current) returns (k: int96, irmConfig: address) per ABI - outputs[0]=k, outputs[1]=irmConfig
+                const result = await irmContract.configsHistory(currentAddr)
+                const prevAddr = result[1] ?? result.irmConfig
+                const prevAddrStr = prevAddr != null ? String(prevAddr) : ''
+                if (!prevAddrStr || prevAddrStr === ethers.ZeroAddress) break
+
+                const configContract = new ethers.Contract(
+                  prevAddrStr,
+                  (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi,
+                  provider
+                )
+                const [config] = await configContract.getConfig()
+                const configObj: Record<string, unknown> = {
+                  ulow: config.ulow.toString(),
+                  u1: config.u1.toString(),
+                  u2: config.u2.toString(),
+                  ucrit: config.ucrit.toString(),
+                  rmin: config.rmin.toString(),
+                  kmin: config.kmin.toString(),
+                  kmax: config.kmax.toString(),
+                  alpha: config.alpha.toString(),
+                  cminus: config.cminus.toString(),
+                  cplus: config.cplus.toString(),
+                  c1: config.c1.toString(),
+                  c2: config.c2.toString(),
+                  dmax: config.dmax.toString()
+                }
+                const name = findKinkConfigName(
+                  { type: 'DynamicKinkModel', config: configObj },
+                  cfgJson
+                )
+                names.push(name ?? 'not able to match')
+                currentAddr = prevAddrStr
+              }
+              return names
+            } catch {
+              return []
+            }
+          }
+
+          const [history0, history1] = await Promise.all([
+            fetchHistoryForSilo(
+              marketConfig.silo0.interestRateModel.address,
+              marketConfig.silo0.interestRateModel.version,
+              marketConfig.silo0.interestRateModel.irmConfigAddress
+            ),
+            fetchHistoryForSilo(
+              marketConfig.silo1.interestRateModel.address,
+              marketConfig.silo1.interestRateModel.version,
+              marketConfig.silo1.interestRateModel.irmConfigAddress
+            )
+          ])
+          if (isMountedRef.current) {
+            setIrmConfigHistory({ silo0: history0, silo1: history1 })
+          }
         } else {
           setIrmConfigNames({ silo0: null, silo1: null })
+          setPendingIrmInfo({ silo0: null, silo1: null })
+          setIrmConfigHistory({ silo0: null, silo1: null })
         }
       } catch {
         setIrmConfigNames({ silo0: null, silo1: null })
+        setPendingIrmInfo({ silo0: null, silo1: null })
+        setIrmConfigHistory({ silo0: null, silo1: null })
       }
     } catch (e) {
       if (!isMountedRef.current) return
@@ -1282,6 +1423,8 @@ export default function Step11Verification() {
               }
               manageableOracleTimelockSeconds={wizardData.manageableOracleTimelock}
               irmConfigNames={irmConfigNames}
+              pendingIrmInfo={pendingIrmInfo}
+              irmConfigHistory={irmConfigHistory}
               hookGaugeInfo={hookGaugeInfo}
             />
           </>

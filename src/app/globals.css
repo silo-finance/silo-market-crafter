@@ -657,6 +657,23 @@ body {
   color: #9ca3af; /* Tailwind gray-400 – slightly darker but still neutral */
 }
 
+/* Tree bullet lists – match tree-item line-height (1.9) for consistent spacing */
+.tree-bullet-list,
+.tree-bullet-list ul {
+  line-height: 1.9;
+}
+.tree-bullet-list li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.tree-bullet-list li:first-child {
+  margin-top: 0;
+}
+.tree-bullet-list ul li {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
 /* Nested bullet lists (e.g. gauge verification under Silo Incentive Controller) – ensure discs show */
 .gauge-verification-list {
   list-style-type: disc;
@@ -664,6 +681,14 @@ body {
 }
 .gauge-verification-list li {
   display: list-item;
+}
+
+/* IRM history config names – very dark, close to black, not overridden by theme */
+.irm-history-config-name {
+  color: #0f172a !important; /* slate-900, almost black */
+}
+.theme-dark .irm-history-config-name {
+  color: #e2e8f0 !important; /* slate-200, light on dark bg */
 }
 
 /* IRM config name chip – only the name is highlighted, prefix text stays normal */
