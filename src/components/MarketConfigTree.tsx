@@ -397,7 +397,6 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
       <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
         <li className="flex items-center">
           <span>{ownerLabel} verification:</span>
-          <VerificationStatusIconSmall status={wizardVsOnChainStatus} />
           {wizardVsOnChainStatus === VERIFICATION_STATUS.PASSED && (
             <span className="text-gray-500 ml-1">matches Wizard value</span>
           )}
@@ -410,10 +409,10 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           {wizardVsOnChainStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
             <span className="text-gray-500 ml-1">N/A</span>
           )}
+          <VerificationStatusIconSmall status={wizardVsOnChainStatus} />
         </li>
         <li className="flex items-center">
           <span>{ownerLabel} address:</span>
-          <VerificationStatusIconSmall status={addressInJsonStatus} />
           {addressInJsonStatus === VERIFICATION_STATUS.PASSED && (
             <span className="text-gray-500 ml-1">exists in Silo Finance repository list</span>
           )}
@@ -423,6 +422,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           {addressInJsonStatus === VERIFICATION_STATUS.PENDING && (
             <span className="text-gray-500 ml-1">verification pending</span>
           )}
+          <VerificationStatusIconSmall status={addressInJsonStatus} />
         </li>
       </ul>
     </>
@@ -518,7 +518,6 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Token verification:</span>
-                <VerificationStatusIconSmall status={tokenWizardVsOnChainStatus} />
                 {tokenWizardVsOnChainStatus === VERIFICATION_STATUS.PASSED && (
                   <span className="text-gray-500 ml-1">matches Wizard value</span>
                 )}
@@ -531,10 +530,10 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 {tokenWizardVsOnChainStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
                   <span className="text-gray-500 ml-1">N/A</span>
                 )}
+                <VerificationStatusIconSmall status={tokenWizardVsOnChainStatus} />
               </li>
               <li className="flex items-center">
                 <span>Token address:</span>
-                <VerificationStatusIconSmall status={tokenAddressInJsonStatus} />
                 {tokenAddressInJsonStatus === VERIFICATION_STATUS.PASSED && (
                   <span className="text-gray-500 ml-1">exists in Silo Finance repository list</span>
                 )}
@@ -544,6 +543,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 {tokenAddressInJsonStatus === VERIFICATION_STATUS.PENDING && (
                   <span className="text-gray-500 ml-1">verification pending</span>
                 )}
+                <VerificationStatusIconSmall status={tokenAddressInJsonStatus} />
               </li>
             </ul>
           )
@@ -599,8 +599,8 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
                 <li className="flex items-center">
                   <span>Verification:</span>
-                  <VerificationStatusIconSmall status={verificationStatus} />
                   <span className="text-gray-500 ml-1">N/A</span>
+                  <VerificationStatusIconSmall status={verificationStatus} />
                 </li>
               </ul>
             )
@@ -611,13 +611,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Verification:</span>
-                <VerificationStatusIconSmall status={verificationStatus} />
                 {verificationStatus === VERIFICATION_STATUS.PASSED && (
                   <span className="text-gray-500 ml-1">matches Wizard value</span>
                 )}
                 {verificationStatus === VERIFICATION_STATUS.FAILED && (
                   <span className="text-gray-500 ml-1">does not match Wizard value</span>
                 )}
+                <VerificationStatusIconSmall status={verificationStatus} />
               </li>
             </ul>
           )
@@ -632,13 +632,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Verification:</span>
-                <VerificationStatusIconSmall status={verificationStatus} />
                 {verificationStatus === VERIFICATION_STATUS.PASSED && (
                   <span className="text-gray-500 ml-1">matches Wizard value</span>
                 )}
                 {verificationStatus === VERIFICATION_STATUS.FAILED && (
                   <span className="text-gray-500 ml-1">does not match Wizard value</span>
                 )}
+                <VerificationStatusIconSmall status={verificationStatus} />
               </li>
             </ul>
           )
@@ -659,29 +659,29 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                     {priceLowWarning && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
-                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
                         <span className="text-gray-500 ml-1">price unexpectedly low</span>
+                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
                       </li>
                     )}
                     {priceHighWarning && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
-                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
                         <span className="text-gray-500 ml-1">price unexpectedly high</span>
+                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
                       </li>
                     )}
                     {priceDecimalsWarning && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
-                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
                         <span className="text-gray-500 ml-1">invalid price decimals</span>
+                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
                       </li>
                     )}
                     {hasPriceVerified && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
-                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.PASSED} />
                         <span className="text-gray-500 ml-1">price verified (range and decimals OK)</span>
+                        <VerificationStatusIconSmall status={VERIFICATION_STATUS.PASSED} />
                       </li>
                     )}
                   </ul>
@@ -700,7 +700,6 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                     <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
                       <li className="flex items-center">
                         <span>Base Discount verification:</span>
-                        <VerificationStatusIconSmall status={verificationStatus} />
                         {verificationStatus === VERIFICATION_STATUS.PASSED && (
                           <span className="text-gray-500 ml-1">matches Wizard value</span>
                         )}
@@ -710,6 +709,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                         {verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
                           <span className="text-gray-500 ml-1">N/A</span>
                         )}
+                        <VerificationStatusIconSmall status={verificationStatus} />
                       </li>
                     </ul>
                   )
@@ -1296,7 +1296,6 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
         <ul className="tree-bullet-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
           <li className="flex items-center">
             <span>Silo factory verification:</span>
-            <VerificationStatusIconSmall status={verificationStatus} />
             {verificationStatus === VERIFICATION_STATUS.PASSED && (
               <span className="text-gray-500 ml-1">matches current Silo Factory</span>
             )}
@@ -1306,6 +1305,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             {verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE && (
               <span className="text-gray-500 ml-1">N/A</span>
             )}
+            <VerificationStatusIconSmall status={verificationStatus} />
           </li>
         </ul>
       </>
@@ -1342,10 +1342,10 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                       <span className="inline-flex items-center gap-1">
                         Address verified in current Silo Factory:
                         <VerificationStatusIconSmall status={
-                          siloVerification?.silo0 === true 
-                            ? VERIFICATION_STATUS.PASSED 
-                            : siloVerification?.silo0 === false 
-                              ? VERIFICATION_STATUS.FAILED 
+                          siloVerification?.silo0 === true
+                            ? VERIFICATION_STATUS.PASSED
+                            : siloVerification?.silo0 === false
+                              ? VERIFICATION_STATUS.FAILED
                               : VERIFICATION_STATUS.PENDING
                         } />
                       </span>
@@ -1513,10 +1513,6 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                 <ul className="tree-bullet-list gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
                                   <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
                                     <span>Gauge owner in repository list:</span>
-                                    <VerificationStatusIconSmall status={
-                                      gv.ownerInJson === null ? VERIFICATION_STATUS.PENDING
-                                        : gv.ownerInJson ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.WARNING
-                                    } />
                                     {gv.ownerInJson === true && (
                                       <span className="text-gray-500 ml-1">{gv.ownerName ? `yes (${gv.ownerName})` : 'yes'}</span>
                                     )}
@@ -1526,36 +1522,40 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                     {gv.ownerInJson === null && (
                                       <span className="text-gray-500 ml-1">verification pending</span>
                                     )}
+                                    <VerificationStatusIconSmall status={
+                                      gv.ownerInJson === null ? VERIFICATION_STATUS.PENDING
+                                        : gv.ownerInJson ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.WARNING
+                                    } />
                                   </li>
                                   <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
                                     <span>Gauge owner equals hook owner:</span>
+                                    {gv.ownerMatchesHookOwner === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesHookOwner === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesHookOwner === null && <span className="text-gray-500 ml-1">N/A</span>}
                                     <VerificationStatusIconSmall status={
                                       gv.ownerMatchesHookOwner === null ? VERIFICATION_STATUS.NOT_AVAILABLE
                                         : gv.ownerMatchesHookOwner ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
                                     } />
-                                    {gv.ownerMatchesHookOwner === true && <span className="text-gray-500 ml-1">yes</span>}
-                                    {gv.ownerMatchesHookOwner === false && <span className="text-gray-500 ml-1">no</span>}
-                                    {gv.ownerMatchesHookOwner === null && <span className="text-gray-500 ml-1">N/A</span>}
                                   </li>
                                   <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
                                     <span>Gauge owner matches Wizard:</span>
+                                    {gv.ownerMatchesWizard === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.ownerMatchesWizard === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.ownerMatchesWizard === null && <span className="text-gray-500 ml-1">N/A</span>}
                                     <VerificationStatusIconSmall status={
                                       gv.ownerMatchesWizard === null ? VERIFICATION_STATUS.NOT_AVAILABLE
                                         : gv.ownerMatchesWizard ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
                                     } />
-                                    {gv.ownerMatchesWizard === true && <span className="text-gray-500 ml-1">yes</span>}
-                                    {gv.ownerMatchesWizard === false && <span className="text-gray-500 ml-1">no</span>}
-                                    {gv.ownerMatchesWizard === null && <span className="text-gray-500 ml-1">N/A</span>}
                                   </li>
                                   <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
                                     <span>Notifier equals hook address:</span>
+                                    {gv.notifierEqualsHook === true && <span className="text-gray-500 ml-1">yes</span>}
+                                    {gv.notifierEqualsHook === false && <span className="text-gray-500 ml-1">no</span>}
+                                    {gv.notifierEqualsHook === null && <span className="text-gray-500 ml-1">verification pending</span>}
                                     <VerificationStatusIconSmall status={
                                       gv.notifierEqualsHook === null ? VERIFICATION_STATUS.PENDING
                                         : gv.notifierEqualsHook ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
                                     } />
-                                    {gv.notifierEqualsHook === true && <span className="text-gray-500 ml-1">yes</span>}
-                                    {gv.notifierEqualsHook === false && <span className="text-gray-500 ml-1">no</span>}
-                                    {gv.notifierEqualsHook === null && <span className="text-gray-500 ml-1">verification pending</span>}
                                   </li>
                                 </ul>
                               )}
