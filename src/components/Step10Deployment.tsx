@@ -787,6 +787,7 @@ export default function Step10Deployment() {
                   value={JSON.stringify({ to: txErrorDebug.to, data: txErrorDebug.data })}
                   iconClassName="w-3.5 h-3.5"
                   title="Copy to + data as JSON"
+                  className="ml-0"
                 />
               </div>
               <ul className="list-disc list-inside text-sm space-y-1 font-mono break-all">
@@ -812,7 +813,7 @@ export default function Step10Deployment() {
             >
               View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
             </a>
-            <CopyButton value={txHash} iconClassName="w-3.5 h-3.5" title="Copy transaction hash" />
+            <CopyButton value={txHash} iconClassName="w-3.5 h-3.5" title="Copy transaction hash" className="ml-0" />
           </div>
           <button
             type="button"

@@ -9,6 +9,7 @@ import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
+import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
 
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
@@ -189,6 +190,13 @@ interface MarketConfigTreeProps {
   manageableOracleTimelockSeconds?: number
    /** Dynamic Kink IRM configuration names resolved from JSON (silo0/silo1) */
   irmConfigNames?: { silo0: string | null; silo1: string | null }
+  /** Pending IRM config (when address !== 0): name + activateAt timestamp */
+  pendingIrmInfo?: {
+    silo0: { name: string | null; activateAt: number | null } | null
+    silo1: { name: string | null; activateAt: number | null } | null
+  }
+  /** IRM config history: list of config names (previous configs in chain) */
+  irmConfigHistory?: { silo0: string[] | null; silo1: string[] | null }
   hookGaugeInfo?: {
     hasDefaultingHook: boolean
     onlyOneBorrowable: boolean | null
@@ -386,7 +394,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
         )}
       </span>
       {/* Verification details as sub-items */}
-      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
         <li className="flex items-center">
           <span>{ownerLabel} verification:</span>
           <VerificationStatusIconSmall status={wizardVsOnChainStatus} />
@@ -507,7 +515,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
               : VERIFICATION_STATUS.WARNING
           
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
+            <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Token verification:</span>
                 <VerificationStatusIconSmall status={tokenWizardVsOnChainStatus} />
@@ -588,7 +596,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           
           if (verificationStatus === VERIFICATION_STATUS.NOT_AVAILABLE) {
             return (
-              <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
+              <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
                 <li className="flex items-center">
                   <span>Verification:</span>
                   <VerificationStatusIconSmall status={verificationStatus} />
@@ -600,7 +608,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           
           // At this point verificationStatus can only be PASSED or FAILED
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
+            <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Verification:</span>
                 <VerificationStatusIconSmall status={verificationStatus} />
@@ -621,7 +629,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
           const verificationStatus = onChainValue === wizardValue ? VERIFICATION_STATUS.PASSED : VERIFICATION_STATUS.FAILED
           
           return (
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm space-y-0.5">
+            <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
               <li className="flex items-center">
                 <span>Verification:</span>
                 <VerificationStatusIconSmall status={verificationStatus} />
@@ -637,7 +645,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
         })()}
       </span>
       {bulletItems && bulletItems.length > 0 && (
-        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+        <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {bulletItems.map((item, i) => {
             const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
             const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
@@ -647,7 +655,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 {item.text}
                 {/* Price verification details as sub-items */}
                 {isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning || hasPriceVerified) && (
-                  <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+                  <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
                     {priceLowWarning && (
                       <li className="flex items-center">
                         <span>Price verification:</span>
@@ -689,7 +697,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                       : VERIFICATION_STATUS.FAILED
                   
                   return (
-                    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+                    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
                       <li className="flex items-center">
                         <span>Base Discount verification:</span>
                         <VerificationStatusIconSmall status={verificationStatus} />
@@ -712,7 +720,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
         </ul>
       )}
       {ownerBullets && ownerBullets.length > 0 && (
-        <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+        <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {ownerBullets.map((item, i) => (
             <li key={i}>
               <OwnerBulletContent 
@@ -746,6 +754,8 @@ interface SiloSectionProps {
   callBeforeQuoteVerification?: { wizard: boolean | null } | null
   oracleOwnerVerification?: OracleOwnerVerification | null
   irmConfigName?: string | null
+  pendingIrmInfo?: { name: string | null; activateAt: number | null } | null
+  irmConfigHistory?: string[] | null
   hookOwnerVerification?: HookOwnerVerification
   irmOwnerVerification?: IRMOwnerVerification
   wizardDaoFee?: bigint | null
@@ -767,6 +777,8 @@ function SiloSection({
   callBeforeQuoteVerification,
   oracleOwnerVerification,
   irmConfigName,
+  pendingIrmInfo,
+  irmConfigHistory,
   hookOwnerVerification,
   irmOwnerVerification,
   wizardDaoFee,
@@ -973,29 +985,7 @@ function SiloSection({
           const irm = siloConfig.interestRateModel
           const irmCfg = irm.config as Record<string, unknown> | undefined
 
-          const name = irmConfigName ?? null
-          if (name) {
-            bullets.push({
-              key: `irm.configName.${siloKey}`,
-              text: (
-                <span className="inline-flex items-center gap-1.5">
-                  <span>IRM config:</span>
-                  <span className="irm-config-name-chip">{name}</span>
-                </span>
-              )
-            })
-          } else {
-            bullets.push({
-              key: `irm.configName.${siloKey}`,
-              text: (
-                <span className="inline-flex items-center gap-1.5">
-                  <span>IRM config: not able to match</span>
-                  <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
-                </span>
-              )
-            })
-          }
-
+          // 1. Timelock, CAP, Owner first (per user request)
           const timelockRaw = irmCfg?.timelock
           if (timelockRaw != null) {
             const seconds = Number(timelockRaw)
@@ -1028,19 +1018,97 @@ function SiloSection({
             }
           }
 
+          if (irm.owner) {
+            bullets.push({
+              key: `irm.owner.${siloKey}`,
+              text: (
+                <OwnerBulletContent
+                  item={{
+                    address: irm.owner,
+                    isContract: irm.ownerIsContract,
+                    name: irm.ownerName
+                  }}
+                  explorerUrl={explorerUrl}
+                  irmOwnerVerification={irmOwnerVerification}
+                  addressInJsonVerification={addressInJsonVerification}
+                />
+              )
+            })
+          }
+
+          // 2. IRM config with nested Pending and History (same indent level)
+          const name = irmConfigName ?? null
+          const hasPendingOrHistory = pendingIrmInfo != null || irmConfigHistory != null
+          bullets.push({
+            key: `irm.configName.${siloKey}`,
+            text: (
+              <>
+                {name ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>IRM config:</span>
+                    <IrmConfigNameWithLink configName={name} variant="emphasized" />
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>IRM config: not able to match</span>
+                    <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
+                  </span>
+                )}
+                {hasPendingOrHistory && (
+                  <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+                    {pendingIrmInfo != null && (
+                      <li>
+                        {pendingIrmInfo.activateAt == null ? (
+                          <span>Pending IRM config: no pending config</span>
+                        ) : (
+                          (() => {
+                            const activateAt = pendingIrmInfo.activateAt
+                            const utcDate = new Date(activateAt * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC')
+                            const nowSec = Math.floor(Date.now() / 1000)
+                            const diffSec = activateAt - nowSec
+                            const hours = Math.floor(diffSec / 3600)
+                            const minutes = Math.floor((diffSec % 3600) / 60)
+                            const countdown =
+                              diffSec <= 0 ? 'already active' : `in ${hours} hours and ${minutes} minutes`
+                            const pendingName = pendingIrmInfo.name ?? 'not able to match'
+                            return (
+                              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                <span>Pending IRM config:</span>
+                                <IrmConfigNameWithLink configName={pendingName} variant="normal" />
+                                <span>– active at {utcDate} ({countdown})</span>
+                              </span>
+                            )
+                          })()
+                        )}
+                      </li>
+                    )}
+                    {irmConfigHistory != null && (
+                      <li>
+                        <span>history:</span>
+                        {irmConfigHistory.length === 0 ? (
+                          <span className="text-gray-500 text-sm ml-1">(empty)</span>
+                        ) : (
+                          <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+                            {irmConfigHistory.map((histName, i) => (
+                              <li key={i}>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <IrmConfigNameWithLink configName={histName} variant="normal" />
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </>
+            )
+          })
+
           return bullets.length > 0 ? bullets : undefined
         })()}
-        ownerBullets={
-          siloConfig.interestRateModel.owner
-            ? [
-                {
-                  address: siloConfig.interestRateModel.owner,
-                  isContract: siloConfig.interestRateModel.ownerIsContract,
-                  name: siloConfig.interestRateModel.ownerName
-                }
-              ]
-            : undefined
-        }
+        ownerBullets={[]}
         explorerUrl={explorerUrl}
         hookOwnerVerification={irmOwnerVerification ? undefined : hookOwnerVerification}
         irmOwnerVerification={irmOwnerVerification}
@@ -1123,7 +1191,7 @@ function renderChainlinkAggregatorsForConfig(
   if (!primaryAggregator && !secondaryAggregator) return null
 
   return (
-    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+    <ul className="tree-bullet-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
       {primaryAggregator && ethers.isAddress(primaryAggregator) && (
         <li>
           <span className="inline-flex flex-wrap items-center gap-1.5">
@@ -1189,7 +1257,7 @@ function formatTimelockBulletText(seconds: number): React.ReactNode {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, hookGaugeInfo }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, pendingIrmInfo, irmConfigHistory, hookGaugeInfo }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -1225,7 +1293,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             ({version})
           </span>
         </span>
-        <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+        <ul className="tree-bullet-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
           <li className="flex items-center">
             <span>Silo factory verification:</span>
             <VerificationStatusIconSmall status={verificationStatus} />
@@ -1442,7 +1510,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                 <VersionStatus version={hookGaugeInfo.gaugeVersion || '—'} />
                               </span>
                               {gv && (
-                                <ul className="gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-0.5">
+                                <ul className="tree-bullet-list gauge-verification-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
                                   <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1">
                                     <span>Gauge owner in repository list:</span>
                                     <VerificationStatusIconSmall status={
@@ -1531,6 +1599,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           callBeforeQuoteVerification={callBeforeQuoteVerification?.silo0}
           oracleOwnerVerification={oracleOwnerVerification?.silo0 ?? null}
           irmConfigName={irmConfigNames?.silo0 ?? null}
+          pendingIrmInfo={pendingIrmInfo?.silo0 ?? null}
+          irmConfigHistory={irmConfigHistory?.silo0 ?? null}
           hookOwnerVerification={hookOwnerVerification}
           irmOwnerVerification={irmOwnerVerification}
           wizardDaoFee={wizardDaoFee ?? null}
@@ -1553,6 +1623,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           callBeforeQuoteVerification={callBeforeQuoteVerification?.silo1}
           oracleOwnerVerification={oracleOwnerVerification?.silo1 ?? null}
           irmConfigName={irmConfigNames?.silo1 ?? null}
+          pendingIrmInfo={pendingIrmInfo?.silo1 ?? null}
+          irmConfigHistory={irmConfigHistory?.silo1 ?? null}
           hookOwnerVerification={hookOwnerVerification}
           irmOwnerVerification={irmOwnerVerification}
           wizardDaoFee={wizardDaoFee ?? null}

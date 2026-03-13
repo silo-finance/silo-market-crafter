@@ -37,12 +37,22 @@ function WizardPageContent() {
     }
   }, [urlStep, searchParams, router])
 
-  // On step 0 (landing), strip tx= and address= so nothing re-triggers verification after Reset
+  // When tx=, address=, or silo= present but not on verification step, redirect to verification
   useEffect(() => {
-    if (currentStep === 0 && (searchParams.get('tx') || searchParams.get('address') || searchParams.get('contract'))) {
-      router.replace('/wizard?step=0', { scroll: false })
+    const hasVerificationParams = searchParams.get('tx') || searchParams.get('address') || searchParams.get('contract') || searchParams.get('silo')
+    if (hasVerificationParams && currentStep !== 13) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('step', 'verification')
+      router.replace(`/wizard?${params.toString()}`, { scroll: false })
     }
   }, [currentStep, searchParams, router])
+
+  // On step 0 (landing) with step=0 explicitly, strip tx=, address=, silo= so nothing re-triggers verification after Reset
+  useEffect(() => {
+    if (currentStep === 0 && urlStep === '0' && (searchParams.get('tx') || searchParams.get('address') || searchParams.get('contract') || searchParams.get('silo'))) {
+      router.replace('/wizard?step=0', { scroll: false })
+    }
+  }, [currentStep, urlStep, searchParams, router])
 
   // Update wizard state when URL changes
   useEffect(() => {
