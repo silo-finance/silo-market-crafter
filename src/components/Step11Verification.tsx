@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { parseDeployTxReceipt } from '@/utils/parseDeployTxEvents'
 import { fetchMarketConfig, MarketConfig } from '@/utils/fetchMarketConfig'
+import { resolveAddressToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
@@ -124,11 +125,13 @@ export default function Step11Verification() {
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
-    (params: { txHash?: string; siloConfigAddress?: string }) => {
+    (params: { txHash?: string; siloConfigAddress?: string; siloAddress?: string }) => {
       const query = new URLSearchParams()
       query.set('step', 'verification')
       if (params.txHash) {
         query.set('tx', params.txHash)
+      } else if (params.siloAddress) {
+        query.set('silo', params.siloAddress)
       } else if (params.siloConfigAddress) {
         query.set('address', params.siloConfigAddress)
       }
@@ -469,9 +472,9 @@ export default function Step11Verification() {
     if (!versionFromMap || versionFromMap === '') return
     setSiloFactory(prev => (prev ? { ...prev, version: versionFromMap } : null))
   }, [siloFactory?.address, addressVersions])
-  const handleVerify = useCallback(async (value: string, isTxHash: boolean) => {
+  const handleVerify = useCallback(async (value: string, isTxHash: boolean, isKnownSilo = false) => {
     if (!value.trim()) {
-      setError('Please enter a Silo Config address or transaction hash')
+      setError('Please enter a Silo Config address, Silo address, or transaction hash')
       return
     }
 
@@ -492,6 +495,7 @@ export default function Step11Verification() {
       const network = await provider.getNetwork()
       setDetectedChainId(network.chainId.toString())
       let siloConfigAddress: string
+      let resolvedFromSilo = false
 
       if (isTxHash) {
         // Check that the transaction exists on the current network first
@@ -521,9 +525,9 @@ export default function Step11Verification() {
         if (!ethers.isAddress(value.trim())) {
           throw new Error('Invalid address format')
         }
-        siloConfigAddress = ethers.getAddress(value.trim())
+        const inputAddress = ethers.getAddress(value.trim())
         // Check that the address is a contract on the current network before calling it
-        const code = await provider.getCode(siloConfigAddress)
+        const code = await provider.getCode(inputAddress)
         if (!code || code === '0x' || code === '0x0') {
           setError(
             'This address is not a contract on the current network. You might be connected to the wrong network, or the address is invalid.'
@@ -531,6 +535,10 @@ export default function Step11Verification() {
           setShowForm(true)
           return
         }
+        siloConfigAddress = await resolveAddressToSiloConfig(provider, inputAddress, {
+          knownSilo: isKnownSilo
+        })
+        resolvedFromSilo = siloConfigAddress.toLowerCase() !== inputAddress.toLowerCase()
         setTxHash(null)
       }
 
@@ -545,12 +553,14 @@ export default function Step11Verification() {
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       if (!isMountedRef.current) return
       setConfig(marketConfig)
-      setInput(isTxHash ? value.trim() : siloConfigAddress)
+      setInput(isTxHash ? value.trim() : value.trim())
       // Keep standalone verification URL shareable and reproducible. Never update URL after user left (e.g. Reset).
       if (!isMountedRef.current) return
+      const trimmed = value.trim()
       updateVerificationUrl({
-        txHash: isTxHash ? value.trim() : undefined,
-        siloConfigAddress: isTxHash ? undefined : siloConfigAddress
+        txHash: isTxHash ? trimmed : undefined,
+        siloAddress: !isTxHash && resolvedFromSilo ? ethers.getAddress(trimmed) : undefined,
+        siloConfigAddress: !isTxHash && !resolvedFromSilo ? siloConfigAddress : undefined
       })
       
       // Defaulting hook (SiloHookV2 / SiloHookV3) and gauge verification
@@ -1066,7 +1076,7 @@ export default function Step11Verification() {
       const msg = e instanceof Error ? e.message : String(e)
       const friendly =
         msg.includes('CALL_EXCEPTION') || msg.includes('execution reverted')
-          ? 'Contract call failed: the address may not be a Silo Config, or the contract reverted. Check the address and network.'
+          ? 'Contract call failed: the address may not be a Silo Config or Silo, or the contract reverted. Check the address and network.'
           : msg
       setError(friendly)
       setShowForm(true)
@@ -1101,13 +1111,17 @@ export default function Step11Verification() {
   // When URL has tx= or address=, run verification once. When URL has neither, only show form (never auto-run with lastDeployTxHash so we don't overwrite user input).
   useEffect(() => {
     const urlHash = searchParams.get('tx')
+    const urlSilo = searchParams.get('silo')
     const urlAddress = searchParams.get('address') || searchParams.get('contract')
     if (urlHash) {
       setInput(urlHash)
-      handleVerify(urlHash, true)
+      handleVerify(urlHash, true, false)
+    } else if (urlSilo) {
+      setInput(urlSilo)
+      handleVerify(urlSilo, false, true)
     } else if (urlAddress) {
       setInput(urlAddress)
-      handleVerify(urlAddress, false)
+      handleVerify(urlAddress, false, false)
     } else {
       // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
       const savedHash = wizardData.lastDeployTxHash
@@ -1129,11 +1143,11 @@ export default function Step11Verification() {
     const isAddress = ethers.isAddress(trimmed)
     
     if (!isTxHash && !isAddress) {
-      setError('Invalid input. Please provide a valid Silo Config address or transaction hash.')
+      setError('Invalid input. Please provide a valid Silo Config address, Silo address, or transaction hash.')
       return
     }
     
-    handleVerify(trimmed, isTxHash)
+    handleVerify(trimmed, isTxHash, false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1142,6 +1156,21 @@ export default function Step11Verification() {
     setInput(normalized)
     setError(null)
   }
+
+  const [shareCopied, setShareCopied] = useState(false)
+  const handleShare = useCallback(async () => {
+    try {
+      const url = typeof window !== 'undefined' ? window.location.href : ''
+      if (url) {
+        await navigator.clipboard.writeText(url)
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 2000)
+      }
+    } catch (err) {
+      console.error('Share failed:', err)
+      setError('Failed to copy URL')
+    }
+  }, [])
 
   const goToDeployment = () => router.push('/wizard?step=12')
   const goToNewMarket = () => router.push('/')
@@ -1218,12 +1247,34 @@ export default function Step11Verification() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
+      <div className="text-center sm:text-left mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
           Verification
         </h1>
-        <p className="text-gray-300 text-lg">
+        <p className="text-gray-300 text-lg inline-flex items-center gap-2">
           View complete market configuration tree
+          {config && !loading && (
+            <button
+              type="button"
+              onClick={handleShare}
+              title={shareCopied ? 'Copied!' : 'Copy verification URL'}
+              className="inline-flex items-center justify-center gap-1.5 rounded p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors -mb-0.5"
+              aria-label={shareCopied ? 'Copied' : 'Share'}
+            >
+              {shareCopied ? (
+                <>
+                  <svg className="w-5 h-5 text-lime-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-lime-500 text-sm font-medium">Copied</span>
+                </>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              )}
+            </button>
+          )}
         </p>
       </div>
 
@@ -1231,27 +1282,27 @@ export default function Step11Verification() {
         <form onSubmit={handleSubmit} className="mb-6">
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
             <label htmlFor="input" className="block text-sm font-medium text-white mb-2">
-              Silo Config Address or Transaction Hash
+              Silo Config, Silo Address, or Transaction Hash
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <input
                 id="input"
                 type="text"
                 value={input}
                 onChange={handleInputChange}
-                placeholder="0x... or transaction hash or explorer URL"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+                placeholder="0x... (Silo Config, Silo address, or tx hash)"
+                className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+                className="shrink-0 bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
               >
                 {loading ? 'Loading...' : 'Verify'}
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2">
-              Paste a Silo Config address, transaction hash, or explorer URL with transaction hash
+              Paste a Silo Config address, Silo address, or transaction hash
             </p>
           </div>
         </form>
@@ -1269,7 +1320,7 @@ export default function Step11Verification() {
             >
               {txHash}
             </a>
-            <CopyButton value={txHash} title="Copy transaction hash" />
+            <CopyButton value={txHash} title="Copy transaction hash" className="ml-0" />
           </div>
         </div>
       )}
@@ -1354,7 +1405,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && (
+      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && wizardData.verificationFromWizard && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Copy this and provide to developer</h3>
           <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700 p-4 text-sm flex items-center justify-between gap-3">
@@ -1372,6 +1423,7 @@ export default function Step11Verification() {
             <CopyButton
               value={`${deploymentLineNumber != null ? deploymentLineNumber : '—'} # ${siloDeploymentsLine}`}
               title="Copy line"
+              className="ml-0"
             />
           </div>
         </div>

@@ -42,7 +42,7 @@ export default function AddressDisplayLong({
       >
         {normalizedAddress}
       </a>
-      <CopyButton value={normalizedAddress} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5" />
+      <CopyButton value={normalizedAddress} title="Copy address" iconClassName="w-3.5 h-3.5" className="p-0.5 ml-0" />
     </div>
   )
 }

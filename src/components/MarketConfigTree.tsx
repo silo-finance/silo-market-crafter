@@ -9,6 +9,7 @@ import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
+import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
 
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
@@ -1045,7 +1046,7 @@ function SiloSection({
                 {name ? (
                   <span className="inline-flex items-center gap-1.5">
                     <span>IRM config:</span>
-                    <span className="irm-config-name-chip">{name}</span>
+                    <IrmConfigNameWithLink configName={name} variant="emphasized" />
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
@@ -1071,8 +1072,10 @@ function SiloSection({
                               diffSec <= 0 ? 'already active' : `in ${hours} hours and ${minutes} minutes`
                             const pendingName = pendingIrmInfo.name ?? 'not able to match'
                             return (
-                              <span>
-                                Pending IRM config: {pendingName} – active at {utcDate} ({countdown})
+                              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                <span>Pending IRM config:</span>
+                                <IrmConfigNameWithLink configName={pendingName} variant="normal" />
+                                <span>– active at {utcDate} ({countdown})</span>
                               </span>
                             )
                           })()
@@ -1087,7 +1090,11 @@ function SiloSection({
                         ) : (
                           <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
                             {irmConfigHistory.map((histName, i) => (
-                              <li key={i}><span className="irm-history-config-name">{histName}</span></li>
+                              <li key={i}>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <IrmConfigNameWithLink configName={histName} variant="normal" />
+                                </span>
+                              </li>
                             ))}
                           </ul>
                         )}

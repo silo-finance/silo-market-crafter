@@ -138,8 +138,8 @@ export async function fetchMarketConfig(
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.includes('CALL_EXCEPTION') || msg.includes('revert') || msg.includes('require(false)')) {
       throw new Error(
-        'This address does not appear to be a valid Silo Config contract, or the contract reverted. ' +
-          'Check that the address is a Silo Config on this network and that the contract is initialized.'
+        'Could not load market configuration. If you entered a Silo Config address, Silo address, or transaction hash, ' +
+          'please verify it exists on the current network and is properly initialized.'
       )
     }
     throw err

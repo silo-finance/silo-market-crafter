@@ -383,7 +383,7 @@ export default function TokenAddressInput({
           ) : (
             <span>{normalizeAddress(resolvedAddress) ?? resolvedAddress}</span>
           )}
-          <CopyButton value={normalizeAddress(resolvedAddress) ?? resolvedAddress} iconClassName="w-3.5 h-3.5" />
+          <CopyButton value={normalizeAddress(resolvedAddress) ?? resolvedAddress} iconClassName="w-3.5 h-3.5" className="ml-0" />
         </div>
       )}
       {error && (

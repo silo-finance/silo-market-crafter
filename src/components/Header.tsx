@@ -212,7 +212,7 @@ export default function Header() {
                   >
                     {formatAddress(account)}
                   </div>
-                  <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" />
+                  <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" className="ml-0" />
                 </div>
                 <div className="header-text-soft text-xs">
                   {networkName} ({networkId})
