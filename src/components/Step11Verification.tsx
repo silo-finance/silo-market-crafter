@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { parseDeployTxReceipt } from '@/utils/parseDeployTxEvents'
-import { fetchMarketConfig, MarketConfig } from '@/utils/fetchMarketConfig'
+import { fetchMarketConfig, MarketConfig, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
 import { resolveAddressToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
@@ -16,7 +16,7 @@ import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
-import { getChainName, getExplorerBaseUrl } from '@/utils/networks'
+import { getChainName, getExplorerBaseUrl, getNetworkDisplayName } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { buildSiloDeploymentKey } from '@/utils/siloDeploymentsJson'
 import { verifyAddress } from '@/utils/verification/addressVerification'
@@ -121,7 +121,8 @@ export default function Step11Verification() {
     silo0: string[] | null
     silo1: string[] | null
   }>({ silo0: null, silo1: null })
-  const [deploymentLineNumber, setDeploymentLineNumber] = useState<number | null>(null)
+  const [openPrCopied, setOpenPrCopied] = useState(false)
+  const [wrongAddressVersion, setWrongAddressVersion] = useState<string | null>(null)
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
@@ -485,15 +486,20 @@ export default function Step11Verification() {
 
     setLoading(true)
     setError(null)
+    setWrongAddressVersion(null)
     setConfig(null)
     setShowForm(false)
     setPendingIrmInfo({ silo0: null, silo1: null })
     setIrmConfigHistory({ silo0: null, silo1: null })
 
+    let chainIdForCatch: string | undefined
+    let failedAddressForCatch: string | undefined
+
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const network = await provider.getNetwork()
-      setDetectedChainId(network.chainId.toString())
+      chainIdForCatch = network.chainId.toString()
+      setDetectedChainId(chainIdForCatch)
       let siloConfigAddress: string
       let resolvedFromSilo = false
 
@@ -526,6 +532,7 @@ export default function Step11Verification() {
           throw new Error('Invalid address format')
         }
         const inputAddress = ethers.getAddress(value.trim())
+        failedAddressForCatch = inputAddress
         // Check that the address is a contract on the current network before calling it
         const code = await provider.getCode(inputAddress)
         if (!code || code === '0x' || code === '0x0') {
@@ -1080,6 +1087,35 @@ export default function Step11Verification() {
           : msg
       setError(friendly)
       setShowForm(true)
+
+      // When address input failed (neither Silo nor SiloConfig), try to read version as a hint
+      if (!isTxHash && failedAddressForCatch && chainIdForCatch) {
+        try {
+          const chainName = getChainName(chainIdForCatch)
+          const lensRes = await fetch(
+            `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloLens.sol.json`
+          )
+          if (lensRes.ok) {
+            const lensData = await lensRes.json()
+            const lensAddr = lensData.address || ''
+            if (lensAddr && ethers.isAddress(lensAddr) && window.ethereum) {
+              const provider = new ethers.BrowserProvider(window.ethereum)
+              const versions = await fetchSiloLensVersionsWithCache({
+                provider,
+                lensAddress: lensAddr,
+                chainId: chainIdForCatch,
+                addresses: [failedAddressForCatch]
+              })
+              const v = versions.get(failedAddressForCatch.toLowerCase()) ?? ''
+              if (v && v.toLowerCase() !== 'legacy') {
+                setWrongAddressVersion(v)
+              }
+            }
+          }
+        } catch {
+          // Ignore – version fetch is best-effort only
+        }
+      }
     } finally {
       if (isMountedRef.current) setLoading(false)
     }
@@ -1155,6 +1191,7 @@ export default function Step11Verification() {
     const normalized = extractHexAddressLike(value)
     setInput(normalized)
     setError(null)
+    setWrongAddressVersion(null)
   }
 
   const [shareCopied, setShareCopied] = useState(false)
@@ -1174,67 +1211,6 @@ export default function Step11Verification() {
 
   const goToDeployment = () => router.push('/wizard?step=12')
   const goToNewMarket = () => router.push('/')
-
-  // Line number in the actual _siloDeployments.json on develop (raw file, with opening brace on line 1).
-  useEffect(() => {
-    const fetchLineNumber = async () => {
-      if (!config || !chainId || config.siloId == null) {
-        setDeploymentLineNumber(null)
-        return
-      }
-      try {
-        const chainName = getChainName(chainId)
-        const key = buildSiloDeploymentKey(
-          config.silo0.tokenSymbol ?? 'ASSET0',
-          config.silo1.tokenSymbol ?? 'ASSET1',
-          config.siloId
-        )
-        const res = await fetch(
-          'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/develop/silo-core/deploy/silo/_siloDeployments.json'
-        )
-        if (!res.ok) {
-          setDeploymentLineNumber(null)
-          return
-        }
-        const rawText = await res.text()
-        const lines = rawText.split(/\r?\n/)
-        // Find line containing "chainName": {
-        const chainHeaderIndex = lines.findIndex(
-          line => line.includes(`"${chainName}"`) && line.includes('{')
-        )
-        if (chainHeaderIndex < 0) {
-          setDeploymentLineNumber(null)
-          return
-        }
-        // Entry lines look like: "Silo_...": "0x...", or "Silo_...": "0x..."
-        const keyRe = /^\s*"([^"]+)":\s*"/
-        let insertAt = chainHeaderIndex + 1
-        for (let i = chainHeaderIndex + 1; i < lines.length; i++) {
-          const m = lines[i].match(keyRe)
-          if (m) {
-            const existingKey = m[1]
-            if (existingKey.localeCompare(key) >= 0) {
-              insertAt = i
-              break
-            }
-            insertAt = i + 1
-          } else {
-            // Closing brace or end of block
-            if (lines[i].trim().startsWith('}')) {
-              insertAt = i
-              break
-            }
-          }
-        }
-        setDeploymentLineNumber(insertAt + 1)
-      } catch (err) {
-        console.warn('Failed to resolve _siloDeployments.json line number:', err)
-        setDeploymentLineNumber(null)
-      }
-    }
-
-    fetchLineNumber()
-  }, [config, chainId])
 
   const siloDeploymentsLine =
     config && chainId && config.siloId != null
@@ -1393,6 +1369,11 @@ export default function Step11Verification() {
       {error && !loading && (
         <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
           <p className="text-red-400">{error}</p>
+          {wrongAddressVersion && (
+            <p className="text-gray-400 text-sm mt-2">
+              Detected contract version: {wrongAddressVersion}
+            </p>
+          )}
           {!showForm && (
             <button
               type="button"
@@ -1407,24 +1388,76 @@ export default function Step11Verification() {
 
       {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && wizardData.verificationFromWizard && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Copy this and provide to developer</h3>
-          <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700 p-4 text-sm flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="text-xs text-gray-500 w-10 text-right pr-2 select-none">
-                {deploymentLineNumber != null ? deploymentLineNumber : '—'}
-              </div>
-              <div
-                className="silo-deployments-copy-line break-all"
-                style={{ fontFamily: '"Courier New", Courier, monospace' }}
-              >
-                {siloDeploymentsLine}
-              </div>
-            </div>
-            <CopyButton
-              value={`${deploymentLineNumber != null ? deploymentLineNumber : '—'} # ${siloDeploymentsLine}`}
-              title="Copy line"
-              className="ml-0"
-            />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Open PR for developer</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Config is copied to clipboard automatically. Paste it into the GitHub form and run the workflow.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                const symbol0 = config.silo0.tokenSymbol ?? 'ASSET0'
+                const symbol1 = config.silo1.tokenSymbol ?? 'ASSET1'
+                const deploymentKey = buildSiloDeploymentKey(symbol0, symbol1, config.siloId!)
+                const address = config.siloConfig.startsWith('0x') ? config.siloConfig : `0x${config.siloConfig}`
+                const network = getNetworkDisplayName(chainId)
+                const baseUrl = typeof window !== 'undefined'
+                  ? `${window.location.origin}${(window.location.pathname.replace(/\/wizard.*$/, '') || '/').replace(/\/$/, '')}`
+                  : 'https://silo-finance.github.io/silo-market-crafter'
+                const verificationUrl = `${baseUrl}/wizard?step=verification&address=${config.siloConfig}`
+
+                const toExternalPrice = (quotePriceRaw: string | undefined, oracleAddress: string): number => {
+                  if (!oracleAddress || oracleAddress === ethers.ZeroAddress) return 1
+                  if (!quotePriceRaw) return 1
+                  const priceStr = formatQuotePriceAs18Decimals(quotePriceRaw)
+                  const price = parseFloat(priceStr)
+                  return Math.round(price * 1000)
+                }
+                const externalPrice0 = toExternalPrice(config.silo0.solvencyOracle?.quotePrice, config.silo0.solvencyOracle?.address ?? '')
+                const externalPrice1 = toExternalPrice(config.silo1.solvencyOracle?.quotePrice, config.silo1.solvencyOracle?.address ?? '')
+
+                const siloConfigJson = JSON.stringify({
+                  chainName: getChainName(chainId),
+                  deploymentKey,
+                  address,
+                  symbol0,
+                  symbol1,
+                  network,
+                  verificationUrl,
+                  externalPrice0,
+                  externalPrice1
+                })
+                try {
+                  await navigator.clipboard.writeText(siloConfigJson)
+                  setOpenPrCopied(true)
+                  setTimeout(() => setOpenPrCopied(false), 3000)
+                  window.open(
+                    'https://github.com/silo-finance/silo-contracts-v2/actions/workflows/create-silo-deployment-pr.yml',
+                    '_blank',
+                    'noopener,noreferrer'
+                  )
+                } catch (err) {
+                  console.error('Failed to copy:', err)
+                }
+              }}
+              className="bg-lime-700 hover:bg-lime-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+            >
+              {openPrCopied ? (
+                <>
+                  <svg className="w-5 h-5 text-lime-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Skopiowano! Dane są w schowku. Wklej je do formularza na stronie GitHubu.</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>Copy config & Open workflow</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
