@@ -26,6 +26,8 @@ import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 import { findKinkConfigName, type KinkConfigItem } from '@/utils/kinkConfigName'
 import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
 import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
+import Image from 'next/image'
+import prWorkflowImage from '@/data/pr.png'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -1387,12 +1389,21 @@ export default function Step11Verification() {
       )}
 
       {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && wizardData.verificationFromWizard && (
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Open PR for developer</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Config is copied to clipboard automatically. Paste it into the GitHub form and run the workflow.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="mb-6 flex flex-col sm:flex-row gap-6 sm:gap-3 items-start">
+          <div className="sm:order-1 order-2 w-full sm:w-auto sm:max-w-[240px] min-w-[120px] shrink-0">
+            <Image
+              src={prWorkflowImage}
+              alt="GitHub Actions Run workflow form with Market configuration field"
+              className="rounded-lg border border-gray-200 dark:border-gray-700 w-full h-auto"
+              placeholder="blur"
+            />
+          </div>
+          <div className="flex-1 min-w-0 text-left sm:order-2 order-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Open PR for developer</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Click the button below to copy the config and open the workflow page. Then paste the data into the <strong>Market configuration</strong> field (shown in the screenshot) and click <strong>Run workflow</strong>.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={async () => {
@@ -1447,7 +1458,7 @@ export default function Step11Verification() {
                   <svg className="w-5 h-5 text-lime-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Skopiowano! Dane są w schowku. Wklej je do formularza na stronie GitHubu.</span>
+                  <span>Copied! Paste into the Market configuration field on GitHub and click Run workflow.</span>
                 </>
               ) : (
                 <>
@@ -1458,6 +1469,7 @@ export default function Step11Verification() {
                 </>
               )}
             </button>
+            </div>
           </div>
         </div>
       )}
