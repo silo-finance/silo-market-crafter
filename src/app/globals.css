@@ -298,6 +298,21 @@ body {
   color: #ffffff !important;
 }
 
+/* Darker background for CTA buttons with white text – light gray overrides make white text invisible */
+.light-market-theme button.cta-strong-white[class*="bg-gray-600"],
+.light-market-theme button.cta-strong-white[class*="bg-gray-700"],
+.light-market-theme a.cta-strong-white[class*="bg-gray-600"],
+.light-market-theme a.cta-strong-white[class*="bg-gray-700"] {
+  background-color: #4d7c0f !important;
+}
+
+.light-market-theme button.cta-strong-white[class*="bg-gray-600"]:hover,
+.light-market-theme button.cta-strong-white[class*="bg-gray-700"]:hover,
+.light-market-theme a.cta-strong-white[class*="bg-gray-600"]:hover,
+.light-market-theme a.cta-strong-white[class*="bg-gray-700"]:hover {
+  background-color: #3f6212 !important;
+}
+
 /* Shared muted success/info tone used across form metadata/status text. */
 .status-muted-success {
   color: rgb(6 95 70 / 0.75) !important;

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
@@ -709,19 +710,14 @@ export default function Step10Deployment() {
 
       {/* Navigation */}
       <div className="flex justify-between mb-6">
-        <button
-          type="button"
-          onClick={goToPreviousStep}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
+        <Button variant="secondary" size="lg" onClick={goToPreviousStep}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>JSON Config</span>
-        </button>
-        
+          JSON Config
+        </Button>
         {!configUnchangedAfterDeploy && (
-          <button
+          <Button
             onClick={handleDeploy}
             disabled={
               deploying ||
@@ -736,7 +732,8 @@ export default function Step10Deployment() {
                 deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
               ))
             }
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            variant="primary"
+            size="lg"
           >
             {deploying ? (
               <>
@@ -754,7 +751,7 @@ export default function Step10Deployment() {
                 </svg>
               </>
             )}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -815,13 +812,13 @@ export default function Step10Deployment() {
             </a>
             <CopyButton value={txHash} iconClassName="w-3.5 h-3.5" title="Copy transaction hash" className="ml-0" />
           </div>
-          <button
-            type="button"
+          <Button
+            variant="primaryDark"
+            size="sm"
             onClick={() => router.push(`/wizard?step=verification&tx=${txHash}`)}
-            className="bg-lime-800 hover:bg-lime-700 text-white cta-strong-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Go to verification
-          </button>
+          </Button>
         </div>
       )}
 

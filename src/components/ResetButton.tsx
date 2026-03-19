@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 
@@ -26,16 +27,17 @@ export default function ResetButton() {
 
   return (
     <>
-      <button
+      <Button
+        variant="destructive"
+        size="sm"
         onClick={handleResetClick}
-        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         title="Reset form and clear all data"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
-        <span>Reset Form</span>
-      </button>
+        Reset Form
+      </Button>
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
@@ -65,18 +67,12 @@ export default function ResetButton() {
             </div>
 
             <div className="flex space-x-3">
-              <button
-                onClick={handleCancelReset}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-              >
+              <Button fullWidth variant="secondary" size="sm" onClick={handleCancelReset}>
                 Cancel
-              </button>
-              <button
-                onClick={handleConfirmReset}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-              >
+              </Button>
+              <Button fullWidth variant="destructive" size="sm" onClick={handleConfirmReset}>
                 Reset Form
-              </button>
+              </Button>
             </div>
           </div>
         </div>
