@@ -6,6 +6,10 @@ WARNING: this is alpha version, it has bugs. Use it on your own risk.
 
 UI for market creation for Silo - A modern web3 application built with Next.js, React, and Tailwind CSS.
 
+## Verification Documentation
+
+- Full verification audit and checklist: [`VERIFICATIONS.md`](./VERIFICATIONS.md)
+
 ## Quick Start
 
 ### Prerequisites
