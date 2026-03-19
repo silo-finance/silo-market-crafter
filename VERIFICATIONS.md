@@ -19,10 +19,8 @@ Legend:
 - Fees
   - DAO Fee
     - DAO fee match: we check that fee on-chain is exactly the same as in wizard settings. *
-    - If wizard value is not available, this check is shown as `N/A`.
   - Deployer Fee
     - Deployer fee match: we check that fee on-chain is exactly the same as in wizard settings. *
-    - If wizard value is not available, this check is shown as `N/A`.
 
 - Hook Receiver
   - Hook owner checks
@@ -32,7 +30,6 @@ Legend:
     - Gauge required/exists: when only one asset is borrowable, we check if required Silo Incentives Controller (gauge) is configured.
     - (i) Show LT margin for defaulting.
     - Gauge ownership and wiring: for configured gauge, we check owner against official list, compare owner with hook owner and wizard owner, and verify that notifier points to hook address. *
-    - (i) Show gauge owner label/name (if available in address list).
 
 ## SILO 0
 
@@ -74,7 +71,7 @@ Legend:
   - Liquidation Fee: check on-chain value equals wizard value *
   - Flashloan Fee: check on-chain value equals wizard value *
   - Call Before Quote
-    - Check is defined in the UI flow, but currently wizard value is missing, so result is `N/A`.
+    - Check is defined in the UI flow, but currently wizard value is missing.
 
 ## SILO 1
 
@@ -103,7 +100,7 @@ Legend:
 
 - Risk and fee parameters
   - Check that these on-chain values match wizard values: Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee *
-  - Call Before Quote currently behaves like SILO 0 (`N/A` because wizard value is missing).
+  - Call Before Quote currently behaves like SILO 0 (wizard value is missing).
 
 ## Shared Address List Checks
 
