@@ -32,8 +32,8 @@ Legend:
     - (i) Show LT margin for defaulting.
     - Gauge owner in official list: for configured gauge, we check that gauge owner exists in official Silo address list.
     - Gauge owner matches hook owner: for configured gauge, we check whether gauge owner and hook owner are the same.
-    - Gauge owner matches wizard: for configured gauge, we check whether gauge owner matches wizard hook owner. *
     - Gauge notifier wiring: for configured gauge, we check whether notifier points to hook address.
+    - Gauge owner matches wizard: for configured gauge, we check whether gauge owner matches wizard hook owner. *
 
 ## SILO 0
 
@@ -76,13 +76,13 @@ Legend:
     - (i) Show pending/history details as context.
 
 - Risk and fee parameters
+  - Call Before Quote
+    - Check is defined in the UI flow, but currently wizard value is missing.
   - Max LTV: check on-chain value equals wizard value *
   - Liquidation Threshold (LT): check on-chain value equals wizard value *
   - Liquidation Target LTV: check on-chain value equals wizard value *
   - Liquidation Fee: check on-chain value equals wizard value *
   - Flashloan Fee: check on-chain value equals wizard value *
-  - Call Before Quote
-    - Check is defined in the UI flow, but currently wizard value is missing.
 
 ## SILO 1
 
@@ -113,8 +113,8 @@ Legend:
   - (i) Show pending config and config history details.
 
 - Risk and fee parameters
-  - Check that these on-chain values match wizard values: Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee *
   - Call Before Quote currently behaves like SILO 0 (wizard value is missing).
+  - Check that these on-chain values match wizard values: Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee *
 
 ## Shared Address List Checks
 
