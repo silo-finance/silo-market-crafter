@@ -24,40 +24,51 @@ Legend:
 
 - Hook Receiver
   - Hook owner checks
-    - Hook owner consistency: we read hook owner from chain, compare it with wizard owner, and also verify that this address exists in official Silo address list. *
+    - Hook owner in official list: we check that hook owner address exists in official Silo address list.
+    - Hook owner matches wizard: we check that hook owner on-chain matches hook owner selected in wizard. *
   - Defaulting hook / gauge checks
     - Defaulting mode detection: we check whether market uses defaulting liquidation mode and whether one or both assets are borrowable.
     - Gauge required/exists: when only one asset is borrowable, we check if required Silo Incentives Controller (gauge) is configured.
     - (i) Show LT margin for defaulting.
-    - Gauge ownership and wiring: for configured gauge, we check owner against official list, compare owner with hook owner and wizard owner, and verify that notifier points to hook address. *
+    - Gauge owner in official list: for configured gauge, we check that gauge owner exists in official Silo address list.
+    - Gauge owner matches hook owner: for configured gauge, we check whether gauge owner and hook owner are the same.
+    - Gauge owner matches wizard: for configured gauge, we check whether gauge owner matches wizard hook owner. *
+    - Gauge notifier wiring: for configured gauge, we check whether notifier points to hook address.
 
 ## SILO 0
 
 - Token
-  - Token address validation: we check that on-chain token matches wizard token and exists in official Silo address list. *
+  - Token in official list: we check that token address exists in official Silo address list.
+  - Token matches wizard: we check that token address on-chain matches token selected in wizard. *
 
 - Share tokens
   - (i) Show share token details (symbol, decimals, decimals offset).
 
 - Solvency Oracle
   - Price checks
-    - Oracle price sanity: we check if price is suspiciously low, suspiciously high, or has an invalid raw format/length.
+    - Price too low check: we flag if price looks suspiciously low.
+    - Price too high check: we flag if price looks suspiciously high.
+    - Price format check: we flag if raw price format/length looks invalid.
   - PT Linear specific
     - PT base discount validation: we check that base discount is in allowed range and matches wizard value. *
   - Owner checks
-    - Oracle owner validation: we check that owner exists in official Silo address list and matches wizard owner. *
+    - Oracle owner in official list: we check that oracle owner address exists in official Silo address list.
+    - Oracle owner matches wizard: we check that oracle owner matches wizard owner. *
   - (i) Show underlying oracle and timelock when available.
   - (i) Show Chainlink aggregator details when available.
 
 - Max LTV Oracle (only when different from Solvency Oracle)
   - Price checks
-    - Oracle price sanity: we check if price is suspiciously low, suspiciously high, or has an invalid raw format/length.
+    - Price too low check: we flag if price looks suspiciously low.
+    - Price too high check: we flag if price looks suspiciously high.
+    - Price format check: we flag if raw price format/length looks invalid.
   - (i) Show underlying oracle and timelock when available.
   - (i) Show Chainlink aggregator details when available.
 
 - Interest Rate Model
   - Owner checks
-    - IRM owner validation: we check that owner exists in official Silo address list and matches wizard owner. *
+    - IRM owner in official list: we check that IRM owner address exists in official Silo address list.
+    - IRM owner matches wizard: we check that IRM owner matches wizard owner. *
   - Dynamic Kink config checks
     - Dynamic Kink config match: we check whether current IRM config matches one of known official Dynamic Kink configurations (otherwise it is shown as not matched).
   - Pending/history checks
@@ -76,25 +87,28 @@ Legend:
 ## SILO 1
 
 - Token
-  - Token address validation: we check that on-chain token matches wizard token and exists in official Silo address list. *
+  - Token in official list: we check that token address exists in official Silo address list.
+  - Token matches wizard: we check that token address on-chain matches token selected in wizard. *
 
 - Share tokens
   - (i) Show share token details.
 
 - Solvency Oracle
-  - Oracle price sanity: same checks as SILO 0 (too low / too high / invalid raw format).
+  - Price checks: same three checks as SILO 0 (too low / too high / invalid format).
   - PT Linear specific:
     - PT base discount validation: we check range and wizard match. *
   - Owner checks:
-    - Oracle owner validation: we check official-list presence and wizard match. *
+    - Oracle owner in official list: we check that owner address exists in official Silo address list.
+    - Oracle owner matches wizard: we check that owner matches wizard owner. *
   - (i) Show underlying/timelock and Chainlink details when available.
 
 - Max LTV Oracle (if separate)
-  - Oracle price sanity: same checks as SILO 0 (too low / too high / invalid raw format).
+  - Price checks: same three checks as SILO 0 (too low / too high / invalid format).
   - (i) Show underlying/timelock and Chainlink details when available.
 
 - Interest Rate Model
-  - IRM owner validation: we check official-list presence and wizard match. *
+  - IRM owner in official list: we check that IRM owner address exists in official Silo address list.
+  - IRM owner matches wizard: we check that IRM owner matches wizard owner. *
   - Dynamic Kink config match: we check whether current config matches known official configs.
   - (i) Show pending config and config history details.
 
