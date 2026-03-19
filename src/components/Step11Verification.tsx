@@ -1484,15 +1484,31 @@ export default function Step11Verification() {
                     : 'https://silo-finance.github.io/silo-market-crafter'
                   const verificationUrl = `${baseUrl}/wizard?step=verification&address=${config.siloConfig}`
 
-                  const toExternalPrice = (quotePriceRaw: string | undefined, oracleAddress: string): number => {
-                    if (!oracleAddress || oracleAddress === ethers.ZeroAddress) return 1
-                    if (!quotePriceRaw) return 1
-                    const priceStr = formatQuotePriceAs18Decimals(quotePriceRaw)
+                  const toExternalPrice = (
+                    quotePriceRaw: string | undefined,
+                    oracleAddress: string,
+                    tokenDecimals: number | undefined
+                  ): number => {
+                    const decimalsSafe = typeof tokenDecimals === 'number' ? tokenDecimals : 18
+                    const effectivePriceRaw =
+                      !oracleAddress || oracleAddress === ethers.ZeroAddress
+                        ? BigInt(`1${'0'.repeat(Math.max(0, Math.floor(decimalsSafe)))}`).toString()
+                        : quotePriceRaw
+                    if (!effectivePriceRaw) return 1
+                    const priceStr = formatQuotePriceAs18Decimals(effectivePriceRaw)
                     const price = parseFloat(priceStr)
                     return Math.round(price * 1000)
                   }
-                  const externalPrice0 = toExternalPrice(config.silo0.solvencyOracle?.quotePrice, config.silo0.solvencyOracle?.address ?? '')
-                  const externalPrice1 = toExternalPrice(config.silo1.solvencyOracle?.quotePrice, config.silo1.solvencyOracle?.address ?? '')
+                  const externalPrice0 = toExternalPrice(
+                    config.silo0.solvencyOracle?.quotePrice,
+                    config.silo0.solvencyOracle?.address ?? '',
+                    config.silo0.tokenDecimals
+                  )
+                  const externalPrice1 = toExternalPrice(
+                    config.silo1.solvencyOracle?.quotePrice,
+                    config.silo1.solvencyOracle?.address ?? '',
+                    config.silo1.tokenDecimals
+                  )
 
                   const siloConfigJson = JSON.stringify({
                     chainName: getChainName(chainId),
