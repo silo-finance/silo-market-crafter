@@ -878,6 +878,8 @@ function SiloSection({
             { excludeBaseDiscount: hasPTLinearUnderlying }
           )
           if (isSolvencyOracleZero && solvencyOraclePriceRawForVerification != null) {
+            const effectiveQuoteTokenSymbol =
+              siloConfig.solvencyOracle.quoteTokenSymbol || siloConfig.tokenSymbol
             base.unshift({
               key: ORACLE_BULLET_KEYS.PRICE,
               text: (
@@ -886,6 +888,9 @@ function SiloSection({
                   <span className="irm-config-name-chip">
                     {formatQuotePriceAs18Decimals(solvencyOraclePriceRawForVerification)}
                   </span>
+                  {effectiveQuoteTokenSymbol && (
+                    <span className="text-gray-300 text-sm">{effectiveQuoteTokenSymbol}</span>
+                  )}
                 </span>
               )
             })
