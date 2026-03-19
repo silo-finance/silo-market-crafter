@@ -35,7 +35,7 @@ Legend:
     - Gauge notifier wiring: for configured gauge, we check whether notifier points to hook address.
     - Gauge owner matches wizard: for configured gauge, we check whether gauge owner matches wizard hook owner. *
 
-## SILO 0
+## SILO
 
 - Token
   - Token in official list: we check that token address exists in official Silo address list.
@@ -48,20 +48,12 @@ Legend:
   - Price checks
     - Price too low check: we flag if price looks suspiciously low.
     - Price too high check: we flag if price looks suspiciously high.
-    - Price format check: we flag if raw price format/length looks invalid.
+    - Price format check: we verify that price format looks like 18-decimal precision and flag values that do not match this expected format.
   - PT Linear specific
     - PT base discount validation: we check that base discount is in allowed range and matches wizard value. *
   - Owner checks
     - Oracle owner in official list: we check that oracle owner address exists in official Silo address list.
     - Oracle owner matches wizard: we check that oracle owner matches wizard owner. *
-  - (i) Show underlying oracle and timelock when available.
-  - (i) Show Chainlink aggregator details when available.
-
-- Max LTV Oracle (only when different from Solvency Oracle)
-  - Price checks
-    - Price too low check: we flag if price looks suspiciously low.
-    - Price too high check: we flag if price looks suspiciously high.
-    - Price format check: we flag if raw price format/length looks invalid.
   - (i) Show underlying oracle and timelock when available.
   - (i) Show Chainlink aggregator details when available.
 
@@ -75,46 +67,12 @@ Legend:
     - IRM pending/history identification: we check pending and historical IRM configs and try to map them to known config names.
     - (i) Show pending/history details as context.
 
-- Risk and fee parameters
-  - Call Before Quote
-    - Check is defined in the UI flow, but currently wizard value is missing.
+- fee parameters
   - Max LTV: check on-chain value equals wizard value *
   - Liquidation Threshold (LT): check on-chain value equals wizard value *
   - Liquidation Target LTV: check on-chain value equals wizard value *
   - Liquidation Fee: check on-chain value equals wizard value *
   - Flashloan Fee: check on-chain value equals wizard value *
-
-## SILO 1
-
-- Token
-  - Token in official list: we check that token address exists in official Silo address list.
-  - Token matches wizard: we check that token address on-chain matches token selected in wizard. *
-
-- Share tokens
-  - (i) Show share token details.
-
-- Solvency Oracle
-  - Price checks: same three checks as SILO 0 (too low / too high / invalid format).
-  - PT Linear specific:
-    - PT base discount validation: we check range and wizard match. *
-  - Owner checks:
-    - Oracle owner in official list: we check that owner address exists in official Silo address list.
-    - Oracle owner matches wizard: we check that owner matches wizard owner. *
-  - (i) Show underlying/timelock and Chainlink details when available.
-
-- Max LTV Oracle (if separate)
-  - Price checks: same three checks as SILO 0 (too low / too high / invalid format).
-  - (i) Show underlying/timelock and Chainlink details when available.
-
-- Interest Rate Model
-  - IRM owner in official list: we check that IRM owner address exists in official Silo address list.
-  - IRM owner matches wizard: we check that IRM owner matches wizard owner. *
-  - Dynamic Kink config match: we check whether current config matches known official configs.
-  - (i) Show pending config and config history details.
-
-- Risk and fee parameters
-  - Call Before Quote currently behaves like SILO 0 (wizard value is missing).
-  - Check that these on-chain values match wizard values: Max LTV, LT, Liquidation Target LTV, Liquidation Fee, Flashloan Fee *
 
 ## Shared Address List Checks
 
@@ -125,7 +83,3 @@ Legend:
   - IRM owners (if available)
   - Solvency oracle owners (if available)
   - Token0 and Token1 addresses
-
-## Notes
-
-- `buildVerificationChecks.ts` also exists, but is not currently wired into the Step 11 view.
