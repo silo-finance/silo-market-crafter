@@ -258,7 +258,11 @@ export function buildVerificationChecks(
   ))
 
   // Silo 0 – Solvency Oracle price - always checkable (independent check)
-  const price0Sol = config.silo0.solvencyOracle.quotePrice
+  const tokenDecimals0Safe = typeof config.silo0.tokenDecimals === 'number' ? config.silo0.tokenDecimals : 18
+  const isSolvencyOracle0Zero = config.silo0.solvencyOracle.address?.toLowerCase() === ethers.ZeroAddress.toLowerCase()
+  const price0Sol = isSolvencyOracle0Zero
+    ? BigInt(`1${'0'.repeat(Math.max(0, Math.floor(tokenDecimals0Safe)))}`).toString()
+    : config.silo0.solvencyOracle.quotePrice
   const low0Sol = isPriceUnexpectedlyLow(price0Sol)
   const high0Sol = isPriceUnexpectedlyHigh(price0Sol)
   const decimals0Sol = isPriceDecimalsInvalid(price0Sol)
@@ -340,7 +344,11 @@ export function buildVerificationChecks(
   addNumeric('flashloanFee', 'Flashloan Fee')
 
   // Silo 1 – Solvency Oracle price - always checkable (independent check)
-  const price1Sol = config.silo1.solvencyOracle.quotePrice
+  const tokenDecimals1Safe = typeof config.silo1.tokenDecimals === 'number' ? config.silo1.tokenDecimals : 18
+  const isSolvencyOracle1Zero = config.silo1.solvencyOracle.address?.toLowerCase() === ethers.ZeroAddress.toLowerCase()
+  const price1Sol = isSolvencyOracle1Zero
+    ? BigInt(`1${'0'.repeat(Math.max(0, Math.floor(tokenDecimals1Safe)))}`).toString()
+    : config.silo1.solvencyOracle.quotePrice
   const low1Sol = isPriceUnexpectedlyLow(price1Sol)
   const high1Sol = isPriceUnexpectedlyHigh(price1Sol)
   const decimals1Sol = isPriceDecimalsInvalid(price1Sol)

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals, formatRate18AsPercent } from '@/utils/fetchMarketConfig'
+import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
@@ -58,7 +58,8 @@ function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
   type: string | undefined,
-  config: Record<string, unknown> | undefined
+  config: Record<string, unknown> | undefined,
+  options?: { excludeBaseDiscount?: boolean }
 ): OracleBulletItem[] {
   const bullets: OracleBulletItem[] = []
   if (quotePrice != null && quotePrice !== '') {
@@ -76,19 +77,27 @@ function buildOracleBullets(
       )
     })
   }
-  if (type) {
+  // Skip Type for PT-Linear – base discount per year is sufficient
+  if (type && !/ptlinear|pt-linear/i.test(type)) {
     bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
   }
 
   if (config && typeof config === 'object') {
     for (const [configKey, val] of Object.entries(config)) {
       if (/quoteToken/i.test(configKey)) continue
+      const isBaseDiscount = /baseDiscount/i.test(configKey)
+      if (isBaseDiscount && options?.excludeBaseDiscount) continue
       const raw = typeof val === 'string' ? val : String(val)
       const isFactor = /scaleFactor|factor/i.test(configKey)
-      const isBaseDiscount = /baseDiscount/i.test(configKey)
-      let display: string
+      let display: string | React.ReactNode
       if (isBaseDiscount && /^\d+$/.test(raw)) {
-        display = formatRate18AsPercent(raw)
+        const valBigInt = BigInt(raw)
+        display = (
+          <>
+            <span className="irm-config-name-chip">{formatPercentage(valBigInt)}</span>
+            <span className="text-gray-500 text-xs font-normal">({formatWizardBigIntToE18(valBigInt, true)})</span>
+          </>
+        )
       } else if (isFactor && /^\d+$/.test(raw)) {
         display = formatFactorToE(raw)
       } else {
@@ -97,7 +106,14 @@ function buildOracleBullets(
       const label = configKey.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim()
       const text = raw.startsWith('0x') && raw.length === 42
         ? `${label}: ${formatAddress(raw)}`
-        : `${label}: ${display}`
+        : isBaseDiscount && typeof display !== 'string'
+          ? (
+              <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <span>{label}:</span>
+                {display}
+              </span>
+            )
+          : `${label}: ${display}`
       const bulletKey = isBaseDiscount ? ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR : ORACLE_BULLET_KEYS.CONFIG(configKey)
       bullets.push({ key: bulletKey, text })
     }
@@ -788,6 +804,14 @@ function SiloSection({
   const numeric = numericVerification ?? null
   const siloKey = side === 0 ? 'silo0' : 'silo1'
 
+  const tokenDecimalsSafe = typeof siloConfig.tokenDecimals === 'number' ? siloConfig.tokenDecimals : 18
+  const isSolvencyOracleZero = siloConfig.solvencyOracle.address?.toLowerCase() === ethers.ZeroAddress.toLowerCase()
+  // When Solvency Oracle address is zero, we can't read quotePrice on-chain.
+  // We assume 1 token == 1 quote token in raw units => priceRaw = 10^tokenDecimals.
+  const solvencyOraclePriceRawForVerification = isSolvencyOracleZero
+    ? BigInt(`1${'0'.repeat(Math.max(0, Math.floor(tokenDecimalsSafe)))}`).toString()
+    : siloConfig.solvencyOracle.quotePrice
+
   return (
     <TreeNode label={label} isRoot address={siloConfig.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={assetSymbol}>
       <TreeNode
@@ -840,15 +864,32 @@ function SiloSection({
         address={siloConfig.solvencyOracle.address}
         suffixText={siloConfig.solvencyOracle.version}
         bulletItems={(() => {
+          const underlying = siloConfig.solvencyOracle.underlying
+          const hasPTLinearUnderlying = Boolean(underlying && ptOracleBaseDiscount)
+          // When underlying is PT-Linear: exclude base discount from top-level, show it nested under underlying
+          const solvencyConfigForBullets = !underlying || hasPTLinearUnderlying
+            ? (siloConfig.solvencyOracle.config as Record<string, unknown> | undefined)
+            : undefined
           const base = buildOracleBullets(
-            siloConfig.solvencyOracle.quotePrice,
+            isSolvencyOracleZero ? undefined : siloConfig.solvencyOracle.quotePrice,
             siloConfig.solvencyOracle.quoteTokenSymbol,
             siloConfig.solvencyOracle.type,
-            siloConfig.solvencyOracle.underlying
-              ? undefined
-              : (siloConfig.solvencyOracle.config as Record<string, unknown> | undefined)
+            solvencyConfigForBullets,
+            { excludeBaseDiscount: hasPTLinearUnderlying }
           )
-          const underlying = siloConfig.solvencyOracle.underlying
+          if (isSolvencyOracleZero && solvencyOraclePriceRawForVerification != null) {
+            base.unshift({
+              key: ORACLE_BULLET_KEYS.PRICE,
+              text: (
+                <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <span className="font-medium">Price is:</span>
+                  <span className="irm-config-name-chip">
+                    {formatQuotePriceAs18Decimals(solvencyOraclePriceRawForVerification)}
+                  </span>
+                </span>
+              )
+            })
+          }
           if (underlying) {
             base.push({
               key: `oracle.manageable.underlying.${siloKey}.solvency`,
@@ -871,6 +912,36 @@ function SiloSection({
                     />
                     <VersionStatus version={underlying.version} />
                   </span>
+                    {hasPTLinearUnderlying && ptOracleBaseDiscount && (
+                    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
+                      <li className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span>Base discount per year:</span>
+                        <span className="irm-config-name-chip">
+                          {formatPercentage(ptOracleBaseDiscount.onChain)}
+                        </span>
+                        <span className="text-gray-500 text-xs font-normal">({formatWizardBigIntToE18(ptOracleBaseDiscount.onChain, true)})</span>
+                        {(() => {
+                          const isMatch = ptOracleBaseDiscount.wizard !== null && verifyNumericValue(ptOracleBaseDiscount.onChain, ptOracleBaseDiscount.wizard)
+                          const outOfRange = isBaseDiscountPercentOutOfRange(ptOracleBaseDiscount.onChain)
+                          const status = ptOracleBaseDiscount.wizard === null
+                            ? VERIFICATION_STATUS.NOT_AVAILABLE
+                            : isMatch && !outOfRange
+                              ? VERIFICATION_STATUS.PASSED
+                              : VERIFICATION_STATUS.FAILED
+                          return (
+                            <>
+                              <span className="text-gray-500 text-xs">
+                                {status === VERIFICATION_STATUS.PASSED && 'matches Wizard'}
+                                {status === VERIFICATION_STATUS.FAILED && (outOfRange ? 'out of range' : 'does not match Wizard')}
+                                {status === VERIFICATION_STATUS.NOT_AVAILABLE && 'N/A'}
+                              </span>
+                              <VerificationStatusIconSmall status={status} />
+                            </>
+                          )
+                        })()}
+                      </li>
+                    </ul>
+                  )}
                   {renderChainlinkAggregatorsForConfig(
                     siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
                     explorerUrl
@@ -890,9 +961,9 @@ function SiloSection({
           }
           return base
         })()}
-        priceLowWarning={isPriceUnexpectedlyLow(siloConfig.solvencyOracle.quotePrice)}
-        priceHighWarning={isPriceUnexpectedlyHigh(siloConfig.solvencyOracle.quotePrice)}
-        priceDecimalsWarning={isPriceDecimalsInvalid(siloConfig.solvencyOracle.quotePrice)}
+        priceLowWarning={isPriceUnexpectedlyLow(solvencyOraclePriceRawForVerification)}
+        priceHighWarning={isPriceUnexpectedlyHigh(solvencyOraclePriceRawForVerification)}
+        priceDecimalsWarning={isPriceDecimalsInvalid(solvencyOraclePriceRawForVerification)}
         baseDiscountVerification={ptOracleBaseDiscount ?? null}
         explorerUrl={explorerUrl}
         addressVersions={addressVersions}
@@ -919,15 +990,19 @@ function SiloSection({
           address={siloConfig.maxLtvOracle.address}
           suffixText={siloConfig.maxLtvOracle.version}
           bulletItems={(() => {
+            const underlying = siloConfig.maxLtvOracle.underlying
+            const maxLtvConfig = siloConfig.maxLtvOracle.config as Record<string, unknown> | undefined
+            const hasPTLinearUnderlying = Boolean(underlying && maxLtvConfig && typeof maxLtvConfig.baseDiscountPerYear !== 'undefined')
+            const maxLtvConfigForBullets = !underlying || hasPTLinearUnderlying
+              ? maxLtvConfig
+              : undefined
             const base = buildOracleBullets(
               siloConfig.maxLtvOracle.quotePrice,
               siloConfig.maxLtvOracle.quoteTokenSymbol,
               siloConfig.maxLtvOracle.type,
-              siloConfig.maxLtvOracle.underlying
-                ? undefined
-                : (siloConfig.maxLtvOracle.config as Record<string, unknown> | undefined)
+              maxLtvConfigForBullets,
+              { excludeBaseDiscount: hasPTLinearUnderlying }
             )
-            const underlying = siloConfig.maxLtvOracle.underlying
             if (underlying) {
               base.push({
                 key: `oracle.manageable.underlying.${siloKey}.maxLtv`,
@@ -950,10 +1025,18 @@ function SiloSection({
                       />
                       <VersionStatus version={underlying.version} />
                     </span>
-                    {renderChainlinkAggregatorsForConfig(
-                      siloConfig.maxLtvOracle.config as Record<string, unknown> | undefined,
-                      explorerUrl
+                    {hasPTLinearUnderlying && maxLtvConfig?.baseDiscountPerYear != null && (
+                      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
+                        <li>
+                          <span>Base discount per year:</span>{' '}
+                          <span className="irm-config-name-chip">
+                            {formatPercentage(BigInt(String(maxLtvConfig.baseDiscountPerYear)))}
+                          </span>
+                          <span className="text-gray-500 text-xs font-normal">({formatWizardBigIntToE18(BigInt(String(maxLtvConfig.baseDiscountPerYear)), true)})</span>
+                        </li>
+                      </ul>
                     )}
+                    {renderChainlinkAggregatorsForConfig(maxLtvConfig, explorerUrl)}
                   </>
                 )
               })
