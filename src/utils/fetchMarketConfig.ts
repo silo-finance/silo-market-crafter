@@ -360,6 +360,28 @@ export async function fetchMarketConfig(
     )
   }
 
+  // When ManageableOracle wraps PT-Linear underlying, enrich with underlying's config (baseDiscountPerYear / max yield)
+  const ptLinearTargets: Array<{ oracle: OracleInfo; ptLinearAddress: string }> = []
+  const maybeAddPTLinearTarget = (oracle: OracleInfo) => {
+    if (isPTLinearOracleByVersion(oracle.version)) {
+      ptLinearTargets.push({ oracle, ptLinearAddress: oracle.address })
+    } else if (oracle.underlying && isPTLinearOracleByVersion(oracle.underlying.version)) {
+      ptLinearTargets.push({ oracle, ptLinearAddress: oracle.underlying.address })
+    }
+  }
+  maybeAddPTLinearTarget(config0.solvencyOracle)
+  maybeAddPTLinearTarget(config1.solvencyOracle)
+  maybeAddPTLinearTarget(config0.maxLtvOracle)
+  maybeAddPTLinearTarget(config1.maxLtvOracle)
+
+  if (ptLinearTargets.length > 0) {
+    await Promise.all(
+      ptLinearTargets.map(({ oracle, ptLinearAddress }) =>
+        enrichPTLinearOracle(provider, ptLinearAddress, oracle)
+      )
+    )
+  }
+
   // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
   // Deduplicate by owner address so we only fetch once when hook and IRM share the same owner.
   const allOwnerAddresses = new Set<string>()
@@ -643,6 +665,12 @@ function isChainlinkOracleByVersion(version: string | undefined): boolean {
   return name === 'ChainlinkV3Oracle'
 }
 
+function isPTLinearOracleByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  const v = version.toLowerCase()
+  return v.includes('ptlinear') || v.includes('pt-linear')
+}
+
 async function enrichChainlinkOracle(
   provider: ethers.Provider,
   chainlinkAddress: string,
@@ -721,6 +749,35 @@ async function enrichChainlinkOracle(
     target.config = {
       ...baseConfig,
       ...chainlinkExtras
+    }
+  } catch {
+    // If anything fails, leave target as-is – detection is done via version, not try/catch.
+  }
+}
+
+async function enrichPTLinearOracle(
+  provider: ethers.Provider,
+  ptLinearAddress: string,
+  target: OracleInfo
+): Promise<void> {
+  if (!ptLinearAddress || ptLinearAddress === ethers.ZeroAddress || !ethers.isAddress(ptLinearAddress)) return
+
+  try {
+    const ptLinearAbi = [
+      {
+        type: 'function' as const,
+        name: 'baseDiscountPerYear',
+        inputs: [],
+        outputs: [{ type: 'uint256', internalType: 'uint256' }],
+        stateMutability: 'view' as const
+      }
+    ]
+    const ptContract = new ethers.Contract(ptLinearAddress, ptLinearAbi as ethers.InterfaceAbi, provider)
+    const baseDiscountPerYear = await ptContract.baseDiscountPerYear()
+    target.type = 'PTLinear'
+    target.config = {
+      ...(target.config ?? {}),
+      baseDiscountPerYear: baseDiscountPerYear.toString()
     }
   } catch {
     // If anything fails, leave target as-is – detection is done via version, not try/catch.
