@@ -12,13 +12,11 @@ Legend:
   - Check which SiloFactory address should be used on the current network (based on the official Silo repository).
   - Check for `silo0` and `silo1` that both silo addresses are recognized by the current SiloFactory (in simple terms: both silos are valid/registered).
   - Check that the factory address saved inside each silo matches the current official SiloFactory address.
-  - (i) Show SiloFactory version.
 
 - SILO implementation check
   - Read the implementation address used by the deployment transaction *
   - Compare that implementation address with the official implementation list from the repository *
   - Confirm that the deployed market used an implementation from the official list *
-  - (i) Show implementation version.
 
 - Fees
   - DAO Fee
@@ -46,7 +44,6 @@ Legend:
       - Check that gauge owner matches wizard hook owner *
       - Check that gauge notifier points to the hook address.
       - (i) Show gauge owner label/name (if available in address list).
-      - (i) Show gauge version.
 
 ## SILO 0
 
@@ -145,5 +142,4 @@ Legend:
 
 ## Notes
 
-- `releaseVersionVerification.ts` exists in codebase, but is not currently used by this verification page.
 - `buildVerificationChecks.ts` also exists, but is not currently wired into the Step 11 view.
