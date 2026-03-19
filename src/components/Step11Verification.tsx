@@ -28,6 +28,7 @@ import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
 import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import Image from 'next/image'
 import prWorkflowImage from '@/data/pr.png'
+import Button from '@/components/Button'
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -123,7 +124,9 @@ export default function Step11Verification() {
     silo0: string[] | null
     silo1: string[] | null
   }>({ silo0: null, silo1: null })
-  const [openPrCopied, setOpenPrCopied] = useState(false)
+  const [showPriceSourcesModal, setShowPriceSourcesModal] = useState(false)
+  const [priceSourcesInput, setPriceSourcesInput] = useState('')
+  const [priceSourcesError, setPriceSourcesError] = useState<string | null>(null)
   const [wrongAddressVersion, setWrongAddressVersion] = useState<string | null>(null)
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
@@ -1271,13 +1274,15 @@ export default function Step11Verification() {
                 placeholder="0x... (Silo Config, Silo address, or tx hash)"
                 className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
               />
-              <button
+              <Button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="shrink-0 bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+                variant="primary"
+                size="mdWide"
+                className="shrink-0"
               >
                 {loading ? 'Loading...' : 'Verify'}
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-gray-400 mt-2">
               Paste a Silo Config address, Silo address, or transaction hash
@@ -1388,7 +1393,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && wizardData.verificationFromWizard && (
+      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && (
         <div className="mb-6 flex flex-col sm:flex-row gap-6 sm:gap-3 items-start">
           <div className="sm:order-1 order-2 w-full sm:w-auto sm:max-w-[240px] min-w-[120px] shrink-0">
             <Image
@@ -1401,74 +1406,135 @@ export default function Step11Verification() {
           <div className="flex-1 min-w-0 text-left sm:order-2 order-1">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Open PR for developer</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              Click the button below to copy the config and open the workflow page. Then paste the data into the <strong>Market configuration</strong> field (shown in the screenshot) and click <strong>Run workflow</strong>.
+              Click the button below to open the workflow for the developer. Do not copy anything – everything will be copied automatically to your clipboard. After redirecting to GitHub, paste the clipboard content into the <strong>Market configuration</strong> field shown in the screenshot.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={async () => {
-                const symbol0 = config.silo0.tokenSymbol ?? 'ASSET0'
-                const symbol1 = config.silo1.tokenSymbol ?? 'ASSET1'
-                const deploymentKey = buildSiloDeploymentKey(symbol0, symbol1, config.siloId!)
-                const address = config.siloConfig.startsWith('0x') ? config.siloConfig : `0x${config.siloConfig}`
-                const network = getNetworkDisplayName(chainId)
-                const baseUrl = typeof window !== 'undefined'
-                  ? `${window.location.origin}${(window.location.pathname.replace(/\/wizard.*$/, '') || '/').replace(/\/$/, '')}`
-                  : 'https://silo-finance.github.io/silo-market-crafter'
-                const verificationUrl = `${baseUrl}/wizard?step=verification&address=${config.siloConfig}`
-
-                const toExternalPrice = (quotePriceRaw: string | undefined, oracleAddress: string): number => {
-                  if (!oracleAddress || oracleAddress === ethers.ZeroAddress) return 1
-                  if (!quotePriceRaw) return 1
-                  const priceStr = formatQuotePriceAs18Decimals(quotePriceRaw)
-                  const price = parseFloat(priceStr)
-                  return Math.round(price * 1000)
-                }
-                const externalPrice0 = toExternalPrice(config.silo0.solvencyOracle?.quotePrice, config.silo0.solvencyOracle?.address ?? '')
-                const externalPrice1 = toExternalPrice(config.silo1.solvencyOracle?.quotePrice, config.silo1.solvencyOracle?.address ?? '')
-
-                const siloConfigJson = JSON.stringify({
-                  chainName: getChainName(chainId),
-                  deploymentKey,
-                  address,
-                  symbol0,
-                  symbol1,
-                  network,
-                  verificationUrl,
-                  externalPrice0,
-                  externalPrice1
-                })
-                try {
-                  await navigator.clipboard.writeText(siloConfigJson)
-                  setOpenPrCopied(true)
-                  setTimeout(() => setOpenPrCopied(false), 3000)
-                  window.open(
-                    'https://github.com/silo-finance/silo-contracts-v2/actions/workflows/create-silo-deployment-pr.yml',
-                    '_blank',
-                    'noopener,noreferrer'
-                  )
-                } catch (err) {
-                  console.error('Failed to copy:', err)
-                }
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                setPriceSourcesInput('')
+                setPriceSourcesError(null)
+                setShowPriceSourcesModal(true)
               }}
-              className="bg-lime-700 hover:bg-lime-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
-              {openPrCopied ? (
-                <>
-                  <svg className="w-5 h-5 text-lime-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Copied! Paste into the Market configuration field on GitHub and click Run workflow.</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  <span>Copy config & Open workflow</span>
-                </>
-              )}
-            </button>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open workflow
+            </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPriceSourcesModal && config && chainId && config.siloId != null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="price-sources-modal-title"
+          onClick={() => {
+            setShowPriceSourcesModal(false)
+            setPriceSourcesInput('')
+            setPriceSourcesError(null)
+          }}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="price-sources-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Price sources
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Please provide external sources where we can verify the price of the token(s).
+            </p>
+            <textarea
+              value={priceSourcesInput}
+              onChange={(e) => {
+                setPriceSourcesInput(e.target.value)
+                setPriceSourcesError(null)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-lime-500 focus:border-transparent"
+              rows={3}
+              required
+            />
+            {priceSourcesError && (
+              <p className="text-sm text-red-600 dark:text-red-400 mt-2">{priceSourcesError}</p>
+            )}
+            <div className="flex gap-3 mt-4">
+              <Button
+                fullWidth
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  const trimmed = priceSourcesInput.trim()
+                  if (!trimmed) {
+                    setPriceSourcesError('This field is required.')
+                    return
+                  }
+                  const symbol0 = config.silo0.tokenSymbol ?? 'ASSET0'
+                  const symbol1 = config.silo1.tokenSymbol ?? 'ASSET1'
+                  const deploymentKey = buildSiloDeploymentKey(symbol0, symbol1, config.siloId!)
+                  const address = config.siloConfig.startsWith('0x') ? config.siloConfig : `0x${config.siloConfig}`
+                  const network = getNetworkDisplayName(chainId)
+                  const baseUrl = typeof window !== 'undefined'
+                    ? `${window.location.origin}${(window.location.pathname.replace(/\/wizard.*$/, '') || '/').replace(/\/$/, '')}`
+                    : 'https://silo-finance.github.io/silo-market-crafter'
+                  const verificationUrl = `${baseUrl}/wizard?step=verification&address=${config.siloConfig}`
+
+                  const toExternalPrice = (quotePriceRaw: string | undefined, oracleAddress: string): number => {
+                    if (!oracleAddress || oracleAddress === ethers.ZeroAddress) return 1
+                    if (!quotePriceRaw) return 1
+                    const priceStr = formatQuotePriceAs18Decimals(quotePriceRaw)
+                    const price = parseFloat(priceStr)
+                    return Math.round(price * 1000)
+                  }
+                  const externalPrice0 = toExternalPrice(config.silo0.solvencyOracle?.quotePrice, config.silo0.solvencyOracle?.address ?? '')
+                  const externalPrice1 = toExternalPrice(config.silo1.solvencyOracle?.quotePrice, config.silo1.solvencyOracle?.address ?? '')
+
+                  const siloConfigJson = JSON.stringify({
+                    chainName: getChainName(chainId),
+                    deploymentKey,
+                    address,
+                    symbol0,
+                    symbol1,
+                    network,
+                    verificationUrl,
+                    externalPrice0,
+                    externalPrice1,
+                    priceSources: trimmed
+                  })
+                  try {
+                    await navigator.clipboard.writeText(siloConfigJson)
+                    setShowPriceSourcesModal(false)
+                    setPriceSourcesInput('')
+                    setPriceSourcesError(null)
+                    window.open(
+                      'https://github.com/silo-finance/silo-contracts-v2/actions/workflows/create-silo-deployment-pr.yml',
+                      '_blank',
+                      'noopener,noreferrer'
+                    )
+                  } catch (err) {
+                    console.error('Failed to copy:', err)
+                    setPriceSourcesError('Failed to copy to clipboard.')
+                  }
+                }}
+              >
+                OK
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowPriceSourcesModal(false)
+                  setPriceSourcesInput('')
+                  setPriceSourcesError(null)
+                }}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         </div>
@@ -1530,21 +1596,13 @@ export default function Step11Verification() {
 
       <div className="flex justify-between mt-8">
         {wizardData.verificationFromWizard ? (
-          <button
-            type="button"
-            onClick={goToDeployment}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <span>Back to Deployment</span>
-          </button>
+          <Button variant="secondary" size="lg" onClick={goToDeployment}>
+            Back to Deployment
+          </Button>
         ) : (
-          <button
-            type="button"
-            onClick={goToNewMarket}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <span>Deploy New Market</span>
-          </button>
+          <Button variant="secondary" size="lg" onClick={goToNewMarket}>
+            Deploy New Market
+          </Button>
         )}
       </div>
     </div>

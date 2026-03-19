@@ -92,7 +92,7 @@ export default function Step8JSONConfig() {
 
         <button
           onClick={handleDeploy}
-          className="bg-lime-700 hover:bg-lime-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          className="bg-lime-700 hover:bg-lime-600 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           <span>Deployment</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +108,7 @@ export default function Step8JSONConfig() {
           <div className="flex space-x-3">
             <button
               onClick={handleCopy}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors cta-strong-white ${
                 copySuccess
                   ? 'bg-green-600 text-white'
                   : 'bg-lime-800 hover:bg-lime-700 text-white'
@@ -118,7 +118,7 @@ export default function Step8JSONConfig() {
             </button>
             <button
               onClick={handleDownload}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              className="bg-gray-600 hover:bg-gray-700 text-white cta-strong-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               Download JSON
             </button>

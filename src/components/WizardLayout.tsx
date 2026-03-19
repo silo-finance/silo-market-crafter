@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
@@ -83,16 +84,17 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <p className="text-emerald-700">Create a new Silo market step by step</p>
               </div>
               <div className="flex items-center space-x-3">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => router.push('/')}
-                  className="bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
                   title="Back to Landing Page"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
-                  <span>Back to Landing</span>
-                </button>
+                  Back to Landing
+                </Button>
                 <ResetButton />
               </div>
             </div>
@@ -555,7 +557,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {!isSummaryOpen && (
           <button
             onClick={() => setIsSummaryOpen(true)}
-            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-lime-50 p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-white cta-strong-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
             title="Show Summary"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

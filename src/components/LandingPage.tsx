@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 
@@ -96,12 +97,15 @@ export default function LandingPage() {
               <p className="text-emerald-700 mb-6">
                 Create a new Silo market in few easy steps.
               </p>
-              <button
+              <Button
+                fullWidth
+                variant="primaryDark"
+                size="md"
                 onClick={handleStartWizard}
-                className="w-full bg-lime-800/90 hover:bg-lime-700 text-white cta-strong-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                className="bg-lime-800/90"
               >
                 Create New Market
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -179,19 +183,18 @@ export default function LandingPage() {
 
             {/* Action Buttons */}
             <div className="flex space-x-3">
-              <button
-                onClick={clearInput}
-                className="flex-1 bg-lime-200 hover:bg-lime-300 text-emerald-900 font-medium py-2 px-4 rounded-lg transition-colors"
-              >
+              <Button fullWidth variant="outlineLight" size="sm" onClick={clearInput}>
                 Clear
-              </button>
-              <button
+              </Button>
+              <Button
+                fullWidth
+                variant="primaryLightDisabled"
+                size="sm"
                 onClick={handleLoadConfig}
                 disabled={isLoading || !jsonInput.trim()}
-                className="flex-1 bg-lime-800 hover:bg-lime-700 disabled:bg-lime-200 disabled:cursor-not-allowed text-lime-50 disabled:text-emerald-700 font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 {isLoading ? 'Loading...' : 'Load Config'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -205,12 +208,9 @@ export default function LandingPage() {
             <p className="text-emerald-900 mb-3">
               If you see UI/runtime errors while opening pages (for example Verify Market), clear local cache and retry.
             </p>
-            <button
-              onClick={handleClearCache}
-              className="bg-orange-600 hover:bg-orange-500 text-white cta-strong-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
+            <Button variant="orange" size="sm" onClick={handleClearCache}>
               Clear Cache
-            </button>
+            </Button>
             {cacheMessage && <p className="mt-2 text-emerald-800">{cacheMessage}</p>}
           </div>
         </div>

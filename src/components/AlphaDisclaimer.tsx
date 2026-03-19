@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Button from '@/components/Button'
 
 const STORAGE_KEY = 'alpha-disclaimer-accepted'
 const REDIRECT_URL = 'https://silo.finance'
@@ -59,13 +60,9 @@ export default function AlphaDisclaimer({ children }: { children: React.ReactNod
               >
                 I do not accept
               </button>
-              <button
-                type="button"
-                onClick={handleAccept}
-                className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold"
-              >
+              <Button variant="destructive" size="sm" onClick={handleAccept}>
                 OK
-              </button>
+              </Button>
             </div>
           </div>
         </div>
