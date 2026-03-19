@@ -1575,6 +1575,18 @@ export default function Step3OracleConfiguration() {
         errors.push('Chainlink normalization not computed for Token 1. Enter a valid primary aggregator.')
       }
     }
+    // Both sides use Chainlink: primary aggregators must be different.
+    if (wizardData.oracleType0?.type === 'chainlink' && wizardData.oracleType1?.type === 'chainlink') {
+      const primary0 = chainlink0.primaryAggregator?.trim() ?? ''
+      const primary1 = chainlink1.primaryAggregator?.trim() ?? ''
+      if (
+        ethers.isAddress(primary0) &&
+        ethers.isAddress(primary1) &&
+        primary0.toLowerCase() === primary1.toLowerCase()
+      ) {
+        errors.push('Chainlink: primary aggregator for Token 0 must be different than primary aggregator for Token 1.')
+      }
+    }
     if (wizardData.oracleType0?.type === 'ptLinear') {
       const max0 = Number(ptLinear0.maxYieldPercent)
       if (Number.isNaN(max0) || max0 <= 0) {
