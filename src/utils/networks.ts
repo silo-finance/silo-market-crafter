@@ -81,6 +81,9 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
 const NETWORK_CONFIG_MAP: Map<number, NetworkConfig> = new Map(
   NETWORK_CONFIGS.map(config => [config.chainId, config])
 )
+const NETWORK_CONFIG_BY_CHAIN_NAME: Map<string, NetworkConfig> = new Map(
+  NETWORK_CONFIGS.map(config => [config.chainName.toLowerCase(), config])
+)
 
 /**
  * Get network config by chain ID
@@ -88,6 +91,22 @@ const NETWORK_CONFIG_MAP: Map<number, NetworkConfig> = new Map(
 export function getNetworkConfig(chainId: number | string): NetworkConfig | undefined {
   const id = typeof chainId === 'string' ? parseInt(chainId, 10) : chainId
   return NETWORK_CONFIG_MAP.get(id)
+}
+
+/**
+ * Get network config by chain name used in repository paths (e.g. "mainnet", "arbitrum_one").
+ */
+export function getNetworkConfigByChainName(chainName: string): NetworkConfig | undefined {
+  const normalized = chainName?.trim().toLowerCase()
+  if (!normalized) return undefined
+  return NETWORK_CONFIG_BY_CHAIN_NAME.get(normalized)
+}
+
+/**
+ * Get chain ID by chain name used in repository paths (e.g. "mainnet", "arbitrum_one").
+ */
+export function getChainIdByChainName(chainName: string): number | null {
+  return getNetworkConfigByChainName(chainName)?.chainId ?? null
 }
 
 /**
