@@ -8,8 +8,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -27,7 +27,7 @@ export default function Step2OracleTypes() {
     tokenDecimals: number,
     tokenSymbol: string
   ): {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
     enabled: boolean
     reason: string
   }[] => {
@@ -74,6 +74,11 @@ export default function Step2OracleTypes() {
         type: 'vault',
         enabled: true,
         reason: 'Use ERC4626 vault-based oracle (Vault Oracle)'
+      },
+      {
+        type: 'customMethod',
+        enabled: true,
+        reason: 'Call a specific no-arg method on a target contract and treat the result as price'
       }
     ]
   }
@@ -133,7 +138,8 @@ export default function Step2OracleTypes() {
       selectedOracle0 !== 'scaler' &&
       selectedOracle0 !== 'chainlink' &&
       selectedOracle0 !== 'ptLinear' &&
-      selectedOracle0 !== 'vault'
+      selectedOracle0 !== 'vault' &&
+      selectedOracle0 !== 'customMethod'
     ) {
       errors.push('Invalid oracle type selected for Token 0')
     }
@@ -143,7 +149,8 @@ export default function Step2OracleTypes() {
       selectedOracle1 !== 'scaler' &&
       selectedOracle1 !== 'chainlink' &&
       selectedOracle1 !== 'ptLinear' &&
-      selectedOracle1 !== 'vault'
+      selectedOracle1 !== 'vault' &&
+      selectedOracle1 !== 'customMethod'
     ) {
       errors.push('Invalid oracle type selected for Token 1')
     }
@@ -272,6 +279,7 @@ export default function Step2OracleTypes() {
                         | 'chainlink'
                         | 'ptLinear'
                         | 'vault'
+                        | 'customMethod'
                     )
                   }
                   disabled={!oracleType.enabled}
@@ -288,6 +296,8 @@ export default function Step2OracleTypes() {
                         ? 'Chainlink'
                         : oracleType.type === 'ptLinear'
                         ? 'PT-Linear'
+                        : oracleType.type === 'customMethod'
+                        ? 'Custom Method Oracle'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
@@ -296,7 +306,7 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && (
+                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && oracleType.type !== 'customMethod' && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
@@ -309,6 +319,11 @@ export default function Step2OracleTypes() {
                   {oracleType.type === 'vault' && (
                     <p className="text-sm text-gray-400 mt-1">
                       ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                    </p>
+                  )}
+                  {oracleType.type === 'customMethod' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Use this when you want to call one specific no-argument method on a target contract to fetch price.
                     </p>
                   )}
                 </div>
@@ -351,6 +366,7 @@ export default function Step2OracleTypes() {
                         | 'chainlink'
                         | 'ptLinear'
                         | 'vault'
+                        | 'customMethod'
                     )
                   }
                   disabled={!oracleType.enabled}
@@ -367,6 +383,8 @@ export default function Step2OracleTypes() {
                         ? 'Chainlink'
                         : oracleType.type === 'ptLinear'
                         ? 'PT-Linear'
+                        : oracleType.type === 'customMethod'
+                        ? 'Custom Method Oracle'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
@@ -375,7 +393,7 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && (
+                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && oracleType.type !== 'customMethod' && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
@@ -389,6 +407,11 @@ export default function Step2OracleTypes() {
                     <p className="text-sm text-gray-400 mt-1">
                       ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
                     </p>
+                  )}
+                  {oracleType.type === 'customMethod' && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Use this when you want to call one specific no-argument method on a target contract to fetch price.
+                      </p>
                   )}
                 </div>
               </label>

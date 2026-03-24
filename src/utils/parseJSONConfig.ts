@@ -56,9 +56,31 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     name: config.token1 || ''
   }
   
-  // Parse oracle configuration (match WizardContext: none | scaler | chainlink)
-  const oracleType0 = config.solvencyOracle0 === 'NO_ORACLE' ? 'none' : config.solvencyOracle0 === 'Chainlink' ? 'chainlink' : 'scaler'
-  const oracleType1 = config.solvencyOracle1 === 'NO_ORACLE' ? 'none' : config.solvencyOracle1 === 'Chainlink' ? 'chainlink' : 'scaler'
+  // Parse oracle configuration (match WizardContext: none | scaler | chainlink | ptLinear | vault | customMethod)
+  const oracleType0 =
+    config.solvencyOracle0 === 'NO_ORACLE'
+      ? 'none'
+      : config.solvencyOracle0 === 'Chainlink'
+      ? 'chainlink'
+      : config.solvencyOracle0 === 'PT-Linear'
+      ? 'ptLinear'
+      : config.solvencyOracle0 === 'VaultOracle'
+      ? 'vault'
+      : config.solvencyOracle0 === 'CustomMethodOracle'
+      ? 'customMethod'
+      : 'scaler'
+  const oracleType1 =
+    config.solvencyOracle1 === 'NO_ORACLE'
+      ? 'none'
+      : config.solvencyOracle1 === 'Chainlink'
+      ? 'chainlink'
+      : config.solvencyOracle1 === 'PT-Linear'
+      ? 'ptLinear'
+      : config.solvencyOracle1 === 'VaultOracle'
+      ? 'vault'
+      : config.solvencyOracle1 === 'CustomMethodOracle'
+      ? 'customMethod'
+      : 'scaler'
   const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
     ? {
         baseToken: (config.chainlinkOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
@@ -85,6 +107,40 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         invertSecondPrice: Boolean(config.chainlinkOracle1.invertSecondPrice)
       }
     : undefined
+  const customMethod0 = config.customMethodOracle0 && oracleType0 === 'customMethod'
+    ? {
+        baseToken: (config.customMethodOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.customMethodOracle0.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.customMethodOracle0.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.customMethodOracle0.customQuoteTokenMetadata
+          ? {
+              symbol: String(config.customMethodOracle0.customQuoteTokenMetadata.symbol ?? ''),
+              decimals: Number(config.customMethodOracle0.customQuoteTokenMetadata.decimals ?? 18)
+            }
+          : undefined,
+        target: String(config.customMethodOracle0.target ?? ''),
+        methodSignature: String(config.customMethodOracle0.methodSignature ?? ''),
+        callSelector: String(config.customMethodOracle0.callSelector ?? ''),
+        priceDecimals: Number(config.customMethodOracle0.priceDecimals ?? 18)
+      }
+    : undefined
+  const customMethod1 = config.customMethodOracle1 && oracleType1 === 'customMethod'
+    ? {
+        baseToken: (config.customMethodOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.customMethodOracle1.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.customMethodOracle1.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.customMethodOracle1.customQuoteTokenMetadata
+          ? {
+              symbol: String(config.customMethodOracle1.customQuoteTokenMetadata.symbol ?? ''),
+              decimals: Number(config.customMethodOracle1.customQuoteTokenMetadata.decimals ?? 18)
+            }
+          : undefined,
+        target: String(config.customMethodOracle1.target ?? ''),
+        methodSignature: String(config.customMethodOracle1.methodSignature ?? ''),
+        callSelector: String(config.customMethodOracle1.callSelector ?? ''),
+        priceDecimals: Number(config.customMethodOracle1.priceDecimals ?? 18)
+      }
+    : undefined
   const oracleConfig: OracleConfiguration = {
     token0: {
       type: oracleType0,
@@ -95,7 +151,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         resultDecimals: 18,
         scaleFactor: '1'
       } : undefined,
-      chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined
+      chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
+      customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined
     },
     token1: {
       type: oracleType1,
@@ -106,7 +163,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         resultDecimals: 18,
         scaleFactor: '1'
       } : undefined,
-      chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined
+      chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
+      customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined
     }
   }
 

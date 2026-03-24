@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
@@ -230,6 +230,10 @@ interface MarketConfigTreeProps {
       notifierEqualsHook: boolean | null
     } | null
   } | null
+  /** Wizard-provided method signatures for Custom Method Oracle (when available). */
+  wizardCustomMethodSignatures?: { silo0?: string | null; silo1?: string | null }
+  /** Called when the component wants to refresh on-chain data (e.g. after setting method signature). */
+  onRequestRefresh?: () => void
 }
 
 interface TokenMeta {
@@ -777,6 +781,8 @@ interface SiloSectionProps {
   wizardDaoFee?: bigint | null
   wizardDeployerFee?: bigint | null
   manageableOracleTimelockSeconds?: number
+  wizardCustomMethodSignature?: string | null
+  onOpenSetCustomMethodSignature?: (args: { oracleAddress: string; suggestedSignature: string | null; onChainSignature: string | null }) => void
 }
 
 function SiloSection({
@@ -799,10 +805,29 @@ function SiloSection({
   irmOwnerVerification,
   wizardDaoFee,
   wizardDeployerFee,
-  manageableOracleTimelockSeconds
+  manageableOracleTimelockSeconds,
+  wizardCustomMethodSignature,
+  onOpenSetCustomMethodSignature
 }: SiloSectionProps) {
   const numeric = numericVerification ?? null
   const siloKey = side === 0 ? 'silo0' : 'silo1'
+
+  const isCustomMethodOracleByVersion = (version: string | undefined): boolean => {
+    if (!version) return false
+    const v = version.toLowerCase()
+    return v.includes('custommethodoracle') || v.includes('custom method oracle')
+  }
+
+  const resolveCustomMethodOracleAddress = (oracle: { address: string; version?: string; underlying?: { address: string; version?: string } } | undefined): string | null => {
+    if (!oracle?.address) return null
+    if (oracle.underlying?.address && isCustomMethodOracleByVersion(oracle.underlying.version)) {
+      return oracle.underlying.address
+    }
+    if (isCustomMethodOracleByVersion(oracle.version)) {
+      return oracle.address
+    }
+    return null
+  }
 
   const tokenDecimalsSafe = typeof siloConfig.tokenDecimals === 'number' ? siloConfig.tokenDecimals : 18
   const isSolvencyOracleZero = siloConfig.solvencyOracle.address?.toLowerCase() === ethers.ZeroAddress.toLowerCase()
@@ -877,6 +902,31 @@ function SiloSection({
             solvencyConfigForBullets,
             { excludeBaseDiscount: hasPTLinearUnderlying }
           )
+          const customMethodOracleAddress = resolveCustomMethodOracleAddress(siloConfig.solvencyOracle)
+          const customMethodDetails = renderCustomMethodOracleDetailsForConfig(
+            siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
+            explorerUrl,
+            {
+              onClickSetSignature:
+                customMethodOracleAddress && onOpenSetCustomMethodSignature
+                  ? () => onOpenSetCustomMethodSignature({
+                      oracleAddress: customMethodOracleAddress,
+                      suggestedSignature: wizardCustomMethodSignature ?? null,
+                      onChainSignature: (() => {
+                        const cfg = siloConfig.solvencyOracle.config as Record<string, unknown> | undefined
+                        const sig = cfg?.methodSignature as string | undefined
+                        return sig != null ? String(sig) : null
+                      })()
+                    })
+                  : undefined
+            }
+          )
+          if (customMethodDetails && !underlying) {
+            base.push({
+              key: `oracle.customMethod.details.${siloKey}.solvency`,
+              text: customMethodDetails
+            })
+          }
           if (isSolvencyOracleZero && solvencyOraclePriceRawForVerification != null) {
             const effectiveQuoteTokenSymbol =
               siloConfig.solvencyOracle.quoteTokenSymbol || siloConfig.tokenSymbol
@@ -951,6 +1001,24 @@ function SiloSection({
                     siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
                     explorerUrl
                   )}
+                  {renderCustomMethodOracleDetailsForConfig(
+                    siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
+                    explorerUrl,
+                    {
+                      onClickSetSignature:
+                        customMethodOracleAddress && onOpenSetCustomMethodSignature
+                          ? () => onOpenSetCustomMethodSignature({
+                              oracleAddress: customMethodOracleAddress,
+                              suggestedSignature: wizardCustomMethodSignature ?? null,
+                              onChainSignature: (() => {
+                                const cfg = siloConfig.solvencyOracle.config as Record<string, unknown> | undefined
+                                const sig = cfg?.methodSignature as string | undefined
+                                return sig != null ? String(sig) : null
+                              })()
+                            })
+                          : undefined
+                    }
+                  )}
                 </>
               )
             })
@@ -1008,6 +1076,31 @@ function SiloSection({
               maxLtvConfigForBullets,
               { excludeBaseDiscount: hasPTLinearUnderlying }
             )
+            const customMethodOracleAddress = resolveCustomMethodOracleAddress(siloConfig.maxLtvOracle)
+            const customMethodDetails = renderCustomMethodOracleDetailsForConfig(
+              maxLtvConfig,
+              explorerUrl,
+              {
+                onClickSetSignature:
+                  customMethodOracleAddress && onOpenSetCustomMethodSignature
+                    ? () => onOpenSetCustomMethodSignature({
+                        oracleAddress: customMethodOracleAddress,
+                        suggestedSignature: wizardCustomMethodSignature ?? null,
+                        onChainSignature: (() => {
+                          const cfg = maxLtvConfig
+                          const sig = cfg?.methodSignature as string | undefined
+                          return sig != null ? String(sig) : null
+                        })()
+                      })
+                    : undefined
+              }
+            )
+            if (customMethodDetails && !underlying) {
+              base.push({
+                key: `oracle.customMethod.details.${siloKey}.maxLtv`,
+                text: customMethodDetails
+              })
+            }
             if (underlying) {
               base.push({
                 key: `oracle.manageable.underlying.${siloKey}.maxLtv`,
@@ -1042,6 +1135,24 @@ function SiloSection({
                       </ul>
                     )}
                     {renderChainlinkAggregatorsForConfig(maxLtvConfig, explorerUrl)}
+                    {renderCustomMethodOracleDetailsForConfig(
+                      maxLtvConfig,
+                      explorerUrl,
+                      {
+                        onClickSetSignature:
+                          customMethodOracleAddress && onOpenSetCustomMethodSignature
+                            ? () => onOpenSetCustomMethodSignature({
+                                oracleAddress: customMethodOracleAddress,
+                                suggestedSignature: wizardCustomMethodSignature ?? null,
+                                onChainSignature: (() => {
+                                  const cfg = maxLtvConfig
+                                  const sig = cfg?.methodSignature as string | undefined
+                                  return sig != null ? String(sig) : null
+                                })()
+                              })
+                            : undefined
+                      }
+                    )}
                   </>
                 )
               })
@@ -1332,6 +1443,87 @@ function renderChainlinkAggregatorsForConfig(
   )
 }
 
+function renderCustomMethodOracleDetailsForConfig(
+  config: Record<string, unknown> | undefined,
+  explorerUrl: string,
+  options?: { onClickSetSignature?: () => void }
+): React.ReactNode | null {
+  if (!config || typeof config !== 'object') return null
+
+  const cfg = config as Record<string, unknown>
+  const target = cfg.target as string | undefined
+  const rawPrice = cfg.rawPrice as string | undefined
+  const methodSignature = cfg.methodSignature as string | undefined
+
+  const hasTarget = !!(target && ethers.isAddress(target))
+  const hasRawPrice = rawPrice != null && rawPrice !== ''
+  const hasMethodSignatureKey = Object.prototype.hasOwnProperty.call(cfg, 'methodSignature')
+
+  // Show details only when at least one field exists; methodSignature is shown if the key exists even when empty string.
+  if (!hasTarget && !hasRawPrice && !hasMethodSignatureKey) {
+    return null
+  }
+
+  return (
+    <ul className="tree-bullet-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
+      {hasTarget && target && (
+        <li>
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>Target contract:</span>
+            <a
+              href={`${explorerUrl}/address/${target}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+            >
+              {formatAddress(target)}
+            </a>
+            <CopyButton
+              value={target}
+              title="Copy target address"
+              iconClassName="w-3.5 h-3.5 inline align-middle"
+            />
+          </span>
+        </li>
+      )}
+      {hasRawPrice && rawPrice != null && (
+        <li>
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>Raw price (readPrice):</span>
+            <span className="font-mono text-sm text-gray-300">{rawPrice}</span>
+          </span>
+        </li>
+      )}
+      {hasMethodSignatureKey && (
+        <li>
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>Method signature:</span>
+            <span className="font-mono text-sm text-gray-300">
+              {methodSignature == null ? 'not available' : (methodSignature === '' ? 'empty (not set)' : methodSignature)}
+            </span>
+            {methodSignature === '' && options?.onClickSetSignature && (
+              <>
+                <span className="text-gray-500 text-xs">(you can set it)</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    options.onClickSetSignature?.()
+                  }}
+                  className="text-lime-600 hover:text-lime-500 text-sm underline"
+                >
+                  Click here to set it
+                </button>
+              </>
+            )}
+          </span>
+        </li>
+      )}
+    </ul>
+  )
+}
+
 function formatTimelockBulletText(seconds: number): React.ReactNode {
   const days = Math.round(seconds / 86400)
   const daysLabel = `${days} ${days === 1 ? 'day' : 'days'}`
@@ -1345,11 +1537,90 @@ function formatTimelockBulletText(seconds: number): React.ReactNode {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, pendingIrmInfo, irmConfigHistory, hookGaugeInfo }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, pendingIrmInfo, irmConfigHistory, hookGaugeInfo, wizardCustomMethodSignatures, onRequestRefresh }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
   const marketName = `${asset0Symbol} / ${asset1Symbol} #${marketId}`
+
+  const [customMethodModal, setCustomMethodModal] = useState<{
+    oracleAddress: string
+    suggestedSignature: string | null
+    onChainSignature: string | null
+  } | null>(null)
+  const [customMethodInput, setCustomMethodInput] = useState('')
+  const [customMethodTxHash, setCustomMethodTxHash] = useState<string | null>(null)
+  const [customMethodTxConfirmed, setCustomMethodTxConfirmed] = useState(false)
+  const [customMethodSubmitting, setCustomMethodSubmitting] = useState(false)
+  const [customMethodError, setCustomMethodError] = useState<string | null>(null)
+
+  const closeCustomMethodModal = useCallback((refresh?: boolean) => {
+    setCustomMethodModal(null)
+    setCustomMethodInput('')
+    setCustomMethodTxHash(null)
+    setCustomMethodTxConfirmed(false)
+    setCustomMethodSubmitting(false)
+    setCustomMethodError(null)
+    if (refresh && onRequestRefresh) onRequestRefresh()
+  }, [onRequestRefresh])
+
+  const normalizeNoArgsSignature = (input: string): { signature: string; error?: string } => {
+    const trimmed = input.trim()
+    if (!trimmed) return { signature: '', error: 'Method signature is required.' }
+    const signature = trimmed.includes('(') ? trimmed : `${trimmed}()`
+    const openIdx = signature.indexOf('(')
+    const closeIdx = signature.indexOf(')')
+    if (openIdx < 1 || closeIdx !== signature.length - 1) {
+      return { signature, error: 'Method signature must be in format methodName() with no parameters.' }
+    }
+    const args = signature.slice(openIdx + 1, closeIdx).trim()
+    if (args.length > 0) {
+      return { signature, error: 'Only no-argument methods are supported (use methodName()).' }
+    }
+    return { signature }
+  }
+
+  const submitSetMethodSignature = useCallback(async () => {
+    const modal = customMethodModal
+    if (!modal) return
+    if (!window.ethereum) {
+      setCustomMethodError('Wallet provider is not available.')
+      return
+    }
+    const valueFromWizard = modal.suggestedSignature?.trim() ?? ''
+    const valueFromInput = customMethodInput.trim()
+    const raw = valueFromWizard !== '' ? valueFromWizard : valueFromInput
+    const parsed = normalizeNoArgsSignature(raw)
+    if (parsed.error) {
+      setCustomMethodError(parsed.error)
+      return
+    }
+
+    setCustomMethodSubmitting(true)
+    setCustomMethodError(null)
+    setCustomMethodTxHash(null)
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+      const abi = ['function setMethodSignature(string _methodSignature)']
+      const contract = new ethers.Contract(modal.oracleAddress, abi, signer)
+      const tx = await contract.setMethodSignature(parsed.signature)
+      setCustomMethodTxHash(tx.hash)
+      await tx.wait()
+      setCustomMethodTxConfirmed(true)
+    } catch (err) {
+      setCustomMethodError(err instanceof Error ? err.message : 'Failed to submit transaction.')
+    } finally {
+      setCustomMethodSubmitting(false)
+    }
+  }, [customMethodModal, customMethodInput])
+
+  const handleOpenSetCustomMethodSignature = useCallback((args: { oracleAddress: string; suggestedSignature: string | null; onChainSignature: string | null }) => {
+    setCustomMethodModal(args)
+    setCustomMethodInput('')
+    setCustomMethodError(null)
+    setCustomMethodTxHash(null)
+  }, [])
 
   const renderSiloFactoryBullet = (siloFactoryAddress?: string) => {
     if (!siloFactoryAddress || siloFactoryAddress === ethers.ZeroAddress) {
@@ -1402,13 +1673,111 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
+      {customMethodModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => closeCustomMethodModal(customMethodTxConfirmed)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Set Custom Method Oracle signature
+              </h3>
+              <button
+                type="button"
+                onClick={() => closeCustomMethodModal(customMethodTxConfirmed)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+              Oracle: <span className="font-mono">{formatAddress(customMethodModal.oracleAddress)}</span>
+            </p>
+
+            {customMethodModal.suggestedSignature && customMethodModal.suggestedSignature.trim() !== '' ? (
+              <div className="mb-4">
+                <p className="text-sm text-gray-700 dark:text-gray-200">
+                  Suggested signature (from Wizard):
+                </p>
+                <div className="mt-1 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 font-mono text-sm text-gray-900 dark:text-white">
+                  {customMethodModal.suggestedSignature}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Method name / signature
+                </label>
+                <input
+                  type="text"
+                  value={customMethodInput}
+                  onChange={(e) => setCustomMethodInput(e.target.value)}
+                  placeholder="e.g. price or latestAnswer()"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Only no-argument methods are supported.
+                </p>
+              </div>
+            )}
+
+            {customMethodError && (
+              <p className="text-sm text-red-600 dark:text-red-400 mb-3">{customMethodError}</p>
+            )}
+            {customMethodTxHash && (
+              <p className={`text-sm mb-3 ${customMethodTxConfirmed ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                {customMethodTxConfirmed ? 'Transaction confirmed:' : 'Transaction submitted:'}{' '}
+                <span className="font-mono">{customMethodTxHash}</span>
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              {customMethodTxConfirmed ? (
+                <button
+                  type="button"
+                  onClick={() => closeCustomMethodModal(true)}
+                  className="flex-1 bg-lime-700 hover:bg-lime-600 text-white font-semibold py-2 px-4 rounded-lg"
+                >
+                  OK
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={submitSetMethodSignature}
+                    disabled={customMethodSubmitting}
+                    className="flex-1 bg-lime-700 hover:bg-lime-600 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg"
+                  >
+                    {customMethodSubmitting ? 'Submitting…' : 'Submit transaction'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => closeCustomMethodModal()}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-2 px-4 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <h3 className="text-lg font-semibold text-white mb-4">
         Market Configuration Tree:{' '}
         <span className="text-lime-300">{marketName}</span>
       </h3>
       
       <ol className="tree">
-        <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config">
+            <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config">
           <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
             {config.siloId !== null && (
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
@@ -1694,6 +2063,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           wizardDaoFee={wizardDaoFee ?? null}
           wizardDeployerFee={wizardDeployerFee ?? null}
           manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
+          wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo0 ?? null}
+          onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
         />
         <li className="tree-separator" aria-hidden="true" />
 
@@ -1718,6 +2089,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           wizardDaoFee={wizardDaoFee ?? null}
           wizardDeployerFee={wizardDeployerFee ?? null}
           manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
+          wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo1 ?? null}
+          onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
         />
       </ol>
     </div>

@@ -478,6 +478,18 @@ export default function Step11Verification() {
     if (!versionFromMap || versionFromMap === '') return
     setSiloFactory(prev => (prev ? { ...prev, version: versionFromMap } : null))
   }, [siloFactory?.address, addressVersions])
+
+  const refreshConfig = useCallback(async () => {
+    if (!config?.siloConfig || !window.ethereum) return
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const refreshed = await fetchMarketConfig(provider, config.siloConfig)
+      if (isMountedRef.current) setConfig(refreshed)
+    } catch {
+      // silently ignore — the user can manually re-verify if needed
+    }
+  }, [config?.siloConfig])
+
   const handleVerify = useCallback(async (value: string, isTxHash: boolean, isKnownSilo = false) => {
     if (!value.trim()) {
       setError('Please enter a Silo Config address, Silo address, or transaction hash')
@@ -1593,6 +1605,15 @@ export default function Step11Verification() {
               addressInJsonVerification={addressInJsonVerification}
               addressVersions={addressVersions}
               ptOracleBaseDiscountVerification={ptOracleBaseDiscountVerification}
+              onRequestRefresh={refreshConfig}
+              wizardCustomMethodSignatures={{
+                silo0: wizardData.verificationFromWizard
+                  ? (wizardData.oracleConfiguration?.token0?.customMethodOracle?.methodSignature ?? null)
+                  : null,
+                silo1: wizardData.verificationFromWizard
+                  ? (wizardData.oracleConfiguration?.token1?.customMethodOracle?.methodSignature ?? null)
+                  : null
+              }}
               callBeforeQuoteVerification={wizardData.verificationFromWizard 
                 ? { 
                     silo0: { wizard: null }, // TODO: Add callBeforeQuote to wizardData if needed
