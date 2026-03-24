@@ -22,7 +22,7 @@
   --header-toggle-off-bg: #d9f99d;
   --header-toggle-off-bg-hover: #bef264;
   --header-toggle-off-text: #065f46;
-  --header-logo-filter: brightness(0) saturate(100%) invert(26%) sepia(21%) saturate(1264%) hue-rotate(104deg) brightness(92%) contrast(92%);
+  --header-logo-filter: none;
   --summary-bg: rgba(6, 95, 70, 0.08);
 }
 
