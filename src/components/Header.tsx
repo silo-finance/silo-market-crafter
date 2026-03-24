@@ -27,6 +27,8 @@ export default function Header() {
   const [account, setAccount] = useState<string>('')
   const [networkId, setNetworkId] = useState<string>('')
   const [networkName, setNetworkName] = useState<string>('')
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
+  const unionLogoSrc = `${basePath}/Union.svg`
 
   const getNetworkInfo = async (chainId: string) => {
     const id = parseInt(chainId, 16)
@@ -140,7 +142,7 @@ export default function Header() {
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
               <Image
-                src="/Union.svg"
+                src={unionLogoSrc}
                 alt="Union"
                 width={32}
                 height={32}
