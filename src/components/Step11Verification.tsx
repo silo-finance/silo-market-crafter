@@ -15,6 +15,7 @@ import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
+import { detectSiloConfigNetwork } from '@/utils/verification/siloConfigNetworkDetection'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { getChainName, getExplorerBaseUrl, getNetworkDisplayName } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
@@ -490,7 +491,12 @@ export default function Step11Verification() {
     }
   }, [config?.siloConfig])
 
-  const handleVerify = useCallback(async (value: string, isTxHash: boolean, isKnownSilo = false) => {
+  const handleVerify = useCallback(async (
+    value: string,
+    isTxHash: boolean,
+    isKnownSilo = false,
+    fromUrlSiloConfigAddress = false
+  ) => {
     if (!value.trim()) {
       setError('Please enter a Silo Config address, Silo address, or transaction hash')
       return
@@ -513,8 +519,8 @@ export default function Step11Verification() {
     let failedAddressForCatch: string | undefined
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const network = await provider.getNetwork()
+      let provider = new ethers.BrowserProvider(window.ethereum)
+      let network = await provider.getNetwork()
       chainIdForCatch = network.chainId.toString()
       setDetectedChainId(chainIdForCatch)
       let siloConfigAddress: string
@@ -550,6 +556,49 @@ export default function Step11Verification() {
         }
         const inputAddress = ethers.getAddress(value.trim())
         failedAddressForCatch = inputAddress
+
+        // For direct verification links with SiloConfig address, try to detect and switch network first.
+        // Failures here are non-fatal: verification continues with current behavior.
+        if (fromUrlSiloConfigAddress && !isKnownSilo) {
+          try {
+            const detectedNetwork = await detectSiloConfigNetwork(inputAddress)
+            if (detectedNetwork) {
+              const currentChainHexRaw = await window.ethereum.request({ method: 'eth_chainId' }) as string
+              const currentChainId = parseInt(String(currentChainHexRaw), 16)
+
+              if (currentChainId !== detectedNetwork.chainId) {
+                const targetChainHex = `0x${detectedNetwork.chainId.toString(16)}`
+                try {
+                  await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: targetChainHex }]
+                  })
+                } catch (switchError) {
+                  const error = switchError as { code?: number; message?: string }
+                  if (error.code === 4001) {
+                    console.info('Verification network auto-switch rejected by user')
+                  } else if (error.code === -32002) {
+                    console.info('Verification network auto-switch request already pending')
+                  } else {
+                    console.warn(
+                      `Verification network auto-switch failed (${detectedNetwork.chainName}).`,
+                      error.message ?? error
+                    )
+                  }
+                }
+
+                // Refresh provider/network after switch attempt so subsequent calls use latest wallet network.
+                provider = new ethers.BrowserProvider(window.ethereum)
+                network = await provider.getNetwork()
+                chainIdForCatch = network.chainId.toString()
+                setDetectedChainId(chainIdForCatch)
+              }
+            }
+          } catch (detectError) {
+            console.warn('Failed to auto-detect verification network for SiloConfig address:', detectError)
+          }
+        }
+
         // Check that the address is a contract on the current network before calling it
         const code = await provider.getCode(inputAddress)
         if (!code || code === '0x' || code === '0x0') {
@@ -1168,13 +1217,13 @@ export default function Step11Verification() {
     const urlAddress = searchParams.get('address') || searchParams.get('contract')
     if (urlHash) {
       setInput(urlHash)
-      handleVerify(urlHash, true, false)
+      handleVerify(urlHash, true, false, false)
     } else if (urlSilo) {
       setInput(urlSilo)
-      handleVerify(urlSilo, false, true)
+      handleVerify(urlSilo, false, true, false)
     } else if (urlAddress) {
       setInput(urlAddress)
-      handleVerify(urlAddress, false, false)
+      handleVerify(urlAddress, false, false, true)
     } else {
       // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
       const savedHash = wizardData.lastDeployTxHash
@@ -1200,7 +1249,7 @@ export default function Step11Verification() {
       return
     }
     
-    handleVerify(trimmed, isTxHash, false)
+    handleVerify(trimmed, isTxHash, false, false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
