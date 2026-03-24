@@ -137,7 +137,7 @@ export default function Header() {
   return (
     <header className="header-shell backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center min-h-16 py-2">
           {/* Logo + Market Crafter version */}
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
@@ -152,9 +152,10 @@ export default function Header() {
                 }}
               />
             </Link>
-            <span className="header-text text-sm font-medium">
-              Market Crafter v{packageJson.version}
-            </span>
+            <div className="flex flex-col leading-tight">
+              <span className="header-text text-sm font-medium">Market Crafter</span>
+              <span className="header-text-soft text-xs">v{packageJson.version}</span>
+            </div>
           </div>
 
           {/* Navigation Menu */}
@@ -165,13 +166,11 @@ export default function Header() {
             >
               Verify Market
             </Link>
-            <Link 
-              href="https://silo.finance" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <Link
+              href="/irm-verification"
               className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
-              Silo Finance
+              Verify IRM Update
             </Link>
             <Link 
               href="https://app.silo.finance" 
@@ -206,7 +205,7 @@ export default function Header() {
               </button>
             </div>
             {isConnected ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col items-end gap-1">
                 <div className="text-right flex items-center gap-2 justify-end">
                   <div
                     className="header-text text-sm font-mono"
@@ -216,25 +215,29 @@ export default function Header() {
                   </div>
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" className="ml-0" />
                 </div>
-                <div className="header-text-soft text-xs">
-                  {networkName} ({networkId})
+                <div className="flex items-center gap-2">
+                  <div className="header-text-soft text-xs">
+                    {networkName} ({networkId})
+                  </div>
+                  <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
                 </div>
-                <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
                 <button
                   type="button"
                   onClick={disconnectWallet}
-                  className="header-link text-sm font-medium transition-colors"
+                  className="header-link text-[10px] font-semibold uppercase tracking-wide transition-colors"
                 >
                   Disconnect
                 </button>
               </div>
             ) : (
-              <button
-                onClick={connectWallet}
-                className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-              >
-                Connect MetaMask
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  onClick={connectWallet}
+                  className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  Connect MetaMask
+                </button>
+              </div>
             )}
           </div>
         </div>
