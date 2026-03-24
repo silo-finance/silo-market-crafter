@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import {
@@ -9,7 +9,8 @@ import {
   ScalerOracle,
   ChainlinkOracleConfig,
   PTLinearOracleConfig,
-  VaultOracleConfig
+  VaultOracleConfig,
+  CustomMethodOracleConfig
 } from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -610,6 +611,449 @@ function VaultOracleSection({
   )
 }
 
+function ensureNoArgsMethodSignature(input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  if (trimmed.includes('(')) {
+    const openIdx = trimmed.indexOf('(')
+    const closeIdx = trimmed.lastIndexOf(')')
+    const methodName = openIdx > 0 ? trimmed.slice(0, openIdx).trim() : ''
+    if (methodName === '') return trimmed
+    if (closeIdx > openIdx) {
+      const args = trimmed.slice(openIdx + 1, closeIdx).trim()
+      return `${methodName}(${args})`
+    }
+    return `${methodName}(`
+  }
+  return `${trimmed}()`
+}
+
+function parseNoArgSignature(methodInput: string): { signature: string; error?: string } {
+  const signature = ensureNoArgsMethodSignature(methodInput)
+  if (!signature) return { signature: '', error: 'Method name is required.' }
+  const openIdx = signature.indexOf('(')
+  const closeIdx = signature.indexOf(')')
+  if (openIdx < 1 || closeIdx < openIdx || closeIdx !== signature.length - 1) {
+    return { signature, error: 'Method signature must be in format methodName() with no parameters.' }
+  }
+  const argsPart = signature.slice(openIdx + 1, closeIdx).trim()
+  if (argsPart.length > 0) {
+    return { signature, error: 'Only no-argument methods are supported (use methodName()).' }
+  }
+  return { signature }
+}
+
+function signatureToSelector(signature: string): string {
+  return ethers.id(signature).slice(0, 10)
+}
+
+interface CustomMethodOracleSectionProps {
+  baseTokenSymbol: string
+  baseTokenName: string
+  otherTokenAddress?: string
+  otherTokenSymbol?: string
+  otherTokenName?: string
+  otherTokenDecimals?: number
+  config: Partial<CustomMethodOracleConfig> & {
+    methodInput?: string
+    fetchedRawPrice?: string
+    formattedPrice?: string
+    fetchError?: string
+  }
+  setConfig: React.Dispatch<
+    React.SetStateAction<
+      Partial<CustomMethodOracleConfig> & {
+        methodInput?: string
+        fetchedRawPrice?: string
+        formattedPrice?: string
+        fetchError?: string
+      }
+    >
+  >
+  quoteInput: string
+  setQuoteInput: (value: string) => void
+  virtualUsdAddress: string | null
+  usdcAddress: string | null
+  networkChainId?: string
+  customMethodFactory: { address: string; version: string } | null
+  customMethodFactoryMissing: string | null
+  customMethodImplementationAddress: string | null
+  customMethodImplementationVersion: string | null
+  customMethodImplementationError: string | null
+}
+
+function CustomMethodOracleSection({
+  baseTokenSymbol,
+  baseTokenName,
+  otherTokenAddress,
+  otherTokenSymbol,
+  otherTokenName,
+  otherTokenDecimals,
+  config,
+  setConfig,
+  quoteInput,
+  setQuoteInput,
+  virtualUsdAddress,
+  usdcAddress,
+  networkChainId,
+  customMethodFactory,
+  customMethodFactoryMissing,
+  customMethodImplementationAddress,
+  customMethodImplementationVersion,
+  customMethodImplementationError
+}: CustomMethodOracleSectionProps) {
+  const [testingPrice, setTestingPrice] = useState(false)
+  const autoFetchKeyRef = useRef<string>('')
+
+  const refreshFormattedPrice = (rawPrice?: string, decimals?: number) => {
+    if (!rawPrice || decimals == null) return ''
+    try {
+      return ethers.formatUnits(BigInt(rawPrice), decimals)
+    } catch {
+      return ''
+    }
+  }
+
+  const quoteInitialMetadata =
+    config.useOtherTokenAsQuote !== false && otherTokenSymbol && typeof otherTokenDecimals === 'number'
+      ? {
+          symbol: otherTokenSymbol,
+          decimals: otherTokenDecimals,
+          name: otherTokenName || otherTokenSymbol
+        }
+      : (config.customQuoteTokenMetadata
+          ? {
+              symbol: config.customQuoteTokenMetadata.symbol,
+              decimals: config.customQuoteTokenMetadata.decimals,
+              name: config.customQuoteTokenMetadata.symbol
+            }
+          : null)
+
+  const testMethodCall = async () => {
+    const target = config.target?.trim() ?? ''
+    const methodInput = config.methodInput ?? ''
+    if (!target || !ethers.isAddress(target)) {
+      setConfig(prev => ({ ...prev, fetchedRawPrice: undefined, formattedPrice: undefined, fetchError: undefined }))
+      return
+    }
+    const parsed = parseNoArgSignature(methodInput)
+    if (parsed.error) {
+      setConfig(prev => ({ ...prev, fetchedRawPrice: undefined, formattedPrice: undefined, fetchError: parsed.error }))
+      return
+    }
+    if (!window.ethereum) {
+      setConfig(prev => ({ ...prev, fetchedRawPrice: undefined, formattedPrice: undefined, fetchError: 'Wallet provider is not available.' }))
+      return
+    }
+
+    setTestingPrice(true)
+    try {
+      const selector = signatureToSelector(parsed.signature)
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const returnData = await provider.call({
+        to: ethers.getAddress(target),
+        data: selector
+      })
+      if (!returnData || returnData === '0x' || returnData.length < 66) {
+        throw new Error('Method returned empty data.')
+      }
+      const [decoded] = ethers.AbiCoder.defaultAbiCoder().decode(['uint256'], returnData)
+      const rawPrice = decoded.toString()
+      const selectedDecimals = config.priceDecimals == null ? null : Number(config.priceDecimals)
+      const formattedPrice = selectedDecimals == null ? '' : refreshFormattedPrice(rawPrice, selectedDecimals)
+      setConfig(prev => ({
+        ...prev,
+        methodSignature: parsed.signature,
+        callSelector: selector,
+        fetchedRawPrice: rawPrice,
+        formattedPrice,
+        fetchError: undefined
+      }))
+    } catch (err) {
+      setConfig(prev => ({
+        ...prev,
+        fetchedRawPrice: undefined,
+        formattedPrice: undefined,
+        fetchError: err instanceof Error ? err.message : 'Failed to call target method.'
+      }))
+    } finally {
+      setTestingPrice(false)
+    }
+  }
+
+  // Auto-fetch method test result when returning to this step with pre-filled config.
+  // This avoids requiring a blur action when target + method are already restored from cache/context.
+  useEffect(() => {
+    const target = config.target?.trim() ?? ''
+    const methodInput = config.methodInput ?? config.methodSignature ?? ''
+    if (!target || !ethers.isAddress(target) || !methodInput) return
+
+    const parsed = parseNoArgSignature(methodInput)
+    if (parsed.error || !parsed.signature) return
+
+    const selector = signatureToSelector(parsed.signature)
+    const normalizedTarget = ethers.getAddress(target).toLowerCase()
+    const key = `${normalizedTarget}|${selector}`
+    const alreadyHasResult =
+      !!config.fetchedRawPrice && (config.callSelector ?? '').toLowerCase() === selector.toLowerCase()
+
+    if (alreadyHasResult || testingPrice || autoFetchKeyRef.current === key) return
+    autoFetchKeyRef.current = key
+    void testMethodCall()
+    // Intentionally react only to restored/changed inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.target, config.methodInput, config.methodSignature, config.fetchedRawPrice, config.callSelector, testingPrice])
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-400 mb-2">
+        Base token:{' '}
+        <span className="text-white font-medium">{baseTokenSymbol}</span>{' '}
+        <span className="text-gray-500">({baseTokenName})</span>
+      </p>
+
+      {/* Oracle implementation (version sourced from factory) */}
+      {customMethodFactoryMissing ? (
+        <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
+          <p className="text-red-200 text-sm font-medium">Custom Method Oracle unavailable</p>
+          <p className="text-red-200/80 text-sm mt-1">{customMethodFactoryMissing}</p>
+        </div>
+      ) : !customMethodFactory ? (
+        <p className="text-sm text-yellow-400">Loading CustomMethodOracle for this chain…</p>
+      ) : customMethodImplementationError ? (
+        <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
+          <p className="text-red-200 text-sm font-medium">Failed to resolve oracle implementation</p>
+          <p className="text-red-200/80 text-sm mt-1">{customMethodImplementationError}</p>
+        </div>
+      ) : customMethodImplementationAddress ? (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-white">CustomMethodOracle (implementation)</p>
+            {customMethodFactory && (
+              <span className="text-xs text-gray-400">
+                Source:{' '}
+                <a
+                  href={getExplorerAddressUrl(networkChainId ?? '1', customMethodFactory.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-gray-300 underline"
+                >
+                  explorer
+                </a>
+              </span>
+            )}
+          </div>
+          <div className="space-y-2">
+            <AddressDisplayShort
+              address={customMethodImplementationAddress}
+              chainId={networkChainId ? parseInt(String(networkChainId), 10) : undefined}
+              className="text-sm"
+              showVersion={false}
+            />
+            <div className="text-sm text-gray-300 whitespace-nowrap">
+              version:{' '}
+              <span className="text-version-muted">
+                {customMethodImplementationVersion ?? '…'}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-yellow-400">Resolving oracle implementation…</p>
+      )}
+
+      {/* Section 2: Target Contract Method + Price Decimals */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-4">
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Target contract method</h4>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Target contract *
+          </label>
+          <input
+            type="text"
+            value={config.target ?? ''}
+            onChange={(e) => setConfig(prev => ({ ...prev, target: extractHexAddressLike(e.target.value) }))}
+            placeholder="0x… or explorer URL"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Method name *
+          </label>
+          <input
+            type="text"
+            value={config.methodInput ?? ''}
+            onChange={(e) =>
+              setConfig(prev => ({
+                ...prev,
+                methodInput: e.target.value,
+                methodSignature: ensureNoArgsMethodSignature(e.target.value),
+                fetchedRawPrice: undefined,
+                formattedPrice: undefined,
+                fetchError: undefined
+              }))
+            }
+            onBlur={testMethodCall}
+            placeholder="e.g. price or latestAnswer()"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+          />
+          <p className="text-xs text-gray-400">
+            Only methods without arguments are supported. If you type just the name, the app uses <span className="font-mono">()</span> internally.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Price decimals</h4>
+          <p className="text-xs text-gray-400">Select decimals for the raw returned value to format the price.</p>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 13 }).map((_, i) => {
+              const d = i + 6
+              const selected = config.priceDecimals != null && Number(config.priceDecimals) === d
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => {
+                    setConfig(prev => ({
+                      ...prev,
+                      priceDecimals: d,
+                      formattedPrice: prev.fetchedRawPrice ? refreshFormattedPrice(prev.fetchedRawPrice, d) : ''
+                    }))
+                  }}
+                  className={`px-2.5 py-1.5 text-xs rounded border transition-colors ${
+                    selected
+                      ? 'border-lime-700 bg-lime-900/20 text-lime-300'
+                      : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
+                  }`}
+                >
+                  {d}
+                </button>
+              )
+            })}
+          </div>
+          {config.priceDecimals == null && (
+            <p className="text-xs text-yellow-300/90">
+              Decimals not selected yet.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-1">
+        <p className="text-gray-500 text-xs uppercase tracking-wide">Method test</p>
+        {testingPrice ? (
+          <p className="text-sm text-gray-300">Calling method…</p>
+        ) : config.fetchError ? (
+          <p className="text-sm text-red-400">{config.fetchError}</p>
+        ) : config.fetchedRawPrice ? (
+          <>
+            <p className="text-sm text-gray-300">
+              Raw price: <span className="font-mono">{config.fetchedRawPrice}</span>
+            </p>
+            <p className="text-sm text-gray-300">
+              Price ({config.priceDecimals == null ? '—' : config.priceDecimals} decimals): <span className="font-mono">{config.formattedPrice ?? ''}</span>
+            </p>
+            {config.callSelector && (
+              <p className="text-xs text-gray-500">
+                callSelector: <span className="font-mono">{config.callSelector}</span>
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-400">
+            {(() => {
+              const target = config.target?.trim() ?? ''
+              const methodInput = config.methodInput ?? config.methodSignature ?? ''
+              const parsed = parseNoArgSignature(methodInput)
+              if (target && ethers.isAddress(target) && methodInput && !parsed.error) {
+                return 'Method result is fetched automatically when the configuration is complete.'
+              }
+              return 'Method result will appear after leaving the method field.'
+            })()}
+          </p>
+        )}
+      </div>
+
+      {/* Section 3: Quote Token */}
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
+        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+        <div className="flex flex-wrap gap-2">
+          <PredefinedOptionButton
+            onClick={() => {
+              const addr = otherTokenAddress || ''
+              setQuoteInput(addr)
+              setConfig(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: true,
+                customQuoteTokenAddress: addr,
+                customQuoteTokenMetadata:
+                  otherTokenSymbol && typeof otherTokenDecimals === 'number'
+                    ? { symbol: otherTokenSymbol, decimals: otherTokenDecimals }
+                    : prev.customQuoteTokenMetadata
+              }))
+            }}
+          >
+            <span>Other token</span>
+          </PredefinedOptionButton>
+          {virtualUsdAddress && (
+            <PredefinedOptionButton
+              onClick={() => {
+                setQuoteInput('SILO_VIRTUAL_USD_8')
+                setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>Virtual asset</span>
+            </PredefinedOptionButton>
+          )}
+          {usdcAddress && (
+            <PredefinedOptionButton
+              onClick={() => {
+                setQuoteInput('USDC')
+                setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>USDC</span>
+            </PredefinedOptionButton>
+          )}
+        </div>
+        <TokenAddressInput
+          value={quoteInput}
+          onChange={(value) => {
+            setQuoteInput(value)
+            setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+          }}
+          onResolve={(address, metadata) => {
+            if (metadata && address) {
+              setConfig(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: false,
+                customQuoteTokenAddress: address,
+                customQuoteTokenMetadata: {
+                  symbol: metadata.symbol,
+                  decimals: metadata.decimals
+                }
+              }))
+            } else {
+              setConfig(prev => ({
+                ...prev,
+                customQuoteTokenAddress: '',
+                customQuoteTokenMetadata: undefined
+              }))
+            }
+          }}
+          chainId={networkChainId}
+          label="Quote token address or symbol"
+          placeholder="0x… or symbol from addresses JSON"
+          initialResolvedAddress={config.customQuoteTokenAddress || null}
+          initialMetadata={quoteInitialMetadata}
+        />
+      </div>
+    </div>
+  )
+}
+
 /**
  * Normalization so oracle output is 18 decimals.
  * Equation: base decimals + aggregator decimals ± normalization = 18.
@@ -761,6 +1205,47 @@ export default function Step3OracleConfiguration() {
   const [pt1QuoteInput, setPT1QuoteInput] = useState('')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
+  const [customMethodFactory, setCustomMethodFactory] = useState<{ address: string; version: string } | null>(null)
+  const [customMethodFactoryMissing, setCustomMethodFactoryMissing] = useState<string | null>(null)
+  const [customMethodImplementationAddress, setCustomMethodImplementationAddress] = useState<string | null>(null)
+  const [customMethodImplementationVersion, setCustomMethodImplementationVersion] = useState<string | null>(null)
+  const [customMethodImplementationError, setCustomMethodImplementationError] = useState<string | null>(null)
+  const [customMethod0, setCustomMethod0] = useState<
+    Partial<CustomMethodOracleConfig> & {
+      methodInput?: string
+      fetchedRawPrice?: string
+      formattedPrice?: string
+      fetchError?: string
+    }
+  >({
+    baseToken: 'token0',
+    useOtherTokenAsQuote: true,
+    customQuoteTokenAddress: '',
+    target: '',
+    methodSignature: '',
+    methodInput: '',
+    callSelector: '',
+    priceDecimals: undefined
+  })
+  const [customMethod1, setCustomMethod1] = useState<
+    Partial<CustomMethodOracleConfig> & {
+      methodInput?: string
+      fetchedRawPrice?: string
+      formattedPrice?: string
+      fetchError?: string
+    }
+  >({
+    baseToken: 'token1',
+    useOtherTokenAsQuote: true,
+    customQuoteTokenAddress: '',
+    target: '',
+    methodSignature: '',
+    methodInput: '',
+    callSelector: '',
+    priceDecimals: undefined
+  })
+  const [customMethod0QuoteInput, setCustomMethod0QuoteInput] = useState('')
+  const [customMethod1QuoteInput, setCustomMethod1QuoteInput] = useState('')
 
   // Optional virtual USD quote token (SILO_VIRTUAL_USD_8) – loaded from addresses JSON per chain.
   const [virtualUsdAddress, setVirtualUsdAddress] = useState<string | null>(null)
@@ -948,6 +1433,80 @@ export default function Step3OracleConfiguration() {
     fetchVaultFactory()
   }, [wizardData.networkInfo?.chainId])
 
+  // Fetch CustomMethodOracleFactory address for current chain
+  useEffect(() => {
+    const fetchCustomMethodFactory = async () => {
+      if (!wizardData.networkInfo?.chainId) return
+      const chainName = getChainName(wizardData.networkInfo.chainId)
+      try {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/CustomMethodOracleFactory.sol.json`
+        )
+        if (!response.ok) {
+          setCustomMethodFactory(null)
+          setCustomMethodFactoryMissing(`Custom Method Oracle is not available on ${chainName} (missing CustomMethodOracleFactory deployment file).`)
+          return
+        }
+        const data = await response.json()
+        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        setCustomMethodFactory(address ? { address, version: '' } : null)
+        setCustomMethodFactoryMissing(null)
+      } catch {
+        setCustomMethodFactory(null)
+        setCustomMethodFactoryMissing('Failed to load CustomMethodOracleFactory for this chain.')
+      }
+    }
+    fetchCustomMethodFactory()
+  }, [wizardData.networkInfo?.chainId])
+
+  // Resolve CustomMethodOracle implementation from factory (ORACLE_IMPLEMENTATION)
+  useEffect(() => {
+    const factoryAddr = customMethodFactory?.address
+    if (!factoryAddr || !ethers.isAddress(factoryAddr)) {
+      setCustomMethodImplementationAddress(null)
+      setCustomMethodImplementationVersion(null)
+      setCustomMethodImplementationError(null)
+      return
+    }
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setCustomMethodImplementationAddress(null)
+      setCustomMethodImplementationError('Wallet provider is not available to resolve oracle implementation.')
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        setCustomMethodImplementationError(null)
+        const eth = window.ethereum
+        if (!eth) {
+          setCustomMethodImplementationAddress(null)
+          setCustomMethodImplementationVersion(null)
+          setCustomMethodImplementationError('Wallet provider is not available to resolve oracle implementation.')
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
+        const abi = ['function ORACLE_IMPLEMENTATION() view returns (address)'] as const
+        const factory = new ethers.Contract(factoryAddr, abi, provider)
+        const impl = await factory.ORACLE_IMPLEMENTATION()
+        if (cancelled) return
+        if (impl && ethers.isAddress(String(impl))) {
+          setCustomMethodImplementationAddress(ethers.getAddress(String(impl)))
+        } else {
+          setCustomMethodImplementationAddress(null)
+          setCustomMethodImplementationVersion(null)
+          setCustomMethodImplementationError('Factory returned an invalid ORACLE_IMPLEMENTATION address.')
+        }
+      } catch (err) {
+        if (cancelled) return
+        setCustomMethodImplementationAddress(null)
+        setCustomMethodImplementationVersion(null)
+        setCustomMethodImplementationError(err instanceof Error ? err.message : 'Failed to resolve ORACLE_IMPLEMENTATION from factory.')
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [customMethodFactory?.address])
+
   // Fetch SiloLens address for current chain (same pattern as Step10)
   useEffect(() => {
     const fetchLens = async () => {
@@ -979,7 +1538,9 @@ export default function Step3OracleConfiguration() {
       oracleScalerFactory?.address,
       chainlinkV3OracleFactory?.address,
       ptLinearFactory?.address,
-      erc4626OracleFactory?.address
+      erc4626OracleFactory?.address,
+      customMethodFactory?.address,
+      customMethodImplementationAddress
     ].filter((value): value is string => !!value)
     if (addresses.length === 0) return
 
@@ -1009,12 +1570,24 @@ export default function Step3OracleConfiguration() {
         setErc4626OracleFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
+        setCustomMethodFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
+        setCustomMethodImplementationVersion(
+          customMethodImplementationAddress
+            ? getVersion(customMethodImplementationAddress) || '—'
+            : null
+        )
       } catch (err) {
         console.warn('Failed to fetch oracle factory versions from Silo Lens:', err)
         setOracleScalerFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setChainlinkV3OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setPTLinearFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setErc4626OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setCustomMethodFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setCustomMethodImplementationVersion(
+          customMethodImplementationAddress ? '—' : null
+        )
       }
     }
     fetchFactoryVersions()
@@ -1024,6 +1597,8 @@ export default function Step3OracleConfiguration() {
     chainlinkV3OracleFactory?.address,
     ptLinearFactory?.address,
     erc4626OracleFactory?.address,
+    customMethodFactory?.address,
+    customMethodImplementationAddress,
     siloLensAddress,
     wizardData.networkInfo?.chainId
   ])
@@ -1085,6 +1660,46 @@ export default function Step3OracleConfiguration() {
   }, [
     wizardData.oracleConfiguration?.token0?.vaultOracle,
     wizardData.oracleConfiguration?.token1?.vaultOracle
+  ])
+
+  // Sync Custom Method oracle state from wizard when returning to step
+  useEffect(() => {
+    const cm0 = wizardData.oracleConfiguration?.token0?.customMethodOracle
+    if (cm0) {
+      setCustomMethod0(prev => ({
+        ...prev,
+        baseToken: cm0.baseToken,
+        useOtherTokenAsQuote: cm0.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: cm0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: cm0.customQuoteTokenMetadata,
+        target: cm0.target,
+        methodSignature: cm0.methodSignature,
+        methodInput: cm0.methodSignature,
+        callSelector: cm0.callSelector,
+        priceDecimals: cm0.priceDecimals
+      }))
+      setCustomMethod0QuoteInput(cm0.customQuoteTokenAddress ?? '')
+    }
+    const cm1 = wizardData.oracleConfiguration?.token1?.customMethodOracle
+    if (cm1) {
+      setCustomMethod1(prev => ({
+        ...prev,
+        baseToken: cm1.baseToken,
+        useOtherTokenAsQuote: cm1.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: cm1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: cm1.customQuoteTokenMetadata,
+        target: cm1.target,
+        methodSignature: cm1.methodSignature,
+        methodInput: cm1.methodSignature,
+        callSelector: cm1.callSelector,
+        priceDecimals: cm1.priceDecimals
+      }))
+      setCustomMethod1QuoteInput(cm1.customQuoteTokenAddress ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    wizardData.oracleConfiguration?.token0?.customMethodOracle,
+    wizardData.oracleConfiguration?.token1?.customMethodOracle
   ])
 
 
@@ -1643,6 +2258,54 @@ export default function Step3OracleConfiguration() {
         )
       }
     }
+    if (wizardData.oracleType0?.type === 'customMethod') {
+      if (customMethodFactoryMissing || !customMethodFactory) {
+        errors.push('Custom Method Oracle (Token 0): this oracle is not available on the selected chain (factory missing).')
+      }
+      const quoteAddr0 = customMethod0.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
+      if (quoteEmpty0) {
+        errors.push('Custom Method Oracle (Token 0): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
+      }
+      const target0 = customMethod0.target?.trim() ?? ''
+      if (!target0 || !ethers.isAddress(target0)) {
+        errors.push('Custom Method Oracle (Token 0): target contract must be a valid address.')
+      }
+      const parsed = parseNoArgSignature(customMethod0.methodInput ?? customMethod0.methodSignature ?? '')
+      if (parsed.error) {
+        errors.push(`Custom Method Oracle (Token 0): ${parsed.error}`)
+      }
+      const decimals = Number(customMethod0.priceDecimals)
+      if (customMethod0.priceDecimals == null) {
+        errors.push('Custom Method Oracle (Token 0): select price decimals.')
+      } else if (!Number.isInteger(decimals) || decimals < 6 || decimals > 18) {
+        errors.push('Custom Method Oracle (Token 0): price decimals must be an integer between 6 and 18.')
+      }
+    }
+    if (wizardData.oracleType1?.type === 'customMethod') {
+      if (customMethodFactoryMissing || !customMethodFactory) {
+        errors.push('Custom Method Oracle (Token 1): this oracle is not available on the selected chain (factory missing).')
+      }
+      const quoteAddr1 = customMethod1.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
+      if (quoteEmpty1) {
+        errors.push('Custom Method Oracle (Token 1): quote token is required. Use a predefined option or enter and resolve a custom quote address.')
+      }
+      const target1 = customMethod1.target?.trim() ?? ''
+      if (!target1 || !ethers.isAddress(target1)) {
+        errors.push('Custom Method Oracle (Token 1): target contract must be a valid address.')
+      }
+      const parsed = parseNoArgSignature(customMethod1.methodInput ?? customMethod1.methodSignature ?? '')
+      if (parsed.error) {
+        errors.push(`Custom Method Oracle (Token 1): ${parsed.error}`)
+      }
+      const decimals = Number(customMethod1.priceDecimals)
+      if (customMethod1.priceDecimals == null) {
+        errors.push('Custom Method Oracle (Token 1): select price decimals.')
+      } else if (!Number.isInteger(decimals) || decimals < 6 || decimals > 18) {
+        errors.push('Custom Method Oracle (Token 1): price decimals must be an integer between 6 and 18.')
+      }
+    }
 
     // Effective quote token address: none/scaler = token itself; chainlink/vault/ptLinear = stored quote address only.
     // "Other token" is just a predefined option that fills the address field – we only read that field.
@@ -1664,6 +2327,10 @@ export default function Step3OracleConfiguration() {
       if (type === 'vault') {
         const v = side === '0' ? vault0 : vault1
         return (v.customQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'customMethod') {
+        const cm = side === '0' ? customMethod0 : customMethod1
+        return (cm.customQuoteTokenAddress?.trim() ?? '')
       }
       return ''
     }
@@ -1691,6 +2358,12 @@ export default function Step3OracleConfiguration() {
         wizardData.oracleType1!.type === 'ptLinear'
           ? (ptLinear1.useSecondTokenAsQuote ? wizardData.token0!.address : ptLinear1.hardcodedQuoteTokenAddress!)
           : ''
+      const customMethod0Parsed = parseNoArgSignature(customMethod0.methodInput ?? customMethod0.methodSignature ?? '')
+      const customMethod1Parsed = parseNoArgSignature(customMethod1.methodInput ?? customMethod1.methodSignature ?? '')
+      const cm0Signature = customMethod0Parsed.signature
+      const cm1Signature = customMethod1Parsed.signature
+      const cm0Selector = cm0Signature ? signatureToSelector(cm0Signature) : ''
+      const cm1Selector = cm1Signature ? signatureToSelector(cm1Signature) : ''
 
       // Create oracle configuration
       const config: OracleConfiguration = {
@@ -1726,6 +2399,27 @@ export default function Step3OracleConfiguration() {
                     : vault0.customQuoteTokenAddress?.trim(),
                 customQuoteTokenMetadata: vault0.customQuoteTokenMetadata
               }
+            : undefined,
+          customMethodOracle: wizardData.oracleType0!.type === 'customMethod'
+            ? {
+                baseToken: 'token0',
+                useOtherTokenAsQuote: customMethod0.useOtherTokenAsQuote ?? true,
+                customQuoteTokenAddress:
+                  customMethod0.useOtherTokenAsQuote !== false && wizardData.token1?.address
+                    ? wizardData.token1.address
+                    : customMethod0.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata:
+                  customMethod0.useOtherTokenAsQuote !== false && wizardData.token1
+                    ? {
+                        symbol: wizardData.token1.symbol,
+                        decimals: wizardData.token1.decimals
+                      }
+                    : customMethod0.customQuoteTokenMetadata,
+                target: customMethod0.target!.trim(),
+                methodSignature: cm0Signature,
+                callSelector: cm0Selector,
+                priceDecimals: Number(customMethod0.priceDecimals ?? 18)
+              }
             : undefined
         },
         token1: {
@@ -1759,6 +2453,27 @@ export default function Step3OracleConfiguration() {
                     ? wizardData.token0.address
                     : vault1.customQuoteTokenAddress?.trim(),
                 customQuoteTokenMetadata: vault1.customQuoteTokenMetadata
+              }
+            : undefined,
+          customMethodOracle: wizardData.oracleType1!.type === 'customMethod'
+            ? {
+                baseToken: 'token1',
+                useOtherTokenAsQuote: customMethod1.useOtherTokenAsQuote ?? true,
+                customQuoteTokenAddress:
+                  customMethod1.useOtherTokenAsQuote !== false && wizardData.token0?.address
+                    ? wizardData.token0.address
+                    : customMethod1.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata:
+                  customMethod1.useOtherTokenAsQuote !== false && wizardData.token0
+                    ? {
+                        symbol: wizardData.token0.symbol,
+                        decimals: wizardData.token0.decimals
+                      }
+                    : customMethod1.customQuoteTokenMetadata,
+                target: customMethod1.target!.trim(),
+                methodSignature: cm1Signature,
+                callSelector: cm1Selector,
+                priceDecimals: Number(customMethod1.priceDecimals ?? 18)
               }
             : undefined
         }
@@ -1844,6 +2559,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType0.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType0.type === 'customMethod'
+              ? 'Custom Method Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType0.type === 'none' ? (
@@ -1999,6 +2716,27 @@ export default function Step3OracleConfiguration() {
               vaultFactory={erc4626OracleFactory}
               onValidationChange={setVault0Valid}
             />
+          ) : wizardData.oracleType0.type === 'customMethod' ? (
+            <CustomMethodOracleSection
+              baseTokenSymbol={wizardData.token0.symbol}
+              baseTokenName={wizardData.token0.name}
+              otherTokenAddress={wizardData.token1?.address}
+              otherTokenSymbol={wizardData.token1?.symbol}
+              otherTokenName={wizardData.token1?.name}
+              otherTokenDecimals={wizardData.token1?.decimals}
+              config={customMethod0}
+              setConfig={setCustomMethod0}
+              quoteInput={customMethod0QuoteInput}
+              setQuoteInput={setCustomMethod0QuoteInput}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              customMethodFactory={customMethodFactory}
+              customMethodFactoryMissing={customMethodFactoryMissing}
+              customMethodImplementationAddress={customMethodImplementationAddress}
+              customMethodImplementationVersion={customMethodImplementationVersion}
+              customMethodImplementationError={customMethodImplementationError}
+            />
           ) : (
             <div>
               {loadingOracles ? (
@@ -2123,6 +2861,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType1.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType1.type === 'customMethod'
+              ? 'Custom Method Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType1.type === 'none' ? (
@@ -2277,6 +3017,27 @@ export default function Step3OracleConfiguration() {
               networkChainId={wizardData.networkInfo?.chainId}
               vaultFactory={erc4626OracleFactory}
               onValidationChange={setVault1Valid}
+            />
+          ) : wizardData.oracleType1.type === 'customMethod' ? (
+            <CustomMethodOracleSection
+              baseTokenSymbol={wizardData.token1.symbol}
+              baseTokenName={wizardData.token1.name}
+              otherTokenAddress={wizardData.token0?.address}
+              otherTokenSymbol={wizardData.token0?.symbol}
+              otherTokenName={wizardData.token0?.name}
+              otherTokenDecimals={wizardData.token0?.decimals}
+              config={customMethod1}
+              setConfig={setCustomMethod1}
+              quoteInput={customMethod1QuoteInput}
+              setQuoteInput={setCustomMethod1QuoteInput}
+              virtualUsdAddress={virtualUsdAddress}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              customMethodFactory={customMethodFactory}
+              customMethodFactoryMissing={customMethodFactoryMissing}
+              customMethodImplementationAddress={customMethodImplementationAddress}
+              customMethodImplementationVersion={customMethodImplementationVersion}
+              customMethodImplementationError={customMethodImplementationError}
             />
           ) : (
             <div>

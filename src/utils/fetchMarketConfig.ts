@@ -382,6 +382,29 @@ export async function fetchMarketConfig(
     )
   }
 
+  // When oracle (or underlying oracle for ManageableOracle) is CustomMethodOracle,
+  // enrich with target contract, raw readPrice and methodSignature.
+  const customMethodTargets: Array<{ oracle: OracleInfo; customMethodAddress: string }> = []
+  const maybeAddCustomMethodTarget = (oracle: OracleInfo) => {
+    if (isCustomMethodOracleByVersion(oracle.version)) {
+      customMethodTargets.push({ oracle, customMethodAddress: oracle.address })
+    } else if (oracle.underlying && isCustomMethodOracleByVersion(oracle.underlying.version)) {
+      customMethodTargets.push({ oracle, customMethodAddress: oracle.underlying.address })
+    }
+  }
+  maybeAddCustomMethodTarget(config0.solvencyOracle)
+  maybeAddCustomMethodTarget(config1.solvencyOracle)
+  maybeAddCustomMethodTarget(config0.maxLtvOracle)
+  maybeAddCustomMethodTarget(config1.maxLtvOracle)
+
+  if (customMethodTargets.length > 0) {
+    await Promise.all(
+      customMethodTargets.map(({ oracle, customMethodAddress }) =>
+        enrichCustomMethodOracle(provider, customMethodAddress, oracle)
+      )
+    )
+  }
+
   // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
   // Deduplicate by owner address so we only fetch once when hook and IRM share the same owner.
   const allOwnerAddresses = new Set<string>()
@@ -658,6 +681,43 @@ async function fetchSiloConfig(
 }
 
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
+const customMethodOracleAbi: ethers.InterfaceAbi = [
+  {
+    type: 'function',
+    name: 'getConfig',
+    inputs: [],
+    outputs: [
+      {
+        components: [
+          { name: 'baseToken', type: 'address', internalType: 'address' },
+          { name: 'quoteToken', type: 'address', internalType: 'address' },
+          { name: 'target', type: 'address', internalType: 'address' },
+          { name: 'callSelector', type: 'bytes4', internalType: 'bytes4' },
+          { name: 'normalizationDivider', type: 'uint256', internalType: 'uint256' },
+          { name: 'normalizationMultiplier', type: 'uint256', internalType: 'uint256' }
+        ],
+        name: '',
+        type: 'tuple',
+        internalType: 'struct ICustomMethodOracle.OracleConfig'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'readPrice',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'methodSignature',
+    inputs: [],
+    outputs: [{ name: '', type: 'string', internalType: 'string' }],
+    stateMutability: 'view'
+  }
+]
 
 function isChainlinkOracleByVersion(version: string | undefined): boolean {
   if (!version) return false
@@ -669,6 +729,12 @@ function isPTLinearOracleByVersion(version: string | undefined): boolean {
   if (!version) return false
   const v = version.toLowerCase()
   return v.includes('ptlinear') || v.includes('pt-linear')
+}
+
+function isCustomMethodOracleByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  const v = version.toLowerCase()
+  return v.includes('custommethodoracle') || v.includes('custom method oracle')
 }
 
 async function enrichChainlinkOracle(
@@ -778,6 +844,44 @@ async function enrichPTLinearOracle(
     target.config = {
       ...(target.config ?? {}),
       baseDiscountPerYear: baseDiscountPerYear.toString()
+    }
+  } catch {
+    // If anything fails, leave target as-is – detection is done via version, not try/catch.
+  }
+}
+
+async function enrichCustomMethodOracle(
+  provider: ethers.Provider,
+  customMethodAddress: string,
+  target: OracleInfo
+): Promise<void> {
+  if (!customMethodAddress || customMethodAddress === ethers.ZeroAddress || !ethers.isAddress(customMethodAddress)) return
+
+  try {
+    const customMethodContract = new ethers.Contract(
+      customMethodAddress,
+      customMethodOracleAbi,
+      provider
+    )
+
+    const [rawConfig, readPriceRaw, methodSignatureRaw] = await Promise.all([
+      customMethodContract.getConfig().catch(() => null),
+      customMethodContract.readPrice().catch(() => null),
+      customMethodContract.methodSignature().catch(() => null)
+    ])
+
+    const cfg = rawConfig as Record<string, unknown> | null
+    const targetAddress = cfg?.target as string | undefined
+
+    target.type = 'CustomMethodOracle'
+    target.config = {
+      ...(target.config ?? {}),
+      target:
+        targetAddress && ethers.isAddress(targetAddress) && targetAddress !== ethers.ZeroAddress
+          ? targetAddress
+          : undefined,
+      rawPrice: readPriceRaw != null ? readPriceRaw.toString() : undefined,
+      methodSignature: methodSignatureRaw != null ? String(methodSignatureRaw) : undefined
     }
   } catch {
     // If anything fails, leave target as-is – detection is done via version, not try/catch.

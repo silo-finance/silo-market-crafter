@@ -33,7 +33,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
   enabled: boolean
   reason?: string
 }
@@ -78,6 +78,26 @@ export interface VaultOracleConfig {
   customQuoteTokenMetadata?: { symbol: string; decimals: number }
 }
 
+/** Custom Method oracle deployment config. Calls a no-arg method on target and interprets result as price. */
+export interface CustomMethodOracleConfig {
+  /** Which token is the base (token0 or token1). */
+  baseToken: 'token0' | 'token1'
+  /** If true, use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
+  /** Contract address that exposes the configured no-arg method. */
+  target: string
+  /** Method signature used to derive bytes4 selector, e.g. getPrice(). */
+  methodSignature: string
+  /** Derived selector from methodSignature, bytes4 hex string (0x12345678). */
+  callSelector: string
+  /** Decimals for the raw value returned by the target method. */
+  priceDecimals: number
+}
+
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
 export interface CustomScalerCreate {
   factoryAddress: string
@@ -97,18 +117,20 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
+    customMethodOracle?: CustomMethodOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
+    customMethodOracle?: CustomMethodOracleConfig
   }
 }
 
@@ -415,6 +437,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
+        if (t === 'customMethod') return 'CustomMethodOracle'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -463,12 +486,27 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'customMethod' && wizardData.oracleConfiguration?.token0?.customMethodOracle
+        ? {
+            customMethodOracle0: {
+              baseToken: wizardData.oracleConfiguration.token0.customMethodOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.customMethodOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.customMethodOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.customMethodOracle.customQuoteTokenMetadata,
+              target: wizardData.oracleConfiguration.token0.customMethodOracle.target,
+              methodSignature: wizardData.oracleConfiguration.token0.customMethodOracle.methodSignature,
+              callSelector: wizardData.oracleConfiguration.token0.customMethodOracle.callSelector,
+              priceDecimals: wizardData.oracleConfiguration.token0.customMethodOracle.priceDecimals
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
         const t = wizardData.oracleConfiguration?.token1?.type
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
+        if (t === 'customMethod') return 'CustomMethodOracle'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -516,6 +554,20 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenMetadata
             }
           }
+        : {}),
+      ...(wizardData.oracleConfiguration?.token1?.type === 'customMethod' && wizardData.oracleConfiguration?.token1?.customMethodOracle
+        ? {
+            customMethodOracle1: {
+              baseToken: wizardData.oracleConfiguration.token1.customMethodOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.customMethodOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.customMethodOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.customMethodOracle.customQuoteTokenMetadata,
+              target: wizardData.oracleConfiguration.token1.customMethodOracle.target,
+              methodSignature: wizardData.oracleConfiguration.token1.customMethodOracle.methodSignature,
+              callSelector: wizardData.oracleConfiguration.token1.customMethodOracle.callSelector,
+              priceDecimals: wizardData.oracleConfiguration.token1.customMethodOracle.priceDecimals
+            }
+          }
         : {})
     }
     return JSON.stringify(config, null, 4)
@@ -550,6 +602,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'ptLinear'
           : config.solvencyOracle0 === 'VaultOracle'
           ? 'vault'
+          : config.solvencyOracle0 === 'CustomMethodOracle'
+          ? 'customMethod'
           : 'scaler'
       const oracleType1 =
         config.solvencyOracle1 === 'NO_ORACLE'
@@ -560,6 +614,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'ptLinear'
           : config.solvencyOracle1 === 'VaultOracle'
           ? 'vault'
+          : config.solvencyOracle1 === 'CustomMethodOracle'
+          ? 'customMethod'
           : 'scaler'
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
@@ -645,6 +701,42 @@ export function WizardProvider({ children }: { children: ReactNode }) {
                 : undefined
             }
           : undefined
+      const customMethod0 =
+        config.customMethodOracle0 && oracleType0 === 'customMethod'
+          ? {
+              baseToken: (config.customMethodOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote: config.customMethodOracle0.useOtherTokenAsQuote !== false,
+              customQuoteTokenAddress: String(config.customMethodOracle0.customQuoteTokenAddress ?? ''),
+              customQuoteTokenMetadata: config.customMethodOracle0.customQuoteTokenMetadata
+                ? {
+                    symbol: String(config.customMethodOracle0.customQuoteTokenMetadata.symbol ?? ''),
+                    decimals: Number(config.customMethodOracle0.customQuoteTokenMetadata.decimals ?? 18)
+                  }
+                : undefined,
+              target: String(config.customMethodOracle0.target ?? ''),
+              methodSignature: String(config.customMethodOracle0.methodSignature ?? ''),
+              callSelector: String(config.customMethodOracle0.callSelector ?? ''),
+              priceDecimals: Number(config.customMethodOracle0.priceDecimals ?? 18)
+            }
+          : undefined
+      const customMethod1 =
+        config.customMethodOracle1 && oracleType1 === 'customMethod'
+          ? {
+              baseToken: (config.customMethodOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote: config.customMethodOracle1.useOtherTokenAsQuote !== false,
+              customQuoteTokenAddress: String(config.customMethodOracle1.customQuoteTokenAddress ?? ''),
+              customQuoteTokenMetadata: config.customMethodOracle1.customQuoteTokenMetadata
+                ? {
+                    symbol: String(config.customMethodOracle1.customQuoteTokenMetadata.symbol ?? ''),
+                    decimals: Number(config.customMethodOracle1.customQuoteTokenMetadata.decimals ?? 18)
+                  }
+                : undefined,
+              target: String(config.customMethodOracle1.target ?? ''),
+              methodSignature: String(config.customMethodOracle1.methodSignature ?? ''),
+              callSelector: String(config.customMethodOracle1.callSelector ?? ''),
+              priceDecimals: Number(config.customMethodOracle1.priceDecimals ?? 18)
+            }
+          : undefined
 
       const oracleConfig: OracleConfiguration = {
         token0: {
@@ -658,7 +750,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           } : undefined,
           chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
           ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined,
-          vaultOracle: oracleType0 === 'vault' ? vault0 : undefined
+          vaultOracle: oracleType0 === 'vault' ? vault0 : undefined,
+          customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined
         },
         token1: {
           type: oracleType1,
@@ -671,7 +764,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           } : undefined,
           chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
           ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined,
-          vaultOracle: oracleType1 === 'vault' ? vault1 : undefined
+          vaultOracle: oracleType1 === 'vault' ? vault1 : undefined,
+          customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined
         }
       }
       
