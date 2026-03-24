@@ -139,9 +139,9 @@ export default function Header() {
           {/* Logo + Market Crafter version */}
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
-              <Image 
-                src="https://cdn.prod.website-files.com/684669826f2b6c83c65f3f7c/684669826f2b6c83c65f3f86_Frame%2010169.svg" 
-                alt="Silo"
+              <Image
+                src="/Union.svg"
+                alt="Union"
                 width={32}
                 height={32}
                 className="header-logo h-8 w-auto"
