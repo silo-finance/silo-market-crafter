@@ -277,6 +277,18 @@ export default function Step10Deployment() {
         console.warn('Failed to fetch ERC4626OracleHardcodeQuoteFactory:', err)
       }
       try {
+        const customMethodRes = await fetch(
+          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/CustomMethodOracleFactory.sol.json`
+        )
+        if (customMethodRes.ok) {
+          const data = await customMethodRes.json()
+          const address = data.address || ''
+          if (address && ethers.isAddress(address)) result.customMethodOracleFactory = address
+        }
+      } catch (err) {
+        console.warn('Failed to fetch CustomMethodOracleFactory:', err)
+      }
+      try {
         const manageableRes = await fetch(
           `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ManageableOracleFactory.sol.json`
         )

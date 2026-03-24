@@ -1,0 +1,250 @@
+[
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "AddressZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "BaseTokenDecimalsAbove18",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "DeployerCannotBeZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "EmptyCallSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FailedDeployment",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "balance",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "needed",
+                "type": "uint256"
+            }
+        ],
+        "name": "InsufficientBalance",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentNonce",
+                "type": "uint256"
+            }
+        ],
+        "name": "InvalidAccountNonce",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NormalizationScaleTooLarge",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "TokenIsNotAContract",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "TokensAreTheSame",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "configAddress",
+                "type": "address"
+            }
+        ],
+        "name": "CustomMethodConfigDeployed",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "ORACLE_IMPLEMENTATION",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "baseToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "quoteToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "target",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "callSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "priceDecimals",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICustomMethodOracle.DeploymentConfig",
+                "name": "_config",
+                "type": "tuple"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_externalSalt",
+                "type": "bytes32"
+            }
+        ],
+        "name": "create",
+        "outputs": [
+            {
+                "internalType": "contract ICustomMethodOracle",
+                "name": "oracle",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "nonces",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_deployer",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_externalSalt",
+                "type": "bytes32"
+            }
+        ],
+        "name": "predictAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "predictedAddress",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "baseToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "contract IERC20Metadata",
+                        "name": "quoteToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "target",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "callSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "priceDecimals",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICustomMethodOracle.DeploymentConfig",
+                "name": "_config",
+                "type": "tuple"
+            }
+        ],
+        "name": "verifyConfig",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "normalizationDivider",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "normalizationMultiplier",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

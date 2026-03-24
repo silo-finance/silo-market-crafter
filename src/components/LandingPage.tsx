@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
+import { NETWORK_CONFIGS } from '@/utils/networks'
 
 export default function LandingPage() {
   const router = useRouter()
@@ -106,6 +107,18 @@ export default function LandingPage() {
               >
                 Create New Market
               </Button>
+              <div className="mt-8 pt-6 border-t border-lime-200/70 text-left">
+                <p className="text-sm font-medium text-emerald-900 mb-3">
+                  Supported blockchains:
+                </p>
+                <ul className="list-disc list-outside pl-5 space-y-1.5 text-sm text-emerald-700">
+                  {NETWORK_CONFIGS.map((network) => (
+                    <li key={network.chainId}>
+                      {network.displayName} ({network.chainId})
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
 

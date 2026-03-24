@@ -1,11 +1,12 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig, CustomMethodOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import erc4626OracleFactoryAbi from '@/abis/oracle/ERC4626OracleHardcodeQuoteFactory.json'
+import customMethodOracleFactoryAbi from '@/abis/oracle/CustomMethodOracleFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 
 /** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
@@ -22,6 +23,9 @@ const manageableFactoryAbi = (manageableOracleFactoryAbi as FoundryArtifact).abi
 const manageableFactoryInterface = new ethers.Interface(manageableFactoryAbi)
 const erc4626FactoryInterface = new ethers.Interface(
   (erc4626OracleFactoryAbi as unknown as ethers.InterfaceAbi)
+)
+const customMethodFactoryInterface = new ethers.Interface(
+  (customMethodOracleFactoryAbi as unknown as ethers.InterfaceAbi)
 )
 
 export interface SiloCoreDeployments {
@@ -96,6 +100,7 @@ export interface OracleDeployments {
   ptLinearOracleFactory?: string
   manageableOracleFactory?: string
   erc4626OracleFactory?: string
+  customMethodOracleFactory?: string
 }
 
 /**
@@ -148,7 +153,8 @@ export function prepareDeployArgs(
     scaler: ScalerOracle | null | undefined,
     chainlink: ChainlinkOracleConfig | null | undefined,
     ptLinear: PTLinearOracleConfig | null | undefined,
-    vault: VaultOracleConfig | null | undefined
+    vault: VaultOracleConfig | null | undefined,
+    customMethod: CustomMethodOracleConfig | null | undefined
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
@@ -240,6 +246,55 @@ export function prepareDeployArgs(
         txInput
       }
     }
+    if (customMethod && oracleDeployments?.customMethodOracleFactory) {
+      const baseToken =
+        customMethod.baseToken === 'token0'
+          ? ethers.getAddress(wizardData.token0!.address)
+          : ethers.getAddress(wizardData.token1!.address)
+      let quoteToken: string
+      if (customMethod.useOtherTokenAsQuote !== false) {
+        quoteToken =
+          customMethod.baseToken === 'token0'
+            ? ethers.getAddress(wizardData.token1!.address)
+            : ethers.getAddress(wizardData.token0!.address)
+      } else {
+        const customAddr = customMethod.customQuoteTokenAddress?.trim()
+        if (!customAddr || !ethers.isAddress(customAddr)) {
+          throw new Error(
+            'Custom Method oracle requires a valid custom quote token address. Please set the quote token in Oracle Configuration (Step 3).'
+          )
+        }
+        quoteToken = ethers.getAddress(customAddr)
+      }
+      const target = customMethod.target?.trim()
+      if (!target || !ethers.isAddress(target)) {
+        throw new Error('Custom Method oracle target contract must be a valid address.')
+      }
+      const callSelector = customMethod.callSelector?.trim()
+      if (!callSelector || !/^0x[a-fA-F0-9]{8}$/.test(callSelector)) {
+        throw new Error('Custom Method oracle call selector is invalid. Please test method in Oracle Configuration (Step 3).')
+      }
+      const priceDecimals = Number(customMethod.priceDecimals)
+      if (!Number.isInteger(priceDecimals) || priceDecimals < 6 || priceDecimals > 18) {
+        throw new Error('Custom Method oracle price decimals must be an integer between 6 and 18.')
+      }
+      const configTuple = [
+        baseToken,
+        quoteToken,
+        ethers.getAddress(target),
+        callSelector,
+        priceDecimals
+      ]
+      const txInput = customMethodFactoryInterface.encodeFunctionData(
+        'create',
+        [configTuple, ethers.ZeroHash]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.customMethodOracleFactory,
+        txInput
+      }
+    }
     if (!scaler) return getOracleTxData(undefined)
     if (scaler.customCreate) {
       const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
@@ -302,13 +357,15 @@ export function prepareDeployArgs(
     wizardData.oracleConfiguration?.token0?.scalerOracle,
     wizardData.oracleConfiguration?.token0?.chainlinkOracle,
     wizardData.oracleConfiguration?.token0?.ptLinearOracle,
-    wizardData.oracleConfiguration?.token0?.vaultOracle
+    wizardData.oracleConfiguration?.token0?.vaultOracle,
+    wizardData.oracleConfiguration?.token0?.customMethodOracle
   )
   const solvency1Raw = getSolvencyOracleTxData(
     wizardData.oracleConfiguration?.token1?.scalerOracle,
     wizardData.oracleConfiguration?.token1?.chainlinkOracle,
     wizardData.oracleConfiguration?.token1?.ptLinearOracle,
-    wizardData.oracleConfiguration?.token1?.vaultOracle
+    wizardData.oracleConfiguration?.token1?.vaultOracle,
+    wizardData.oracleConfiguration?.token1?.customMethodOracle
   )
 
   const _oracles = {
