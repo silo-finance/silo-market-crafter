@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { Suspense } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import AlphaDisclaimer from '@/components/AlphaDisclaimer'
@@ -43,7 +44,9 @@ export default function RootLayout({
         <ThemeProvider>
           <WizardProvider>
             <NetworkWarning />
-            <Header />
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
             <div className="pt-5 sm:pt-7">
               <AlphaDisclaimer>
                 {children}
