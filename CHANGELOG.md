@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.22.2 - 2026-03-25
+### Updated
+- add bg animation
+
 ## 0.22.1 - 2026-03-25
 ### Fixed
 - fix background image
