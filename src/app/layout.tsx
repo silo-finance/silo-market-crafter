@@ -4,12 +4,15 @@ import './globals.css'
 import { Suspense } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import AnimatedCirclesBackground from '@/components/AnimatedCirclesBackground'
 import AlphaDisclaimer from '@/components/AlphaDisclaimer'
 import NetworkWarning from '@/components/NetworkWarning'
 import { WizardProvider } from '@/contexts/WizardContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
 const inter = Inter({ subsets: ['latin'] })
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
+const patternCirclesUrl = `${basePath}/pattern-circles.svg`
 
 export const metadata: Metadata = {
   title: 'Silo Market Crafter',
@@ -24,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <style>{`:root{--pattern-circles-url:url(${patternCirclesUrl});--pattern-circles-static-url:url(${patternCirclesUrl})}`}</style>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -41,8 +45,10 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <AnimatedCirclesBackground />
         <ThemeProvider>
           <WizardProvider>
+            <div className="relative z-[1]">
             <NetworkWarning />
             <Suspense fallback={null}>
               <Header />
@@ -53,6 +59,7 @@ export default function RootLayout({
               </AlphaDisclaimer>
             </div>
             <Footer />
+            </div>
           </WizardProvider>
         </ThemeProvider>
       </body>
