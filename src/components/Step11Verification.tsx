@@ -1752,7 +1752,11 @@ export default function Step11Verification() {
                   const baseUrl = typeof window !== 'undefined'
                     ? `${window.location.origin}${(window.location.pathname.replace(/\/wizard.*$/, '') || '/').replace(/\/$/, '')}`
                     : 'https://silo-finance.github.io/silo-market-crafter'
-                  const verificationUrl = `${baseUrl}/wizard?step=verification&address=${config.siloConfig}`
+                  const verificationParams = new URLSearchParams()
+                  verificationParams.set('step', 'verification')
+                  verificationParams.set('address', address)
+                  verificationParams.set('chain', String(chainId))
+                  const verificationUrl = `${baseUrl}/wizard?${verificationParams.toString()}`
 
                   const toExternalPrice = (
                     quotePriceRaw: string | undefined,
