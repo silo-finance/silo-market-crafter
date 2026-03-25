@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.23.0 - 2026-03-25
+### Added
+- add chain argument to verification page, so we can switch blockchain automatically
+
 ## 0.22.2 - 2026-03-25
 ### Updated
 - add bg animation

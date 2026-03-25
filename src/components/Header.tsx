@@ -39,6 +39,7 @@ export default function Header() {
   const isWizardPath = pathWithoutBase === '/wizard' || pathWithoutBase === '/wizard/'
   const isIrmVerificationPath = pathWithoutBase === '/irm-verification' || pathWithoutBase === '/irm-verification/'
   const currentStep = searchParams.get('step')
+  const isNewMarketActive = isWizardPath && currentStep !== 'verification'
   const isVerifyMarketActive = isWizardPath && currentStep === 'verification'
   const isVerifyIrmActive = isIrmVerificationPath
 
@@ -173,6 +174,15 @@ export default function Header() {
 
           {/* Navigation Menu */}
           <nav className="hidden md:flex items-center gap-2">
+            <Link
+              href="/wizard?step=1"
+              className={`header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)] ${
+                isNewMarketActive ? 'header-link-active bg-[var(--silo-accent-soft)] border border-[var(--header-toggle-border)]' : ''
+              }`}
+              aria-current={isNewMarketActive ? 'page' : undefined}
+            >
+              New Market
+            </Link>
             <Link 
               href="/wizard?step=verification"
               className={`header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)] ${
