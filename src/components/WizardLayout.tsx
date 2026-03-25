@@ -59,6 +59,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   }
 
   const isStep13Standalone = wizardData.currentStep === 13 && !wizardData.verificationFromWizard
+  const isVerificationStep = wizardData.currentStep === 13
 
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
@@ -76,28 +77,29 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
       <div className="flex">
         {/* Main Content */}
         <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
-          <div className="px-8 pb-8 pt-12">
-            {/* Header with Navigation and Reset Button */}
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-bold silo-text-main">Silo Market Creator</h1>
-                <p className="silo-text-soft">Create a new Silo market step by step</p>
+          <div className={`px-8 pb-8 ${isVerificationStep ? 'pt-8' : 'pt-12'}`}>
+            {!isVerificationStep && (
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold silo-text-main">Silo Market Creator</h1>
+                  <p className="silo-text-soft">Create a new Silo market step by step</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/')}
+                    title="Back to Landing Page"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Landing
+                  </Button>
+                  <ResetButton />
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push('/')}
-                  title="Back to Landing Page"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Back to Landing
-                </Button>
-                <ResetButton />
-              </div>
-            </div>
+            )}
             {children}
           </div>
         </div>

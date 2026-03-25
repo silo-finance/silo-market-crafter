@@ -17,7 +17,7 @@ import { verifySiloImplementation } from '@/utils/verification/siloImplementatio
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { detectSiloConfigNetwork } from '@/utils/verification/siloConfigNetworkDetection'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
-import { getChainName, getExplorerBaseUrl, getNetworkDisplayName } from '@/utils/networks'
+import { getChainName, getExplorerBaseUrl, getNetworkDisplayName, isChainSupported } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { buildSiloDeploymentKey } from '@/utils/siloDeploymentsJson'
 import { verifyAddress } from '@/utils/verification/addressVerification'
@@ -30,6 +30,36 @@ import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import Image from 'next/image'
 import prWorkflowImage from '@/data/pr.png'
 import Button from '@/components/Button'
+
+function parseChainQueryParam(chainParam: string | null): { chainId: number | null; error: string | null } {
+  if (!chainParam) {
+    return { chainId: null, error: null }
+  }
+
+  const trimmed = chainParam.trim()
+  if (trimmed === '') {
+    return { chainId: null, error: null }
+  }
+
+  const isHex = /^0x[0-9a-fA-F]+$/.test(trimmed)
+  const isDecimal = /^[0-9]+$/.test(trimmed)
+  if (!isHex && !isDecimal) {
+    return {
+      chainId: null,
+      error: `Invalid "chain" query parameter: "${trimmed}". Expected decimal or 0x-prefixed chain ID.`
+    }
+  }
+
+  const parsed = Number.parseInt(trimmed, isHex ? 16 : 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return {
+      chainId: null,
+      error: `Invalid "chain" query parameter: "${trimmed}".`
+    }
+  }
+
+  return { chainId: parsed, error: null }
+}
 
 export default function Step11Verification() {
   const router = useRouter()
@@ -129,10 +159,18 @@ export default function Step11Verification() {
   const [priceSourcesInput, setPriceSourcesInput] = useState('')
   const [priceSourcesError, setPriceSourcesError] = useState<string | null>(null)
   const [wrongAddressVersion, setWrongAddressVersion] = useState<string | null>(null)
+  const [networkSwitchToast, setNetworkSwitchToast] = useState<string | null>(null)
+  const [isOpenPrSectionVisible, setIsOpenPrSectionVisible] = useState(false)
+  const networkSwitchToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chainParamRaw = searchParams.get('chain')
+  const parsedChainParam = React.useMemo(
+    () => parseChainQueryParam(chainParamRaw),
+    [chainParamRaw]
+  )
   const chainId = wizardData.networkInfo?.chainId || detectedChainId
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
-    (params: { txHash?: string; siloConfigAddress?: string; siloAddress?: string }) => {
+    (params: { txHash?: string; siloConfigAddress?: string; siloAddress?: string; chainId?: number | null }) => {
       const query = new URLSearchParams()
       query.set('step', 'verification')
       if (params.txHash) {
@@ -142,16 +180,33 @@ export default function Step11Verification() {
       } else if (params.siloConfigAddress) {
         query.set('address', params.siloConfigAddress)
       }
+      if (params.chainId != null) {
+        query.set('chain', String(params.chainId))
+      }
       router.replace(`/wizard?${query.toString()}`, { scroll: false })
     },
     [router]
   )
+
+  const showNetworkSwitchToast = useCallback((targetChainId: number) => {
+    if (networkSwitchToastTimeoutRef.current) {
+      clearTimeout(networkSwitchToastTimeoutRef.current)
+    }
+    setNetworkSwitchToast(`Switched network to ${getNetworkDisplayName(targetChainId)}.`)
+    networkSwitchToastTimeoutRef.current = setTimeout(() => {
+      setNetworkSwitchToast(null)
+      networkSwitchToastTimeoutRef.current = null
+    }, 3000)
+  }, [])
 
   // Avoid updating URL/state after user left verification (e.g. Reset → Landing → Create new market)
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
+      if (networkSwitchToastTimeoutRef.current) {
+        clearTimeout(networkSwitchToastTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -495,7 +550,7 @@ export default function Step11Verification() {
     value: string,
     isTxHash: boolean,
     isKnownSilo = false,
-    fromUrlSiloConfigAddress = false
+    forcedChainId: number | null = null
   ) => {
     if (!value.trim()) {
       setError('Please enter a Silo Config address, Silo address, or transaction hash')
@@ -512,6 +567,7 @@ export default function Step11Verification() {
     setWrongAddressVersion(null)
     setConfig(null)
     setShowForm(false)
+    setIsOpenPrSectionVisible(false)
     setPendingIrmInfo({ silo0: null, silo1: null })
     setIrmConfigHistory({ silo0: null, silo1: null })
 
@@ -523,6 +579,41 @@ export default function Step11Verification() {
       let network = await provider.getNetwork()
       chainIdForCatch = network.chainId.toString()
       setDetectedChainId(chainIdForCatch)
+
+      if (forcedChainId != null) {
+        if (!isChainSupported(forcedChainId)) {
+          throw new Error(`Chain ${forcedChainId} is not supported.`)
+        }
+
+        const currentChainId = Number(network.chainId)
+        if (currentChainId !== forcedChainId) {
+          const targetChainHex = `0x${forcedChainId.toString(16)}`
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: targetChainHex }]
+            })
+            showNetworkSwitchToast(forcedChainId)
+          } catch (switchError) {
+            const error = switchError as { code?: number; message?: string }
+            if (error.code === 4001) {
+              throw new Error('Network switch rejected in wallet. Please accept network switch and try again.')
+            }
+            if (error.code === -32002) {
+              throw new Error('Network switch request already pending in wallet. Please confirm it and retry.')
+            }
+            throw new Error(
+              `Failed to switch wallet network to chain ${forcedChainId}.${error.message ? ` ${error.message}` : ''}`
+            )
+          }
+
+          // Refresh provider/network after forced switch attempt.
+          provider = new ethers.BrowserProvider(window.ethereum)
+          network = await provider.getNetwork()
+          chainIdForCatch = network.chainId.toString()
+          setDetectedChainId(chainIdForCatch)
+        }
+      }
       let siloConfigAddress: string
       let resolvedFromSilo = false
 
@@ -557,9 +648,10 @@ export default function Step11Verification() {
         const inputAddress = ethers.getAddress(value.trim())
         failedAddressForCatch = inputAddress
 
-        // For direct verification links with SiloConfig address, try to detect and switch network first.
-        // Failures here are non-fatal: verification continues with current behavior.
-        if (fromUrlSiloConfigAddress && !isKnownSilo) {
+        // For address verification without explicit ?chain=, try to detect the target network
+        // and switch first. Failures here are non-fatal: verification then continues and may
+        // still show a network/address error on the current chain.
+        if (!isKnownSilo && forcedChainId == null) {
           try {
             const detectedNetwork = await detectSiloConfigNetwork(inputAddress)
             if (detectedNetwork) {
@@ -573,6 +665,7 @@ export default function Step11Verification() {
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: targetChainHex }]
                   })
+                  showNetworkSwitchToast(detectedNetwork.chainId)
                 } catch (switchError) {
                   const error = switchError as { code?: number; message?: string }
                   if (error.code === 4001) {
@@ -1195,7 +1288,47 @@ export default function Step11Verification() {
     wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
     wizardData.token1?.address,
-    updateVerificationUrl
+    updateVerificationUrl,
+    showNetworkSwitchToast
+  ])
+
+  const runVerificationFromUrl = useCallback(() => {
+    const urlHash = searchParams.get('tx')
+    const urlSilo = searchParams.get('silo')
+    const urlAddress = searchParams.get('address') || searchParams.get('contract')
+    const forcedChainId = parsedChainParam.chainId
+    if (parsedChainParam.error) {
+      setError(parsedChainParam.error)
+      setTxHash(null)
+      setConfig(null)
+      setShowForm(true)
+      return
+    }
+    if (urlHash) {
+      setInput(urlHash)
+      void handleVerify(urlHash, true, false, forcedChainId)
+    } else if (urlSilo) {
+      setInput(urlSilo)
+      void handleVerify(urlSilo, false, true, forcedChainId)
+    } else if (urlAddress) {
+      setInput(urlAddress)
+      void handleVerify(urlAddress, false, false, forcedChainId)
+    } else {
+      // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
+      const savedHash = wizardData.lastDeployTxHash
+      if (savedHash) {
+        setInput(savedHash)
+      }
+      setShowForm(true)
+      setVerificationFromWizard(false)
+    }
+  }, [
+    handleVerify,
+    parsedChainParam.chainId,
+    parsedChainParam.error,
+    searchParams,
+    setVerificationFromWizard,
+    wizardData.lastDeployTxHash
   ])
 
   // Whether we're verifying the wizard's deployment (show summary) or standalone (hide summary)
@@ -1212,28 +1345,40 @@ export default function Step11Verification() {
 
   // When URL has tx= or address=, run verification once. When URL has neither, only show form (never auto-run with lastDeployTxHash so we don't overwrite user input).
   useEffect(() => {
-    const urlHash = searchParams.get('tx')
-    const urlSilo = searchParams.get('silo')
-    const urlAddress = searchParams.get('address') || searchParams.get('contract')
-    if (urlHash) {
-      setInput(urlHash)
-      handleVerify(urlHash, true, false, false)
-    } else if (urlSilo) {
-      setInput(urlSilo)
-      handleVerify(urlSilo, false, true, false)
-    } else if (urlAddress) {
-      setInput(urlAddress)
-      handleVerify(urlAddress, false, false, true)
-    } else {
-      // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
-      const savedHash = wizardData.lastDeployTxHash
-      if (savedHash) {
-        setInput(savedHash)
-      }
-      setShowForm(true)
-      setVerificationFromWizard(false)
+    runVerificationFromUrl()
+  }, [runVerificationFromUrl])
+
+  // If user opens a share URL before wallet is connected, auto-retry once wallet gets connected.
+  useEffect(() => {
+    const ethereumProvider = window.ethereum as
+      | {
+          on?: (event: string, callback: (...args: unknown[]) => void) => void
+          removeListener?: (event: string, callback: (...args: unknown[]) => void) => void
+        }
+      | undefined
+
+    if (!ethereumProvider?.on) return
+
+    const handleAccountsChanged = (accountsArg: unknown) => {
+      if (loading) return
+      const accounts = Array.isArray(accountsArg) ? accountsArg : []
+      if (accounts.length === 0) return
+
+      const hasUrlInput =
+        !!searchParams.get('tx') ||
+        !!searchParams.get('silo') ||
+        !!searchParams.get('address') ||
+        !!searchParams.get('contract')
+      if (!hasUrlInput) return
+
+      void runVerificationFromUrl()
     }
-  }, [searchParams, wizardData.lastDeployTxHash, handleVerify, setVerificationFromWizard])
+
+    ethereumProvider.on('accountsChanged', handleAccountsChanged)
+    return () => {
+      ethereumProvider.removeListener?.('accountsChanged', handleAccountsChanged)
+    }
+  }, [loading, runVerificationFromUrl, searchParams])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1249,7 +1394,8 @@ export default function Step11Verification() {
       return
     }
     
-    handleVerify(trimmed, isTxHash, false, false)
+    // Manual input verification should not be forced by URL chain parameter.
+    handleVerify(trimmed, isTxHash, false, null)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1263,9 +1409,12 @@ export default function Step11Verification() {
   const [shareCopied, setShareCopied] = useState(false)
   const handleShare = useCallback(async () => {
     try {
-      const url = typeof window !== 'undefined' ? window.location.href : ''
+      const url = typeof window !== 'undefined' ? new URL(window.location.href) : null
       if (url) {
-        await navigator.clipboard.writeText(url)
+        if (chainId) {
+          url.searchParams.set('chain', String(chainId))
+        }
+        await navigator.clipboard.writeText(url.toString())
         setShareCopied(true)
         setTimeout(() => setShareCopied(false), 2000)
       }
@@ -1273,10 +1422,19 @@ export default function Step11Verification() {
       console.error('Share failed:', err)
       setError('Failed to copy URL')
     }
-  }, [])
+  }, [chainId])
 
   const goToDeployment = () => router.push('/wizard?step=12')
-  const goToNewMarket = () => router.push('/')
+  const handleVerifyAnotherMarket = () => {
+    setShowForm(true)
+    setError(null)
+    setWrongAddressVersion(null)
+    setTxHash(null)
+    setConfig(null)
+    setInput('')
+    setVerificationFromWizard(false)
+    updateVerificationUrl({})
+  }
 
   const siloDeploymentsLine =
     config && chainId && config.siloId != null
@@ -1289,35 +1447,75 @@ export default function Step11Verification() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {networkSwitchToast && (
+        <div className="fixed top-24 right-4 z-[10000] max-w-sm">
+          <div className="silo-panel-soft flex items-start gap-3 px-4 py-3 shadow-lg">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--silo-accent)_18%,var(--silo-surface))]">
+              <svg className="h-3.5 w-3.5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-sm silo-text-main">{networkSwitchToast}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setNetworkSwitchToast(null)
+                if (networkSwitchToastTimeoutRef.current) {
+                  clearTimeout(networkSwitchToastTimeoutRef.current)
+                  networkSwitchToastTimeoutRef.current = null
+                }
+              }}
+              className="ml-1 rounded p-1 silo-text-soft hover:text-[var(--silo-text)] hover:bg-[var(--silo-surface)]"
+              aria-label="Close network switch notification"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="text-center sm:text-left mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
           Verification
         </h1>
-        <p className="text-gray-300 text-lg inline-flex items-center gap-2">
-          View complete market configuration tree
-          {config && !loading && (
-            <button
-              type="button"
-              onClick={handleShare}
-              title={shareCopied ? 'Copied!' : 'Copy verification URL'}
-              className="inline-flex items-center justify-center gap-1.5 rounded p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors -mb-0.5"
-              aria-label={shareCopied ? 'Copied' : 'Share'}
-            >
-              {shareCopied ? (
-                <>
-                  <svg className="w-5 h-5 text-[var(--silo-success)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-gray-300 text-lg inline-flex items-center gap-2">
+            View complete market configuration tree
+            {config && !loading && (
+              <button
+                type="button"
+                onClick={handleShare}
+                title={shareCopied ? 'Copied!' : 'Copy verification URL'}
+                className="inline-flex items-center justify-center gap-1.5 rounded p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors -mb-0.5"
+                aria-label={shareCopied ? 'Copied' : 'Share'}
+              >
+                {shareCopied ? (
+                  <>
+                    <svg className="w-5 h-5 text-[var(--silo-success)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-[var(--silo-success)] text-sm font-medium">Copied</span>
+                  </>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
-                  <span className="text-[var(--silo-success)] text-sm font-medium">Copied</span>
-                </>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-              )}
-            </button>
+                )}
+              </button>
+            )}
+          </p>
+          {config && !loading && (
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={handleVerifyAnotherMarket}>
+                Verify New Market
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setIsOpenPrSectionVisible(true)}>
+                Open PR
+              </Button>
+            </div>
           )}
-        </p>
+        </div>
       </div>
 
       {showForm && !loading && (
@@ -1454,7 +1652,7 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && (
+      {config && !loading && chainId && config.siloId != null && siloDeploymentsLine && isOpenPrSectionVisible && (
         <div className="mb-6 flex flex-col sm:flex-row gap-6 sm:gap-3 items-start">
           <div className="sm:order-1 order-2 w-full sm:w-auto sm:max-w-[240px] min-w-[120px] shrink-0">
             <Image
@@ -1464,7 +1662,18 @@ export default function Step11Verification() {
               placeholder="blur"
             />
           </div>
-          <div className="flex-1 min-w-0 text-left sm:order-2 order-1">
+          <div className="relative flex-1 min-w-0 text-left sm:order-2 order-1">
+            <button
+              type="button"
+              onClick={() => setIsOpenPrSectionVisible(false)}
+              className="absolute right-0 top-0 rounded p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close Open PR section"
+              title="Close"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Open PR for developer</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
               Click the button below to open the workflow for the developer. Do not copy anything – everything will be copied automatically to your clipboard. After redirecting to GitHub, paste the clipboard content into the <strong>Market configuration</strong> field shown in the screenshot.
@@ -1681,13 +1890,9 @@ export default function Step11Verification() {
       })()}
 
       <div className="flex justify-between mt-8">
-        {wizardData.verificationFromWizard ? (
+        {wizardData.verificationFromWizard && (
           <Button variant="secondary" size="lg" onClick={goToDeployment}>
             Back to Deployment
-          </Button>
-        ) : (
-          <Button variant="secondary" size="lg" onClick={goToNewMarket}>
-            Deploy New Market
           </Button>
         )}
       </div>
