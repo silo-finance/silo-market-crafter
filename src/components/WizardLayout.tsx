@@ -63,7 +63,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
     return (
-      <div className="light-market-theme min-h-screen text-emerald-950">
+      <div className="silo-page light-market-theme">
         {children}
       </div>
     )
@@ -72,16 +72,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   const showSummarySidebar = !isStep13Standalone && isSummaryOpen
 
   return (
-    <div className="light-market-theme min-h-screen text-emerald-950">
+    <div className="silo-page light-market-theme">
       <div className="flex">
         {/* Main Content */}
         <div className={`transition-all duration-300 ${showSummarySidebar ? 'w-2/3' : 'w-full'}`}>
-          <div className="p-8">
+          <div className="px-8 pb-8 pt-12">
             {/* Header with Navigation and Reset Button */}
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-emerald-950">Silo Market Creator</h1>
-                <p className="text-emerald-700">Create a new Silo market step by step</p>
+                <h1 className="text-2xl font-bold silo-text-main">Silo Market Creator</h1>
+                <p className="silo-text-soft">Create a new Silo market step by step</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Button
@@ -104,12 +104,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
         {/* Summary Sidebar - hidden on verification step when verifying user-provided data (not from wizard) */}
         <div className={`${showSummarySidebar ? 'w-1/3' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-          <div className="summary-panel border-l border-lime-200 p-6 backdrop-blur-[1px]">
+          <div className="summary-panel border-l border-[var(--silo-border)] p-6 backdrop-blur-[1px]">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-emerald-950">Configuration Summary</h2>
+              <h2 className="text-xl font-semibold silo-text-main">Configuration Summary</h2>
               <button
                 onClick={() => setIsSummaryOpen(false)}
-                className="text-emerald-700 hover:text-emerald-950 transition-colors"
+                className="silo-text-soft hover:text-[var(--silo-text)] transition-colors"
                 title="Hide Summary"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
             {/* Progress Indicator */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-emerald-800 mb-3">Progress</h3>
+              <h3 className="text-sm font-medium silo-text-soft mb-3">Progress</h3>
               <div className="space-y-1.5">
                 {[
                   { step: 1, title: 'Assets' },
@@ -148,25 +148,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       onClick={() => isClickable && handleStepClick(item.step, 'id' in item ? item.id : undefined)}
                       className={`flex items-center space-x-2 p-1.5 rounded-lg transition-colors ${
                         wizardData.currentStep >= item.step
-                          ? 'bg-lime-900/20 border border-lime-700/50'
-                          : 'bg-[#1a241a] border border-lime-900/40'
+                          ? 'bg-[var(--silo-accent-soft)] border border-[#b9c2f0]'
+                          : 'bg-[var(--silo-surface)] border border-[var(--silo-border)]'
                       } ${
-                        isClickable ? 'cursor-pointer hover:bg-lime-800/30' : 'cursor-default'
+                        isClickable ? 'cursor-pointer hover:bg-[#d6ddff]' : 'cursor-default'
                       }`}
                     >
                       <div
                         className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${
                           isCompleted
-                            ? 'bg-lime-600 text-lime-950'
+                            ? 'bg-[var(--silo-accent)] text-[#172045]'
                             : isCurrent
-                            ? 'bg-lime-700 text-lime-50'
-                            : 'bg-lime-950/70 text-lime-300/50'
+                            ? 'bg-[#8f9dff] text-[#182149]'
+                            : 'bg-[var(--silo-surface-2)] text-[var(--silo-text-faint)]'
                         }`}
                       >
                         {isCompleted ? '✓' : (itemId === 'verification' ? 'V' : item.step)}
                       </div>
                       <div className={`text-xs font-medium ${
-                        wizardData.currentStep >= item.step ? 'text-lime-50' : 'text-lime-200/60'
+                        wizardData.currentStep >= item.step ? 'text-[var(--silo-text)]' : 'text-[var(--silo-text-faint)]'
                       }`}>
                         {item.title}
                       </div>
@@ -653,7 +653,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
         {!isSummaryOpen && (
           <button
             onClick={() => setIsSummaryOpen(true)}
-            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-lime-800/80 hover:bg-lime-700 text-white cta-strong-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+            className="fixed top-1/2 right-4 transform -translate-y-1/2 bg-[var(--silo-accent)] hover:bg-[#7384ff] text-[#141a3c] p-3 rounded-full shadow-lg transition-all duration-200 z-50"
             title="Show Summary"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

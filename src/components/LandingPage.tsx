@@ -70,14 +70,14 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="light-market-theme min-h-screen flex items-center justify-center px-4">
+    <div className="silo-page flex items-center justify-center px-4 py-8">
       <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-emerald-950 mb-4">
+          <h1 className="text-5xl font-bold silo-text-main mb-4">
             Silo Market Crafter
           </h1>
-          <p className="text-xl text-emerald-800">
+          <p className="text-xl silo-text-soft">
             Create or load Silo market configurations
           </p>
         </div>
@@ -85,17 +85,17 @@ export default function LandingPage() {
         {/* Main Options */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Start New Wizard */}
-          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
+          <div className="silo-panel silo-top-card p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-lime-800/90 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-[var(--silo-accent-soft)] text-[var(--silo-accent)]">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
+              <h2 className="text-2xl font-semibold silo-text-main mb-4">
                 Start New Market
               </h2>
-              <p className="text-emerald-700 mb-6">
+              <p className="silo-text-soft mb-6">
                 Create a new Silo market in few easy steps.
               </p>
               <Button
@@ -103,15 +103,14 @@ export default function LandingPage() {
                 variant="primaryDark"
                 size="md"
                 onClick={handleStartWizard}
-                className="bg-lime-800/90"
               >
                 Create New Market
               </Button>
-              <div className="mt-8 pt-6 border-t border-lime-200/70 text-left">
-                <p className="text-sm font-medium text-emerald-900 mb-3">
+              <div className="mt-8 pt-6 border-t border-[var(--silo-border)] text-left">
+                <p className="text-sm font-medium silo-text-main mb-3">
                   Supported blockchains:
                 </p>
-                <ul className="list-disc list-outside pl-5 space-y-1.5 text-sm text-emerald-700">
+                <ul className="list-disc list-outside pl-5 space-y-1.5 text-sm silo-text-soft">
                   {NETWORK_CONFIGS.map((network) => (
                     <li key={network.chainId}>
                       {network.displayName} ({network.chainId})
@@ -123,17 +122,17 @@ export default function LandingPage() {
           </div>
 
           {/* Load Existing Config */}
-          <div className="bg-[#f6fbf2] rounded-lg border border-lime-200 p-8">
+          <div className="silo-panel silo-top-card p-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-lime-700/90 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-[var(--silo-accent-soft)] text-[var(--silo-accent)]">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-emerald-950 mb-4">
+              <h2 className="text-2xl font-semibold silo-text-main mb-4">
                 Load Existing Config
               </h2>
-              <p className="text-emerald-700 mb-6">
+              <p className="silo-text-soft mb-6">
                 Upload or paste an existing JSON configuration to edit and deploy.
               </p>
             </div>
@@ -144,8 +143,8 @@ export default function LandingPage() {
                 onClick={() => setIsUploadMode(false)}
                 className={`flex-1 py-2 px-4 rounded-l-lg font-medium transition-colors ${
                   !isUploadMode
-                    ? 'bg-lime-800 text-lime-50'
-                    : 'bg-lime-100 text-emerald-800 hover:bg-lime-200'
+                    ? 'bg-[var(--silo-accent-soft)] text-[var(--silo-text)] border border-[var(--silo-border)]'
+                    : 'bg-transparent text-[var(--silo-text-soft)] border border-[var(--silo-border)] hover:bg-[var(--silo-surface-2)]'
                 }`}
               >
                 Paste JSON
@@ -154,8 +153,8 @@ export default function LandingPage() {
                 onClick={() => setIsUploadMode(true)}
                 className={`flex-1 py-2 px-4 rounded-r-lg font-medium transition-colors ${
                   isUploadMode
-                    ? 'bg-lime-800 text-lime-50'
-                    : 'bg-lime-100 text-emerald-800 hover:bg-lime-200'
+                    ? 'bg-[var(--silo-accent-soft)] text-[var(--silo-text)] border border-[var(--silo-border)]'
+                    : 'bg-transparent text-[var(--silo-text-soft)] border border-[var(--silo-border)] hover:bg-[var(--silo-surface-2)]'
                 }`}
               >
                 Upload File
@@ -169,7 +168,7 @@ export default function LandingPage() {
                   type="file"
                   accept=".json"
                   onChange={handleFileUpload}
-                  className="w-full p-3 bg-white border border-lime-200 rounded-lg text-emerald-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-lime-800 file:text-lime-50 hover:file:bg-lime-700"
+                  className="w-full p-3 silo-input rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--silo-accent-soft)] file:text-[var(--silo-text)] hover:file:bg-[#cfd6ff]"
                 />
               </div>
             )}
@@ -183,13 +182,13 @@ export default function LandingPage() {
                   if (error) setError('') // Clear error when user types
                 }}
                 placeholder="Paste your JSON configuration here..."
-                className="w-full h-32 p-3 bg-white border border-lime-200 rounded-lg text-emerald-900 placeholder-emerald-400 resize-none focus:outline-none focus:ring-2 focus:ring-lime-700"
+                className="w-full h-32 p-3 silo-input rounded-lg resize-none"
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded-lg text-red-400 text-sm">
+              <div className="mb-4 silo-alert silo-alert-error">
                 {error}
               </div>
             )}
@@ -213,18 +212,18 @@ export default function LandingPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="text-center mt-12 text-emerald-700 text-sm space-y-4">
+        <div className="text-center mt-12 silo-text-soft text-sm space-y-4">
           <p>
             Make sure your wallet is connected to determine the correct blockchain for token resolution.
           </p>
-          <div className="max-w-2xl mx-auto bg-lime-100/60 border border-lime-200 rounded-lg p-4">
-            <p className="text-emerald-900 mb-3">
+          <div className="max-w-2xl mx-auto silo-panel-soft p-4">
+            <p className="silo-text-main mb-3">
               If you see UI/runtime errors while opening pages (for example Verify Market), clear local cache and retry.
             </p>
             <Button variant="orange" size="sm" onClick={handleClearCache}>
               Clear Cache
             </Button>
-            {cacheMessage && <p className="mt-2 text-emerald-800">{cacheMessage}</p>}
+            {cacheMessage && <p className="mt-2 silo-text-main">{cacheMessage}</p>}
           </div>
         </div>
       </div>

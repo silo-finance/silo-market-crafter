@@ -814,16 +814,16 @@ function CustomMethodOracleSection({
 
       {/* Oracle implementation (version sourced from factory) */}
       {customMethodFactoryMissing ? (
-        <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
-          <p className="text-red-200 text-sm font-medium">Custom Method Oracle unavailable</p>
-          <p className="text-red-200/80 text-sm mt-1">{customMethodFactoryMissing}</p>
+        <div className="silo-alert silo-alert-error">
+          <p className="text-sm font-medium">Custom Method Oracle unavailable</p>
+          <p className="text-sm mt-1">{customMethodFactoryMissing}</p>
         </div>
       ) : !customMethodFactory ? (
         <p className="text-sm text-yellow-400">Loading CustomMethodOracle for this chain…</p>
       ) : customMethodImplementationError ? (
-        <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
-          <p className="text-red-200 text-sm font-medium">Failed to resolve oracle implementation</p>
-          <p className="text-red-200/80 text-sm mt-1">{customMethodImplementationError}</p>
+        <div className="silo-alert silo-alert-error">
+          <p className="text-sm font-medium">Failed to resolve oracle implementation</p>
+          <p className="text-sm mt-1">{customMethodImplementationError}</p>
         </div>
       ) : customMethodImplementationAddress ? (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
@@ -2520,7 +2520,7 @@ export default function Step3OracleConfiguration() {
         <div className="flex justify-between">
           <button
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2594,7 +2594,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-lime-700"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-[var(--silo-accent)]"
                   value={ptLinear0.maxYieldPercent === 0 ? '' : ptLinear0.maxYieldPercent}
                   onChange={(e) => setPTLinear0(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -2896,7 +2896,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-lime-700"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-[var(--silo-accent)]"
                   value={ptLinear1.maxYieldPercent === 0 ? '' : ptLinear1.maxYieldPercent}
                   onChange={(e) => setPTLinear1(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -3164,7 +3164,7 @@ export default function Step3OracleConfiguration() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -3174,7 +3174,7 @@ export default function Step3OracleConfiguration() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>

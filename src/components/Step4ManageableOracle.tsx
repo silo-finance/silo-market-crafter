@@ -274,10 +274,10 @@ export default function Step4ManageableOracle() {
                   updateManageableOracleTimelock(undefined)
                 }
               }}
-              className="mt-1 w-5 h-5 rounded border-gray-600 bg-gray-800 text-lime-600 focus:ring-lime-500 focus:ring-offset-gray-900"
+              className="mt-1 w-5 h-5 rounded border-[var(--silo-border)] bg-[var(--silo-surface)] text-[var(--silo-accent)] focus:ring-[var(--silo-accent)] focus:ring-offset-[var(--silo-surface)]"
             />
             <div>
-              <span className="text-lg font-medium text-white group-hover:text-lime-50">
+              <span className="text-lg font-medium text-white group-hover:text-[var(--silo-text)]">
                 Allow Oracle updates in the future
               </span>
               <p className="mt-2 text-sm text-gray-400">
@@ -321,7 +321,7 @@ export default function Step4ManageableOracle() {
                     <AddressDisplayLong
                       address={oracleImplementation}
                       chainId={wizardData.networkInfo.chainId}
-                      linkClassName="text-lime-600 hover:text-lime-500"
+                      linkClassName="text-[var(--silo-accent)] hover:text-[#7f91ff]"
                     />
                   </div>
                   <div className="text-sm text-gray-300 whitespace-nowrap">
@@ -344,10 +344,10 @@ export default function Step4ManageableOracle() {
                       key={days}
                       type="button"
                       onClick={() => setSelectedTimelockDays(days)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded-lg text-sm font-normal border transition-colors ${
                         selectedTimelockDays === days
-                          ? 'bg-lime-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          ? 'border-[var(--silo-accent)] bg-[var(--silo-accent-soft)] text-[var(--silo-text)]'
+                          : 'border-[var(--silo-border)] bg-[var(--silo-surface)] text-[var(--silo-text-soft)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
                       }`}
                     >
                       {days} {days === 1 ? 'day' : 'days'}
@@ -376,8 +376,8 @@ export default function Step4ManageableOracle() {
         )}
 
         {manageableEnabled && !manageableFactory?.address && wizardData.networkInfo?.chainId && (
-          <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-amber-200">
+          <div className="silo-alert silo-alert-warning mb-6">
+            <p className="text-sm">
               ManageableOracleFactory address was not found for this network. Deployment may require manual configuration.
             </p>
           </div>
@@ -387,7 +387,7 @@ export default function Step4ManageableOracle() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -396,7 +396,7 @@ export default function Step4ManageableOracle() {
           </button>
           <button
             type="submit"
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>IRM Selection</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

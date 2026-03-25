@@ -221,7 +221,7 @@ export default function OwnerSelectionBlock({
             href={chainId ? getAddressesJsonUrl(chainId) : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lime-600 hover:text-lime-500 underline"
+            className="text-[var(--silo-accent)] hover:text-[#7f91ff] underline"
           >
             {chainId ? `in this JSON file (${networkName ?? chainId})` : 'in the repository'}
           </a>
@@ -245,9 +245,9 @@ export default function OwnerSelectionBlock({
                 : addressValidation.error
                   ? 'border-red-500 focus:border-red-500'
                   : addressValidation.isValid
-                    ? 'border-green-500 focus:border-green-500'
+                    ? 'border-[var(--silo-accent)] focus:border-[var(--silo-accent)]'
                     : 'border-gray-600'
-              : 'border-gray-600 focus:border-lime-700'
+              : 'border-gray-600 focus:border-[var(--silo-accent)]'
           }`}
         />
         {manualAddress && (
@@ -265,17 +265,17 @@ export default function OwnerSelectionBlock({
             ) : addressValidation.isValid && resolvedOwnerAddress ? (
               <div className="space-y-1">
                 {ownerResolvedKey && (
-                  <div className="text-sm status-muted-success">
-                    Matched name: <span className="font-mono text-emerald-800/85">{ownerResolvedKey}</span>
+                  <div className="text-sm text-[var(--silo-success)]">
+                    Matched name: <span className="font-mono text-[var(--silo-text)]">{ownerResolvedKey}</span>
                   </div>
                 )}
                 {!ownerResolvedKey && ownerNameFromJson && (
-                  <div className="text-sm status-muted-success">
-                    Name (from addresses): <span className="font-mono text-emerald-800/85">{ownerNameFromJson}</span>
+                  <div className="text-sm text-[var(--silo-success)]">
+                    Name (from addresses): <span className="font-mono text-[var(--silo-text)]">{ownerNameFromJson}</span>
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="status-muted-success">✓ Address</span>
+                  <span className="text-[var(--silo-success)] font-medium">✓ Address</span>
                   <AddressDisplayLong address={resolvedOwnerAddress} chainId={effectiveChainId} className="break-all" />
                 </div>
                 <div className="text-sm status-muted-success">
@@ -287,7 +287,7 @@ export default function OwnerSelectionBlock({
                 </div>
                 {nativeBalance !== null && (
                   <div className="text-sm status-muted-success">
-                    Native balance: <span className="text-emerald-800/85 font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
+                    Native balance: <span className="text-[var(--silo-text)] font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
                   </div>
                 )}
               </div>

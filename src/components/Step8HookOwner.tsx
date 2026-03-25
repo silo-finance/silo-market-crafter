@@ -267,9 +267,9 @@ export default function Step8HookOwner() {
                   : addressValidation.error
                     ? 'border-red-500 focus:border-red-500'
                     : addressValidation.isValid
-                      ? 'border-green-500 focus:border-green-500'
+                      ? 'border-[var(--silo-accent)] focus:border-[var(--silo-accent)]'
                       : 'border-gray-600'
-                : 'border-gray-600 focus:border-lime-700'
+                : 'border-gray-600 focus:border-[var(--silo-accent)]'
             }`}
           />
           
@@ -290,17 +290,17 @@ export default function Step8HookOwner() {
               ) : addressValidation.isValid && resolvedOwnerAddress ? (
                 <div className="space-y-1">
                   {ownerResolvedKey && (
-                    <div className="text-sm status-muted-success">
-                      Matched name: <span className="font-mono text-emerald-800/85">{ownerResolvedKey}</span>
+                    <div className="text-sm text-[var(--silo-success)]">
+                      Matched name: <span className="font-mono text-[var(--silo-success)]">{ownerResolvedKey}</span>
                     </div>
                   )}
                   {!ownerResolvedKey && ownerNameFromJson && (
-                    <div className="text-sm status-muted-success">
-                      Name (from addresses): <span className="font-mono text-emerald-800/85">{ownerNameFromJson}</span>
+                    <div className="text-sm text-[var(--silo-success)]">
+                      Name (from addresses): <span className="font-mono text-[var(--silo-success)]">{ownerNameFromJson}</span>
                     </div>
                   )}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                    <span className="status-muted-success">✓ Address</span>
+                    <span className="text-[var(--silo-success)] font-medium">✓ Address</span>
                     <AddressDisplayLong
                       address={resolvedOwnerAddress}
                       chainId={wizardData.networkInfo?.chainId}
@@ -316,7 +316,7 @@ export default function Step8HookOwner() {
                   </div>
                   {nativeBalance !== null && (
                     <div className="text-sm status-muted-success">
-                      Native balance: <span className="text-emerald-800/85 font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
+                      Native balance: <span className="text-[var(--silo-success)] font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
                     </div>
                   )}
                 </div>
@@ -340,7 +340,7 @@ export default function Step8HookOwner() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -350,7 +350,7 @@ export default function Step8HookOwner() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>

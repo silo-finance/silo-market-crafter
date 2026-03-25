@@ -221,7 +221,7 @@ export default function Step2OracleTypes() {
         <div className="flex justify-between">
           <button
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -261,9 +261,9 @@ export default function Step2OracleTypes() {
                 className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
                   oracleType.enabled
                     ? selectedOracle0 === oracleType.type
-                      ? 'border-lime-700 bg-lime-900/20'
-                      : 'border-gray-700 hover:border-gray-600 bg-gray-800'
-                    : 'border-gray-600 bg-gray-800/50 cursor-not-allowed opacity-50'
+                      ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))]'
+                      : 'border-[var(--silo-border)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))] bg-[var(--silo-surface)]'
+                    : 'border-[var(--silo-border)] bg-[color-mix(in_srgb,var(--silo-surface)_70%,var(--silo-bg))] cursor-not-allowed opacity-50'
                 }`}
               >
                 <input
@@ -283,7 +283,7 @@ export default function Step2OracleTypes() {
                     )
                   }
                   disabled={!oracleType.enabled}
-                  className="mt-1"
+                  className="mt-1 accent-[var(--silo-accent)]"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
@@ -348,9 +348,9 @@ export default function Step2OracleTypes() {
                 className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
                   oracleType.enabled
                     ? selectedOracle1 === oracleType.type
-                      ? 'border-lime-700 bg-lime-900/20'
-                      : 'border-gray-700 hover:border-gray-600 bg-gray-800'
-                    : 'border-gray-600 bg-gray-800/50 cursor-not-allowed opacity-50'
+                      ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))]'
+                      : 'border-[var(--silo-border)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))] bg-[var(--silo-surface)]'
+                    : 'border-[var(--silo-border)] bg-[color-mix(in_srgb,var(--silo-surface)_70%,var(--silo-bg))] cursor-not-allowed opacity-50'
                 }`}
               >
                 <input
@@ -370,7 +370,7 @@ export default function Step2OracleTypes() {
                     )
                   }
                   disabled={!oracleType.enabled}
-                  className="mt-1"
+                  className="mt-1 accent-[var(--silo-accent)]"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
@@ -434,7 +434,7 @@ export default function Step2OracleTypes() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -444,7 +444,7 @@ export default function Step2OracleTypes() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             {loading ? (
               <>
