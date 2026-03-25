@@ -307,7 +307,7 @@ export default function Step4IRMSelection() {
                   value={kinkConfigSearch}
                   onChange={e => setKinkConfigSearch(e.target.value)}
                   placeholder="e.g. static-2.4-6"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkConfigs.length} config(s)</p>
               </div>
@@ -321,7 +321,7 @@ export default function Step4IRMSelection() {
                   value={kinkImmutableSearch}
                   onChange={e => setKinkImmutableSearch(e.target.value)}
                   placeholder="e.g. T1day_C200"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkImmutables.length} immutable(s)</p>
               </div>
@@ -332,7 +332,7 @@ export default function Step4IRMSelection() {
               {/* Token 0 */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-white">
-                  <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+                  <span className="text-[var(--silo-accent)] font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
                 </h3>
 
                 <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
@@ -348,8 +348,8 @@ export default function Step4IRMSelection() {
                           key={`t0-cfg-${cfg.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
                             kinkToken0Config?.name === cfg.name
-                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
-                              : 'border-gray-700 hover:border-gray-600'
+                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
                           }`}
                           onClick={() => setKinkToken0Config(cfg)}
                         >
@@ -373,8 +373,8 @@ export default function Step4IRMSelection() {
                           key={`t0-imm-${imm.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
                             kinkToken0Immutable?.name === imm.name
-                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
-                              : 'border-gray-700 hover:border-gray-600'
+                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
                           }`}
                           onClick={() => setKinkToken0Immutable(imm)}
                         >
@@ -396,7 +396,7 @@ export default function Step4IRMSelection() {
               {/* Token 1 */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-white">
-                  <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+                  <span className="text-[var(--silo-accent)] font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
                 </h3>
 
                 <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
@@ -412,8 +412,8 @@ export default function Step4IRMSelection() {
                           key={`t1-cfg-${cfg.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
                             kinkToken1Config?.name === cfg.name
-                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
-                              : 'border-gray-700 hover:border-gray-600'
+                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
                           }`}
                           onClick={() => setKinkToken1Config(cfg)}
                         >
@@ -437,8 +437,8 @@ export default function Step4IRMSelection() {
                           key={`t1-imm-${imm.name}`}
                           className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
                             kinkToken1Immutable?.name === imm.name
-                              ? 'border-lime-500 bg-lime-900/50 ring-2 ring-lime-500/40'
-                              : 'border-gray-700 hover:border-gray-600'
+                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
                           }`}
                           onClick={() => setKinkToken1Immutable(imm)}
                         >
@@ -462,7 +462,7 @@ export default function Step4IRMSelection() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -471,7 +471,7 @@ export default function Step4IRMSelection() {
           </button>
           <button
             type="submit"
-            className="bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Oracle/IRM Owner</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

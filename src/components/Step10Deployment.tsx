@@ -769,11 +769,11 @@ export default function Step10Deployment() {
 
       {/* Warnings and Errors */}
       {warnings.length > 0 && (
-        <div className="bg-yellow-900/50 border border-yellow-500 rounded-lg p-4 mb-6">
-          <div className="text-yellow-400 text-sm font-semibold mb-2">
+        <div className="silo-alert silo-alert-warning mb-6">
+          <div className="text-sm font-semibold mb-2">
             ⚠ Warnings:
           </div>
-          <ol className="list-decimal list-inside space-y-1 text-yellow-300 text-sm ml-4">
+          <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
             {warnings.map((warning, index) => (
               <li key={index} className="mb-1">{warning}</li>
             ))}

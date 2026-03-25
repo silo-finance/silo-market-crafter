@@ -355,8 +355,8 @@ export default function TokenAddressInput({
           onBlur={handleBlur}
           placeholder={placeholder}
           required={required}
-          className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent ${
-            error ? 'border-red-500' : metadata ? 'border-green-500' : 'border-gray-700'
+          className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent ${
+            error ? 'border-red-500' : metadata ? 'border-[var(--silo-accent)]' : 'border-gray-700'
           } ${className}`}
         />
         {loading && (
@@ -369,14 +369,14 @@ export default function TokenAddressInput({
         )}
       </div>
       {showMatchedAddress && resolvedAddress && value.trim() !== resolvedAddress && (
-        <div className="mt-2 text-sm status-muted-success font-mono break-all flex flex-wrap items-center gap-2">
+        <div className="mt-2 text-sm text-gray-300 font-mono break-all flex flex-wrap items-center gap-2">
           <span>Matched address:</span>
           {chainId ? (
             <a
               href={getExplorerAddressUrl(chainId, resolvedAddress)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-700 hover:text-emerald-800 underline"
+              className="text-gray-300 hover:text-white underline"
             >
               {normalizeAddress(resolvedAddress) ?? resolvedAddress}
             </a>
@@ -392,8 +392,9 @@ export default function TokenAddressInput({
         </div>
       )}
       {metadata && (
-        <div className="mt-2 text-sm status-muted-success">
-          ✓ {metadata.name} ({metadata.symbol}) - {metadata.decimals} decimals
+        <div className="mt-2 text-sm text-gray-300">
+          <span className="text-[var(--silo-success)] font-medium">✓</span>{' '}
+          {metadata.name} ({metadata.symbol}) - {metadata.decimals} decimals
         </div>
       )}
     </div>

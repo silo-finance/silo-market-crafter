@@ -69,12 +69,13 @@ export default function NetworkWarning() {
     : `Network ${currentChainId}`
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
-      <div className="bg-gray-900 border-2 border-amber-500 rounded-lg p-8 max-w-md mx-4 shadow-2xl">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 backdrop-blur-md">
+      <div className="silo-panel p-8 max-w-md mx-4 shadow-2xl">
         <div className="flex items-center justify-center mb-6">
-          <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[color-mix(in_srgb,var(--silo-warning)_20%,var(--silo-surface))]">
             <svg
-              className="w-8 h-8 text-white"
+              className="w-8 h-8"
+              style={{ color: 'var(--silo-warning)' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -89,27 +90,27 @@ export default function NetworkWarning() {
           </div>
         </div>
         
-        <h2 className="text-2xl font-bold text-white text-center mb-4">
+        <h2 className="text-2xl font-bold silo-text-main text-center mb-4">
           Unsupported Network
         </h2>
         
-        <p className="text-gray-300 text-center mb-6">
-          You are currently connected to <span className="font-semibold text-white">{currentNetworkName}</span>, which is not supported by this application.
+        <p className="silo-text-soft text-center mb-6">
+          You are currently connected to <span className="font-semibold silo-text-main">{currentNetworkName}</span>, which is not supported by this application.
         </p>
         
-        <div className="bg-gray-800 rounded-lg p-4 mb-6">
-          <p className="text-sm text-gray-400 mb-2">Supported networks:</p>
-          <ul className="space-y-1 text-sm text-white">
+        <div className="silo-panel-soft p-4 mb-6">
+          <p className="text-sm silo-text-faint mb-2">Supported networks:</p>
+          <ul className="space-y-1 text-sm silo-text-main">
             {Object.entries(SUPPORTED_NETWORKS).map(([chainId, name]) => (
               <li key={chainId} className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                <span className="w-2 h-2 rounded-full mr-2 bg-[var(--silo-accent)]"></span>
                 {name}
               </li>
             ))}
           </ul>
         </div>
         
-        <p className="text-gray-400 text-sm text-center">
+        <p className="silo-text-faint text-sm text-center">
           Please switch your wallet to one of the supported networks above to continue.
         </p>
       </div>

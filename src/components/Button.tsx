@@ -11,23 +11,23 @@ import React from 'react'
 
 const variantStyles = {
   primary:
-    'bg-lime-700 hover:bg-lime-600 disabled:bg-gray-600 disabled:opacity-55 disabled:cursor-not-allowed text-white cta-strong-white',
+    'bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654]',
   primaryDark:
-    'bg-lime-800 hover:bg-lime-700 text-white cta-strong-white',
+    'bg-[#6f83ff] hover:bg-[#6679f0] text-[#12193d]',
   primaryLightDisabled:
-    'bg-lime-800 hover:bg-lime-700 disabled:bg-lime-200 disabled:cursor-not-allowed text-white cta-strong-white disabled:!text-emerald-700',
+    'bg-[#6f83ff] hover:bg-[#6679f0] disabled:bg-[var(--silo-border)] disabled:cursor-not-allowed text-[#12193d] disabled:text-[var(--silo-text-faint)]',
   secondary:
-    'bg-gray-600 hover:bg-gray-700 text-white cta-strong-white',
+    'bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)]',
   destructive:
-    'bg-red-600 hover:bg-red-700 text-white cta-strong-white',
+    'bg-[#e76969] hover:bg-[#dc5a5a] text-white',
   orange:
-    'bg-orange-600 hover:bg-orange-500 text-white cta-strong-white',
+    'bg-[#f4b24b] hover:bg-[#efaa39] text-[#3d2a00]',
   outline:
-    'bg-lime-200 hover:bg-lime-300 border border-lime-300 text-emerald-900 font-semibold',
+    'bg-transparent hover:bg-[var(--silo-surface-2)] border border-[var(--silo-border)] text-[var(--silo-text)] font-semibold',
   outlineLight:
-    'bg-lime-200 hover:bg-lime-300 text-emerald-900 font-medium',
+    'bg-[var(--silo-surface)] hover:bg-[var(--silo-surface-2)] border border-[var(--silo-border)] text-[var(--silo-text)] font-medium',
   ghost:
-    'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+    'border border-[var(--silo-border)] text-[var(--silo-text-soft)] hover:bg-[var(--silo-surface-2)] hover:text-[var(--silo-text)]',
 } as const
 
 const sizeStyles = {

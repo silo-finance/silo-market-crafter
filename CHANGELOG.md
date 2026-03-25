@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.22.0 - 2026-03-25
+### Changed
+- update UI to match new brand
+
 ## 0.21.0 - 2026-03-24
 ### Added
 - discover and switch to blockchain on verification when siloConfig is known

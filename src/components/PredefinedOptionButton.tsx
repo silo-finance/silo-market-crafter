@@ -10,7 +10,7 @@ export interface PredefinedOptionButtonProps {
 }
 
 const buttonClassName =
-  'px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-600 bg-gray-900 text-gray-200 hover:border-lime-400 hover:text-lime-200 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed'
+  'px-3 py-1.5 rounded-full text-xs font-semibold border border-[var(--silo-border)] bg-[var(--silo-surface)] text-[var(--silo-text-soft)] hover:border-[var(--silo-accent)] hover:text-[var(--silo-text)] hover:bg-[var(--silo-surface-2)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed'
 
 export default function PredefinedOptionButton({
   children,
