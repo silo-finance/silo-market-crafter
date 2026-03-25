@@ -20,8 +20,8 @@
   --silo-success: #22c55e;
   --silo-warning: #f59e0b;
   --silo-danger: #dc5252;
-  --silo-global-pattern: url("./pattern-circles.svg");
-  --silo-card-pattern: url("./pattern-circles.svg");
+  --silo-global-pattern: none;
+  --silo-card-pattern: var(--pattern-circles-static-url);
   --header-bg: rgba(247, 248, 250, 0.94);
   --header-border: #d8dce3;
   --header-text: var(--silo-text);
@@ -60,6 +60,22 @@ body {
   background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   background-size: 476px 449px, 952px 898px, cover, cover, cover;
   background-position: -238px -58px, calc(100% + 476px) 42px, top left, top right, center;
+}
+
+.animated-circles-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.animated-circles-canvas {
+  position: absolute;
+  display: block;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .theme-dark body {
