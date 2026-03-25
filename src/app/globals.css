@@ -20,8 +20,8 @@
   --silo-success: #22c55e;
   --silo-warning: #f59e0b;
   --silo-danger: #dc5252;
-  --silo-global-pattern: url("/pattern-circles.svg");
-  --silo-card-pattern: url("/pattern-circles.svg");
+  --silo-global-pattern: url("./pattern-circles.svg");
+  --silo-card-pattern: url("./pattern-circles.svg");
   --header-bg: rgba(247, 248, 250, 0.94);
   --header-border: #d8dce3;
   --header-text: var(--silo-text);
