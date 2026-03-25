@@ -1305,10 +1305,10 @@ export default function Step11Verification() {
             >
               {shareCopied ? (
                 <>
-                  <svg className="w-5 h-5 text-lime-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-[var(--silo-success)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-lime-500 text-sm font-medium">Copied</span>
+                  <span className="text-[var(--silo-success)] text-sm font-medium">Copied</span>
                 </>
               ) : (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1333,7 +1333,7 @@ export default function Step11Verification() {
                 value={input}
                 onChange={handleInputChange}
                 placeholder="0x... (Silo Config, Silo address, or tx hash)"
-                className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+                className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
               />
               <Button
                 type="submit"
@@ -1393,9 +1393,9 @@ export default function Step11Verification() {
             renderVersion={<VersionStatus version={implementationFromRepo.version || null} />}
             verificationIcon={implementationVerified === true ? (
               <div className="relative group inline-block">
-                <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                <div className="flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[var(--silo-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.75} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -1517,7 +1517,7 @@ export default function Step11Verification() {
                 setPriceSourcesInput(e.target.value)
                 setPriceSourcesError(null)
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-lime-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent"
               rows={3}
               required
             />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
 import { getNetworkDisplayName } from '@/utils/networks'
@@ -23,12 +24,23 @@ declare global {
 export default function Header() {
   const { clearNetworkInfo } = useWizard()
   const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isConnected, setIsConnected] = useState(false)
   const [account, setAccount] = useState<string>('')
   const [networkId, setNetworkId] = useState<string>('')
   const [networkName, setNetworkName] = useState<string>('')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
   const unionLogoSrc = `${basePath}/Union.svg`
+  const pathWithoutBase =
+    basePath && pathname.startsWith(basePath)
+      ? (pathname.slice(basePath.length) || '/')
+      : pathname
+  const isWizardPath = pathWithoutBase === '/wizard' || pathWithoutBase === '/wizard/'
+  const isIrmVerificationPath = pathWithoutBase === '/irm-verification' || pathWithoutBase === '/irm-verification/'
+  const currentStep = searchParams.get('step')
+  const isVerifyMarketActive = isWizardPath && currentStep === 'verification'
+  const isVerifyIrmActive = isIrmVerificationPath
 
   const getNetworkInfo = async (chainId: string) => {
     const id = parseInt(chainId, 16)
@@ -135,16 +147,16 @@ export default function Header() {
   }
 
   return (
-    <header className="header-shell backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center min-h-16 py-2">
+    <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="header-shell rounded-[26px] border px-5 py-2.5 shadow-[0_8px_24px_rgba(15,20,31,0.08)] backdrop-blur-md flex justify-between items-center min-h-16">
           {/* Logo + Market Crafter version */}
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
               <Image
                 src={unionLogoSrc}
                 alt="Union"
-                width={32}
+                width={92}
                 height={32}
                 className="header-logo h-8 w-auto"
                 style={{
@@ -153,22 +165,28 @@ export default function Header() {
               />
             </Link>
             <div className="flex flex-col leading-tight">
-              <span className="header-text text-sm font-medium">Market Crafter</span>
-              <span className="header-text-soft text-xs">v{packageJson.version}</span>
+              <span className="header-text text-[11px] font-semibold uppercase tracking-[0.14em]">Market Crafter</span>
+              <span className="header-text-soft text-[10px]">v{packageJson.version}</span>
             </div>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center gap-2">
             <Link 
               href="/wizard?step=verification"
-              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className={`header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)] ${
+                isVerifyMarketActive ? 'header-link-active bg-[var(--silo-accent-soft)] border border-[var(--header-toggle-border)]' : ''
+              }`}
+              aria-current={isVerifyMarketActive ? 'page' : undefined}
             >
               Verify Market
             </Link>
             <Link
               href="/irm-verification"
-              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className={`header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)] ${
+                isVerifyIrmActive ? 'header-link-active bg-[var(--silo-accent-soft)] border border-[var(--header-toggle-border)]' : ''
+              }`}
+              aria-current={isVerifyIrmActive ? 'page' : undefined}
             >
               Verify IRM Update
             </Link>
@@ -176,7 +194,7 @@ export default function Header() {
               href="https://app.silo.finance" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="header-link px-3 py-2 text-sm font-medium transition-colors duration-200"
+              className="header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)]"
             >
               Silo App
             </Link>
@@ -184,11 +202,11 @@ export default function Header() {
 
           {/* MetaMask Connect / Disconnect */}
           <div className="flex items-center gap-3">
-            <div className="header-theme-toggle flex items-center rounded-lg overflow-hidden">
+            <div className="header-theme-toggle flex items-center rounded-full overflow-hidden p-0.5">
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className="header-theme-toggle-button px-2.5 py-1.5 text-xs font-semibold"
+                className="header-theme-toggle-button px-3 py-1.5 text-xs font-semibold rounded-full"
                 aria-pressed={theme === 'light'}
                 title="Switch to light theme"
               >
@@ -197,7 +215,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className="header-theme-toggle-button px-2.5 py-1.5 text-xs font-semibold"
+                className="header-theme-toggle-button px-3 py-1.5 text-xs font-semibold rounded-full"
                 aria-pressed={theme === 'dark'}
                 title="Switch to dark theme"
               >
@@ -208,7 +226,7 @@ export default function Header() {
               <div className="flex flex-col items-end gap-1">
                 <div className="text-right flex items-center gap-2 justify-end">
                   <div
-                    className="header-text text-sm font-mono"
+                    className="header-text text-xs font-mono"
                     title={normalizeAddress(account) ?? account}
                   >
                     {formatAddress(account)}
@@ -216,7 +234,7 @@ export default function Header() {
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" className="ml-0" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="header-text-soft text-xs">
+                  <div className="header-text-soft text-[11px]">
                     {networkName} ({networkId})
                   </div>
                   <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
@@ -233,7 +251,7 @@ export default function Header() {
               <div className="flex flex-col items-end gap-1">
                 <button
                   onClick={connectWallet}
-                  className="header-connect-button font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                  className="header-connect-button font-semibold py-2 px-4 rounded-full transition-colors duration-200 text-xs"
                 >
                   Connect MetaMask
                 </button>

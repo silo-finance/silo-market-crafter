@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 import AlphaDisclaimer from '@/components/AlphaDisclaimer'
 import NetworkWarning from '@/components/NetworkWarning'
 import { WizardProvider } from '@/contexts/WizardContext'
@@ -43,9 +44,12 @@ export default function RootLayout({
           <WizardProvider>
             <NetworkWarning />
             <Header />
-            <AlphaDisclaimer>
-              {children}
-            </AlphaDisclaimer>
+            <div className="pt-5 sm:pt-7">
+              <AlphaDisclaimer>
+                {children}
+              </AlphaDisclaimer>
+            </div>
+            <Footer />
           </WizardProvider>
         </ThemeProvider>
       </body>

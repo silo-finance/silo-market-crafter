@@ -48,7 +48,7 @@ const GeneralFeeInput = React.memo(({
           value={displayValue}
           onChange={(e) => onChange(field, e.target.value)}
           onBlur={() => onBlur(field)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent text-center"
+          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent text-center"
           placeholder="0"
         />
         <div className="absolute right-2 top-2 text-gray-400 text-sm">
@@ -90,7 +90,7 @@ const TokenFeeInput = React.memo(({
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
           onBlur={() => onBlur(tokenIndex, field)}
-          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-transparent ${
+          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent ${
             disabled
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
               : 'bg-gray-700 border border-gray-600 text-white'

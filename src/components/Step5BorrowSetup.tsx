@@ -60,7 +60,7 @@ const InputComponent = React.memo(({
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed' 
               : error
               ? 'bg-gray-700 border-red-500 text-white focus:ring-red-500'
-              : 'bg-gray-700 border-gray-600 text-white focus:ring-lime-700'
+              : 'bg-gray-700 border-gray-600 text-white focus:ring-[var(--silo-accent)]'
           }`}
           placeholder="0"
         />
@@ -411,7 +411,7 @@ export default function Step5BorrowSetup() {
                   type="checkbox"
                   checked={borrowConfig.token0.nonBorrowable}
                   onChange={(e) => handleNonBorrowableChange(0, e.target.checked)}
-                  className="w-5 h-5 text-lime-700 bg-gray-700 border-gray-600 rounded focus:ring-lime-700 focus:ring-2"
+                  className="w-5 h-5 text-[var(--silo-accent)] bg-gray-700 border-gray-600 rounded focus:ring-[var(--silo-accent)] focus:ring-2"
                 />
                 <span className="text-white font-medium">Non-borrowable</span>
               </label>
@@ -471,7 +471,7 @@ export default function Step5BorrowSetup() {
                   type="checkbox"
                   checked={borrowConfig.token1.nonBorrowable}
                   onChange={(e) => handleNonBorrowableChange(1, e.target.checked)}
-                  className="w-5 h-5 text-lime-700 bg-gray-700 border-gray-600 rounded focus:ring-lime-700 focus:ring-2"
+                  className="w-5 h-5 text-[var(--silo-accent)] bg-gray-700 border-gray-600 rounded focus:ring-[var(--silo-accent)] focus:ring-2"
                 />
                 <span className="text-white font-medium">Non-borrowable</span>
               </label>
@@ -534,7 +534,7 @@ export default function Step5BorrowSetup() {
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -544,7 +544,7 @@ export default function Step5BorrowSetup() {
           
           <button
             type="submit"
-            className="bg-lime-700 hover:bg-lime-600 text-white cta-strong-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <span>Fees</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
