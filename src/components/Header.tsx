@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
-import { getNetworkDisplayName } from '@/utils/networks'
+import { getNetworkDisplayName, NETWORK_CONFIGS } from '@/utils/networks'
 import packageJson from '../../package.json'
 import CopyButton from '@/components/CopyButton'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -30,6 +30,10 @@ export default function Header() {
   const [account, setAccount] = useState<string>('')
   const [networkId, setNetworkId] = useState<string>('')
   const [networkName, setNetworkName] = useState<string>('')
+  const [switchingNetwork, setSwitchingNetwork] = useState(false)
+  const sortedNetworkOptions = [...NETWORK_CONFIGS].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName)
+  )
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
   const unionLogoSrc = `${basePath}/Union.svg`
   const pathWithoutBase =
@@ -147,6 +151,31 @@ export default function Header() {
     clearNetworkInfo()
   }
 
+  const switchNetwork = async (targetChainId: number) => {
+    if (!window.ethereum) return
+    if (!networkId) return
+    if (Number(networkId) === targetChainId) return
+
+    setSwitchingNetwork(true)
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${targetChainId.toString(16)}` }]
+      })
+    } catch (error) {
+      const walletError = error as { code?: number; message?: string }
+      if (walletError.code === 4001) {
+        // User rejected the request.
+      } else if (walletError.code === -32002) {
+        alert('Network switch request is already pending in wallet.')
+      } else {
+        alert(`Failed to switch network.${walletError.message ? ` ${walletError.message}` : ''}`)
+      }
+    } finally {
+      setSwitchingNetwork(false)
+    }
+  }
+
   return (
     <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
       <div className="max-w-7xl mx-auto">
@@ -245,9 +274,24 @@ export default function Header() {
                   <CopyButton value={normalizeAddress(account) ?? account} iconClassName="w-3.5 h-3.5" className="ml-0" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="header-text-soft text-[11px]">
-                    {networkName} ({networkId})
-                  </div>
+                  <select
+                    value={networkId}
+                    onChange={(e) => {
+                      const nextChainId = Number(e.target.value)
+                      if (!Number.isNaN(nextChainId)) {
+                        void switchNetwork(nextChainId)
+                      }
+                    }}
+                    disabled={switchingNetwork || networkId === ''}
+                    className="header-text-soft text-[11px] bg-transparent border border-[var(--header-toggle-border)] rounded-md px-2 py-1"
+                    title={networkName ? `Current network: ${networkName}` : 'Select network'}
+                  >
+                    {sortedNetworkOptions.map((network) => (
+                      <option key={network.chainId} value={network.chainId.toString()}>
+                        {network.displayName} ({network.chainId})
+                      </option>
+                    ))}
+                  </select>
                   <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
                 </div>
                 <button
