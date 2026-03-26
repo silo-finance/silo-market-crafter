@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.24.0 - 2026-03-26
+### Updated
+- add separate virtual tokens
+
 ## 0.23.1 - 2026-03-25
 ### Updated
 - use chain argument in PR workflow
