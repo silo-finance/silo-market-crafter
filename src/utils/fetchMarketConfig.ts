@@ -8,6 +8,7 @@ import iShareTokenAbi from '@/abis/silo/IShareToken.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
+import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -84,6 +85,12 @@ export interface OracleInfo {
   version?: string
   /** quote(1 base token, baseToken) result as raw string (display as 18 decimals) */
   quotePrice?: string
+  /** Oracle base token address (when oracle exposes baseToken()). */
+  baseTokenAddress?: string
+  /** Symbol for base token address when available. */
+  baseTokenSymbol?: string
+  /** Oracle quote token address (when oracle exposes quoteToken()). */
+  quoteTokenAddress?: string
   /** Symbol of the token in which quote price is denominated (when available, e.g. from QUOTE_TOKEN) */
   quoteTokenSymbol?: string
   /** Set only for ManageableOracle wrappers when contract has owner() */
@@ -608,15 +615,24 @@ async function fetchSiloConfig(
   if (solvencyQuote != null) solvencyOracle.quotePrice = solvencyQuote
   if (maxLtvQuote != null) maxLtvOracle.quotePrice = maxLtvQuote
 
-  // Every oracle implements ISiloOracle.quoteToken() – fetch quote token address and resolve symbol
+  // Fetch baseToken()/quoteToken() for top-level oracles and resolve symbols.
   const oracleAddresses = [
     solvencyOracle.address,
     maxLtvOracle.address && maxLtvOracle.address !== ethers.ZeroAddress && maxLtvOracle.address.toLowerCase() !== solvencyOracle.address?.toLowerCase()
       ? maxLtvOracle.address
       : null
   ].filter((a): a is string => !!a && a !== ethers.ZeroAddress)
+  const baseTokenByOracle = new Map<string, string>()
   const quoteTokenByOracle = new Map<string, string>()
   await Promise.all(Array.from(new Set(oracleAddresses)).map(async (oracleAddr) => {
+    try {
+      const aggregatorContract = new ethers.Contract(oracleAddr, oracleAggregatorAbi as ethers.InterfaceAbi, provider)
+      const bt = await aggregatorContract.baseToken()
+      const baseAddr = typeof bt === 'string' ? bt : bt?.toString?.() ?? ''
+      if (baseAddr && baseAddr !== ethers.ZeroAddress) baseTokenByOracle.set(oracleAddr.toLowerCase(), baseAddr.toLowerCase())
+    } catch {
+      // Not every oracle exposes baseToken(); ignore gracefully.
+    }
     try {
       const oracleContract = new ethers.Contract(oracleAddr, siloOracleAbi.abi as ethers.InterfaceAbi, provider)
       const qt = await oracleContract.quoteToken()
@@ -626,13 +642,15 @@ async function fetchSiloConfig(
       // ignore
     }
   }))
-  const quoteTokenAddresses = new Set(quoteTokenByOracle.values())
-  const quoteSymbolByAddress = new Map<string, string>()
-  await Promise.all(Array.from(quoteTokenAddresses).map(async (addr) => {
+  const tokenAddresses = new Set<string>(
+    Array.from(baseTokenByOracle.values()).concat(Array.from(quoteTokenByOracle.values()))
+  )
+  const symbolByAddress = new Map<string, string>()
+  await Promise.all(Array.from(tokenAddresses).map(async (addr) => {
     try {
       const contract = new ethers.Contract(addr, erc20Abi.abi as ethers.InterfaceAbi, provider)
       const sym = await contract.symbol()
-      quoteSymbolByAddress.set(addr, typeof sym === 'string' ? sym : String(sym))
+      symbolByAddress.set(addr, typeof sym === 'string' ? sym : String(sym))
     } catch {
       // ignore
     }
@@ -640,10 +658,17 @@ async function fetchSiloConfig(
   for (const oracle of [solvencyOracle, maxLtvOracle]) {
     const addr = oracle.address?.toLowerCase()
     if (!addr) continue
+    const btAddr = baseTokenByOracle.get(addr)
+    if (btAddr) {
+      oracle.baseTokenAddress = btAddr
+      const baseSym = symbolByAddress.get(btAddr)
+      if (baseSym) oracle.baseTokenSymbol = baseSym
+    }
     const qtAddr = quoteTokenByOracle.get(addr)
     if (qtAddr) {
-      const sym = quoteSymbolByAddress.get(qtAddr)
-      if (sym) oracle.quoteTokenSymbol = sym
+      oracle.quoteTokenAddress = qtAddr
+      const quoteSym = symbolByAddress.get(qtAddr)
+      if (quoteSym) oracle.quoteTokenSymbol = quoteSym
     }
   }
 

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.25.0 - 2026-03-26
+### Added
+- display base and quote tokens on verification page
+- network selector
+
 ## 0.24.0 - 2026-03-26
 ### Updated
 - add separate virtual tokens
