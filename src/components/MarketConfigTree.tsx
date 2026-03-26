@@ -34,7 +34,6 @@ function formatFactorToE(value: string): string {
 /** Stable keys for oracle bullet items — use these for verification wiring, not display text */
 export const ORACLE_BULLET_KEYS = {
   PRICE: 'oracle.price',
-  TYPE: 'oracle.type',
   /** PT-Linear: baseDiscountPerYear from config */
   BASE_DISCOUNT_PER_YEAR: 'baseDiscountPerYear',
   /** Prefix for other config entries: key = config key as-is (e.g. scaleFactor, ulow, ucrit) */
@@ -57,8 +56,15 @@ function buildShareTokenMetaBullet(symbol?: string, decimals?: number, offset?: 
 function buildOracleBullets(
   quotePrice: string | undefined,
   quoteTokenSymbol: string | undefined,
-  type: string | undefined,
+  _type: string | undefined,
   config: Record<string, unknown> | undefined,
+  tokenInfo?: {
+    chainId?: string
+    baseTokenAddress?: string
+    baseTokenSymbol?: string
+    quoteTokenAddress?: string
+    quoteTokenSymbol?: string
+  },
   options?: { excludeBaseDiscount?: boolean }
 ): OracleBulletItem[] {
   const bullets: OracleBulletItem[] = []
@@ -77,9 +83,40 @@ function buildOracleBullets(
       )
     })
   }
-  // Skip Type for PT-Linear – base discount per year is sufficient
-  if (type && !/ptlinear|pt-linear/i.test(type)) {
-    bullets.push({ key: ORACLE_BULLET_KEYS.TYPE, text: `Type: ${type}` })
+  if (tokenInfo?.baseTokenAddress && ethers.isAddress(tokenInfo.baseTokenAddress)) {
+    bullets.push({
+      key: 'oracle.baseToken',
+      text: (
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span>Base token:</span>
+          <AddressDisplayShort
+            address={tokenInfo.baseTokenAddress}
+            chainId={tokenInfo.chainId}
+            className="text-sm"
+            showVersion={false}
+          />
+          {tokenInfo.baseTokenSymbol && <span className="text-gray-300 text-sm">{tokenInfo.baseTokenSymbol}</span>}
+        </span>
+      )
+    })
+  }
+
+  if (tokenInfo?.quoteTokenAddress && ethers.isAddress(tokenInfo.quoteTokenAddress)) {
+    bullets.push({
+      key: 'oracle.quoteToken',
+      text: (
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span>Quote token:</span>
+          <AddressDisplayShort
+            address={tokenInfo.quoteTokenAddress}
+            chainId={tokenInfo.chainId}
+            className="text-sm"
+            showVersion={false}
+          />
+          {tokenInfo.quoteTokenSymbol && <span className="text-gray-300 text-sm">{tokenInfo.quoteTokenSymbol}</span>}
+        </span>
+      )
+    })
   }
 
   if (config && typeof config === 'object') {
@@ -783,6 +820,7 @@ interface SiloSectionProps {
   manageableOracleTimelockSeconds?: number
   wizardCustomMethodSignature?: string | null
   onOpenSetCustomMethodSignature?: (args: { oracleAddress: string; suggestedSignature: string | null; onChainSignature: string | null }) => void
+  chainId?: string
 }
 
 function SiloSection({
@@ -807,7 +845,8 @@ function SiloSection({
   wizardDeployerFee,
   manageableOracleTimelockSeconds,
   wizardCustomMethodSignature,
-  onOpenSetCustomMethodSignature
+  onOpenSetCustomMethodSignature,
+  chainId
 }: SiloSectionProps) {
   const numeric = numericVerification ?? null
   const siloKey = side === 0 ? 'silo0' : 'silo1'
@@ -900,6 +939,13 @@ function SiloSection({
             siloConfig.solvencyOracle.quoteTokenSymbol,
             siloConfig.solvencyOracle.type,
             solvencyConfigForBullets,
+            {
+              chainId,
+              baseTokenAddress: siloConfig.solvencyOracle.baseTokenAddress,
+              baseTokenSymbol: siloConfig.solvencyOracle.baseTokenSymbol,
+              quoteTokenAddress: siloConfig.solvencyOracle.quoteTokenAddress,
+              quoteTokenSymbol: siloConfig.solvencyOracle.quoteTokenSymbol
+            },
             { excludeBaseDiscount: hasPTLinearUnderlying }
           )
           const customMethodOracleAddress = resolveCustomMethodOracleAddress(siloConfig.solvencyOracle)
@@ -1074,6 +1120,13 @@ function SiloSection({
               siloConfig.maxLtvOracle.quoteTokenSymbol,
               siloConfig.maxLtvOracle.type,
               maxLtvConfigForBullets,
+              {
+                chainId,
+                baseTokenAddress: siloConfig.maxLtvOracle.baseTokenAddress,
+                baseTokenSymbol: siloConfig.maxLtvOracle.baseTokenSymbol,
+                quoteTokenAddress: siloConfig.maxLtvOracle.quoteTokenAddress,
+                quoteTokenSymbol: siloConfig.maxLtvOracle.quoteTokenSymbol
+              },
               { excludeBaseDiscount: hasPTLinearUnderlying }
             )
             const customMethodOracleAddress = resolveCustomMethodOracleAddress(siloConfig.maxLtvOracle)
@@ -2065,6 +2118,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
           wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo0 ?? null}
           onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
+          chainId={chainId}
         />
         <li className="tree-separator" aria-hidden="true" />
 
@@ -2091,6 +2145,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           manageableOracleTimelockSeconds={manageableOracleTimelockSeconds}
           wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo1 ?? null}
           onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
+          chainId={chainId}
         />
       </ol>
     </div>
