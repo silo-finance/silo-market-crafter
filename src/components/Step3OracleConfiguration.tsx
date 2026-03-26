@@ -94,7 +94,7 @@ interface ChainlinkOracleSectionProps {
   setQuoteInput: (value: string) => void
   useSecondaryAggregator: boolean
   setUseSecondaryAggregator: (value: boolean) => void
-  virtualUsdAddress: string | null
+  virtualTokenOptions: VirtualTokenOption[]
   usdcAddress: string | null
   chainlinkV3OracleFactory: { address: string; version: string } | null
   networkChainId?: string
@@ -103,6 +103,20 @@ interface ChainlinkOracleSectionProps {
 
 const CHAINLINK_AGGREGATOR_KEY_DEFAULT = 'CHAINLINK_USDC_USD_aggregator'
 const CHAINLINK_AGGREGATOR_KEY_SONIC = 'CHAINLINK_USDC.e_USD_aggregator'
+const VIRTUAL_TOKEN_KEYS = ['SILO_VIRTUAL_BTC', 'SILO_VIRTUAL_EUR', 'SILO_VIRTUAL_USD'] as const
+
+type VirtualTokenKey = (typeof VIRTUAL_TOKEN_KEYS)[number]
+type VirtualTokenOption = {
+  key: VirtualTokenKey
+  label: string
+  address: string
+}
+
+const VIRTUAL_TOKEN_LABELS: Record<VirtualTokenKey, string> = {
+  SILO_VIRTUAL_BTC: 'virtual BTC',
+  SILO_VIRTUAL_USD: 'virtual USD',
+  SILO_VIRTUAL_EUR: 'virtual EUR'
+}
 
 interface VaultOracleSectionProps {
   /** Token this oracle is for (for display). */
@@ -129,7 +143,7 @@ interface VaultOracleSectionProps {
   >
   quoteInput: string
   setQuoteInput: (value: string) => void
-  virtualUsdAddress: string | null
+  virtualTokenOptions: VirtualTokenOption[]
   usdcAddress: string | null
   networkChainId?: string
   vaultFactory: { address: string; version: string } | null
@@ -147,7 +161,7 @@ function ChainlinkOracleSection({
   setQuoteInput,
   useSecondaryAggregator,
   setUseSecondaryAggregator,
-  virtualUsdAddress,
+  virtualTokenOptions,
   usdcAddress,
   networkChainId,
   idSuffix
@@ -242,16 +256,6 @@ function ChainlinkOracleSection({
           >
             <span>Other token</span>
           </PredefinedOptionButton>
-          {virtualUsdAddress && (
-            <PredefinedOptionButton
-              onClick={() => {
-                setQuoteInput('SILO_VIRTUAL_USD_8')
-                setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
-              }}
-            >
-              <span>Virtual asset</span>
-            </PredefinedOptionButton>
-          )}
           {usdcAddress && (
             <PredefinedOptionButton
               onClick={() => {
@@ -262,6 +266,17 @@ function ChainlinkOracleSection({
               <span>USDC</span>
             </PredefinedOptionButton>
           )}
+          {virtualTokenOptions.map((virtualToken) => (
+            <PredefinedOptionButton
+              key={virtualToken.key}
+              onClick={() => {
+                setQuoteInput(virtualToken.key)
+                setChainlink(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>{virtualToken.label}</span>
+            </PredefinedOptionButton>
+          ))}
         </div>
         <TokenAddressInput
           value={quoteInput}
@@ -356,7 +371,7 @@ function VaultOracleSection({
   setVault,
   quoteInput,
   setQuoteInput,
-  virtualUsdAddress,
+  virtualTokenOptions,
   usdcAddress,
   networkChainId,
   vaultFactory,
@@ -547,16 +562,6 @@ function VaultOracleSection({
           >
             <span>Other token</span>
           </PredefinedOptionButton>
-          {virtualUsdAddress && (
-            <PredefinedOptionButton
-              onClick={() => {
-                setQuoteInput('SILO_VIRTUAL_USD_8')
-                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
-              }}
-            >
-              <span>Virtual asset</span>
-            </PredefinedOptionButton>
-          )}
           {usdcAddress && (
             <PredefinedOptionButton
               onClick={() => {
@@ -567,6 +572,17 @@ function VaultOracleSection({
               <span>USDC</span>
             </PredefinedOptionButton>
           )}
+          {virtualTokenOptions.map((virtualToken) => (
+            <PredefinedOptionButton
+              key={virtualToken.key}
+              onClick={() => {
+                setQuoteInput(virtualToken.key)
+                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>{virtualToken.label}</span>
+            </PredefinedOptionButton>
+          ))}
         </div>
         <TokenAddressInput
           value={quoteInput}
@@ -672,7 +688,7 @@ interface CustomMethodOracleSectionProps {
   >
   quoteInput: string
   setQuoteInput: (value: string) => void
-  virtualUsdAddress: string | null
+  virtualTokenOptions: VirtualTokenOption[]
   usdcAddress: string | null
   networkChainId?: string
   customMethodFactory: { address: string; version: string } | null
@@ -693,7 +709,7 @@ function CustomMethodOracleSection({
   setConfig,
   quoteInput,
   setQuoteInput,
-  virtualUsdAddress,
+  virtualTokenOptions,
   usdcAddress,
   networkChainId,
   customMethodFactory,
@@ -997,16 +1013,6 @@ function CustomMethodOracleSection({
           >
             <span>Other token</span>
           </PredefinedOptionButton>
-          {virtualUsdAddress && (
-            <PredefinedOptionButton
-              onClick={() => {
-                setQuoteInput('SILO_VIRTUAL_USD_8')
-                setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false }))
-              }}
-            >
-              <span>Virtual asset</span>
-            </PredefinedOptionButton>
-          )}
           {usdcAddress && (
             <PredefinedOptionButton
               onClick={() => {
@@ -1017,6 +1023,17 @@ function CustomMethodOracleSection({
               <span>USDC</span>
             </PredefinedOptionButton>
           )}
+          {virtualTokenOptions.map((virtualToken) => (
+            <PredefinedOptionButton
+              key={virtualToken.key}
+              onClick={() => {
+                setQuoteInput(virtualToken.key)
+                setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+              }}
+            >
+              <span>{virtualToken.label}</span>
+            </PredefinedOptionButton>
+          ))}
         </div>
         <TokenAddressInput
           value={quoteInput}
@@ -1247,9 +1264,9 @@ export default function Step3OracleConfiguration() {
   const [customMethod0QuoteInput, setCustomMethod0QuoteInput] = useState('')
   const [customMethod1QuoteInput, setCustomMethod1QuoteInput] = useState('')
 
-  // Optional virtual USD quote token (SILO_VIRTUAL_USD_8) – loaded from addresses JSON per chain.
-  const [virtualUsdAddress, setVirtualUsdAddress] = useState<string | null>(null)
-  const [virtualUsdLoadedChain, setVirtualUsdLoadedChain] = useState<string | null>(null)
+  // Optional virtual quote tokens – loaded from addresses JSON per chain.
+  const [virtualTokenOptions, setVirtualTokenOptions] = useState<VirtualTokenOption[]>([])
+  const [virtualTokensLoadedChain, setVirtualTokensLoadedChain] = useState<string | null>(null)
   // Optional USDC quote token – loaded from addresses JSON per chain (key: USDC).
   const [usdcAddress, setUsdcAddress] = useState<string | null>(null)
   const [usdcLoadedChain, setUsdcLoadedChain] = useState<string | null>(null)
@@ -1257,28 +1274,38 @@ export default function Step3OracleConfiguration() {
   // Chain ID to chain name mapping - using centralized network config
   // getChainName is imported from @/utils/networks
 
-  // Load virtual USD address if available in addresses JSON (key: SILO_VIRTUAL_USD_8)
+  // Load virtual quote tokens if available in addresses JSON.
   useEffect(() => {
     const chainId = wizardData.networkInfo?.chainId
     if (!chainId) {
-      setVirtualUsdAddress(null)
-      setVirtualUsdLoadedChain(null)
+      setVirtualTokenOptions([])
+      setVirtualTokensLoadedChain(null)
       return
     }
-    if (virtualUsdLoadedChain === chainId) {
+    if (virtualTokensLoadedChain === chainId) {
       return
     }
     let cancelled = false
     const run = async () => {
       try {
-        const res = await resolveSymbolToAddress(chainId, 'SILO_VIRTUAL_USD_8')
+        const resolvedVirtualTokens = await Promise.all(
+          VIRTUAL_TOKEN_KEYS.map(async (key) => {
+            const res = await resolveSymbolToAddress(chainId, key)
+            if (!res?.address) return null
+            return {
+              key,
+              label: VIRTUAL_TOKEN_LABELS[key],
+              address: res.address
+            } satisfies VirtualTokenOption
+          })
+        )
         if (cancelled) return
-        setVirtualUsdAddress(res?.address ?? null)
-        setVirtualUsdLoadedChain(chainId)
+        setVirtualTokenOptions(resolvedVirtualTokens.filter((token): token is VirtualTokenOption => token !== null))
+        setVirtualTokensLoadedChain(chainId)
       } catch {
         if (!cancelled) {
-          setVirtualUsdAddress(null)
-          setVirtualUsdLoadedChain(chainId)
+          setVirtualTokenOptions([])
+          setVirtualTokensLoadedChain(chainId)
         }
       }
     }
@@ -1286,7 +1313,7 @@ export default function Step3OracleConfiguration() {
     return () => {
       cancelled = true
     }
-  }, [wizardData.networkInfo?.chainId, virtualUsdLoadedChain, virtualUsdAddress])
+  }, [wizardData.networkInfo?.chainId, virtualTokensLoadedChain])
 
   // Load USDC address if available in addresses JSON (key: USDC)
   useEffect(() => {
@@ -2547,7 +2574,18 @@ export default function Step3OracleConfiguration() {
         {/* Token 0 Configuration */}
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
-            {wizardData.token0.symbol} ({wizardData.token0.name})
+            {(wizardData.oracleType0.type === 'none'
+              ? 'No Oracle'
+              : wizardData.oracleType0.type === 'scaler'
+              ? 'Scaler Oracle'
+              : wizardData.oracleType0.type === 'ptLinear'
+              ? 'PT-Linear'
+              : wizardData.oracleType0.type === 'vault'
+              ? 'Vault Oracle'
+              : wizardData.oracleType0.type === 'customMethod'
+              ? 'Custom Method Oracle'
+              : 'Chainlink')}{' '}
+            for {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
             Oracle Type:{' '}
@@ -2639,16 +2677,6 @@ export default function Step3OracleConfiguration() {
                       >
                         <span>Other token</span>
                       </PredefinedOptionButton>
-                      {virtualUsdAddress && (
-                        <PredefinedOptionButton
-                          onClick={() => {
-                            setPT0QuoteInput('SILO_VIRTUAL_USD_8')
-                            setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualUsdAddress }))
-                          }}
-                        >
-                          <span>Virtual asset</span>
-                        </PredefinedOptionButton>
-                      )}
                       {usdcAddress && (
                         <PredefinedOptionButton
                           onClick={() => {
@@ -2659,6 +2687,17 @@ export default function Step3OracleConfiguration() {
                           <span>USDC</span>
                         </PredefinedOptionButton>
                       )}
+                      {virtualTokenOptions.map((virtualToken) => (
+                        <PredefinedOptionButton
+                          key={virtualToken.key}
+                          onClick={() => {
+                            setPT0QuoteInput(virtualToken.key)
+                            setPTLinear0(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualToken.address }))
+                          }}
+                        >
+                          <span>{virtualToken.label}</span>
+                        </PredefinedOptionButton>
+                      ))}
                     </div>
                   </div>
                   <TokenAddressInput
@@ -2694,7 +2733,7 @@ export default function Step3OracleConfiguration() {
               setQuoteInput={setChainlink0QuoteInput}
               useSecondaryAggregator={useSecondaryAggregator0}
               setUseSecondaryAggregator={setUseSecondaryAggregator0}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
               networkChainId={wizardData.networkInfo?.chainId}
@@ -2710,7 +2749,7 @@ export default function Step3OracleConfiguration() {
               setVault={setVault0}
               quoteInput={vault0QuoteInput}
               setQuoteInput={setVault0QuoteInput}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               vaultFactory={erc4626OracleFactory}
@@ -2728,7 +2767,7 @@ export default function Step3OracleConfiguration() {
               setConfig={setCustomMethod0}
               quoteInput={customMethod0QuoteInput}
               setQuoteInput={setCustomMethod0QuoteInput}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               customMethodFactory={customMethodFactory}
@@ -2849,7 +2888,18 @@ export default function Step3OracleConfiguration() {
         {/* Token 1 Configuration */}
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
-            {wizardData.token1.symbol} ({wizardData.token1.name})
+            {(wizardData.oracleType1.type === 'none'
+              ? 'No Oracle'
+              : wizardData.oracleType1.type === 'scaler'
+              ? 'Scaler Oracle'
+              : wizardData.oracleType1.type === 'ptLinear'
+              ? 'PT-Linear'
+              : wizardData.oracleType1.type === 'vault'
+              ? 'Vault Oracle'
+              : wizardData.oracleType1.type === 'customMethod'
+              ? 'Custom Method Oracle'
+              : 'Chainlink')}{' '}
+            for {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
           <p className="text-sm text-gray-400 mb-2">
             Oracle Type:{' '}
@@ -2941,16 +2991,6 @@ export default function Step3OracleConfiguration() {
                       >
                         <span>Other token</span>
                       </PredefinedOptionButton>
-                      {virtualUsdAddress && (
-                        <PredefinedOptionButton
-                          onClick={() => {
-                            setPT1QuoteInput('SILO_VIRTUAL_USD_8')
-                            setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualUsdAddress }))
-                          }}
-                        >
-                          <span>Virtual asset</span>
-                        </PredefinedOptionButton>
-                      )}
                       {usdcAddress && (
                         <PredefinedOptionButton
                           onClick={() => {
@@ -2961,6 +3001,17 @@ export default function Step3OracleConfiguration() {
                           <span>USDC</span>
                         </PredefinedOptionButton>
                       )}
+                      {virtualTokenOptions.map((virtualToken) => (
+                        <PredefinedOptionButton
+                          key={virtualToken.key}
+                          onClick={() => {
+                            setPT1QuoteInput(virtualToken.key)
+                            setPTLinear1(prev => ({ ...prev, useSecondTokenAsQuote: false, hardcodedQuoteTokenAddress: virtualToken.address }))
+                          }}
+                        >
+                          <span>{virtualToken.label}</span>
+                        </PredefinedOptionButton>
+                      ))}
                     </div>
                   </div>
                   <TokenAddressInput
@@ -2996,7 +3047,7 @@ export default function Step3OracleConfiguration() {
               setQuoteInput={setChainlink1QuoteInput}
               useSecondaryAggregator={useSecondaryAggregator1}
               setUseSecondaryAggregator={setUseSecondaryAggregator1}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
               networkChainId={wizardData.networkInfo?.chainId}
@@ -3012,7 +3063,7 @@ export default function Step3OracleConfiguration() {
               setVault={setVault1}
               quoteInput={vault1QuoteInput}
               setQuoteInput={setVault1QuoteInput}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               vaultFactory={erc4626OracleFactory}
@@ -3030,7 +3081,7 @@ export default function Step3OracleConfiguration() {
               setConfig={setCustomMethod1}
               quoteInput={customMethod1QuoteInput}
               setQuoteInput={setCustomMethod1QuoteInput}
-              virtualUsdAddress={virtualUsdAddress}
+              virtualTokenOptions={virtualTokenOptions}
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               customMethodFactory={customMethodFactory}
