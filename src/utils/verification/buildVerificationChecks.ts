@@ -214,6 +214,56 @@ function createAddressInJsonCheck(
   return createIndependentCheck(label, message, status)
 }
 
+type SiloConfigSlice = MarketConfig['silo0']
+
+function appendErc4626VaultQuoteVerificationChecks(
+  checks: VerificationCheckItem[],
+  siloLabel: 'Silo 0' | 'Silo 1',
+  siloConfig: SiloConfigSlice
+): void {
+  const appendForOracle = (oracle: SiloConfigSlice['solvencyOracle'], role: 'Solvency' | 'Max LTV') => {
+    const chk = oracle.erc4626VaultQuoteCheck
+    if (!chk) return
+    const title = `${siloLabel} ${role} Oracle – ERC4626 vault vs quote token`
+    if (chk.match === true) {
+      checks.push(
+        createIndependentCheck(title, 'Vault underlying asset matches oracle quote token', VERIFICATION_STATUS.PASSED)
+      )
+    } else if (chk.match === false) {
+      const v = chk.vaultAssetSymbol ?? chk.vaultAssetAddress ?? '?'
+      const q = chk.quoteTokenSymbol ?? chk.quoteTokenAddress ?? '?'
+      checks.push(
+        createIndependentCheck(
+          title,
+          `Vault asset (${v}) ≠ quote token (${q}); deliberate 1:1 peg may be OK.`,
+          VERIFICATION_STATUS.WARNING,
+          'vault underlying asset does not match oracle quote token'
+        )
+      )
+    } else {
+      checks.push(
+        createIndependentCheck(
+          title,
+          chk.error ? `Unavailable: ${chk.error}` : 'Unavailable',
+          VERIFICATION_STATUS.NOT_AVAILABLE,
+          chk.error
+        )
+      )
+    }
+  }
+  appendForOracle(siloConfig.solvencyOracle, 'Solvency')
+  const maxAddr = siloConfig.maxLtvOracle.address
+  const solAddr = siloConfig.solvencyOracle.address
+  const hasDistinctMaxLtv =
+    maxAddr &&
+    maxAddr !== ethers.ZeroAddress &&
+    solAddr &&
+    maxAddr.toLowerCase() !== solAddr.toLowerCase()
+  if (hasDistinctMaxLtv) {
+    appendForOracle(siloConfig.maxLtvOracle, 'Max LTV')
+  }
+}
+
 export function buildVerificationChecks(
   config: MarketConfig,
   options: BuildVerificationChecksOptions
@@ -297,6 +347,8 @@ export function buildVerificationChecks(
       price0MaxError
     ))
   }
+
+  appendErc4626VaultQuoteVerificationChecks(checks, 'Silo 0', config.silo0)
 
   // Silo 0 – Base Discount Per Year (PT Oracle) - always add if PT Oracle exists
   const bd0 = ptOracleBaseDiscount.silo0
@@ -382,6 +434,8 @@ export function buildVerificationChecks(
       price1MaxError
     ))
   }
+
+  appendErc4626VaultQuoteVerificationChecks(checks, 'Silo 1', config.silo1)
 
   const bd1 = ptOracleBaseDiscount.silo1
   if (bd1) {

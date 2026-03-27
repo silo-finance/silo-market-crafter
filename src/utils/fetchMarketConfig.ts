@@ -9,6 +9,8 @@ import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
+import erc4626OracleHardcodeQuoteArtifact from '@/abis/oracle/ERC4626OracleHardcodeQuote.json'
+import ierc4626VaultArtifact from '@/abis/IERC4526.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -101,6 +103,18 @@ export interface OracleInfo {
   underlying?: { address: string; version?: string }
   /** For ManageableOracle: timelock duration in seconds (from contract timelock()) */
   timelockSeconds?: number
+  /** ERC4626OracleHardcodeQuote: vault underlying asset vs oracle quoteToken() */
+  erc4626VaultQuoteCheck?: Erc4626VaultQuoteCheck
+}
+
+export interface Erc4626VaultQuoteCheck {
+  /** null if RPC/compare could not complete */
+  match: boolean | null
+  vaultAssetAddress?: string
+  quoteTokenAddress?: string
+  vaultAssetSymbol?: string
+  quoteTokenSymbol?: string
+  error?: string
 }
 
 export interface IRMInfo {
@@ -410,6 +424,40 @@ export async function fetchMarketConfig(
         enrichCustomMethodOracle(provider, customMethodAddress, oracle)
       )
     )
+  }
+
+  // ERC4626OracleHardcodeQuote: vault underlying asset vs oracle quoteToken() (RPC deduped per oracle contract)
+  const oraclesForErc4626Check: OracleInfo[] = [
+    config0.solvencyOracle,
+    config1.solvencyOracle,
+    config0.maxLtvOracle,
+    config1.maxLtvOracle
+  ]
+  const erc4626AddrByOracle = new Map<OracleInfo, string>()
+  const uniqueErc4626Lower = new Set<string>()
+  for (const oracle of oraclesForErc4626Check) {
+    const addr = getErc4626OracleHardcodeQuoteContractAddress(oracle)
+    if (addr) {
+      erc4626AddrByOracle.set(oracle, addr)
+      uniqueErc4626Lower.add(addr.toLowerCase())
+    }
+  }
+  if (uniqueErc4626Lower.size > 0) {
+    const resultByLower = new Map<string, Erc4626VaultQuoteCheck>()
+    await Promise.all(
+      Array.from(uniqueErc4626Lower).map(async (lower) => {
+        const checksum = ethers.getAddress(lower)
+        const res = await fetchErc4626VaultQuoteCheckOnce(provider, checksum)
+        resultByLower.set(lower, res)
+      })
+    )
+    for (const oracle of oraclesForErc4626Check) {
+      const addr = erc4626AddrByOracle.get(oracle)
+      if (addr) {
+        const r = resultByLower.get(addr.toLowerCase())
+        if (r) oracle.erc4626VaultQuoteCheck = r
+      }
+    }
   }
 
   // Owner meta: isContract (getCode) + name from addresses JSON (per chain).
@@ -762,6 +810,30 @@ function isCustomMethodOracleByVersion(version: string | undefined): boolean {
   return v.includes('custommethodoracle') || v.includes('custom method oracle')
 }
 
+export function isErc4626OracleHardcodeQuoteByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  return version.toLowerCase().includes('erc4626oraclehardcodequote')
+}
+
+function getErc4626OracleHardcodeQuoteContractAddress(oracle: OracleInfo): string | null {
+  if (oracle.address && oracle.address !== ethers.ZeroAddress && isErc4626OracleHardcodeQuoteByVersion(oracle.version)) {
+    try {
+      return ethers.getAddress(oracle.address)
+    } catch {
+      return null
+    }
+  }
+  const u = oracle.underlying
+  if (u?.address && isErc4626OracleHardcodeQuoteByVersion(u.version)) {
+    try {
+      return ethers.getAddress(u.address)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 async function enrichChainlinkOracle(
   provider: ethers.Provider,
   chainlinkAddress: string,
@@ -910,6 +982,62 @@ async function enrichCustomMethodOracle(
     }
   } catch {
     // If anything fails, leave target as-is – detection is done via version, not try/catch.
+  }
+}
+
+const erc4626OracleHardcodeQuoteAbi = erc4626OracleHardcodeQuoteArtifact as ethers.InterfaceAbi
+const ierc4626VaultAbi = ierc4626VaultArtifact as ethers.InterfaceAbi
+
+async function fetchErc4626VaultQuoteCheckOnce(
+  provider: ethers.Provider,
+  erc4626OracleAddr: string
+): Promise<Erc4626VaultQuoteCheck> {
+  try {
+    const oracle = new ethers.Contract(erc4626OracleAddr, erc4626OracleHardcodeQuoteAbi, provider)
+    // ERC4626OracleHardcodeQuote exposes the vault as immutable `VAULT()` (Solidity all-caps), not IERC4626-style naming.
+    const [quoteRaw, vaultRaw] = await Promise.all([oracle.quoteToken(), oracle.VAULT()])
+    const quoteToken =
+      typeof quoteRaw === 'string' ? quoteRaw : (quoteRaw as { toString: () => string })?.toString?.() ?? ''
+    const vaultAddr =
+      typeof vaultRaw === 'string' ? vaultRaw : (vaultRaw as { toString: () => string })?.toString?.() ?? ''
+    if (!quoteToken || !ethers.isAddress(quoteToken) || quoteToken === ethers.ZeroAddress) {
+      return { match: null, error: 'Could not read oracle quoteToken().' }
+    }
+    if (!vaultAddr || !ethers.isAddress(vaultAddr) || vaultAddr === ethers.ZeroAddress) {
+      return { match: null, error: 'Could not read oracle VAULT().' }
+    }
+    const vault = new ethers.Contract(vaultAddr, ierc4626VaultAbi, provider)
+    const assetRaw = await vault.asset()
+    const vaultAsset =
+      typeof assetRaw === 'string' ? assetRaw : (assetRaw as { toString: () => string })?.toString?.() ?? ''
+    if (!vaultAsset || !ethers.isAddress(vaultAsset) || vaultAsset === ethers.ZeroAddress) {
+      return { match: null, quoteTokenAddress: ethers.getAddress(quoteToken), error: 'Could not read vault asset().' }
+    }
+    const quoteNorm = ethers.getAddress(quoteToken)
+    const assetNorm = ethers.getAddress(vaultAsset)
+    const match = quoteNorm.toLowerCase() === assetNorm.toLowerCase()
+
+    const fetchSym = async (addr: string): Promise<string | undefined> => {
+      try {
+        const c = new ethers.Contract(addr, erc20Abi.abi as ethers.InterfaceAbi, provider)
+        const sym = await c.symbol()
+        return typeof sym === 'string' ? sym : String(sym)
+      } catch {
+        return undefined
+      }
+    }
+    const [vaultAssetSymbol, quoteTokenSymbol] = await Promise.all([fetchSym(assetNorm), fetchSym(quoteNorm)])
+
+    return {
+      match,
+      vaultAssetAddress: assetNorm,
+      quoteTokenAddress: quoteNorm,
+      vaultAssetSymbol,
+      quoteTokenSymbol
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { match: null, error: msg || 'Failed to verify ERC4626 vault vs quote token.' }
   }
 }
 
