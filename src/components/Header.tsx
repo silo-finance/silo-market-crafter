@@ -46,6 +46,10 @@ export default function Header() {
   const isNewMarketActive = isWizardPath && currentStep !== 'verification'
   const isVerifyMarketActive = isWizardPath && currentStep === 'verification'
   const isVerifyIrmActive = isIrmVerificationPath
+  const verificationChainParam = searchParams.get('chain') || networkId || ''
+  const verifyMarketHref = verificationChainParam
+    ? `/wizard?step=verification&chain=${verificationChainParam}`
+    : '/wizard?step=verification'
 
   const getNetworkInfo = async (chainId: string) => {
     const id = parseInt(chainId, 16)
@@ -213,7 +217,7 @@ export default function Header() {
               New Market
             </Link>
             <Link 
-              href="/wizard?step=verification"
+              href={verifyMarketHref}
               className={`header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)] ${
                 isVerifyMarketActive ? 'header-link-active bg-[var(--silo-accent-soft)] border border-[var(--header-toggle-border)]' : ''
               }`}

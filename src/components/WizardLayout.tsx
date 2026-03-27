@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Button from '@/components/Button'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import ResetButton from '@/components/ResetButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
@@ -48,13 +48,24 @@ interface WizardLayoutProps {
 
 export default function WizardLayout({ children }: WizardLayoutProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { wizardData } = useWizard()
   const [isSummaryOpen, setIsSummaryOpen] = useState(true)
 
   const handleStepClick = (step: number, stepId?: string) => {
     // Only allow navigation to completed steps (steps that are before current step)
     if (wizardData.currentStep > step) {
-      router.push(stepId === 'verification' ? '/wizard?step=verification' : `/wizard?step=${step}`)
+      if (stepId === 'verification') {
+        const params = new URLSearchParams()
+        params.set('step', 'verification')
+        const chainFromUrl = searchParams.get('chain')
+        if (chainFromUrl) {
+          params.set('chain', chainFromUrl)
+        }
+        router.push(`/wizard?${params.toString()}`)
+        return
+      }
+      router.push(`/wizard?step=${step}`)
     }
   }
 
