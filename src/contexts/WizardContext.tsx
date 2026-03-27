@@ -76,6 +76,8 @@ export interface VaultOracleConfig {
   customQuoteTokenAddress?: string
   /** Resolved metadata when using custom quote (for display). */
   customQuoteTokenMetadata?: { symbol: string; decimals: number }
+  /** User acknowledged vault price-manipulation risk (Step 3); optional in saved JSON. */
+  priceManipulationRiskAcknowledged?: boolean
 }
 
 /** Custom Method oracle deployment config. Calls a no-arg method on target and interprets result as price. */
@@ -482,7 +484,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.vaultOracle.useOtherTokenAsQuote ?? true,
               vaultAddress: wizardData.oracleConfiguration.token0.vaultOracle.vaultAddress,
               customQuoteTokenAddress: wizardData.oracleConfiguration.token0.vaultOracle.customQuoteTokenAddress || '',
-              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.vaultOracle.customQuoteTokenMetadata
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.vaultOracle.customQuoteTokenMetadata,
+              priceManipulationRiskAcknowledged:
+                wizardData.oracleConfiguration.token0.vaultOracle.priceManipulationRiskAcknowledged === true
             }
           }
         : {}),
@@ -551,7 +555,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.vaultOracle.useOtherTokenAsQuote ?? true,
               vaultAddress: wizardData.oracleConfiguration.token1.vaultOracle.vaultAddress,
               customQuoteTokenAddress: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenAddress || '',
-              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenMetadata
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenMetadata,
+              priceManipulationRiskAcknowledged:
+                wizardData.oracleConfiguration.token1.vaultOracle.priceManipulationRiskAcknowledged === true
             }
           }
         : {}),
@@ -676,7 +682,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
                       config.vaultOracle0.customQuoteTokenMetadata.decimals ?? 18
                     )
                   }
-                : undefined
+                : undefined,
+              priceManipulationRiskAcknowledged:
+                Boolean(config.vaultOracle0.priceManipulationRiskAcknowledged) === true
             }
           : undefined
       const vault1 =
@@ -698,7 +706,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
                       config.vaultOracle1.customQuoteTokenMetadata.decimals ?? 18
                     )
                   }
-                : undefined
+                : undefined,
+              priceManipulationRiskAcknowledged:
+                Boolean(config.vaultOracle1.priceManipulationRiskAcknowledged) === true
             }
           : undefined
       const customMethod0 =

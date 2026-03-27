@@ -130,6 +130,7 @@ interface VaultOracleSectionProps {
     vaultAssetAddress?: string
     vaultAssetSymbol?: string
     assetMatchesBase?: boolean
+    priceManipulationRiskAcknowledged?: boolean
   }
   setVault: React.Dispatch<
     React.SetStateAction<
@@ -138,6 +139,7 @@ interface VaultOracleSectionProps {
         vaultAssetAddress?: string
         vaultAssetSymbol?: string
         assetMatchesBase?: boolean
+        priceManipulationRiskAcknowledged?: boolean
       }
     >
   >
@@ -383,10 +385,10 @@ function VaultOracleSection({
   const [localError, setLocalError] = useState<string | null>(null)
 
   useEffect(() => {
-    onValidationChange(
-      !!vault.vaultAddress && ethers.isAddress(vault.vaultAddress)
-    )
-  }, [vault.vaultAddress, onValidationChange])
+    const addressOk = !!vault.vaultAddress && ethers.isAddress(vault.vaultAddress)
+    const ack = vault.priceManipulationRiskAcknowledged === true
+    onValidationChange(addressOk && ack)
+  }, [vault.vaultAddress, vault.priceManipulationRiskAcknowledged, onValidationChange])
 
   const resolveVault = async (address: string) => {
     if (!address || !ethers.isAddress(address) || !window.ethereum) {
@@ -396,7 +398,8 @@ function VaultOracleSection({
         vaultSymbol: undefined,
         vaultAssetAddress: undefined,
         vaultAssetSymbol: undefined,
-        assetMatchesBase: undefined
+        assetMatchesBase: undefined,
+        priceManipulationRiskAcknowledged: false
       }))
       setLocalError(null)
       return
@@ -412,12 +415,17 @@ function VaultOracleSection({
         vaultContract.asset()
       ])
       const assetAddr = ethers.getAddress(assetAddress)
-      setVault(prev => ({
-        ...prev,
-        vaultAddress: ethers.getAddress(address),
-        vaultSymbol: String(symbol ?? ''),
-        vaultAssetAddress: assetAddr
-      }))
+      const resolvedVault = ethers.getAddress(address)
+      setVault(prev => {
+        const addrChanged = prev.vaultAddress?.toLowerCase() !== resolvedVault.toLowerCase()
+        return {
+          ...prev,
+          vaultAddress: resolvedVault,
+          vaultSymbol: String(symbol ?? ''),
+          vaultAssetAddress: assetAddr,
+          ...(addrChanged ? { priceManipulationRiskAcknowledged: false } : {})
+        }
+      })
       const erc20 = new ethers.Contract(assetAddr, ierc20Abi, provider)
       const [assetSymbol] = await Promise.all([erc20.symbol()])
       const assetNorm = assetAddr.toLowerCase()
@@ -447,7 +455,8 @@ function VaultOracleSection({
         vaultSymbol: undefined,
         vaultAssetAddress: undefined,
         vaultAssetSymbol: undefined,
-        assetMatchesBase: undefined
+        assetMatchesBase: undefined,
+        priceManipulationRiskAcknowledged: false
       }))
       setLocalError('Failed to load vault metadata. Check address and network.')
     } finally {
@@ -543,6 +552,28 @@ function VaultOracleSection({
               </span>
             </p>
           )}
+          <div className="mt-3 pt-3 border-t border-gray-600/50 space-y-2">
+            <p className="text-xs text-amber-400/95 leading-relaxed">
+              <span className="font-semibold">Warning:</span> Vault-based oracles can be susceptible to{' '}
+              <span className="font-medium">price manipulation</span>, which can seriously harm the market. Use this only if you are confident the vault has adequate protections.
+            </p>
+            <label className="flex items-start gap-2 cursor-pointer text-xs text-gray-300 leading-snug">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-[var(--silo-accent)] shrink-0"
+                checked={vault.priceManipulationRiskAcknowledged === true}
+                onChange={e =>
+                  setVault(prev => ({
+                    ...prev,
+                    priceManipulationRiskAcknowledged: e.target.checked
+                  }))
+                }
+              />
+              <span>
+                I understand that if the vault is not resistant to price manipulation, this poses a serious risk to the Silo market.
+              </span>
+            </label>
+          </div>
         </div>
       )}
 
@@ -1670,7 +1701,8 @@ export default function Step3OracleConfiguration() {
         useOtherTokenAsQuote: v0.useOtherTokenAsQuote ?? true,
         vaultAddress: v0.vaultAddress,
         customQuoteTokenAddress: v0.customQuoteTokenAddress,
-        customQuoteTokenMetadata: v0.customQuoteTokenMetadata
+        customQuoteTokenMetadata: v0.customQuoteTokenMetadata,
+        priceManipulationRiskAcknowledged: v0.priceManipulationRiskAcknowledged === true
       }))
       setVault0QuoteInput(v0.customQuoteTokenAddress ?? '')
     }
@@ -1682,7 +1714,8 @@ export default function Step3OracleConfiguration() {
         useOtherTokenAsQuote: v1.useOtherTokenAsQuote ?? true,
         vaultAddress: v1.vaultAddress,
         customQuoteTokenAddress: v1.customQuoteTokenAddress,
-        customQuoteTokenMetadata: v1.customQuoteTokenMetadata
+        customQuoteTokenMetadata: v1.customQuoteTokenMetadata,
+        priceManipulationRiskAcknowledged: v1.priceManipulationRiskAcknowledged === true
       }))
       setVault1QuoteInput(v1.customQuoteTokenAddress ?? '')
     }
@@ -2262,7 +2295,9 @@ export default function Step3OracleConfiguration() {
         errors.push('Vault Oracle (Token 0): vault address is required and must be a valid address')
       }
       if (!vault0Valid) {
-        errors.push('Vault Oracle (Token 0): vault asset must match token asset to continue')
+        errors.push(
+          'Vault Oracle (Token 0): enter a valid vault address and confirm the price-manipulation risk acknowledgement.'
+        )
       }
       const quoteAddr0 = vault0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
@@ -2278,7 +2313,9 @@ export default function Step3OracleConfiguration() {
         errors.push('Vault Oracle (Token 1): vault address is required and must be a valid address')
       }
       if (!vault1Valid) {
-        errors.push('Vault Oracle (Token 1): vault asset must match token asset to continue')
+        errors.push(
+          'Vault Oracle (Token 1): enter a valid vault address and confirm the price-manipulation risk acknowledgement.'
+        )
       }
       const quoteAddr1 = vault1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
@@ -2427,7 +2464,8 @@ export default function Step3OracleConfiguration() {
                   vault0.useOtherTokenAsQuote !== false && wizardData.token1?.address
                     ? wizardData.token1.address
                     : vault0.customQuoteTokenAddress?.trim(),
-                customQuoteTokenMetadata: vault0.customQuoteTokenMetadata
+                customQuoteTokenMetadata: vault0.customQuoteTokenMetadata,
+                priceManipulationRiskAcknowledged: vault0.priceManipulationRiskAcknowledged === true
               }
             : undefined,
           customMethodOracle: wizardData.oracleType0!.type === 'customMethod'
@@ -2482,7 +2520,8 @@ export default function Step3OracleConfiguration() {
                   vault1.useOtherTokenAsQuote !== false && wizardData.token0?.address
                     ? wizardData.token0.address
                     : vault1.customQuoteTokenAddress?.trim(),
-                customQuoteTokenMetadata: vault1.customQuoteTokenMetadata
+                customQuoteTokenMetadata: vault1.customQuoteTokenMetadata,
+                priceManipulationRiskAcknowledged: vault1.priceManipulationRiskAcknowledged === true
               }
             : undefined,
           customMethodOracle: wizardData.oracleType1!.type === 'customMethod'

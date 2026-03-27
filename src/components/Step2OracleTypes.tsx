@@ -317,9 +317,14 @@ export default function Step2OracleTypes() {
                     </p>
                   )}
                   {oracleType.type === 'vault' && (
-                    <p className="text-sm text-gray-400 mt-1">
-                      ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
-                    </p>
+                    <>
+                      <p className="text-sm text-gray-400 mt-1">
+                        ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                      </p>
+                      <p className="text-sm text-amber-400/90 mt-1">
+                        Note: vault-based pricing may be susceptible to price manipulation.
+                      </p>
+                    </>
                   )}
                   {oracleType.type === 'customMethod' && (
                     <p className="text-sm text-gray-400 mt-1">
@@ -404,9 +409,14 @@ export default function Step2OracleTypes() {
                       </p>
                   )}
                   {oracleType.type === 'vault' && (
-                    <p className="text-sm text-gray-400 mt-1">
-                      ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
-                    </p>
+                    <>
+                      <p className="text-sm text-gray-400 mt-1">
+                        ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                      </p>
+                      <p className="text-sm text-amber-400/90 mt-1">
+                        Note: vault-based pricing may be susceptible to price manipulation.
+                      </p>
+                    </>
                   )}
                   {oracleType.type === 'customMethod' && (
                     <p className="text-sm text-gray-400 mt-1">
