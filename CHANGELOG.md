@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.25.3 - 2026-03-27
+### Updated
+- update vault oracle warning
+
 ## 0.25.2 - 2026-03-27
 ### Fixed
 - fix verification `chain` param disappearing from URL
