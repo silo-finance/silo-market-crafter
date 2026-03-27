@@ -36,6 +36,62 @@ function toStringValue(value: unknown): string {
   return String(value)
 }
 
+function decodeUpdateConfigFromDataDecoded(dataDecoded: unknown): DecodedUpdateConfig | null {
+  if (!dataDecoded || typeof dataDecoded !== 'object') return null
+
+  const asRecord = dataDecoded as Record<string, unknown>
+  const method = asRecord.method
+  if (typeof method !== 'string' || method.toLowerCase() !== 'updateconfig') return null
+
+  const parameters = Array.isArray(asRecord.parameters) ? asRecord.parameters : []
+  const configParam = parameters.find((param) => {
+    if (!param || typeof param !== 'object') return false
+    const p = param as Record<string, unknown>
+    const name = typeof p.name === 'string' ? p.name.toLowerCase() : ''
+    return name === 'config' || name === '_config'
+  }) as Record<string, unknown> | undefined
+
+  if (!configParam) return null
+  const value = configParam.value
+  if (!value || typeof value !== 'object') return null
+
+  const config = value as Record<string, unknown>
+  const requiredKeys = [
+    'ulow',
+    'u1',
+    'u2',
+    'ucrit',
+    'rmin',
+    'kmin',
+    'kmax',
+    'alpha',
+    'cminus',
+    'cplus',
+    'c1',
+    'c2',
+    'dmax',
+  ] as const
+
+  const hasAllKeys = requiredKeys.every((key) => key in config)
+  if (!hasAllKeys) return null
+
+  return {
+    ulow: toStringValue(config.ulow),
+    u1: toStringValue(config.u1),
+    u2: toStringValue(config.u2),
+    ucrit: toStringValue(config.ucrit),
+    rmin: toStringValue(config.rmin),
+    kmin: toStringValue(config.kmin),
+    kmax: toStringValue(config.kmax),
+    alpha: toStringValue(config.alpha),
+    cminus: toStringValue(config.cminus),
+    cplus: toStringValue(config.cplus),
+    c1: toStringValue(config.c1),
+    c2: toStringValue(config.c2),
+    dmax: toStringValue(config.dmax)
+  }
+}
+
 export function isUpdateConfigCalldata(data: string | null | undefined): data is string {
   if (!data || !data.startsWith('0x')) return false
   return data.slice(0, 10).toLowerCase() === UPDATE_CONFIG_SELECTOR
@@ -68,13 +124,23 @@ export function extractIrmUpdateCandidates(
   const candidates: IrmUpdateCandidate[] = []
 
   for (const tx of txs) {
-    if (!isUpdateConfigCalldata(tx.data)) continue
-    try {
-      const decodedConfig = decodeUpdateConfigCalldata(tx.data)
-      candidates.push({ tx, decodedConfig })
-    } catch {
-      // Ignore malformed calldata while keeping the flow resilient.
+    let decodedConfig: DecodedUpdateConfig | null = null
+
+    if (isUpdateConfigCalldata(tx.data)) {
+      try {
+        decodedConfig = decodeUpdateConfigCalldata(tx.data)
+      } catch {
+        decodedConfig = null
+      }
     }
+
+    if (!decodedConfig) {
+      decodedConfig = decodeUpdateConfigFromDataDecoded(tx.dataDecoded)
+    }
+
+    if (!decodedConfig) continue
+
+    candidates.push({ tx, decodedConfig })
   }
 
   return candidates
