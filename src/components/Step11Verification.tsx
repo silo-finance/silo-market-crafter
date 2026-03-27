@@ -66,6 +66,7 @@ export default function Step11Verification() {
   const searchParams = useSearchParams()
   const { wizardData, setVerificationFromWizard } = useWizard()
   const isMountedRef = useRef(true)
+  const lastAutoVerifyKeyRef = useRef<string | null>(null)
   const [input, setInput] = useState<string>('')
   const [txHash, setTxHash] = useState<string | null>(null)
   const [config, setConfig] = useState<MarketConfig | null>(null)
@@ -75,6 +76,7 @@ export default function Step11Verification() {
   const [siloFactory, setSiloFactory] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [detectedChainId, setDetectedChainId] = useState<string>('')
+  const [effectiveChainId, setEffectiveChainId] = useState<string>('')
   const [siloVerification, setSiloVerification] = useState<{ silo0: boolean | null; silo1: boolean | null; error: string | null }>({
     silo0: null,
     silo1: null,
@@ -167,25 +169,60 @@ export default function Step11Verification() {
     () => parseChainQueryParam(chainParamRaw),
     [chainParamRaw]
   )
-  const chainId = wizardData.networkInfo?.chainId || detectedChainId
+  const chainId = effectiveChainId || detectedChainId || wizardData.networkInfo?.chainId || ''
   const explorerUrl = chainId ? getExplorerBaseUrl(chainId) : 'https://etherscan.io'
   const updateVerificationUrl = useCallback(
-    (params: { txHash?: string; siloConfigAddress?: string; siloAddress?: string; chainId?: number | null }) => {
-      const query = new URLSearchParams()
+    (
+      params: {
+        txHash?: string
+        siloConfigAddress?: string
+        siloAddress?: string
+        chainId?: number | string | null
+      },
+      options?: { preserveChain?: boolean }
+    ) => {
+      const query = new URLSearchParams(searchParams.toString())
       query.set('step', 'verification')
+      const hasIdentityParam =
+        typeof params.txHash !== 'undefined' ||
+        typeof params.siloAddress !== 'undefined' ||
+        typeof params.siloConfigAddress !== 'undefined'
       if (params.txHash) {
         query.set('tx', params.txHash)
+        query.delete('silo')
+        query.delete('address')
+        query.delete('contract')
       } else if (params.siloAddress) {
         query.set('silo', params.siloAddress)
+        query.delete('tx')
+        query.delete('address')
+        query.delete('contract')
       } else if (params.siloConfigAddress) {
         query.set('address', params.siloConfigAddress)
+        query.delete('tx')
+        query.delete('silo')
+        query.delete('contract')
+      } else if (hasIdentityParam) {
+        query.delete('tx')
+        query.delete('silo')
+        query.delete('address')
+        query.delete('contract')
       }
       if (params.chainId != null) {
         query.set('chain', String(params.chainId))
+      } else if (options?.preserveChain !== false) {
+        const fallbackChainId = effectiveChainId || detectedChainId || wizardData.networkInfo?.chainId || chainParamRaw
+        if (fallbackChainId) {
+          query.set('chain', String(fallbackChainId))
+        }
       }
-      router.replace(`/wizard?${query.toString()}`, { scroll: false })
+      const nextQuery = query.toString()
+      if (nextQuery === searchParams.toString()) {
+        return
+      }
+      router.replace(`/wizard?${nextQuery}`, { scroll: false })
     },
-    [router]
+    [router, searchParams, effectiveChainId, detectedChainId, wizardData.networkInfo?.chainId, chainParamRaw]
   )
 
   const showNetworkSwitchToast = useCallback((targetChainId: number) => {
@@ -209,6 +246,18 @@ export default function Step11Verification() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!effectiveChainId && wizardData.networkInfo?.chainId) {
+      setEffectiveChainId(wizardData.networkInfo.chainId)
+    }
+  }, [effectiveChainId, wizardData.networkInfo?.chainId])
+
+  useEffect(() => {
+    if (parsedChainParam.chainId != null) {
+      setEffectiveChainId(String(parsedChainParam.chainId))
+    }
+  }, [parsedChainParam.chainId])
 
   // Fetch Silo Factory address and version
   // Always fetch - this is independent verification that doesn't require wizard data
@@ -579,6 +628,7 @@ export default function Step11Verification() {
       let network = await provider.getNetwork()
       chainIdForCatch = network.chainId.toString()
       setDetectedChainId(chainIdForCatch)
+      setEffectiveChainId(chainIdForCatch)
 
       if (forcedChainId != null) {
         if (!isChainSupported(forcedChainId)) {
@@ -612,6 +662,7 @@ export default function Step11Verification() {
           network = await provider.getNetwork()
           chainIdForCatch = network.chainId.toString()
           setDetectedChainId(chainIdForCatch)
+          setEffectiveChainId(chainIdForCatch)
         }
       }
       let siloConfigAddress: string
@@ -685,6 +736,7 @@ export default function Step11Verification() {
                 network = await provider.getNetwork()
                 chainIdForCatch = network.chainId.toString()
                 setDetectedChainId(chainIdForCatch)
+                setEffectiveChainId(chainIdForCatch)
               }
             }
           } catch (detectError) {
@@ -695,11 +747,35 @@ export default function Step11Verification() {
         // Check that the address is a contract on the current network before calling it
         const code = await provider.getCode(inputAddress)
         if (!code || code === '0x' || code === '0x0') {
-          setError(
-            'This address is not a contract on the current network. You might be connected to the wrong network, or the address is invalid.'
-          )
-          setShowForm(true)
-          return
+          // Fallback path: try repository-based network detection once before final error.
+          const detectedNetwork = await detectSiloConfigNetwork(inputAddress).catch(() => null)
+          if (detectedNetwork && Number(network.chainId) !== detectedNetwork.chainId) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: `0x${detectedNetwork.chainId.toString(16)}` }]
+              })
+              showNetworkSwitchToast(detectedNetwork.chainId)
+              provider = new ethers.BrowserProvider(window.ethereum)
+              network = await provider.getNetwork()
+              chainIdForCatch = network.chainId.toString()
+              setDetectedChainId(chainIdForCatch)
+              setEffectiveChainId(chainIdForCatch)
+            } catch {
+              // Non-fatal: fall through to the final address/network error below.
+            }
+          }
+
+          const codeAfterFallback = await provider.getCode(inputAddress)
+          if (!codeAfterFallback || codeAfterFallback === '0x' || codeAfterFallback === '0x0') {
+            setError(
+              forcedChainId != null
+                ? 'Address not found on the URL chain and repository fallback network. Check chain or address.'
+                : 'Address not found on detected network. Check address and try again.'
+            )
+            setShowForm(true)
+            return
+          }
         }
         siloConfigAddress = await resolveAddressToSiloConfig(provider, inputAddress, {
           knownSilo: isKnownSilo
@@ -726,7 +802,8 @@ export default function Step11Verification() {
       updateVerificationUrl({
         txHash: isTxHash ? trimmed : undefined,
         siloAddress: !isTxHash && resolvedFromSilo ? ethers.getAddress(trimmed) : undefined,
-        siloConfigAddress: !isTxHash && !resolvedFromSilo ? siloConfigAddress : undefined
+        siloConfigAddress: !isTxHash && !resolvedFromSilo ? siloConfigAddress : undefined,
+        chainId: network.chainId.toString()
       })
       
       // Defaulting hook (SiloHookV2 / SiloHookV3) and gauge verification
@@ -814,7 +891,7 @@ export default function Step11Verification() {
                       ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
                     }
                     // Try to resolve version via SiloLens when available
-                    const chainIdForGauge = wizardData.networkInfo?.chainId || network.chainId.toString()
+                    const chainIdForGauge = network.chainId.toString()
                     if (siloLensAddress && chainIdForGauge) {
                       try {
                         const versionsByAddress = await fetchSiloLensVersionsWithCache({
@@ -897,7 +974,7 @@ export default function Step11Verification() {
       }
 
       // Get chain ID - use wizard data if available, otherwise get from provider
-      const chainIdForVerification = wizardData.networkInfo?.chainId || network.chainId.toString()
+      const chainIdForVerification = network.chainId.toString()
       
       // Verify addresses in JSON - ALWAYS performed regardless of wizard data
       // This verification is independent and can be done for any address
@@ -1285,7 +1362,6 @@ export default function Step11Verification() {
     wizardData.hookOwnerAddress,
     wizardData.lastDeployTxHash,
     wizardData.manageableOracleOwnerAddress,
-    wizardData.networkInfo?.chainId,
     wizardData.token0?.address,
     wizardData.token1?.address,
     updateVerificationUrl,
@@ -1297,23 +1373,33 @@ export default function Step11Verification() {
     const urlSilo = searchParams.get('silo')
     const urlAddress = searchParams.get('address') || searchParams.get('contract')
     const forcedChainId = parsedChainParam.chainId
+    // Keep key independent from `chain` so internal URL chain updates do not re-trigger auto-verify loops.
+    const autoVerifyKey = `${urlHash ?? ''}|${urlSilo ?? ''}|${urlAddress ?? ''}`
     if (parsedChainParam.error) {
       setError(parsedChainParam.error)
       setTxHash(null)
       setConfig(null)
       setShowForm(true)
+      lastAutoVerifyKeyRef.current = null
       return
     }
     if (urlHash) {
+      if (lastAutoVerifyKeyRef.current === autoVerifyKey) return
+      lastAutoVerifyKeyRef.current = autoVerifyKey
       setInput(urlHash)
       void handleVerify(urlHash, true, false, forcedChainId)
     } else if (urlSilo) {
+      if (lastAutoVerifyKeyRef.current === autoVerifyKey) return
+      lastAutoVerifyKeyRef.current = autoVerifyKey
       setInput(urlSilo)
       void handleVerify(urlSilo, false, true, forcedChainId)
     } else if (urlAddress) {
+      if (lastAutoVerifyKeyRef.current === autoVerifyKey) return
+      lastAutoVerifyKeyRef.current = autoVerifyKey
       setInput(urlAddress)
       void handleVerify(urlAddress, false, false, forcedChainId)
     } else {
+      lastAutoVerifyKeyRef.current = null
       // No URL params: show form only. Optionally pre-fill with last deploy tx so user can Verify with one click; do NOT auto-run handleVerify or we would overwrite input when async call completes.
       const savedHash = wizardData.lastDeployTxHash
       if (savedHash) {
@@ -1411,8 +1497,12 @@ export default function Step11Verification() {
     try {
       const url = typeof window !== 'undefined' ? new URL(window.location.href) : null
       if (url) {
-        if (chainId) {
-          url.searchParams.set('chain', String(chainId))
+        const shareChainId = effectiveChainId || detectedChainId || wizardData.networkInfo?.chainId || chainParamRaw
+        if (shareChainId) {
+          url.searchParams.set('chain', String(shareChainId))
+          if (searchParams.get('chain') !== String(shareChainId)) {
+            updateVerificationUrl({ chainId: String(shareChainId) })
+          }
         }
         await navigator.clipboard.writeText(url.toString())
         setShareCopied(true)
@@ -1422,7 +1512,7 @@ export default function Step11Verification() {
       console.error('Share failed:', err)
       setError('Failed to copy URL')
     }
-  }, [chainId])
+  }, [effectiveChainId, detectedChainId, wizardData.networkInfo?.chainId, chainParamRaw, searchParams, updateVerificationUrl])
 
   const goToDeployment = () => router.push('/wizard?step=12')
   const handleVerifyAnotherMarket = () => {

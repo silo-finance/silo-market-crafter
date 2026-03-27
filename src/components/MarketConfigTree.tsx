@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useState } from 'react'
+import Image from 'next/image'
 import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
@@ -11,6 +12,7 @@ import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
 import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
+import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
 
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
@@ -1612,6 +1614,10 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
   const marketName = `${asset0Symbol} / ${asset1Symbol} #${marketId}`
+  const networkLabel = chainId ? getNetworkDisplayName(chainId) : 'Unknown network'
+  const networkIconPath = chainId ? getNetworkIconPath(chainId) : null
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
+  const networkIconSrc = networkIconPath ? `${basePath}${networkIconPath}` : null
   const getSiloTypeLabel = (side: 0 | 1): string | null => {
     if (hookGaugeInfo?.onlyOneBorrowable === false) {
       return 'Two-way market'
@@ -1854,6 +1860,18 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           </div>
         </div>
       )}
+      <div className="mb-1 inline-flex items-center gap-2 text-sm font-medium text-gray-400 dark:text-gray-500">
+        {networkIconSrc && (
+          <Image
+            src={networkIconSrc}
+            alt={networkLabel}
+            width={16}
+            height={16}
+            className="h-4 w-4 rounded-full border border-gray-200/30 dark:border-gray-600/50"
+          />
+        )}
+        <span>{networkLabel}</span>
+      </div>
       <h3 className="text-lg font-semibold text-white mb-4">
         Market Configuration Tree:{' '}
         <span className="text-lime-300">{marketName}</span>

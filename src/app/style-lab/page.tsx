@@ -1,6 +1,9 @@
+import Image from 'next/image'
 import Button from '@/components/Button'
+import { NETWORK_CONFIGS } from '@/utils/networks'
 
 export default function StyleLabPage() {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
   return (
     <main className="silo-page px-6 py-10">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -95,6 +98,27 @@ export default function StyleLabPage() {
                 <span className="block text-sm mt-1 silo-text-soft">Selected state with active border and filled radio dot.</span>
               </span>
             </label>
+          </div>
+        </section>
+
+        <section className="silo-panel p-5 space-y-4">
+          <h2 className="text-xl font-semibold silo-text-main">Network Icons</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {NETWORK_CONFIGS.map((network) => (
+              <div key={network.chainId} className="silo-panel-soft p-3 flex items-center gap-3">
+                <Image
+                  src={`${basePath}${network.iconPath}`}
+                  alt={network.displayName}
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 rounded-full border border-gray-200/40 dark:border-gray-600/60"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium silo-text-main truncate">{network.displayName}</p>
+                  <p className="text-xs silo-text-soft">chainId: {network.chainId}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>
