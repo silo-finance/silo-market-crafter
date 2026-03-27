@@ -238,10 +238,10 @@ export default function IrmUpdateVerificationPage() {
         </p>
       </div>
 
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+      <div className="silo-panel p-6 mb-6">
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <label htmlFor="safe-url" className="block text-sm font-medium text-white mb-2">
+            <label htmlFor="safe-url" className="block text-sm font-medium silo-text-main mb-2">
               Safe Queue URL
             </label>
             <input
@@ -250,12 +250,12 @@ export default function IrmUpdateVerificationPage() {
               value={safeUrlInput}
               onChange={(event) => setSafeUrlInput(event.target.value)}
               placeholder="https://app.safe.global/transactions/queue?safe=eth:0x..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+              className="w-full rounded-lg px-4 py-2 silo-input focus:outline-none focus:ring-0"
             />
           </div>
 
           <div>
-            <label htmlFor="silo-config" className="block text-sm font-medium text-white mb-2">
+            <label htmlFor="silo-config" className="block text-sm font-medium silo-text-main mb-2">
               Silo Addresses (ordered)
             </label>
             <textarea
@@ -264,9 +264,9 @@ export default function IrmUpdateVerificationPage() {
               onChange={(event) => setSiloAddressInput(event.target.value)}
               placeholder={'0x...\n0x...'}
               rows={3}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-700"
+              className="w-full rounded-lg px-4 py-2 min-h-[5.5rem] resize-y silo-input focus:outline-none focus:ring-0"
             />
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs silo-text-soft">
               Provide only Silo addresses (one per line, or separated by commas/spaces). You can
               paste raw hex address or explorer URL. Order must match transaction order.
             </p>
@@ -298,14 +298,20 @@ export default function IrmUpdateVerificationPage() {
             <p className="text-gray-300 text-sm">Safe: <span className="font-mono">{result.parsedSafe.safeAddress}</span></p>
             <p className="text-gray-300 text-sm">Queued `updateConfig` tx count: <span className="font-semibold">{result.rows.length}</span></p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <div className="inline-flex items-center gap-2 rounded-md border border-lime-700/70 bg-lime-900/20 px-3 py-1.5">
-                <svg className="h-5 w-5 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm font-semibold text-lime-300">
-                  success: {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length}
+              {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length > 0 ? (
+                <div className="inline-flex items-center gap-2 rounded-md border border-lime-700/70 bg-lime-900/20 px-3 py-1.5">
+                  <svg className="h-5 w-5 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm font-semibold text-lime-300">
+                    success: {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-sm font-semibold text-gray-300">
+                  success: 0
                 </span>
-              </div>
+              )}
 
               {result.rows.filter((row) => !(row.targetMatchesSilo && row.matchedConfigName != null)).length > 0 ? (
                 <div className="inline-flex items-center gap-2 rounded-md border border-red-600/70 bg-red-900/30 px-3 py-1.5">

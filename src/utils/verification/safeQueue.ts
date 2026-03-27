@@ -11,6 +11,7 @@ export interface SafePendingTransaction {
   nonce: number
   to: string
   data: string | null
+  dataDecoded?: unknown
   submissionDate: string
   isExecuted: boolean
 }
@@ -21,6 +22,7 @@ interface SafePendingResponse {
     nonce?: number
     to?: string
     data?: string | null
+    dataDecoded?: unknown
     submissionDate?: string
     isExecuted?: boolean
   }>
@@ -33,9 +35,57 @@ interface SafeNetworkConfig {
 
 const SAFE_NETWORK_CONFIG_BY_PREFIX: Record<string, SafeNetworkConfig> = {
   eth: {
-    txServiceBaseUrl: 'https://safe-transaction-mainnet.safe.global',
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/eth',
     chainId: 1
   },
+  oeth: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/oeth',
+    chainId: 10
+  },
+  bnb: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/bnb',
+    chainId: 56
+  },
+  arb1: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/arb1',
+    chainId: 42161
+  },
+  avax: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/avax',
+    chainId: 43114
+  },
+  sonic: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/sonic',
+    chainId: 146
+  },
+  xlayer: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/okb',
+    chainId: 196
+  },
+  injective: {
+    txServiceBaseUrl: 'https://prod.injective.keypersafe.xyz',
+    chainId: 1776
+  },
+  inj: {
+    txServiceBaseUrl: 'https://prod.injective.keypersafe.xyz',
+    chainId: 1776
+  },
+  optimism: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/oeth',
+    chainId: 10
+  },
+  arbitrum: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/arb1',
+    chainId: 42161
+  },
+  avalanche: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/avax',
+    chainId: 43114
+  },
+  okx: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/okb',
+    chainId: 196
+  }
 }
 
 export function parseSafeQueueUrl(rawUrl: string): ParsedSafeUrl {
@@ -116,6 +166,7 @@ export async function fetchPendingSafeTransactions(
       nonce: Number(tx.nonce ?? 0),
       to: ethers.getAddress(String(tx.to)),
       data: tx.data ?? null,
+      dataDecoded: tx.dataDecoded,
       submissionDate: String(tx.submissionDate ?? ''),
       isExecuted: Boolean(tx.isExecuted)
     }))

@@ -26,12 +26,57 @@ describe('Safe queue parser', () => {
   })
 
   it('resolves tx service base URL for eth prefix', () => {
-    expect(getSafeTxServiceBaseUrl('eth')).toBe('https://safe-transaction-mainnet.safe.global')
+    expect(getSafeTxServiceBaseUrl('eth')).toBe('https://api.safe.global/tx-service/eth')
   })
 
   it('resolves chainId and chainId hex for eth prefix', () => {
     expect(getSafeChainId('eth')).toBe(1)
     expect(getSafeChainIdHex('eth')).toBe('0x1')
+  })
+
+  it('resolves Safe prefixes for all app-supported chains', () => {
+    expect(getSafeTxServiceBaseUrl('oeth')).toBe('https://api.safe.global/tx-service/oeth')
+    expect(getSafeChainId('oeth')).toBe(10)
+
+    expect(getSafeTxServiceBaseUrl('bnb')).toBe('https://api.safe.global/tx-service/bnb')
+    expect(getSafeChainId('bnb')).toBe(56)
+
+    expect(getSafeTxServiceBaseUrl('arb1')).toBe('https://api.safe.global/tx-service/arb1')
+    expect(getSafeChainId('arb1')).toBe(42161)
+
+    expect(getSafeTxServiceBaseUrl('avax')).toBe('https://api.safe.global/tx-service/avax')
+    expect(getSafeChainId('avax')).toBe(43114)
+
+    expect(getSafeTxServiceBaseUrl('sonic')).toBe('https://api.safe.global/tx-service/sonic')
+    expect(getSafeChainId('sonic')).toBe(146)
+
+    expect(getSafeTxServiceBaseUrl('xlayer')).toBe('https://api.safe.global/tx-service/okb')
+    expect(getSafeChainId('xlayer')).toBe(196)
+  })
+
+  it('supports common aliases for selected networks', () => {
+    expect(getSafeChainId('optimism')).toBe(10)
+    expect(getSafeChainId('arbitrum')).toBe(42161)
+    expect(getSafeChainId('avalanche')).toBe(43114)
+    expect(getSafeChainId('okx')).toBe(196)
+  })
+
+  it('parses injective Safe URL and resolves network config', () => {
+    const parsed = parseSafeQueueUrl(
+      'https://multisig.injective.network/transactions/queue?safe=injective:0xb889683D4608cDDad705640731C72B47B3529D97'
+    )
+
+    expect(parsed.chainPrefix).toBe('injective')
+    expect(parsed.safeAddress).toBe('0xb889683D4608cDDad705640731C72B47B3529D97')
+    expect(getSafeTxServiceBaseUrl(parsed.chainPrefix)).toBe('https://prod.injective.keypersafe.xyz')
+    expect(getSafeChainId(parsed.chainPrefix)).toBe(1776)
+    expect(getSafeChainIdHex(parsed.chainPrefix)).toBe('0x6f0')
+  })
+
+  it('supports inj alias for Injective network config', () => {
+    expect(getSafeTxServiceBaseUrl('inj')).toBe('https://prod.injective.keypersafe.xyz')
+    expect(getSafeChainId('inj')).toBe(1776)
+    expect(getSafeChainIdHex('inj')).toBe('0x6f0')
   })
 
   it('throws for unsupported chain prefix', () => {
@@ -114,6 +159,47 @@ describe('IRM updateConfig calldata helpers', () => {
 
     expect(candidates).toHaveLength(1)
     expect(candidates[0].tx.safeTxHash).toBe('0x1')
+  })
+
+  it('extracts updateConfig from dataDecoded when calldata is missing', () => {
+    const candidates = extractIrmUpdateCandidates([
+      {
+        safeTxHash: '0xdecoded',
+        nonce: 1,
+        to: '0x05E46c0117F2Aa62A52f093FC41CE314a5bDe0a6',
+        data: null,
+        dataDecoded: {
+          method: 'updateConfig',
+          parameters: [
+            {
+              name: '_config',
+              value: {
+                ulow: '1',
+                u1: '2',
+                u2: '3',
+                ucrit: '4',
+                rmin: '5',
+                kmin: '6',
+                kmax: '7',
+                alpha: '8',
+                cminus: '9',
+                cplus: '10',
+                c1: '11',
+                c2: '12',
+                dmax: '13',
+              }
+            }
+          ]
+        },
+        submissionDate: '',
+        isExecuted: false
+      }
+    ])
+
+    expect(candidates).toHaveLength(1)
+    expect(candidates[0].tx.safeTxHash).toBe('0xdecoded')
+    expect(candidates[0].decodedConfig.kmax).toBe('7')
+    expect(candidates[0].decodedConfig.dmax).toBe('13')
   })
 })
 

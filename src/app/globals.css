@@ -212,7 +212,28 @@ body {
 .silo-input:focus {
   outline: none;
   border-color: var(--silo-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--silo-accent) 28%, transparent);
+  box-shadow: none;
+}
+
+/* Error state: keep red border on focus (no accent ring/shadow). */
+.silo-input.border-red-500:focus,
+.silo-input:focus.border-red-500 {
+  border-color: var(--silo-danger) !important;
+  box-shadow: none !important;
+}
+
+/* Brand focus on silo-input; border-only (blue accent), no glow/shadow. */
+.light-market-theme .silo-input:focus {
+  outline: none !important;
+  border-color: var(--silo-accent) !important;
+  box-shadow: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.light-market-theme .silo-input.border-red-500:focus {
+  border-color: var(--silo-danger) !important;
+  box-shadow: none !important;
 }
 
 .silo-alert {
@@ -532,8 +553,8 @@ body {
 }
 
 .light-market-theme select:focus {
-  border-color: #7384ff !important;
-  box-shadow: 0 0 0 2px rgba(132, 148, 255, 0.35) !important;
+  border-color: var(--silo-accent) !important;
+  box-shadow: none !important;
   outline: none !important;
 }
 
@@ -753,9 +774,24 @@ body {
 .theme-dark .light-market-theme input:focus,
 .theme-dark .light-market-theme textarea:focus,
 .theme-dark .light-market-theme select:focus {
-  border-color: #8d9dff !important;
-  box-shadow: 0 0 0 2px rgba(141, 157, 255, 0.35) !important;
+  border-color: var(--silo-accent) !important;
+  box-shadow: none !important;
   outline: none !important;
+}
+
+/* silo-input: same blue border focus, no shadow (must follow generic input:focus above). */
+.theme-dark .light-market-theme input.silo-input:focus,
+.theme-dark .light-market-theme textarea.silo-input:focus {
+  border-color: var(--silo-accent) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.theme-dark .light-market-theme .silo-input.border-red-500:focus {
+  border-color: var(--silo-danger) !important;
+  box-shadow: none !important;
 }
 
 .theme-dark .light-market-theme input[type='checkbox'],
@@ -837,6 +873,9 @@ body {
   padding-left: 1.25rem;
   margin-top: 0.1rem;
   margin-bottom: 0.05rem;
+}
+.tree.tree-root-bullet {
+  list-style-type: disc;
 }
 .tree-item {
   display: list-item;
