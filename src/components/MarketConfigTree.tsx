@@ -2,7 +2,14 @@
 
 import React, { useCallback, useState } from 'react'
 import Image from 'next/image'
-import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
+import {
+  MarketConfig,
+  formatPercentage,
+  formatAddress,
+  formatQuotePriceAs18Decimals,
+  isErc4626OracleHardcodeQuoteByVersion,
+  type Erc4626VaultQuoteCheck
+} from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
@@ -14,6 +21,69 @@ import { VersionStatus } from '@/components/VersionStatus'
 import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
 import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
 
+
+function renderErc4626VaultQuoteCheckContent(check: Erc4626VaultQuoteCheck): React.ReactNode {
+  const vaultLabel = check.vaultAssetSymbol ?? (check.vaultAssetAddress ? formatAddress(check.vaultAssetAddress) : '?')
+  const quoteLabel = check.quoteTokenSymbol ?? (check.quoteTokenAddress ? formatAddress(check.quoteTokenAddress) : '?')
+  if (check.match === true) {
+    const detail =
+      check.vaultAssetSymbol && check.quoteTokenSymbol
+        ? ` (${check.vaultAssetSymbol} / ${check.quoteTokenSymbol})`
+        : ''
+    return (
+      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs status-muted-success">
+        <span>✓</span>
+        <span>Vault underlying asset matches oracle quote token{detail}</span>
+      </span>
+    )
+  }
+  if (check.match === false) {
+    return (
+      <span className="inline-flex flex-col gap-1 text-xs text-yellow-400">
+        <span>
+          Vault underlying ({vaultLabel}) does not match oracle quote token ({quoteLabel}). If you deliberately peg &quot;{vaultLabel}&quot; to &quot;{quoteLabel}&quot; 1:1 (same economic exposure), that is fine.
+        </span>
+      </span>
+    )
+  }
+  return (
+    <span className="text-xs text-gray-500">
+      ERC4626 vault vs quote token check unavailable{check.error ? `: ${check.error}` : '.'}
+    </span>
+  )
+}
+
+/** Indented sub-bullets: vault asset row, then match / warning / unavailable. */
+function renderErc4626OracleBulletBlock(check: Erc4626VaultQuoteCheck, explorerUrl: string): React.ReactNode {
+  const addr = check.vaultAssetAddress
+  const hasAddr = addr && ethers.isAddress(addr)
+  return (
+    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-1">
+      <li>
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span className="text-gray-300">asset:</span>
+          {hasAddr ? (
+            <>
+              <a
+                href={`${explorerUrl}/address/${addr}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+              >
+                {formatAddress(addr)}
+              </a>
+              <CopyButton value={addr} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+              <span className="text-gray-300 text-sm">{check.vaultAssetSymbol ?? '—'}</span>
+            </>
+          ) : (
+            <span className="text-gray-500 text-sm">—</span>
+          )}
+        </span>
+      </li>
+      <li>{renderErc4626VaultQuoteCheckContent(check)}</li>
+    </ul>
+  )
+}
 
 /** Format large numeric string as e-notation (e.g. scaleFactor 1000000000000000000 → 1e18). */
 function formatFactorToE(value: string): string {
@@ -1062,6 +1132,10 @@ function SiloSection({
                       </li>
                     </ul>
                   )}
+                  {underlying &&
+                    isErc4626OracleHardcodeQuoteByVersion(underlying.version) &&
+                    siloConfig.solvencyOracle.erc4626VaultQuoteCheck &&
+                    renderErc4626OracleBulletBlock(siloConfig.solvencyOracle.erc4626VaultQuoteCheck, explorerUrl)}
                   {renderChainlinkAggregatorsForConfig(
                     siloConfig.solvencyOracle.config as Record<string, unknown> | undefined,
                     explorerUrl
@@ -1086,6 +1160,17 @@ function SiloSection({
                   )}
                 </>
               )
+            })
+          }
+          const erc4626SolvencyChk = siloConfig.solvencyOracle.erc4626VaultQuoteCheck
+          if (
+            erc4626SolvencyChk &&
+            !underlying &&
+            isErc4626OracleHardcodeQuoteByVersion(siloConfig.solvencyOracle.version)
+          ) {
+            base.push({
+              key: `oracle.erc4626.vaultQuote.${siloKey}.solvency`,
+              text: renderErc4626OracleBulletBlock(erc4626SolvencyChk, explorerUrl)
             })
           }
           const solvencyVersion = siloConfig.solvencyOracle.version
@@ -1206,6 +1291,10 @@ function SiloSection({
                         </li>
                       </ul>
                     )}
+                    {underlying &&
+                      isErc4626OracleHardcodeQuoteByVersion(underlying.version) &&
+                      siloConfig.maxLtvOracle.erc4626VaultQuoteCheck &&
+                      renderErc4626OracleBulletBlock(siloConfig.maxLtvOracle.erc4626VaultQuoteCheck, explorerUrl)}
                     {renderChainlinkAggregatorsForConfig(maxLtvConfig, explorerUrl)}
                     {renderCustomMethodOracleDetailsForConfig(
                       maxLtvConfig,
@@ -1227,6 +1316,17 @@ function SiloSection({
                     )}
                   </>
                 )
+              })
+            }
+            const erc4626MaxLtvChk = siloConfig.maxLtvOracle.erc4626VaultQuoteCheck
+            if (
+              erc4626MaxLtvChk &&
+              !underlying &&
+              isErc4626OracleHardcodeQuoteByVersion(siloConfig.maxLtvOracle.version)
+            ) {
+              base.push({
+                key: `oracle.erc4626.vaultQuote.${siloKey}.maxLtv`,
+                text: renderErc4626OracleBulletBlock(erc4626MaxLtvChk, explorerUrl)
               })
             }
             const maxLtvVersion = siloConfig.maxLtvOracle.version

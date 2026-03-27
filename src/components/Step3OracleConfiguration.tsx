@@ -456,6 +456,9 @@ function VaultOracleSection({
     }
   }
 
+  const vaultAssetSymLabel = vault.vaultAssetSymbol ?? '?'
+  const otherMarketSymLabel = otherTokenSymbol ?? '?'
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-400 mb-2">
@@ -536,7 +539,7 @@ function VaultOracleSection({
             <p className="text-xs text-yellow-400 flex items-center gap-1">
               <span>⚠</span>
               <span>
-                Vault asset does not match the other token. Symbol differs: vault asset is &quot;{vault.vaultAssetSymbol ?? '?'}&quot;, other token is &quot;{otherTokenSymbol ?? '?'}&quot;. The vault&apos;s underlying asset should be the other market token.
+                Vault asset does not match the other token. Symbol differs: vault asset is &quot;{vaultAssetSymLabel}&quot;, other token is &quot;{otherMarketSymLabel}&quot;. The vault&apos;s underlying asset should normally be the other market token. If you deliberately peg &quot;{vaultAssetSymLabel}&quot; to &quot;{otherMarketSymLabel}&quot; 1:1 (same economic exposure), that is fine.
               </span>
             </p>
           )}
