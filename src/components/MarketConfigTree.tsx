@@ -5,6 +5,7 @@ import { MarketConfig, formatPercentage, formatAddress, formatQuotePriceAs18Deci
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
+import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { ethers } from 'ethers'
 import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid, isBaseDiscountPercentOutOfRange, verifyAddress, verifyNumericValue } from '@/utils/verification'
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
@@ -318,6 +319,8 @@ interface TreeNodeProps {
   oracleOwnerVerification?: OracleOwnerVerification
   /** Optional section token label shown in large background marker for root SILO nodes */
   sectionTokenLabel?: string
+  /** Optional chain id for address display components */
+  chainId?: string
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -486,7 +489,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification, sectionTokenLabel }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification, sectionTokenLabel, chainId }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -498,12 +501,15 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       : (normalizedAddress ? addressVersions?.get(normalizedAddress) : undefined)
   const hasSuffix = versionText != null && versionText !== ''
 
-  const isSiloRoot = isRoot && (label === 'SILO 0' || label === 'SILO 1')
-  const isSiloConfigRoot = isRoot && label === 'SILO CONFIG'
+  const normalizedRootLabel = typeof label === 'string' ? label.trim().toLowerCase() : ''
+  const isSilo0Root = isRoot && normalizedRootLabel.startsWith('silo 0')
+  const isSilo1Root = isRoot && normalizedRootLabel.startsWith('silo 1')
+  const isSiloRoot = isSilo0Root || isSilo1Root
+  const isSiloConfigRoot = isRoot && normalizedRootLabel === 'silo config'
   const sectionMain = isSiloConfigRoot
     ? 'config'
     : isSiloRoot
-      ? (label === 'SILO 0' ? '0' : '1')
+      ? (isSilo0Root ? '0' : '1')
       : null
 
   return (
@@ -526,15 +532,26 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
         
         {hasAddress && (
           <>
-            <a
-              href={`${explorerUrl}/address/${address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
-            >
-              {formatAddress(address)}
-            </a>
-            <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+            {isRoot ? (
+              <AddressDisplayLong
+                address={address}
+                chainId={chainId}
+                className="inline-flex align-middle"
+                linkClassName="text-sm"
+              />
+            ) : (
+              <>
+                <a
+                  href={`${explorerUrl}/address/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                >
+                  {formatAddress(address)}
+                </a>
+                <CopyButton value={address} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+              </>
+            )}
             {hasTokenMeta && (
               <span className="text-gray-400 text-sm ml-1">
                 {' '}
@@ -1595,6 +1612,19 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
   const marketName = `${asset0Symbol} / ${asset1Symbol} #${marketId}`
+  const getSiloTypeLabel = (side: 0 | 1): string | null => {
+    if (hookGaugeInfo?.onlyOneBorrowable === false) {
+      return 'Two-way market'
+    }
+    if (hookGaugeInfo?.onlyOneBorrowable === true && hookGaugeInfo.borrowableSilo !== null) {
+      return hookGaugeInfo.borrowableSilo === side ? 'Debt Silo' : 'Collateral Silo'
+    }
+    return null
+  }
+  const silo0TypeLabel = getSiloTypeLabel(0)
+  const silo1TypeLabel = getSiloTypeLabel(1)
+  const silo0Label = `Silo 0${silo0TypeLabel ? ` (${silo0TypeLabel})` : ''}`
+  const silo1Label = `Silo 1${silo1TypeLabel ? ` (${silo1TypeLabel})` : ''}`
 
   const [customMethodModal, setCustomMethodModal] = useState<{
     oracleAddress: string
@@ -1829,8 +1859,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
         <span className="text-lime-300">{marketName}</span>
       </h3>
       
-      <ol className="tree">
-            <TreeNode label="SILO CONFIG" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config">
+      <ul className="tree tree-root-bullet">
+            <TreeNode label="Silo Config" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config" chainId={chainId}>
           <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
             {config.siloId !== null && (
               <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
@@ -2097,7 +2127,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
 
         <SiloSection
           side={0}
-          label="SILO 0"
+          label={silo0Label}
           assetSymbol={asset0Symbol}
           siloConfig={config.silo0}
           explorerUrl={explorerUrl}
@@ -2124,7 +2154,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
 
         <SiloSection
           side={1}
-          label="SILO 1"
+          label={silo1Label}
           assetSymbol={asset1Symbol}
           siloConfig={config.silo1}
           explorerUrl={explorerUrl}
@@ -2147,7 +2177,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
           chainId={chainId}
         />
-      </ol>
+      </ul>
     </div>
   )
 }
