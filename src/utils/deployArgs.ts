@@ -194,6 +194,11 @@ export function prepareDeployArgs(
       }
     }
     if (vault && oracleDeployments?.erc4626OracleFactory) {
+      if (vault.priceManipulationRiskAcknowledged !== true) {
+        throw new Error(
+          'Vault oracle: confirm the price-manipulation risk acknowledgement in Oracle Configuration (Step 3) before deploying.'
+        )
+      }
       const baseToken =
         vault.baseToken === 'token0'
           ? ethers.getAddress(wizardData.token0!.address)
