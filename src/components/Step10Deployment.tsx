@@ -827,7 +827,15 @@ export default function Step10Deployment() {
           <Button
             variant="primaryDark"
             size="sm"
-            onClick={() => router.push(`/wizard?step=verification&tx=${txHash}`)}
+            onClick={() => {
+              const params = new URLSearchParams()
+              params.set('step', 'verification')
+              params.set('tx', txHash)
+              if (wizardData.networkInfo?.chainId) {
+                params.set('chain', wizardData.networkInfo.chainId)
+              }
+              router.push(`/wizard?${params.toString()}`)
+            }}
           >
             Go to verification
           </Button>

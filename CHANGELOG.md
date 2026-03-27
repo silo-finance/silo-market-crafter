@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## 0.25.1 - 2026-03-27
+## 0.25.2 - 2026-03-27
+### Fixed
+- fix verification `chain` param disappearing from URL
 
+## 0.25.1 - 2026-03-27
 ### Fixed
 - fix Safe URL prefix handling to support all chains available in the app (including aliases)
 
