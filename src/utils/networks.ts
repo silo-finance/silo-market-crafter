@@ -35,6 +35,14 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     iconPath: '/network-icons/optimism.svg',
   },
   {
+    chainId: 50,
+    displayName: 'XDC Network',
+    chainName: 'xdc',
+    explorerBaseUrl: 'https://xdcscan.com',
+    nativeTokenSymbol: 'XDC',
+    iconPath: '/network-icons/xdc.svg',
+  },
+  {
     chainId: 56,
     displayName: 'BNB Chain',
     chainName: 'bnb',

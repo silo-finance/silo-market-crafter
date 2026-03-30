@@ -24,6 +24,10 @@ import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayShort from '@/components/AddressDisplayShort'
 import PredefinedOptionButton from '@/components/PredefinedOptionButton'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
+import {
+  fetchOracleFactoryAddress,
+  getOracleFactoryMissingMessage,
+} from '@/utils/oracleFactoryAvailability'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -149,6 +153,7 @@ interface VaultOracleSectionProps {
   usdcAddress: string | null
   networkChainId?: string
   vaultFactory: { address: string; version: string } | null
+  vaultFactoryMissing?: string | null
   onValidationChange: (valid: boolean) => void
 }
 
@@ -377,6 +382,7 @@ function VaultOracleSection({
   usdcAddress,
   networkChainId,
   vaultFactory,
+  vaultFactoryMissing,
   onValidationChange
 }: VaultOracleSectionProps) {
   const [vaultInput, setVaultInput] = useState(vault.vaultAddress ?? '')
@@ -485,6 +491,8 @@ function VaultOracleSection({
           chainId={networkChainId}
           isOracle={true}
         />
+      ) : vaultFactoryMissing ? (
+        <p className="text-sm text-red-400">{vaultFactoryMissing}</p>
       ) : (
         <p className="text-sm text-yellow-400">Loading ERC4626OracleHardcodeQuoteFactory for this chain…</p>
       )}
@@ -1204,11 +1212,13 @@ export default function Step3OracleConfiguration() {
   const [error, setError] = useState('')
   const [loadingOracles, setLoadingOracles] = useState(true)
   const [oracleScalerFactory, setOracleScalerFactory] = useState<{ address: string; version: string } | null>(null)
+  const [oracleScalerFactoryMissing, setOracleScalerFactoryMissing] = useState<string | null>(null)
   const [chainlinkV3OracleFactory, setChainlinkV3OracleFactory] = useState<{ address: string; version: string } | null>(null)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [useSecondaryAggregator0, setUseSecondaryAggregator0] = useState(false)
   const [useSecondaryAggregator1, setUseSecondaryAggregator1] = useState(false)
   const [erc4626OracleFactory, setErc4626OracleFactory] = useState<{ address: string; version: string } | null>(null)
+  const [vaultFactoryMissing, setVaultFactoryMissing] = useState<string | null>(null)
 
   const [vault0, setVault0] = useState<
     Partial<VaultOracleConfig> & {
@@ -1250,6 +1260,7 @@ export default function Step3OracleConfiguration() {
     hardcodedQuoteTokenAddress: ''
   })
   const [ptLinearFactory, setPTLinearFactory] = useState<{ address: string; version: string } | null>(null)
+  const [ptLinearFactoryMissing, setPTLinearFactoryMissing] = useState<string | null>(null)
   const [pt0QuoteInput, setPT0QuoteInput] = useState('')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pt0QuoteMetadata, setPT0QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
@@ -1307,6 +1318,12 @@ export default function Step3OracleConfiguration() {
 
   // Chain ID to chain name mapping - using centralized network config
   // getChainName is imported from @/utils/networks
+  const selectedOracleTypes = [wizardData.oracleType0?.type, wizardData.oracleType1?.type]
+  const needsScalerFactory = selectedOracleTypes.includes('scaler')
+  const needsChainlinkFactory = selectedOracleTypes.includes('chainlink')
+  const needsPtLinearFactory = selectedOracleTypes.includes('ptLinear')
+  const needsVaultFactory = selectedOracleTypes.includes('vault')
+  const needsCustomMethodFactory = selectedOracleTypes.includes('customMethod')
 
   // Load virtual quote tokens if available in addresses JSON.
   useEffect(() => {
@@ -1383,7 +1400,14 @@ export default function Step3OracleConfiguration() {
 
   // Fetch oracle deployments from GitHub
   useEffect(() => {
+    if (!needsScalerFactory) {
+      setOracleDeployments(null)
+      setAvailableScalers({ token0: [], token1: [] })
+      setLoadingOracles(false)
+      return
+    }
     const fetchOracleDeployments = async () => {
+      setLoadingOracles(true)
       try {
         const response = await fetch('https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deploy/_oraclesDeployments.json')
         if (!response.ok) {
@@ -1400,125 +1424,112 @@ export default function Step3OracleConfiguration() {
     }
 
     fetchOracleDeployments()
-  }, [])
+  }, [needsScalerFactory])
 
   // Fetch OracleScalerFactory address for current chain
   useEffect(() => {
     const fetchScalerFactory = async () => {
-      if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
+      if (!wizardData.networkInfo?.chainId || !needsScalerFactory) {
+        setOracleScalerFactory(null)
+        setOracleScalerFactoryMissing(null)
+        return
+      }
       try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/OracleScalerFactory.sol.json`
-        )
-        if (!response.ok) {
-          setOracleScalerFactory(null)
-          return
-        }
-        const data = await response.json()
-        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'scaler')
         setOracleScalerFactory(address ? { address, version: '' } : null)
+        setOracleScalerFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('scaler', wizardData.networkInfo.chainId)
+        )
       } catch {
         setOracleScalerFactory(null)
+        setOracleScalerFactoryMissing('Failed to load OracleScalerFactory for this chain.')
       }
     }
     fetchScalerFactory()
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, needsScalerFactory])
 
   // Fetch ChainlinkV3OracleFactory address for current chain (master only)
   useEffect(() => {
     const fetchChainlinkFactory = async () => {
-      if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
+      if (!wizardData.networkInfo?.chainId || !needsChainlinkFactory) {
+        setChainlinkV3OracleFactory(null)
+        return
+      }
       try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ChainlinkV3OracleFactory.sol.json`
-        )
-        if (!response.ok) {
-          setChainlinkV3OracleFactory(null)
-          return
-        }
-        const data = await response.json()
-        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'chainlink')
         setChainlinkV3OracleFactory(address ? { address, version: '' } : null)
       } catch {
         setChainlinkV3OracleFactory(null)
       }
     }
     fetchChainlinkFactory()
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, needsChainlinkFactory])
 
   // Fetch PTLinearOracleFactory address for current chain
   useEffect(() => {
     const fetchPTLinearFactory = async () => {
-      if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
+      if (!wizardData.networkInfo?.chainId || !needsPtLinearFactory) {
+        setPTLinearFactory(null)
+        setPTLinearFactoryMissing(null)
+        return
+      }
       try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/PTLinearOracleFactory.sol.json`
-        )
-        if (!response.ok) {
-          setPTLinearFactory(null)
-          return
-        }
-        const data = await response.json()
-        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'ptLinear')
         setPTLinearFactory(address ? { address, version: '' } : null)
+        setPTLinearFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('ptLinear', wizardData.networkInfo.chainId)
+        )
       } catch {
         setPTLinearFactory(null)
+        setPTLinearFactoryMissing('Failed to load PTLinearOracleFactory for this chain.')
       }
     }
     fetchPTLinearFactory()
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, needsPtLinearFactory])
 
   // Fetch ERC4626OracleHardcodeQuoteFactory address for current chain
   useEffect(() => {
     const fetchVaultFactory = async () => {
-      if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
+      if (!wizardData.networkInfo?.chainId || !needsVaultFactory) {
+        setErc4626OracleFactory(null)
+        setVaultFactoryMissing(null)
+        return
+      }
       try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ERC4626OracleHardcodeQuoteFactory.sol.json`
-        )
-        if (!response.ok) {
-          setErc4626OracleFactory(null)
-          return
-        }
-        const data = await response.json()
-        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'vault')
         setErc4626OracleFactory(address ? { address, version: '' } : null)
+        setVaultFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('vault', wizardData.networkInfo.chainId)
+        )
       } catch {
         setErc4626OracleFactory(null)
+        setVaultFactoryMissing('Failed to load ERC4626OracleHardcodeQuoteFactory for this chain.')
       }
     }
     fetchVaultFactory()
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, needsVaultFactory])
 
   // Fetch CustomMethodOracleFactory address for current chain
   useEffect(() => {
     const fetchCustomMethodFactory = async () => {
-      if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
-      try {
-        const response = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/CustomMethodOracleFactory.sol.json`
-        )
-        if (!response.ok) {
-          setCustomMethodFactory(null)
-          setCustomMethodFactoryMissing(`Custom Method Oracle is not available on ${chainName} (missing CustomMethodOracleFactory deployment file).`)
-          return
-        }
-        const data = await response.json()
-        const address = data.address && ethers.isAddress(data.address) ? data.address : ''
-        setCustomMethodFactory(address ? { address, version: '' } : null)
+      if (!wizardData.networkInfo?.chainId || !needsCustomMethodFactory) {
+        setCustomMethodFactory(null)
         setCustomMethodFactoryMissing(null)
+        return
+      }
+      try {
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'customMethod')
+        setCustomMethodFactory(address ? { address, version: '' } : null)
+        setCustomMethodFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('customMethod', wizardData.networkInfo.chainId)
+        )
       } catch {
         setCustomMethodFactory(null)
         setCustomMethodFactoryMissing('Failed to load CustomMethodOracleFactory for this chain.')
       }
     }
     fetchCustomMethodFactory()
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, needsCustomMethodFactory])
 
   // Resolve CustomMethodOracle implementation from factory (ORACLE_IMPLEMENTATION)
   useEffect(() => {
@@ -2169,39 +2180,36 @@ export default function Step3OracleConfiguration() {
     const savedScaler0 = wizardData.oracleConfiguration.token0.scalerOracle
     const savedScaler1 = wizardData.oracleConfiguration.token1.scalerOracle
     
-    // Only set if we have available scalers loaded
-    if (availableScalers.token0.length > 0 || availableScalers.token1.length > 0) {
-      setSelectedScalers(prev => {
-        const updated = { ...prev }
-        let changed = false
-        
-        // Token0: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
-        if (savedScaler0 && !savedScaler0.customCreate && availableScalers.token0.length > 0) {
-          const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
-          if (matchedScaler0) {
-            updated.token0 = matchedScaler0
-            changed = true
-          }
-        } else if (savedScaler0?.customCreate && availableScalers.token0.length === 0) {
-          updated.token0 = savedScaler0
+    setSelectedScalers(prev => {
+      const updated = { ...prev }
+      let changed = false
+      
+      // Token0: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+      if (savedScaler0 && !savedScaler0.customCreate && availableScalers.token0.length > 0) {
+        const matchedScaler0 = availableScalers.token0.find(s => s.address.toLowerCase() === savedScaler0.address.toLowerCase())
+        if (matchedScaler0 && prev.token0?.address?.toLowerCase() !== matchedScaler0.address.toLowerCase()) {
+          updated.token0 = matchedScaler0
           changed = true
         }
-        
-        // Token1: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
-        if (savedScaler1 && !savedScaler1.customCreate && availableScalers.token1.length > 0) {
-          const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
-          if (matchedScaler1) {
-            updated.token1 = matchedScaler1
-            changed = true
-          }
-        } else if (savedScaler1?.customCreate && availableScalers.token1.length === 0) {
-          updated.token1 = savedScaler1
+      } else if (savedScaler0?.customCreate && availableScalers.token0.length === 0 && prev.token0 !== savedScaler0) {
+        updated.token0 = savedScaler0
+        changed = true
+      }
+      
+      // Token1: restore from context when saved scaler matches available (user returned to step); customCreate only when no pre-deployed scalers
+      if (savedScaler1 && !savedScaler1.customCreate && availableScalers.token1.length > 0) {
+        const matchedScaler1 = availableScalers.token1.find(s => s.address.toLowerCase() === savedScaler1.address.toLowerCase())
+        if (matchedScaler1 && prev.token1?.address?.toLowerCase() !== matchedScaler1.address.toLowerCase()) {
+          updated.token1 = matchedScaler1
           changed = true
         }
-        
-        return changed ? updated : prev
-      })
-    }
+      } else if (savedScaler1?.customCreate && availableScalers.token1.length === 0 && prev.token1 !== savedScaler1) {
+        updated.token1 = savedScaler1
+        changed = true
+      }
+      
+      return changed ? updated : prev
+    })
   }, [wizardData.oracleConfiguration, availableScalers])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2217,7 +2225,16 @@ export default function Step3OracleConfiguration() {
     if (wizardData.oracleType1?.type === 'scaler' && (!selectedScalers.token1 || (!selectedScalers.token1.customCreate && !selectedScalers.token1.valid))) {
       errors.push('Please select or configure a scaler oracle for Token 1')
     }
+    if (wizardData.oracleType0?.type === 'scaler' && !oracleScalerFactory && availableScalers.token0.length === 0) {
+      errors.push('Scaler Oracle (Token 0): this oracle is not available on the selected chain (missing OracleScalerFactory and no pre-deployed scaler).')
+    }
+    if (wizardData.oracleType1?.type === 'scaler' && !oracleScalerFactory && availableScalers.token1.length === 0) {
+      errors.push('Scaler Oracle (Token 1): this oracle is not available on the selected chain (missing OracleScalerFactory and no pre-deployed scaler).')
+    }
     if (wizardData.oracleType0?.type === 'chainlink') {
+      if (!chainlinkV3OracleFactory) {
+        errors.push('Chainlink Oracle (Token 0): this oracle is not available on the selected chain (missing ChainlinkV3OracleFactory).')
+      }
       const quoteAddr0 = chainlink0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
       if (quoteEmpty0) {
@@ -2236,6 +2253,9 @@ export default function Step3OracleConfiguration() {
       }
     }
     if (wizardData.oracleType1?.type === 'chainlink') {
+      if (!chainlinkV3OracleFactory) {
+        errors.push('Chainlink Oracle (Token 1): this oracle is not available on the selected chain (missing ChainlinkV3OracleFactory).')
+      }
       const quoteAddr1 = chainlink1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
       if (quoteEmpty1) {
@@ -2266,6 +2286,9 @@ export default function Step3OracleConfiguration() {
       }
     }
     if (wizardData.oracleType0?.type === 'ptLinear') {
+      if (!ptLinearFactory) {
+        errors.push('PT-Linear Oracle (Token 0): this oracle is not available on the selected chain (missing PTLinearOracleFactory).')
+      }
       const max0 = Number(ptLinear0.maxYieldPercent)
       if (Number.isNaN(max0) || max0 <= 0) {
         errors.push('Please enter a valid max yield (%) for Token 0 PT-Linear oracle')
@@ -2278,6 +2301,9 @@ export default function Step3OracleConfiguration() {
       }
     }
     if (wizardData.oracleType1?.type === 'ptLinear') {
+      if (!ptLinearFactory) {
+        errors.push('PT-Linear Oracle (Token 1): this oracle is not available on the selected chain (missing PTLinearOracleFactory).')
+      }
       const max1 = Number(ptLinear1.maxYieldPercent)
       if (Number.isNaN(max1) || max1 <= 0) {
         errors.push('Please enter a valid max yield (%) for Token 1 PT-Linear oracle')
@@ -2290,6 +2316,9 @@ export default function Step3OracleConfiguration() {
       }
     }
     if (wizardData.oracleType0?.type === 'vault') {
+      if (!erc4626OracleFactory) {
+        errors.push('Vault Oracle (Token 0): this oracle is not available on the selected chain (missing ERC4626OracleHardcodeQuoteFactory).')
+      }
       const addr = vault0.vaultAddress?.trim() ?? ''
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 0): vault address is required and must be a valid address')
@@ -2308,6 +2337,9 @@ export default function Step3OracleConfiguration() {
       }
     }
     if (wizardData.oracleType1?.type === 'vault') {
+      if (!erc4626OracleFactory) {
+        errors.push('Vault Oracle (Token 1): this oracle is not available on the selected chain (missing ERC4626OracleHardcodeQuoteFactory).')
+      }
       const addr = vault1.vaultAddress?.trim() ?? ''
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault Oracle (Token 1): vault address is required and must be a valid address')
@@ -2665,6 +2697,8 @@ export default function Step3OracleConfiguration() {
                   chainId={wizardData.networkInfo?.chainId}
                   isOracle={true}
                 />
+              ) : ptLinearFactoryMissing ? (
+                <p className="text-sm text-red-400">{ptLinearFactoryMissing}</p>
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -2795,6 +2829,7 @@ export default function Step3OracleConfiguration() {
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               vaultFactory={erc4626OracleFactory}
+              vaultFactoryMissing={vaultFactoryMissing}
               onValidationChange={setVault0Valid}
             />
           ) : wizardData.oracleType0.type === 'customMethod' ? (
@@ -2844,6 +2879,8 @@ export default function Step3OracleConfiguration() {
                       />
                       <p className="text-xs text-gray-500">Quote token: Token 0 ({wizardData.token0.symbol})</p>
                     </>
+                  ) : oracleScalerFactoryMissing ? (
+                    <p className="text-sm text-red-400">{oracleScalerFactoryMissing}</p>
                   ) : (
                     <p className="text-sm text-yellow-400">Loading OracleScalerFactory for this chain…</p>
                   )}
@@ -2979,6 +3016,8 @@ export default function Step3OracleConfiguration() {
                   chainId={wizardData.networkInfo?.chainId}
                   isOracle={true}
                 />
+              ) : ptLinearFactoryMissing ? (
+                <p className="text-sm text-red-400">{ptLinearFactoryMissing}</p>
               ) : (
                 <p className="text-sm text-yellow-400">Loading PTLinearOracleFactory for this chain…</p>
               )}
@@ -3109,6 +3148,7 @@ export default function Step3OracleConfiguration() {
               usdcAddress={usdcAddress}
               networkChainId={wizardData.networkInfo?.chainId}
               vaultFactory={erc4626OracleFactory}
+              vaultFactoryMissing={vaultFactoryMissing}
               onValidationChange={setVault1Valid}
             />
           ) : wizardData.oracleType1.type === 'customMethod' ? (
@@ -3158,6 +3198,8 @@ export default function Step3OracleConfiguration() {
                       />
                       <p className="text-xs text-gray-500">Quote token: Token 1 ({wizardData.token1.symbol})</p>
                     </>
+                  ) : oracleScalerFactoryMissing ? (
+                    <p className="text-sm text-red-400">{oracleScalerFactoryMissing}</p>
                   ) : (
                     <p className="text-sm text-yellow-400">Loading OracleScalerFactory for this chain…</p>
                   )}

@@ -192,11 +192,7 @@ export default function Header() {
                 alt="Union"
                 width={92}
                 height={32}
-                className="header-logo"
-                style={{
-                  width: 'auto',
-                  height: '2rem',
-                }}
+                className="header-logo h-8 w-auto"
               />
             </Link>
             <div className="flex flex-col leading-tight">
