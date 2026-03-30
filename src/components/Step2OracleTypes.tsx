@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, OracleType } from '@/contexts/WizardContext'
+import {
+  fetchOracleFactoryAvailability,
+  getOracleFactoryMissingMessage,
+  OracleFactoryType,
+} from '@/utils/oracleFactoryAvailability'
 
 export default function Step2OracleTypes() {
   const router = useRouter()
@@ -12,6 +17,14 @@ export default function Step2OracleTypes() {
   const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [factoryAvailabilityLoading, setFactoryAvailabilityLoading] = useState(false)
+  const [factoryAvailability, setFactoryAvailability] = useState<Record<OracleFactoryType, boolean>>({
+    scaler: false,
+    chainlink: false,
+    ptLinear: false,
+    vault: false,
+    customMethod: false,
+  })
 
   // Check if both tokens have the same decimals
   const tokensHaveSameDecimals = wizardData.token0 && wizardData.token1 
@@ -21,6 +34,37 @@ export default function Step2OracleTypes() {
   // PT-Linear is only available when token symbol starts with two uppercase letters "PT"
   const isPTToken = (symbol: string) =>
     symbol.length >= 2 && symbol[0] === 'P' && symbol[1] === 'T'
+
+  useEffect(() => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) return
+
+    let cancelled = false
+    const loadAvailability = async () => {
+      setFactoryAvailabilityLoading(true)
+      const availability = await fetchOracleFactoryAvailability(chainId, [
+        'chainlink',
+        'ptLinear',
+        'vault',
+        'customMethod',
+      ])
+      if (cancelled) return
+      setFactoryAvailability((prev) => ({ ...prev, ...availability }))
+      setFactoryAvailabilityLoading(false)
+    }
+
+    loadAvailability()
+    return () => {
+      cancelled = true
+    }
+  }, [wizardData.networkInfo?.chainId])
+
+  const getFactoryReason = (type: OracleFactoryType): string => {
+    if (factoryAvailabilityLoading) return 'Checking deployment availability on selected chain...'
+    if (factoryAvailability[type]) return ''
+    if (!wizardData.networkInfo?.chainId) return 'Select network first'
+    return getOracleFactoryMissingMessage(type, wizardData.networkInfo.chainId)
+  }
 
   // Calculate oracle type availability based on token decimals and symbol
   const getOracleTypes = (
@@ -60,31 +104,56 @@ export default function Step2OracleTypes() {
       },
       {
         type: 'chainlink',
-        enabled: true,
-        reason: ''
+        enabled: !factoryAvailabilityLoading && factoryAvailability.chainlink,
+        reason: getFactoryReason('chainlink')
       },
       {
         type: 'ptLinear',
-        enabled: ptLinearEnabled,
+        enabled: ptLinearEnabled && !factoryAvailabilityLoading && factoryAvailability.ptLinear,
         reason: ptLinearEnabled
-          ? 'Available for PT tokens (symbol must start with PT)'
+          ? getFactoryReason('ptLinear')
           : 'Only available when token symbol starts with two uppercase letters PT'
       },
       {
         type: 'vault',
-        enabled: true,
-        reason: 'Use ERC4626 vault-based oracle (Vault Oracle)'
+        enabled: !factoryAvailabilityLoading && factoryAvailability.vault,
+        reason: !factoryAvailabilityLoading && factoryAvailability.vault
+          ? 'Use ERC4626 vault-based oracle (Vault Oracle)'
+          : getFactoryReason('vault')
       },
       {
         type: 'customMethod',
-        enabled: true,
-        reason: 'Call a specific no-arg method on a target contract and treat the result as price'
+        enabled: !factoryAvailabilityLoading && factoryAvailability.customMethod,
+        reason: !factoryAvailabilityLoading && factoryAvailability.customMethod
+          ? 'Call a specific no-arg method on a target contract and treat the result as price'
+          : getFactoryReason('customMethod')
       }
     ]
   }
 
   const oracleTypes0 = wizardData.token0 ? getOracleTypes(wizardData.token0.decimals, wizardData.token0.symbol) : []
   const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals, wizardData.token1.symbol) : []
+
+  const isFactoryBackedTypeUnavailable = (
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null
+  ): boolean => {
+    if (selectedType === 'chainlink') return !factoryAvailability.chainlink
+    if (selectedType === 'ptLinear') return !factoryAvailability.ptLinear
+    if (selectedType === 'vault') return !factoryAvailability.vault
+    if (selectedType === 'customMethod') return !factoryAvailability.customMethod
+    return false
+  }
+
+  const getFactoryBackedTypeError = (
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null
+  ): string | null => {
+    if (!selectedType || !wizardData.networkInfo?.chainId) return null
+    if (selectedType === 'chainlink') return getOracleFactoryMissingMessage('chainlink', wizardData.networkInfo.chainId)
+    if (selectedType === 'ptLinear') return getOracleFactoryMissingMessage('ptLinear', wizardData.networkInfo.chainId)
+    if (selectedType === 'vault') return getOracleFactoryMissingMessage('vault', wizardData.networkInfo.chainId)
+    if (selectedType === 'customMethod') return getOracleFactoryMissingMessage('customMethod', wizardData.networkInfo.chainId)
+    return null
+  }
 
   // Track token addresses to detect changes and reset selections
   const token0AddressRef = React.useRef<string | undefined>()
@@ -159,6 +228,14 @@ export default function Step2OracleTypes() {
     const bothAreNon18 = token0IsNon18 && token1IsNon18
     if (bothAreNon18 && ((selectedOracle0 === 'none' && selectedOracle1 !== 'none') || (selectedOracle1 === 'none' && selectedOracle0 !== 'none'))) {
       errors.push('For non-18 decimal tokens, if you select "No Oracle" for one token, you must also select "No Oracle" for the other')
+    }
+    if (isFactoryBackedTypeUnavailable(selectedOracle0)) {
+      const msg = getFactoryBackedTypeError(selectedOracle0)
+      if (msg) errors.push(`Token 0: ${msg}`)
+    }
+    if (isFactoryBackedTypeUnavailable(selectedOracle1)) {
+      const msg = getFactoryBackedTypeError(selectedOracle1)
+      if (msg) errors.push(`Token 1: ${msg}`)
     }
 
     if (errors.length > 0) {
@@ -306,17 +383,17 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && oracleType.type !== 'customMethod' && (
+                  {oracleType.reason && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
                   )}
-                  {oracleType.type === 'chainlink' && (
+                  {oracleType.type === 'chainlink' && oracleType.enabled && (
                     <p className="text-sm text-gray-400 mt-1">
                       Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
                     </p>
                   )}
-                  {oracleType.type === 'vault' && (
+                  {oracleType.type === 'vault' && oracleType.enabled && (
                     <>
                       <p className="text-sm text-gray-400 mt-1">
                         ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
@@ -326,7 +403,7 @@ export default function Step2OracleTypes() {
                       </p>
                     </>
                   )}
-                  {oracleType.type === 'customMethod' && (
+                  {oracleType.type === 'customMethod' && oracleType.enabled && (
                     <p className="text-sm text-gray-400 mt-1">
                       Use this when you want to call one specific no-argument method on a target contract to fetch price.
                     </p>
@@ -398,17 +475,17 @@ export default function Step2OracleTypes() {
                       <span className="text-red-400 text-sm">✗ Not Available</span>
                     )}
                   </div>
-                  {oracleType.type !== 'chainlink' && oracleType.type !== 'vault' && oracleType.type !== 'customMethod' && (
+                  {oracleType.reason && (
                     <p className="text-sm text-gray-400 mt-1">
                       {oracleType.reason}
                     </p>
                   )}
-                  {oracleType.type === 'chainlink' && (
+                  {oracleType.type === 'chainlink' && oracleType.enabled && (
                     <p className="text-sm text-gray-400 mt-1">
                       Newest DIA and RedStone oracles share the same interface as Chainlink. Pick this option for them. Older versions that are not compatible are not supported.
                       </p>
                   )}
-                  {oracleType.type === 'vault' && (
+                  {oracleType.type === 'vault' && oracleType.enabled && (
                     <>
                       <p className="text-sm text-gray-400 mt-1">
                         ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
@@ -418,7 +495,7 @@ export default function Step2OracleTypes() {
                       </p>
                     </>
                   )}
-                  {oracleType.type === 'customMethod' && (
+                  {oracleType.type === 'customMethod' && oracleType.enabled && (
                     <p className="text-sm text-gray-400 mt-1">
                       Use this when you want to call one specific no-argument method on a target contract to fetch price.
                       </p>

@@ -12,6 +12,7 @@ import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
+import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
 
@@ -117,18 +118,16 @@ export default function Step10Deployment() {
   // Fetch SiloDeployer address and SiloCore deployments
   useEffect(() => {
     const fetchDeploymentData = async () => {
+      if (!wizardData.networkInfo?.chainId) {
+        // Step can mount before network info is hydrated; skip without noisy console errors.
+        setLoading(false)
+        return
+      }
       try {
         setLoading(true)
         setError('')
         setTxErrorDebug(null)
         // Don't clear warnings here - they should persist
-        
-        if (!wizardData.networkInfo?.chainId) {
-          throw new Error(
-            'Chain ID is missing — deployment addresses for SiloDeployer and SiloLens could not be loaded. ' +
-            'Connect a wallet and ensure a network is selected in Step 1 (e.g. Ethereum, Polygon, Arbitrum).'
-          )
-        }
 
         // Clear stale "Chain ID missing" warning from an earlier run (e.g. before wallet returned chainId)
         setWarnings(prev => prev.filter(w => !w.includes('Chain ID is missing') && !w.includes('deployment data')))
@@ -238,57 +237,34 @@ export default function Step10Deployment() {
 
     const fetchOracleDeployments = async () => {
       if (!wizardData.networkInfo?.chainId) return
-      const chainName = getChainName(wizardData.networkInfo.chainId)
       const result: OracleDeployments = {}
+      const chainId = wizardData.networkInfo.chainId
+      const selectedTypes = new Set([
+        wizardData.oracleConfiguration?.token0.type,
+        wizardData.oracleConfiguration?.token1.type
+      ])
       try {
-        const chainlinkRes = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ChainlinkV3OracleFactory.sol.json`
-        )
-        if (chainlinkRes.ok) {
-          const data = await chainlinkRes.json()
-          const address = data.address || ''
-          if (address && ethers.isAddress(address)) result.chainlinkV3OracleFactory = address
+        if (selectedTypes.has('chainlink')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'chainlink')
+          if (address) result.chainlinkV3OracleFactory = address
+        }
+        if (selectedTypes.has('ptLinear')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'ptLinear')
+          if (address) result.ptLinearOracleFactory = address
+        }
+        if (selectedTypes.has('vault')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'vault')
+          if (address) result.erc4626OracleFactory = address
+        }
+        if (selectedTypes.has('customMethod')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'customMethod')
+          if (address) result.customMethodOracleFactory = address
         }
       } catch (err) {
-        console.warn('Failed to fetch ChainlinkV3OracleFactory:', err)
+        console.warn('Failed to fetch selected oracle factory deployments:', err)
       }
       try {
-        const ptLinearRes = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/PTLinearOracleFactory.sol.json`
-        )
-        if (ptLinearRes.ok) {
-          const data = await ptLinearRes.json()
-          const address = data.address || ''
-          if (address && ethers.isAddress(address)) result.ptLinearOracleFactory = address
-        }
-      } catch (err) {
-        console.warn('Failed to fetch PTLinearOracleFactory:', err)
-      }
-      try {
-        const erc4626Res = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ERC4626OracleHardcodeQuoteFactory.sol.json`
-        )
-        if (erc4626Res.ok) {
-          const data = await erc4626Res.json()
-          const address = data.address || ''
-          if (address && ethers.isAddress(address)) result.erc4626OracleFactory = address
-        }
-      } catch (err) {
-        console.warn('Failed to fetch ERC4626OracleHardcodeQuoteFactory:', err)
-      }
-      try {
-        const customMethodRes = await fetch(
-          `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/CustomMethodOracleFactory.sol.json`
-        )
-        if (customMethodRes.ok) {
-          const data = await customMethodRes.json()
-          const address = data.address || ''
-          if (address && ethers.isAddress(address)) result.customMethodOracleFactory = address
-        }
-      } catch (err) {
-        console.warn('Failed to fetch CustomMethodOracleFactory:', err)
-      }
-      try {
+        const chainName = getChainName(chainId)
         const manageableRes = await fetch(
           `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-oracles/deployments/${chainName}/ManageableOracleFactory.sol.json`
         )
@@ -307,7 +283,7 @@ export default function Step10Deployment() {
       fetchSiloCoreDeployments()
       fetchOracleDeployments()
     }
-  }, [wizardData.networkInfo?.chainId])
+  }, [wizardData.networkInfo?.chainId, wizardData.oracleConfiguration?.token0.type, wizardData.oracleConfiguration?.token1.type])
 
   // Fetch SiloDeployer version using Silo Lens (cached per chainId+address)
   useEffect(() => {

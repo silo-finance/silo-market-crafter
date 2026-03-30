@@ -29,7 +29,7 @@ const CONTRACT_SOURCE_PATHS: Record<string, string> = {
 
   // Oracles package (Silo V3 repo layout)
   ChainlinkV3Oracle: 'silo-oracles/contracts/chainlinkV3/ChainlinkV3Oracle.sol',
-  OracleScaler: 'silo-oracles/contracts/OracleScaler.sol',
+  OracleScaler: 'silo-oracles/contracts/scaler/OracleScaler.sol',
   ERC4626OracleHardcodeQuote: 'silo-oracles/contracts/erc4626/ERC4626OracleHardcodeQuote.sol',
   CustomMethodOracle: 'silo-oracles/contracts/custom-method/CustomMethodOracle.sol',
 
