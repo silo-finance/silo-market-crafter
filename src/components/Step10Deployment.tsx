@@ -260,6 +260,10 @@ export default function Step10Deployment() {
           const address = await fetchOracleFactoryAddress(chainId, 'customMethod')
           if (address) result.customMethodOracleFactory = address
         }
+        if (selectedTypes.has('supraSValue')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'supraSValue')
+          if (address) result.supraSValueOracleFactory = address
+        }
       } catch (err) {
         console.warn('Failed to fetch selected oracle factory deployments:', err)
       }
@@ -681,7 +685,6 @@ export default function Step10Deployment() {
                     <AddressDisplayLong
                       address={siloImplementationAddress}
                       chainId={wizardData.networkInfo?.chainId}
-                      linkClassName="text-lime-600 hover:text-lime-500"
                     />
                   </div>
                   <div className="text-sm text-gray-300 whitespace-nowrap">

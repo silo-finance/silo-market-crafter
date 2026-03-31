@@ -13,8 +13,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [factoryAvailabilityLoading, setFactoryAvailabilityLoading] = useState(false)
@@ -24,6 +24,7 @@ export default function Step2OracleTypes() {
     ptLinear: false,
     vault: false,
     customMethod: false,
+    supraSValue: false,
   })
 
   // Check if both tokens have the same decimals
@@ -47,6 +48,7 @@ export default function Step2OracleTypes() {
         'ptLinear',
         'vault',
         'customMethod',
+        'supraSValue',
       ])
       if (cancelled) return
       setFactoryAvailability((prev) => ({ ...prev, ...availability }))
@@ -71,7 +73,7 @@ export default function Step2OracleTypes() {
     tokenDecimals: number,
     tokenSymbol: string
   ): {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
     enabled: boolean
     reason: string
   }[] => {
@@ -127,6 +129,13 @@ export default function Step2OracleTypes() {
         reason: !factoryAvailabilityLoading && factoryAvailability.customMethod
           ? 'Call a specific no-arg method on a target contract and treat the result as price'
           : getFactoryReason('customMethod')
+      },
+      {
+        type: 'supraSValue',
+        enabled: !factoryAvailabilityLoading && factoryAvailability.supraSValue,
+        reason: !factoryAvailabilityLoading && factoryAvailability.supraSValue
+          ? ''
+          : getFactoryReason('supraSValue')
       }
     ]
   }
@@ -135,23 +144,25 @@ export default function Step2OracleTypes() {
   const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals, wizardData.token1.symbol) : []
 
   const isFactoryBackedTypeUnavailable = (
-    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null
   ): boolean => {
     if (selectedType === 'chainlink') return !factoryAvailability.chainlink
     if (selectedType === 'ptLinear') return !factoryAvailability.ptLinear
     if (selectedType === 'vault') return !factoryAvailability.vault
     if (selectedType === 'customMethod') return !factoryAvailability.customMethod
+    if (selectedType === 'supraSValue') return !factoryAvailability.supraSValue
     return false
   }
 
   const getFactoryBackedTypeError = (
-    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | null
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null
   ): string | null => {
     if (!selectedType || !wizardData.networkInfo?.chainId) return null
     if (selectedType === 'chainlink') return getOracleFactoryMissingMessage('chainlink', wizardData.networkInfo.chainId)
     if (selectedType === 'ptLinear') return getOracleFactoryMissingMessage('ptLinear', wizardData.networkInfo.chainId)
     if (selectedType === 'vault') return getOracleFactoryMissingMessage('vault', wizardData.networkInfo.chainId)
     if (selectedType === 'customMethod') return getOracleFactoryMissingMessage('customMethod', wizardData.networkInfo.chainId)
+    if (selectedType === 'supraSValue') return getOracleFactoryMissingMessage('supraSValue', wizardData.networkInfo.chainId)
     return null
   }
 
@@ -208,7 +219,8 @@ export default function Step2OracleTypes() {
       selectedOracle0 !== 'chainlink' &&
       selectedOracle0 !== 'ptLinear' &&
       selectedOracle0 !== 'vault' &&
-      selectedOracle0 !== 'customMethod'
+      selectedOracle0 !== 'customMethod' &&
+      selectedOracle0 !== 'supraSValue'
     ) {
       errors.push('Invalid oracle type selected for Token 0')
     }
@@ -219,7 +231,8 @@ export default function Step2OracleTypes() {
       selectedOracle1 !== 'chainlink' &&
       selectedOracle1 !== 'ptLinear' &&
       selectedOracle1 !== 'vault' &&
-      selectedOracle1 !== 'customMethod'
+      selectedOracle1 !== 'customMethod' &&
+      selectedOracle1 !== 'supraSValue'
     ) {
       errors.push('Invalid oracle type selected for Token 1')
     }
@@ -357,6 +370,7 @@ export default function Step2OracleTypes() {
                         | 'ptLinear'
                         | 'vault'
                         | 'customMethod'
+                        | 'supraSValue'
                     )
                   }
                   disabled={!oracleType.enabled}
@@ -375,6 +389,8 @@ export default function Step2OracleTypes() {
                         ? 'PT-Linear'
                         : oracleType.type === 'customMethod'
                         ? 'Custom Method Oracle'
+                        : oracleType.type === 'supraSValue'
+                        ? 'Supra s-value Oracle'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
@@ -449,6 +465,7 @@ export default function Step2OracleTypes() {
                         | 'ptLinear'
                         | 'vault'
                         | 'customMethod'
+                        | 'supraSValue'
                     )
                   }
                   disabled={!oracleType.enabled}
@@ -467,6 +484,8 @@ export default function Step2OracleTypes() {
                         ? 'PT-Linear'
                         : oracleType.type === 'customMethod'
                         ? 'Custom Method Oracle'
+                        : oracleType.type === 'supraSValue'
+                        ? 'Supra s-value Oracle'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
