@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.27.1 - 2026-03-31
+### Updated
+- improve Supra oracle verification details: display Pair ID from on-chain config
+
 ## 0.27.0 - 2026-03-31
 ### Added
 - Supra oracle support

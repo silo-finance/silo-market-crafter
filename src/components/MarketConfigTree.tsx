@@ -1056,10 +1056,46 @@ function SiloSection({
                   : undefined
             }
           )
+          const supraPairId = getSupraPairId(
+            siloConfig.solvencyOracle.config as Record<string, unknown> | undefined
+          )
           if (customMethodDetails && !underlying) {
             base.push({
               key: `oracle.customMethod.details.${siloKey}.solvency`,
               text: customMethodDetails
+            })
+          }
+          if (supraPairId && !underlying) {
+            base.push({
+              key: `oracle.supra.details.${siloKey}.solvency`,
+              text: (
+                <span className="inline-flex flex-wrap items-center gap-1.5">
+                  <span>Pair ID: <span className="font-mono text-sm text-gray-300">{supraPairId}</span></span>
+                  <a
+                    href={SUPRA_DATA_FEEDS_INDEX_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+                  >
+                    Check Pair ID Indexes List
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14 3h7m0 0v7m0-7L10 14m-4 1v6h6"
+                      />
+                    </svg>
+                  </a>
+                </span>
+              )
             })
           }
           if (isSolvencyOracleZero && solvencyOraclePriceRawForVerification != null) {
@@ -1158,6 +1194,9 @@ function SiloSection({
                           : undefined
                     }
                   )}
+                  {renderSupraOracleDetailsForConfig(
+                    siloConfig.solvencyOracle.config as Record<string, unknown> | undefined
+                  )}
                 </>
               )
             })
@@ -1252,10 +1291,44 @@ function SiloSection({
                     : undefined
               }
             )
+            const supraPairId = getSupraPairId(maxLtvConfig)
             if (customMethodDetails && !underlying) {
               base.push({
                 key: `oracle.customMethod.details.${siloKey}.maxLtv`,
                 text: customMethodDetails
+              })
+            }
+            if (supraPairId && !underlying) {
+              base.push({
+                key: `oracle.supra.details.${siloKey}.maxLtv`,
+                text: (
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
+                    <span>Pair ID: <span className="font-mono text-sm text-gray-300">{supraPairId}</span></span>
+                    <a
+                      href={SUPRA_DATA_FEEDS_INDEX_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+                    >
+                      Check Pair ID Indexes List
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 3h7m0 0v7m0-7L10 14m-4 1v6h6"
+                        />
+                      </svg>
+                    </a>
+                  </span>
+                )
               })
             }
             if (underlying) {
@@ -1314,6 +1387,7 @@ function SiloSection({
                             : undefined
                       }
                     )}
+                    {renderSupraOracleDetailsForConfig(maxLtvConfig)}
                   </>
                 )
               })
@@ -1692,6 +1766,56 @@ function renderCustomMethodOracleDetailsForConfig(
           </span>
         </li>
       )}
+    </ul>
+  )
+}
+
+function getSupraPairId(config: Record<string, unknown> | undefined): string | null {
+  if (!config || typeof config !== 'object') return null
+  const cfg = config as Record<string, unknown>
+  const pairId = cfg.pairId
+  if (pairId == null) return null
+  const normalized = String(pairId).trim()
+  return normalized === '' ? null : normalized
+}
+
+const SUPRA_DATA_FEEDS_INDEX_URL = 'https://docs.supra.com/oracles/data-feeds/data-feeds-index'
+
+function renderSupraOracleDetailsForConfig(
+  config: Record<string, unknown> | undefined
+): React.ReactNode | null {
+  const pairId = getSupraPairId(config)
+  if (!pairId) return null
+  return (
+    <ul className="tree-bullet-list list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
+      <li>
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span>Pair ID: <span className="font-mono text-sm text-gray-300">{pairId}</span></span>
+          <a
+            href={SUPRA_DATA_FEEDS_INDEX_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+          >
+            Check Pair ID Indexes List
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14 3h7m0 0v7m0-7L10 14m-4 1v6h6"
+              />
+            </svg>
+          </a>
+        </span>
+      </li>
     </ul>
   )
 }
