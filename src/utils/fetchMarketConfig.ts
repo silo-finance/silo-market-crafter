@@ -7,6 +7,7 @@ import erc20Abi from '@/abis/IERC20.json'
 import iShareTokenAbi from '@/abis/silo/IShareToken.json'
 import chainlinkV3OracleAbi from '@/abis/oracle/IChainlinkV3Oracle.json'
 import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
+import supraSValueOracleAbi from '@/abis/oracle/ISupraSValueOracle.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
 import erc4626OracleHardcodeQuoteArtifact from '@/abis/oracle/ERC4626OracleHardcodeQuote.json'
@@ -426,6 +427,29 @@ export async function fetchMarketConfig(
     )
   }
 
+  // When oracle (or underlying for ManageableOracle) is SupraSValueOracle,
+  // enrich with config values used in verification UI (currently pairId).
+  const supraSValueTargets: Array<{ oracle: OracleInfo; supraSValueAddress: string }> = []
+  const maybeAddSupraSValueTarget = (oracle: OracleInfo) => {
+    if (isSupraSValueOracleByVersion(oracle.version)) {
+      supraSValueTargets.push({ oracle, supraSValueAddress: oracle.address })
+    } else if (oracle.underlying && isSupraSValueOracleByVersion(oracle.underlying.version)) {
+      supraSValueTargets.push({ oracle, supraSValueAddress: oracle.underlying.address })
+    }
+  }
+  maybeAddSupraSValueTarget(config0.solvencyOracle)
+  maybeAddSupraSValueTarget(config1.solvencyOracle)
+  maybeAddSupraSValueTarget(config0.maxLtvOracle)
+  maybeAddSupraSValueTarget(config1.maxLtvOracle)
+
+  if (supraSValueTargets.length > 0) {
+    await Promise.all(
+      supraSValueTargets.map(({ oracle, supraSValueAddress }) =>
+        enrichSupraSValueOracle(provider, supraSValueAddress, oracle)
+      )
+    )
+  }
+
   // ERC4626OracleHardcodeQuote: vault underlying asset vs oracle quoteToken() (RPC deduped per oracle contract)
   const oraclesForErc4626Check: OracleInfo[] = [
     config0.solvencyOracle,
@@ -810,6 +834,12 @@ function isCustomMethodOracleByVersion(version: string | undefined): boolean {
   return v.includes('custommethodoracle') || v.includes('custom method oracle')
 }
 
+function isSupraSValueOracleByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  const v = version.toLowerCase()
+  return v.includes('suprasvalueoracle') || v.includes('supra s-value oracle')
+}
+
 export function isErc4626OracleHardcodeQuoteByVersion(version: string | undefined): boolean {
   if (!version) return false
   return version.toLowerCase().includes('erc4626oraclehardcodequote')
@@ -979,6 +1009,34 @@ async function enrichCustomMethodOracle(
           : undefined,
       rawPrice: readPriceRaw != null ? readPriceRaw.toString() : undefined,
       methodSignature: methodSignatureRaw != null ? String(methodSignatureRaw) : undefined
+    }
+  } catch {
+    // If anything fails, leave target as-is – detection is done via version, not try/catch.
+  }
+}
+
+async function enrichSupraSValueOracle(
+  provider: ethers.Provider,
+  supraSValueAddress: string,
+  target: OracleInfo
+): Promise<void> {
+  if (!supraSValueAddress || supraSValueAddress === ethers.ZeroAddress || !ethers.isAddress(supraSValueAddress)) return
+
+  try {
+    const supraSValueContract = new ethers.Contract(
+      supraSValueAddress,
+      supraSValueOracleAbi as unknown as ethers.InterfaceAbi,
+      provider
+    )
+
+    const rawConfig = await supraSValueContract.getConfig().catch(() => null)
+    const cfg = rawConfig as Record<string, unknown> | null
+    const pairId = cfg?.pairId
+
+    target.type = 'SupraSValueOracle'
+    target.config = {
+      ...(target.config ?? {}),
+      pairId: pairId != null ? pairId.toString() : undefined
     }
   } catch {
     // If anything fails, leave target as-is – detection is done via version, not try/catch.
