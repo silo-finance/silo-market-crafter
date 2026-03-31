@@ -9,12 +9,23 @@ import { extractHexAddressLike } from '@/utils/addressFromInput'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import PredefinedOptionButton from '@/components/PredefinedOptionButton'
 
+/** Preset name keys filled into the field (e.g. DAO_ORACLE, DAO). */
+export type OwnerSelectionShortcut = { label: string; value: string }
+
+const DEFAULT_SHORTCUTS: OwnerSelectionShortcut[] = [
+  { label: 'DAO Oracle', value: 'DAO_ORACLE' }
+]
+
 interface OwnerSelectionBlockProps {
   value: string | null
   onChange: (address: string | null) => void
   chainId?: string
   networkName?: string
   disabled?: boolean
+  /** Quick-fill buttons above the input. Defaults to DAO Oracle. */
+  shortcuts?: OwnerSelectionShortcut[]
+  /** Anchor text when `chainId` is missing (generic repo link). */
+  repositoryLinkLabelNoChain?: string
 }
 
 function getInitialOwnerValue(value: string | null): string {
@@ -28,7 +39,9 @@ export default function OwnerSelectionBlock({
   onChange,
   chainId,
   networkName,
-  disabled = false
+  disabled = false,
+  shortcuts = DEFAULT_SHORTCUTS,
+  repositoryLinkLabelNoChain = 'in the repository'
 }: OwnerSelectionBlockProps) {
   const [manualAddress, setManualAddress] = useState<string>(() => getInitialOwnerValue(value))
   const [resolvedOwnerAddress, setResolvedOwnerAddress] = useState<string | null>(() => {
@@ -121,7 +134,7 @@ export default function OwnerSelectionBlock({
       } catch {
         setResolvedOwnerAddress(null)
         setOwnerResolvedKey(null)
-        setAddressValidation({ isValid: false, isContract: null, error: 'Could not read network.' })
+        setAddressValidation({ isValid: false, isContract: null, error: 'Could not read network. Enter address manually.' })
         setValidatingAddress(false)
         return
       }
@@ -223,14 +236,16 @@ export default function OwnerSelectionBlock({
             rel="noopener noreferrer"
             className="text-[var(--silo-accent)] hover:text-[#7f91ff] underline"
           >
-            {chainId ? `in this JSON file (${networkName ?? chainId})` : 'in the repository'}
+            {chainId ? `in this JSON file (${networkName ?? chainId})` : repositoryLinkLabelNoChain}
           </a>
           .
         </p>
         <div className="flex flex-wrap gap-2 mb-2">
-          <PredefinedOptionButton disabled={disabled} onClick={() => setManualAddress('DAO_ORACLE')}>
-            <span>DAO Oracle</span>
-          </PredefinedOptionButton>
+          {shortcuts.map((s) => (
+            <PredefinedOptionButton key={s.value} disabled={disabled} onClick={() => setManualAddress(s.value)}>
+              <span>{s.label}</span>
+            </PredefinedOptionButton>
+          ))}
         </div>
         <input
           type="text"
@@ -253,8 +268,8 @@ export default function OwnerSelectionBlock({
         {manualAddress && (
           <div className="mt-2 space-y-1">
             {validatingAddress ? (
-              <div className="text-sm status-muted-success flex items-center space-x-2">
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <div className="text-sm text-[var(--silo-text-soft)] flex items-center space-x-2">
+                <svg className="animate-spin h-4 w-4 text-[var(--silo-accent)]" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
@@ -265,29 +280,42 @@ export default function OwnerSelectionBlock({
             ) : addressValidation.isValid && resolvedOwnerAddress ? (
               <div className="space-y-1">
                 {ownerResolvedKey && (
-                  <div className="text-sm text-[var(--silo-success)]">
-                    Matched name: <span className="font-mono text-[var(--silo-text)]">{ownerResolvedKey}</span>
+                  <div className="text-sm">
+                    <span className="text-[var(--silo-text-soft)]">Matched name: </span>
+                    <span className="font-mono text-[var(--silo-text)]">{ownerResolvedKey}</span>
                   </div>
                 )}
                 {!ownerResolvedKey && ownerNameFromJson && (
-                  <div className="text-sm text-[var(--silo-success)]">
-                    Name (from addresses): <span className="font-mono text-[var(--silo-text)]">{ownerNameFromJson}</span>
+                  <div className="text-sm">
+                    <span className="text-[var(--silo-text-soft)]">Name (from addresses): </span>
+                    <span className="font-mono text-[var(--silo-text)]">{ownerNameFromJson}</span>
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="text-[var(--silo-success)] font-medium">✓ Address</span>
+                  <span className="font-medium text-[var(--silo-text-soft)]">
+                    <span className="text-[var(--silo-success)]" aria-hidden>
+                      ✓{' '}
+                    </span>
+                    Address
+                  </span>
                   <AddressDisplayLong address={resolvedOwnerAddress} chainId={effectiveChainId} className="break-all" />
                 </div>
-                <div className="text-sm status-muted-success">
-                  {addressValidation.isContract === null
-                    ? 'Type: Checking…'
-                    : addressValidation.isContract
-                      ? 'Type: Contract'
-                      : 'Type: Wallet (EOA)'}
+                <div className="text-sm">
+                  <span className="text-[var(--silo-text-soft)]">Type: </span>
+                  <span className="text-[var(--silo-text)]">
+                    {addressValidation.isContract === null
+                      ? 'Checking…'
+                      : addressValidation.isContract
+                        ? 'Contract'
+                        : 'Wallet (EOA)'}
+                  </span>
                 </div>
                 {nativeBalance !== null && (
-                  <div className="text-sm status-muted-success">
-                    Native balance: <span className="text-[var(--silo-text)] font-mono">{nativeBalance} {nativeBalanceSymbol}</span>
+                  <div className="text-sm">
+                    <span className="text-[var(--silo-text-soft)]">Native balance: </span>
+                    <span className="text-[var(--silo-text)] font-mono">
+                      {nativeBalance} {nativeBalanceSymbol}
+                    </span>
                   </div>
                 )}
               </div>

@@ -56,7 +56,7 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     name: config.token1 || ''
   }
   
-  // Parse oracle configuration (match WizardContext: none | scaler | chainlink | ptLinear | vault | customMethod)
+  // Parse oracle configuration (match WizardContext: none | scaler | chainlink | ptLinear | vault | customMethod | supraSValue)
   const oracleType0 =
     config.solvencyOracle0 === 'NO_ORACLE'
       ? 'none'
@@ -68,6 +68,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'vault'
       : config.solvencyOracle0 === 'CustomMethodOracle'
       ? 'customMethod'
+      : config.solvencyOracle0 === 'SupraSValueOracle'
+      ? 'supraSValue'
       : 'scaler'
   const oracleType1 =
     config.solvencyOracle1 === 'NO_ORACLE'
@@ -80,6 +82,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'vault'
       : config.solvencyOracle1 === 'CustomMethodOracle'
       ? 'customMethod'
+      : config.solvencyOracle1 === 'SupraSValueOracle'
+      ? 'supraSValue'
       : 'scaler'
   const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
     ? {
@@ -141,6 +145,34 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         priceDecimals: Number(config.customMethodOracle1.priceDecimals ?? 18)
       }
     : undefined
+  const supra0 = config.supraSValueOracle0 && oracleType0 === 'supraSValue'
+    ? {
+        baseToken: (config.supraSValueOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.supraSValueOracle0.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.supraSValueOracle0.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.supraSValueOracle0.customQuoteTokenMetadata
+          ? {
+              symbol: String(config.supraSValueOracle0.customQuoteTokenMetadata.symbol ?? ''),
+              decimals: Number(config.supraSValueOracle0.customQuoteTokenMetadata.decimals ?? 18)
+            }
+          : undefined,
+        pairId: String(config.supraSValueOracle0.pairId ?? '')
+      }
+    : undefined
+  const supra1 = config.supraSValueOracle1 && oracleType1 === 'supraSValue'
+    ? {
+        baseToken: (config.supraSValueOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        useOtherTokenAsQuote: config.supraSValueOracle1.useOtherTokenAsQuote !== false,
+        customQuoteTokenAddress: String(config.supraSValueOracle1.customQuoteTokenAddress ?? ''),
+        customQuoteTokenMetadata: config.supraSValueOracle1.customQuoteTokenMetadata
+          ? {
+              symbol: String(config.supraSValueOracle1.customQuoteTokenMetadata.symbol ?? ''),
+              decimals: Number(config.supraSValueOracle1.customQuoteTokenMetadata.decimals ?? 18)
+            }
+          : undefined,
+        pairId: String(config.supraSValueOracle1.pairId ?? '')
+      }
+    : undefined
   const oracleConfig: OracleConfiguration = {
     token0: {
       type: oracleType0,
@@ -152,7 +184,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         scaleFactor: '1'
       } : undefined,
       chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
-      customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined
+      customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined,
+      supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined
     },
     token1: {
       type: oracleType1,
@@ -164,7 +197,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         scaleFactor: '1'
       } : undefined,
       chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
-      customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined
+      customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined,
+      supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined
     }
   }
 

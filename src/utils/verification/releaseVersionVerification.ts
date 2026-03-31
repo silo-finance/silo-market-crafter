@@ -32,6 +32,7 @@ const CONTRACT_SOURCE_PATHS: Record<string, string> = {
   OracleScaler: 'silo-oracles/contracts/scaler/OracleScaler.sol',
   ERC4626OracleHardcodeQuote: 'silo-oracles/contracts/erc4626/ERC4626OracleHardcodeQuote.sol',
   CustomMethodOracle: 'silo-oracles/contracts/custom-method/CustomMethodOracle.sol',
+  SupraSValueOracle: 'silo-oracles/contracts/supra/SupraSValueOracle.sol',
 
   // Manageable oracle wrapper
   ManageableOracle: 'silo-oracles/contracts/manageable/ManageableOracle.sol',
