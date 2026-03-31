@@ -10,7 +10,8 @@ import {
   ChainlinkOracleConfig,
   PTLinearOracleConfig,
   VaultOracleConfig,
-  CustomMethodOracleConfig
+  CustomMethodOracleConfig,
+  SupraSValueOracleConfig
 } from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
@@ -28,6 +29,8 @@ import {
   fetchOracleFactoryAddress,
   getOracleFactoryMissingMessage,
 } from '@/utils/oracleFactoryAvailability'
+import supraSValueFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
+import supraOracleFeedStorageAbi from '@/abis/oracle/ISupraOracleFeedStorage.json'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -896,7 +899,7 @@ function CustomMethodOracleSection({
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-gray-300 underline"
                 >
-                  explorer
+                  Factory
                 </a>
               </span>
             )}
@@ -1113,6 +1116,284 @@ function CustomMethodOracleSection({
   )
 }
 
+interface SupraSValueOracleSectionProps {
+  baseTokenAddress: string
+  baseTokenSymbol: string
+  baseTokenName: string
+  otherTokenAddress?: string
+  otherTokenSymbol?: string
+  otherTokenName?: string
+  otherTokenDecimals?: number
+  config: Partial<SupraSValueOracleConfig> & {
+    verifiedDecimals?: number
+    verifiedFeedAddress?: string
+    fetchedRawPrice?: string
+    formattedPrice?: string
+    lastUpdatedTimestamp?: number
+    fetchError?: string
+  }
+  setConfig: React.Dispatch<React.SetStateAction<Partial<SupraSValueOracleConfig> & {
+    verifiedDecimals?: number
+    verifiedFeedAddress?: string
+    fetchedRawPrice?: string
+    formattedPrice?: string
+    lastUpdatedTimestamp?: number
+    fetchError?: string
+  }>>
+  quoteInput: string
+  setQuoteInput: (value: string) => void
+  virtualTokenOptions: VirtualTokenOption[]
+  usdcAddress: string | null
+  networkChainId?: string
+  factory: { address: string; version: string } | null
+  factoryMissing: string | null
+  implementationAddress: string | null
+  implementationVersion: string | null
+  implementationError: string | null
+}
+
+function SupraSValueOracleSection({
+  baseTokenAddress,
+  baseTokenSymbol,
+  baseTokenName,
+  otherTokenAddress,
+  otherTokenSymbol,
+  otherTokenName,
+  otherTokenDecimals,
+  config,
+  setConfig,
+  quoteInput,
+  setQuoteInput,
+  virtualTokenOptions,
+  usdcAddress,
+  networkChainId,
+  factory,
+  factoryMissing,
+  implementationAddress,
+  implementationVersion,
+  implementationError
+}: SupraSValueOracleSectionProps) {
+  const [testingConfig, setTestingConfig] = useState(false)
+  const lastAutoCheckKeyRef = useRef<string>('')
+  const quoteInitialMetadata =
+    config.useOtherTokenAsQuote !== false && otherTokenSymbol && typeof otherTokenDecimals === 'number'
+      ? { symbol: otherTokenSymbol, decimals: otherTokenDecimals, name: otherTokenName || otherTokenSymbol }
+      : (config.customQuoteTokenMetadata
+          ? { symbol: config.customQuoteTokenMetadata.symbol, decimals: config.customQuoteTokenMetadata.decimals, name: config.customQuoteTokenMetadata.symbol }
+          : null)
+
+  const formatUtc = (timestamp: number): string => {
+    const tsSeconds = timestamp > 1_000_000_000_000 ? Math.floor(timestamp / 1000) : timestamp
+    const d = new Date(tsSeconds * 1000)
+    const pad = (v: number) => String(v).padStart(2, '0')
+    const y = d.getUTCFullYear()
+    const m = pad(d.getUTCMonth() + 1)
+    const day = pad(d.getUTCDate())
+    const h = pad(d.getUTCHours())
+    const min = pad(d.getUTCMinutes())
+    const s = pad(d.getUTCSeconds())
+    return `${y}-${m}-${day} ${h}:${min}:${s} UTC (${timestamp})`
+  }
+
+  const verifyConfigAndFetchPrice = async () => {
+    if (!window.ethereum || !factory?.address) return
+    const pairIdRaw = config.pairId?.trim() ?? ''
+    const quoteAddress = config.customQuoteTokenAddress?.trim() ?? ''
+    if (!pairIdRaw || !/^\d+$/.test(pairIdRaw)) {
+      setConfig(prev => ({ ...prev, fetchError: 'Pair ID must be a non-negative integer.' }))
+      return
+    }
+    if (!baseTokenAddress || !ethers.isAddress(baseTokenAddress)) {
+      setConfig(prev => ({ ...prev, fetchError: 'Base token address is invalid.' }))
+      return
+    }
+    if (!quoteAddress || !ethers.isAddress(quoteAddress)) {
+      setConfig(prev => ({ ...prev, fetchError: 'Quote token is required and must be a valid address.' }))
+      return
+    }
+
+    setTestingConfig(true)
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const factoryContract = new ethers.Contract(factory.address, supraSValueFactoryAbi as unknown as ethers.InterfaceAbi, provider)
+      const verifyTuple = [ethers.getAddress(baseTokenAddress), ethers.getAddress(quoteAddress), BigInt(pairIdRaw)]
+      const [, , priceDecimalsRaw, feedAddressRaw] = await factoryContract.verifyConfig(verifyTuple)
+      const priceDecimals = Number(priceDecimalsRaw)
+      const feedAddress = String(feedAddressRaw)
+      if (!ethers.isAddress(feedAddress) || feedAddress === ethers.ZeroAddress) {
+        throw new Error('Factory verification returned invalid feed address.')
+      }
+      const feed = new ethers.Contract(feedAddress, supraOracleFeedStorageAbi as unknown as ethers.InterfaceAbi, provider)
+      const sValue = await feed["getSvalue(uint256)"](BigInt(pairIdRaw))
+      const rawPrice = sValue?.price != null ? sValue.price.toString() : ''
+      const updatedAt = sValue?.time != null ? Number(sValue.time) : 0
+      const formattedPrice = rawPrice ? ethers.formatUnits(rawPrice, priceDecimals) : ''
+      setConfig(prev => ({
+        ...prev,
+        verifiedDecimals: priceDecimals,
+        verifiedFeedAddress: feedAddress,
+        fetchedRawPrice: rawPrice,
+        formattedPrice,
+        lastUpdatedTimestamp: updatedAt,
+        fetchError: undefined
+      }))
+    } catch (err) {
+      setConfig(prev => ({
+        ...prev,
+        fetchedRawPrice: undefined,
+        formattedPrice: undefined,
+        lastUpdatedTimestamp: undefined,
+        verifiedDecimals: undefined,
+        verifiedFeedAddress: undefined,
+        fetchError: err instanceof Error ? err.message : 'Failed to verify Supra config.'
+      }))
+    } finally {
+      setTestingConfig(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!factory?.address) return
+    const pairIdRaw = config.pairId?.trim() ?? ''
+    const quoteAddress = config.customQuoteTokenAddress?.trim() ?? ''
+    if (!pairIdRaw || !/^\d+$/.test(pairIdRaw) || !quoteAddress || !ethers.isAddress(quoteAddress)) return
+    const key = `${factory.address.toLowerCase()}|${baseTokenAddress.toLowerCase()}|${quoteAddress.toLowerCase()}|${pairIdRaw}`
+    if (lastAutoCheckKeyRef.current === key || testingConfig) return
+    lastAutoCheckKeyRef.current = key
+    void verifyConfigAndFetchPrice()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [factory?.address, baseTokenAddress, config.pairId, config.customQuoteTokenAddress, testingConfig])
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-400 mb-2">
+        Base token: <span className="text-white font-medium">{baseTokenSymbol}</span> <span className="text-gray-500">({baseTokenName})</span>
+      </p>
+
+      {factoryMissing ? (
+        <div className="silo-alert silo-alert-error"><p className="text-sm">{factoryMissing}</p></div>
+      ) : !factory ? (
+        <p className="text-sm text-yellow-400">Loading SupraSValueOracle for this chain…</p>
+      ) : implementationError ? (
+        <div className="silo-alert silo-alert-error">
+          <p className="text-sm font-medium">Failed to resolve oracle implementation</p>
+          <p className="text-sm mt-1">{implementationError}</p>
+        </div>
+      ) : implementationAddress ? (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-white">SupraSValueOracle (implementation)</p>
+            <span className="text-xs text-gray-400">
+              Source:{' '}
+              <a
+                href={getExplorerAddressUrl(networkChainId ?? '1', factory.address)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-gray-300 underline"
+              >
+                Factory
+              </a>
+            </span>
+          </div>
+          <AddressDisplayShort
+            address={implementationAddress}
+            chainId={networkChainId ? parseInt(String(networkChainId), 10) : undefined}
+            className="text-sm"
+            showVersion={false}
+          />
+          <div className="text-sm text-gray-300 whitespace-nowrap">
+            version: <span className="text-version-muted">{implementationVersion ?? '…'}</span>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-yellow-400">Resolving oracle implementation…</p>
+      )}
+
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
+        <label className="block text-sm font-medium text-gray-300 mb-1">Provide pair ID *</label>
+        <p className="text-xs text-gray-400 mb-1">
+          Based on{' '}
+          <a
+            href="https://docs.supra.com/oracles/data-feeds/data-feeds-index"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 underline hover:text-gray-300"
+          >
+            Supra data feeds index
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5h6M5 5v14h14v-6" />
+            </svg>
+          </a>
+        </p>
+        <input
+          type="text"
+          value={config.pairId ?? ''}
+          onChange={(e) => setConfig(prev => ({ ...prev, pairId: e.target.value.replace(/[^\d]/g, '') }))}
+          placeholder="e.g. 123"
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+        />
+        {config.pairId?.trim() && (
+          <div className="mt-2">
+            {testingConfig ? (
+              <p className="text-sm text-gray-400">Verifying config and reading feed…</p>
+            ) : config.fetchError ? (
+              <p className="text-sm text-red-400">{config.fetchError}</p>
+            ) : config.fetchedRawPrice ? (
+              <ul className="space-y-1 text-sm text-gray-400">
+                <li>• Raw price value: <span className="font-mono font-medium text-white">{config.fetchedRawPrice}</span></li>
+                <li>• With decimals ({config.verifiedDecimals}): <span className="font-mono font-medium text-white">{config.formattedPrice}</span></li>
+                {config.lastUpdatedTimestamp != null && (
+                  <li>• Last time update: <span className="font-mono font-medium text-white">{formatUtc(config.lastUpdatedTimestamp)}</span></li>
+                )}
+              </ul>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
+        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+        <div className="flex flex-wrap gap-2">
+          <PredefinedOptionButton onClick={() => {
+            const addr = otherTokenAddress || ''
+            setQuoteInput(addr)
+            setConfig(prev => ({ ...prev, useOtherTokenAsQuote: true, customQuoteTokenAddress: addr }))
+          }}><span>Other token</span></PredefinedOptionButton>
+          {usdcAddress && <PredefinedOptionButton onClick={() => { setQuoteInput('USDC'); setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false })) }}><span>USDC</span></PredefinedOptionButton>}
+          {virtualTokenOptions.map((v) => (
+            <PredefinedOptionButton key={v.key} onClick={() => { setQuoteInput(v.key); setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false })) }}><span>{v.label}</span></PredefinedOptionButton>
+          ))}
+        </div>
+        <TokenAddressInput
+          value={quoteInput}
+          onChange={(value) => { setQuoteInput(value); setConfig(prev => ({ ...prev, useOtherTokenAsQuote: false })) }}
+          onResolve={(address, metadata) => {
+            if (address && metadata) {
+              setConfig(prev => ({ ...prev, customQuoteTokenAddress: address, customQuoteTokenMetadata: { symbol: metadata.symbol, decimals: metadata.decimals } }))
+              if (config.pairId?.trim()) void verifyConfigAndFetchPrice()
+            } else {
+              setConfig(prev => ({ ...prev, customQuoteTokenAddress: '', customQuoteTokenMetadata: undefined }))
+            }
+          }}
+          chainId={networkChainId}
+          label="Quote token address or symbol"
+          placeholder="0x… or symbol from addresses JSON"
+          initialResolvedAddress={config.customQuoteTokenAddress || null}
+          initialMetadata={quoteInitialMetadata}
+        />
+      </div>
+
+    </div>
+  )
+}
+
 /**
  * Normalization so oracle output is 18 decimals.
  * Equation: base decimals + aggregator decimals ± normalization = 18.
@@ -1269,6 +1550,11 @@ export default function Step3OracleConfiguration() {
   const [pt1QuoteMetadata, setPT1QuoteMetadata] = useState<{ symbol: string; decimals: number; name: string } | null>(null)
   const [customMethodFactory, setCustomMethodFactory] = useState<{ address: string; version: string } | null>(null)
   const [customMethodFactoryMissing, setCustomMethodFactoryMissing] = useState<string | null>(null)
+  const [supraSValueFactory, setSupraSValueFactory] = useState<{ address: string; version: string } | null>(null)
+  const [supraSValueFactoryMissing, setSupraSValueFactoryMissing] = useState<string | null>(null)
+  const [supraSValueImplementationAddress, setSupraSValueImplementationAddress] = useState<string | null>(null)
+  const [supraSValueImplementationVersion, setSupraSValueImplementationVersion] = useState<string | null>(null)
+  const [supraSValueImplementationError, setSupraSValueImplementationError] = useState<string | null>(null)
   const [customMethodImplementationAddress, setCustomMethodImplementationAddress] = useState<string | null>(null)
   const [customMethodImplementationVersion, setCustomMethodImplementationVersion] = useState<string | null>(null)
   const [customMethodImplementationError, setCustomMethodImplementationError] = useState<string | null>(null)
@@ -1308,6 +1594,38 @@ export default function Step3OracleConfiguration() {
   })
   const [customMethod0QuoteInput, setCustomMethod0QuoteInput] = useState('')
   const [customMethod1QuoteInput, setCustomMethod1QuoteInput] = useState('')
+  const [supraSValue0, setSupraSValue0] = useState<
+    Partial<SupraSValueOracleConfig> & {
+      verifiedDecimals?: number
+      verifiedFeedAddress?: string
+      fetchedRawPrice?: string
+      formattedPrice?: string
+      lastUpdatedTimestamp?: number
+      fetchError?: string
+    }
+  >({
+    baseToken: 'token0',
+    useOtherTokenAsQuote: true,
+    customQuoteTokenAddress: '',
+    pairId: ''
+  })
+  const [supraSValue1, setSupraSValue1] = useState<
+    Partial<SupraSValueOracleConfig> & {
+      verifiedDecimals?: number
+      verifiedFeedAddress?: string
+      fetchedRawPrice?: string
+      formattedPrice?: string
+      lastUpdatedTimestamp?: number
+      fetchError?: string
+    }
+  >({
+    baseToken: 'token1',
+    useOtherTokenAsQuote: true,
+    customQuoteTokenAddress: '',
+    pairId: ''
+  })
+  const [supraSValue0QuoteInput, setSupraSValue0QuoteInput] = useState('')
+  const [supraSValue1QuoteInput, setSupraSValue1QuoteInput] = useState('')
 
   // Optional virtual quote tokens – loaded from addresses JSON per chain.
   const [virtualTokenOptions, setVirtualTokenOptions] = useState<VirtualTokenOption[]>([])
@@ -1324,6 +1642,7 @@ export default function Step3OracleConfiguration() {
   const needsPtLinearFactory = selectedOracleTypes.includes('ptLinear')
   const needsVaultFactory = selectedOracleTypes.includes('vault')
   const needsCustomMethodFactory = selectedOracleTypes.includes('customMethod')
+  const needsSupraSValueFactory = selectedOracleTypes.includes('supraSValue')
 
   // Load virtual quote tokens if available in addresses JSON.
   useEffect(() => {
@@ -1531,6 +1850,76 @@ export default function Step3OracleConfiguration() {
     fetchCustomMethodFactory()
   }, [wizardData.networkInfo?.chainId, needsCustomMethodFactory])
 
+  // Fetch SupraSValueOracleFactory address for current chain
+  useEffect(() => {
+    const fetchSupraFactory = async () => {
+      if (!wizardData.networkInfo?.chainId || !needsSupraSValueFactory) {
+        setSupraSValueFactory(null)
+        setSupraSValueFactoryMissing(null)
+        return
+      }
+      try {
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'supraSValue')
+        setSupraSValueFactory(address ? { address, version: '' } : null)
+        setSupraSValueFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('supraSValue', wizardData.networkInfo.chainId)
+        )
+      } catch {
+        setSupraSValueFactory(null)
+        setSupraSValueFactoryMissing('Failed to load SupraSValueOracleFactory for this chain.')
+      }
+    }
+    fetchSupraFactory()
+  }, [wizardData.networkInfo?.chainId, needsSupraSValueFactory])
+
+  // Resolve SupraSValueOracle implementation from factory (ORACLE_IMPLEMENTATION)
+  useEffect(() => {
+    const factoryAddr = supraSValueFactory?.address
+    if (!factoryAddr || !ethers.isAddress(factoryAddr)) {
+      setSupraSValueImplementationAddress(null)
+      setSupraSValueImplementationVersion(null)
+      setSupraSValueImplementationError(null)
+      return
+    }
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setSupraSValueImplementationAddress(null)
+      setSupraSValueImplementationError('Wallet provider is not available to resolve oracle implementation.')
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        setSupraSValueImplementationError(null)
+        const eth = window.ethereum
+        if (!eth) {
+          setSupraSValueImplementationAddress(null)
+          setSupraSValueImplementationVersion(null)
+          setSupraSValueImplementationError('Wallet provider is not available to resolve oracle implementation.')
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
+        const abi = ['function ORACLE_IMPLEMENTATION() view returns (address)'] as const
+        const factory = new ethers.Contract(factoryAddr, abi, provider)
+        const impl = await factory.ORACLE_IMPLEMENTATION()
+        if (cancelled) return
+        if (impl && ethers.isAddress(String(impl))) {
+          setSupraSValueImplementationAddress(ethers.getAddress(String(impl)))
+        } else {
+          setSupraSValueImplementationAddress(null)
+          setSupraSValueImplementationVersion(null)
+          setSupraSValueImplementationError('Factory returned an invalid ORACLE_IMPLEMENTATION address.')
+        }
+      } catch (err) {
+        if (cancelled) return
+        setSupraSValueImplementationAddress(null)
+        setSupraSValueImplementationVersion(null)
+        setSupraSValueImplementationError(err instanceof Error ? err.message : 'Failed to resolve ORACLE_IMPLEMENTATION from factory.')
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [supraSValueFactory?.address])
+
   // Resolve CustomMethodOracle implementation from factory (ORACLE_IMPLEMENTATION)
   useEffect(() => {
     const factoryAddr = customMethodFactory?.address
@@ -1612,7 +2001,9 @@ export default function Step3OracleConfiguration() {
       ptLinearFactory?.address,
       erc4626OracleFactory?.address,
       customMethodFactory?.address,
-      customMethodImplementationAddress
+      supraSValueFactory?.address,
+      customMethodImplementationAddress,
+      supraSValueImplementationAddress
     ].filter((value): value is string => !!value)
     if (addresses.length === 0) return
 
@@ -1645,9 +2036,17 @@ export default function Step3OracleConfiguration() {
         setCustomMethodFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
+        setSupraSValueFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
         setCustomMethodImplementationVersion(
           customMethodImplementationAddress
             ? getVersion(customMethodImplementationAddress) || '—'
+            : null
+        )
+        setSupraSValueImplementationVersion(
+          supraSValueImplementationAddress
+            ? getVersion(supraSValueImplementationAddress) || '—'
             : null
         )
       } catch (err) {
@@ -1657,8 +2056,12 @@ export default function Step3OracleConfiguration() {
         setPTLinearFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setErc4626OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setSupraSValueFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodImplementationVersion(
           customMethodImplementationAddress ? '—' : null
+        )
+        setSupraSValueImplementationVersion(
+          supraSValueImplementationAddress ? '—' : null
         )
       }
     }
@@ -1670,7 +2073,9 @@ export default function Step3OracleConfiguration() {
     ptLinearFactory?.address,
     erc4626OracleFactory?.address,
     customMethodFactory?.address,
+    supraSValueFactory?.address,
     customMethodImplementationAddress,
+    supraSValueImplementationAddress,
     siloLensAddress,
     wizardData.networkInfo?.chainId
   ])
@@ -1774,6 +2179,38 @@ export default function Step3OracleConfiguration() {
   }, [
     wizardData.oracleConfiguration?.token0?.customMethodOracle,
     wizardData.oracleConfiguration?.token1?.customMethodOracle
+  ])
+
+  // Sync Supra s-value oracle state from wizard when returning to step
+  useEffect(() => {
+    const s0 = wizardData.oracleConfiguration?.token0?.supraSValueOracle
+    if (s0) {
+      setSupraSValue0(prev => ({
+        ...prev,
+        baseToken: s0.baseToken,
+        useOtherTokenAsQuote: s0.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: s0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: s0.customQuoteTokenMetadata,
+        pairId: s0.pairId
+      }))
+      setSupraSValue0QuoteInput(s0.customQuoteTokenAddress ?? '')
+    }
+    const s1 = wizardData.oracleConfiguration?.token1?.supraSValueOracle
+    if (s1) {
+      setSupraSValue1(prev => ({
+        ...prev,
+        baseToken: s1.baseToken,
+        useOtherTokenAsQuote: s1.useOtherTokenAsQuote ?? true,
+        customQuoteTokenAddress: s1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: s1.customQuoteTokenMetadata,
+        pairId: s1.pairId
+      }))
+      setSupraSValue1QuoteInput(s1.customQuoteTokenAddress ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    wizardData.oracleConfiguration?.token0?.supraSValueOracle,
+    wizardData.oracleConfiguration?.token1?.supraSValueOracle
   ])
 
 
@@ -2405,6 +2842,54 @@ export default function Step3OracleConfiguration() {
         errors.push('Custom Method Oracle (Token 1): price decimals must be an integer between 6 and 18.')
       }
     }
+    if (wizardData.oracleType0?.type === 'supraSValue') {
+      if (supraSValueFactoryMissing || !supraSValueFactory) {
+        errors.push('Supra s-value Oracle (Token 0): this oracle is not available on the selected chain (factory missing).')
+      }
+      const quoteAddr0 = supraSValue0.customQuoteTokenAddress?.trim() ?? ''
+      if (!quoteAddr0 || !ethers.isAddress(quoteAddr0)) {
+        errors.push('Supra s-value Oracle (Token 0): quote token is required and must be a valid address.')
+      }
+      if (
+        wizardData.token0?.address &&
+        quoteAddr0 &&
+        ethers.isAddress(quoteAddr0) &&
+        wizardData.token0.address.toLowerCase() === quoteAddr0.toLowerCase()
+      ) {
+        errors.push('Supra s-value Oracle (Token 0): base token and quote token must be different.')
+      }
+      const pairId0 = supraSValue0.pairId?.trim() ?? ''
+      if (!pairId0 || !/^\d+$/.test(pairId0)) {
+        errors.push('Supra s-value Oracle (Token 0): pair ID must be a non-negative integer.')
+      }
+      if (!supraSValue0.fetchedRawPrice || supraSValue0.fetchError) {
+        errors.push('Supra s-value Oracle (Token 0): sanity check failed. Verify Pair ID and quote token.')
+      }
+    }
+    if (wizardData.oracleType1?.type === 'supraSValue') {
+      if (supraSValueFactoryMissing || !supraSValueFactory) {
+        errors.push('Supra s-value Oracle (Token 1): this oracle is not available on the selected chain (factory missing).')
+      }
+      const quoteAddr1 = supraSValue1.customQuoteTokenAddress?.trim() ?? ''
+      if (!quoteAddr1 || !ethers.isAddress(quoteAddr1)) {
+        errors.push('Supra s-value Oracle (Token 1): quote token is required and must be a valid address.')
+      }
+      if (
+        wizardData.token1?.address &&
+        quoteAddr1 &&
+        ethers.isAddress(quoteAddr1) &&
+        wizardData.token1.address.toLowerCase() === quoteAddr1.toLowerCase()
+      ) {
+        errors.push('Supra s-value Oracle (Token 1): base token and quote token must be different.')
+      }
+      const pairId1 = supraSValue1.pairId?.trim() ?? ''
+      if (!pairId1 || !/^\d+$/.test(pairId1)) {
+        errors.push('Supra s-value Oracle (Token 1): pair ID must be a non-negative integer.')
+      }
+      if (!supraSValue1.fetchedRawPrice || supraSValue1.fetchError) {
+        errors.push('Supra s-value Oracle (Token 1): sanity check failed. Verify Pair ID and quote token.')
+      }
+    }
 
     // Effective quote token address: none/scaler = token itself; chainlink/vault/ptLinear = stored quote address only.
     // "Other token" is just a predefined option that fills the address field – we only read that field.
@@ -2430,6 +2915,10 @@ export default function Step3OracleConfiguration() {
       if (type === 'customMethod') {
         const cm = side === '0' ? customMethod0 : customMethod1
         return (cm.customQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'supraSValue') {
+        const s = side === '0' ? supraSValue0 : supraSValue1
+        return (s.customQuoteTokenAddress?.trim() ?? '')
       }
       return ''
     }
@@ -2520,6 +3009,21 @@ export default function Step3OracleConfiguration() {
                 callSelector: cm0Selector,
                 priceDecimals: Number(customMethod0.priceDecimals ?? 18)
               }
+            : undefined,
+          supraSValueOracle: wizardData.oracleType0!.type === 'supraSValue'
+            ? {
+                baseToken: 'token0',
+                useOtherTokenAsQuote: supraSValue0.useOtherTokenAsQuote ?? true,
+                customQuoteTokenAddress:
+                  supraSValue0.useOtherTokenAsQuote !== false && wizardData.token1?.address
+                    ? wizardData.token1.address
+                    : supraSValue0.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata:
+                  supraSValue0.useOtherTokenAsQuote !== false && wizardData.token1
+                    ? { symbol: wizardData.token1.symbol, decimals: wizardData.token1.decimals }
+                    : supraSValue0.customQuoteTokenMetadata,
+                pairId: (supraSValue0.pairId ?? '').trim()
+              }
             : undefined
         },
         token1: {
@@ -2575,6 +3079,21 @@ export default function Step3OracleConfiguration() {
                 methodSignature: cm1Signature,
                 callSelector: cm1Selector,
                 priceDecimals: Number(customMethod1.priceDecimals ?? 18)
+              }
+            : undefined,
+          supraSValueOracle: wizardData.oracleType1!.type === 'supraSValue'
+            ? {
+                baseToken: 'token1',
+                useOtherTokenAsQuote: supraSValue1.useOtherTokenAsQuote ?? true,
+                customQuoteTokenAddress:
+                  supraSValue1.useOtherTokenAsQuote !== false && wizardData.token0?.address
+                    ? wizardData.token0.address
+                    : supraSValue1.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata:
+                  supraSValue1.useOtherTokenAsQuote !== false && wizardData.token0
+                    ? { symbol: wizardData.token0.symbol, decimals: wizardData.token0.decimals }
+                    : supraSValue1.customQuoteTokenMetadata,
+                pairId: (supraSValue1.pairId ?? '').trim()
               }
             : undefined
         }
@@ -2658,6 +3177,8 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : wizardData.oracleType0.type === 'customMethod'
               ? 'Custom Method Oracle'
+              : wizardData.oracleType0.type === 'supraSValue'
+              ? 'Supra s-value Oracle'
               : 'Chainlink')}{' '}
             for {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
@@ -2673,6 +3194,8 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : wizardData.oracleType0.type === 'customMethod'
               ? 'Custom Method Oracle'
+              : wizardData.oracleType0.type === 'supraSValue'
+              ? 'Supra s-value Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType0.type === 'none' ? (
@@ -2853,6 +3376,28 @@ export default function Step3OracleConfiguration() {
               customMethodImplementationVersion={customMethodImplementationVersion}
               customMethodImplementationError={customMethodImplementationError}
             />
+          ) : wizardData.oracleType0.type === 'supraSValue' ? (
+            <SupraSValueOracleSection
+              baseTokenAddress={wizardData.token0.address}
+              baseTokenSymbol={wizardData.token0.symbol}
+              baseTokenName={wizardData.token0.name}
+              otherTokenAddress={wizardData.token1?.address}
+              otherTokenSymbol={wizardData.token1?.symbol}
+              otherTokenName={wizardData.token1?.name}
+              otherTokenDecimals={wizardData.token1?.decimals}
+              config={supraSValue0}
+              setConfig={setSupraSValue0}
+              quoteInput={supraSValue0QuoteInput}
+              setQuoteInput={setSupraSValue0QuoteInput}
+              virtualTokenOptions={virtualTokenOptions}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              factory={supraSValueFactory}
+              factoryMissing={supraSValueFactoryMissing}
+              implementationAddress={supraSValueImplementationAddress}
+              implementationVersion={supraSValueImplementationVersion}
+              implementationError={supraSValueImplementationError}
+            />
           ) : (
             <div>
               {loadingOracles ? (
@@ -2977,6 +3522,8 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : wizardData.oracleType1.type === 'customMethod'
               ? 'Custom Method Oracle'
+              : wizardData.oracleType1.type === 'supraSValue'
+              ? 'Supra s-value Oracle'
               : 'Chainlink')}{' '}
             for {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
@@ -2992,6 +3539,8 @@ export default function Step3OracleConfiguration() {
               ? 'Vault Oracle'
               : wizardData.oracleType1.type === 'customMethod'
               ? 'Custom Method Oracle'
+              : wizardData.oracleType1.type === 'supraSValue'
+              ? 'Supra s-value Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType1.type === 'none' ? (
@@ -3171,6 +3720,28 @@ export default function Step3OracleConfiguration() {
               customMethodImplementationAddress={customMethodImplementationAddress}
               customMethodImplementationVersion={customMethodImplementationVersion}
               customMethodImplementationError={customMethodImplementationError}
+            />
+          ) : wizardData.oracleType1.type === 'supraSValue' ? (
+            <SupraSValueOracleSection
+              baseTokenAddress={wizardData.token1.address}
+              baseTokenSymbol={wizardData.token1.symbol}
+              baseTokenName={wizardData.token1.name}
+              otherTokenAddress={wizardData.token0?.address}
+              otherTokenSymbol={wizardData.token0?.symbol}
+              otherTokenName={wizardData.token0?.name}
+              otherTokenDecimals={wizardData.token0?.decimals}
+              config={supraSValue1}
+              setConfig={setSupraSValue1}
+              quoteInput={supraSValue1QuoteInput}
+              setQuoteInput={setSupraSValue1QuoteInput}
+              virtualTokenOptions={virtualTokenOptions}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              factory={supraSValueFactory}
+              factoryMissing={supraSValueFactoryMissing}
+              implementationAddress={supraSValueImplementationAddress}
+              implementationVersion={supraSValueImplementationVersion}
+              implementationError={supraSValueImplementationError}
             />
           ) : (
             <div>

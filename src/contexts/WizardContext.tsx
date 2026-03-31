@@ -33,7 +33,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
   enabled: boolean
   reason?: string
 }
@@ -100,6 +100,20 @@ export interface CustomMethodOracleConfig {
   priceDecimals: number
 }
 
+/** Supra s-value oracle config. */
+export interface SupraSValueOracleConfig {
+  /** Which token is the base (token0 or token1). */
+  baseToken: 'token0' | 'token1'
+  /** If true, use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
+  /** Supra pair ID used by factory config verification and deployment. */
+  pairId: string
+}
+
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
 export interface CustomScalerCreate {
   factoryAddress: string
@@ -119,20 +133,22 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
+    supraSValueOracle?: SupraSValueOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
+    supraSValueOracle?: SupraSValueOracleConfig
   }
 }
 
@@ -440,6 +456,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
         if (t === 'customMethod') return 'CustomMethodOracle'
+        if (t === 'supraSValue') return 'SupraSValueOracle'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -504,6 +521,17 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'supraSValue' && wizardData.oracleConfiguration?.token0?.supraSValueOracle
+        ? {
+            supraSValueOracle0: {
+              baseToken: wizardData.oracleConfiguration.token0.supraSValueOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.supraSValueOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.supraSValueOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.supraSValueOracle.customQuoteTokenMetadata,
+              pairId: wizardData.oracleConfiguration.token0.supraSValueOracle.pairId
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
         const t = wizardData.oracleConfiguration?.token1?.type
@@ -511,6 +539,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
         if (t === 'customMethod') return 'CustomMethodOracle'
+        if (t === 'supraSValue') return 'SupraSValueOracle'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -575,6 +604,18 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {})
+      ,
+      ...(wizardData.oracleConfiguration?.token1?.type === 'supraSValue' && wizardData.oracleConfiguration?.token1?.supraSValueOracle
+        ? {
+            supraSValueOracle1: {
+              baseToken: wizardData.oracleConfiguration.token1.supraSValueOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.supraSValueOracle.useOtherTokenAsQuote ?? true,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.supraSValueOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.supraSValueOracle.customQuoteTokenMetadata,
+              pairId: wizardData.oracleConfiguration.token1.supraSValueOracle.pairId
+            }
+          }
+        : {})
     }
     return JSON.stringify(config, null, 4)
   }
@@ -610,6 +651,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'vault'
           : config.solvencyOracle0 === 'CustomMethodOracle'
           ? 'customMethod'
+          : config.solvencyOracle0 === 'SupraSValueOracle'
+          ? 'supraSValue'
           : 'scaler'
       const oracleType1 =
         config.solvencyOracle1 === 'NO_ORACLE'
@@ -622,6 +665,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'vault'
           : config.solvencyOracle1 === 'CustomMethodOracle'
           ? 'customMethod'
+          : config.solvencyOracle1 === 'SupraSValueOracle'
+          ? 'supraSValue'
           : 'scaler'
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
@@ -747,6 +792,36 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               priceDecimals: Number(config.customMethodOracle1.priceDecimals ?? 18)
             }
           : undefined
+      const supra0 =
+        config.supraSValueOracle0 && oracleType0 === 'supraSValue'
+          ? {
+              baseToken: (config.supraSValueOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote: config.supraSValueOracle0.useOtherTokenAsQuote !== false,
+              customQuoteTokenAddress: String(config.supraSValueOracle0.customQuoteTokenAddress ?? ''),
+              customQuoteTokenMetadata: config.supraSValueOracle0.customQuoteTokenMetadata
+                ? {
+                    symbol: String(config.supraSValueOracle0.customQuoteTokenMetadata.symbol ?? ''),
+                    decimals: Number(config.supraSValueOracle0.customQuoteTokenMetadata.decimals ?? 18)
+                  }
+                : undefined,
+              pairId: String(config.supraSValueOracle0.pairId ?? '')
+            }
+          : undefined
+      const supra1 =
+        config.supraSValueOracle1 && oracleType1 === 'supraSValue'
+          ? {
+              baseToken: (config.supraSValueOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote: config.supraSValueOracle1.useOtherTokenAsQuote !== false,
+              customQuoteTokenAddress: String(config.supraSValueOracle1.customQuoteTokenAddress ?? ''),
+              customQuoteTokenMetadata: config.supraSValueOracle1.customQuoteTokenMetadata
+                ? {
+                    symbol: String(config.supraSValueOracle1.customQuoteTokenMetadata.symbol ?? ''),
+                    decimals: Number(config.supraSValueOracle1.customQuoteTokenMetadata.decimals ?? 18)
+                  }
+                : undefined,
+              pairId: String(config.supraSValueOracle1.pairId ?? '')
+            }
+          : undefined
 
       const oracleConfig: OracleConfiguration = {
         token0: {
@@ -761,7 +836,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
           ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined,
           vaultOracle: oracleType0 === 'vault' ? vault0 : undefined,
-          customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined
+          customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined,
+          supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined
         },
         token1: {
           type: oracleType1,
@@ -775,7 +851,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
           ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined,
           vaultOracle: oracleType1 === 'vault' ? vault1 : undefined,
-          customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined
+          customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined,
+          supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined
         }
       }
       

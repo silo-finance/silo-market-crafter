@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.27.0 - 2026-03-31
+### Added
+- Supra oracle support
+
 ## 0.26.0 - 2026-03-30
 ### Added
 - add XDC support
