@@ -11,11 +11,11 @@ import React from 'react'
 
 const variantStyles = {
   primary:
-    'bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654]',
+    'bg-[var(--silo-accent)] hover:bg-[#8a9cf0] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[var(--silo-surface-strong)]',
   primaryDark:
-    'bg-[#6f83ff] hover:bg-[#6679f0] text-[#12193d]',
+    'bg-[var(--silo-deep-purple)] hover:bg-[#8898e8] text-[var(--silo-black)]',
   primaryLightDisabled:
-    'bg-[#6f83ff] hover:bg-[#6679f0] disabled:bg-[var(--silo-border)] disabled:cursor-not-allowed text-[#12193d] disabled:text-[var(--silo-text-faint)]',
+    'bg-[var(--silo-deep-purple)] hover:bg-[#8898e8] disabled:bg-[var(--silo-border)] disabled:cursor-not-allowed text-[var(--silo-black)] disabled:text-[var(--silo-text-faint)]',
   secondary:
     'bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)]',
   destructive:

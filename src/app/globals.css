@@ -1,25 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Silo v3 brand tokens — [Silo-v3-Brandkit/Silo Brand Specification.md] */
 :root {
-  --foreground-rgb: 31, 35, 43;
-  --background-start-rgb: 232, 236, 241;
-  --background-end-rgb: 242, 244, 248;
-  --silo-bg: #e9edf1;
-  --silo-surface: #f7f8fa;
-  --silo-surface-2: #eef2f8;
-  --silo-border: #d8dce3;
-  --silo-text: #1f232b;
-  --silo-text-soft: #6a7282;
-  --silo-text-faint: #8d94a3;
-  --silo-accent: #8494ff;
-  --silo-accent-soft: #dfe3ff;
-  --silo-success: #22c55e;
-  --silo-warning: #f59e0b;
-  --silo-danger: #dc5252;
+  --foreground-rgb: 68, 82, 95;
+  --background-start-rgb: 240, 241, 254;
+  --background-end-rgb: 242, 244, 247;
+  --silo-light-purple: #f0f1fe;
+  --silo-white: #ffffff;
+  --silo-soft-purple: #dbe1fa;
+  --silo-node-purple: #c4cefd;
+  --silo-deep-purple: #9dadfb;
+  --silo-signal-green: #e1fcad;
+  --silo-soft-green: #daecc6;
+  --silo-mint-accent: #d0f1d5;
+  --silo-surface-light: #d7dfea;
+  --silo-surface-muted: #778ea3;
+  --silo-surface-strong: #44525f;
+  --silo-deep-surface: #232b33;
+  --silo-black: #060a0e;
+  --silo-almost-white: #f2f4f7;
+  --silo-surface-blue: #f5f6fc;
+  --silo-light-cyan: #e2f0fb;
+  --silo-soft-cyan: #cce4f5;
+  --silo-node-cyan: #aad2ee;
+  --silo-strong-violet: #c7b1e6;
+  --silo-deep-violet: #b193dc;
+
+  --silo-bg: var(--silo-light-purple);
+  --silo-surface: var(--silo-white);
+  --silo-surface-2: var(--silo-almost-white);
+  --silo-border: var(--silo-surface-light);
+  --silo-text: var(--silo-surface-strong);
+  --silo-text-soft: var(--silo-surface-muted);
+  --silo-text-faint: #8a96a8;
+  --silo-accent: var(--silo-deep-purple);
+  --silo-accent-soft: var(--silo-soft-purple);
+  --silo-brand-highlight: var(--silo-signal-green);
+  --silo-success: #16a34a;
+  --silo-warning: #d97706;
+  --silo-danger: #dc2626;
   --silo-global-pattern: none;
   --silo-card-pattern: var(--pattern-circles-static-url);
   --header-bg: rgba(247, 248, 250, 0.94);
@@ -27,9 +48,9 @@
   --header-text: var(--silo-text);
   --header-text-soft: var(--silo-text-soft);
   --header-text-hover: #11141b;
-  --header-connect-bg: var(--silo-accent-soft);
-  --header-connect-bg-hover: #cfd6ff;
-  --header-connect-text: #2f3b79;
+  --header-connect-bg: color-mix(in srgb, var(--silo-deep-purple) 22%, var(--silo-white));
+  --header-connect-bg-hover: color-mix(in srgb, var(--silo-deep-purple) 30%, var(--silo-white));
+  --header-connect-text: var(--silo-surface-strong);
   --header-toggle-border: var(--silo-border);
   --header-toggle-on-bg: var(--silo-surface);
   --header-toggle-on-text: var(--silo-text);
@@ -51,12 +72,13 @@
 body {
   color: rgb(var(--foreground-rgb));
   background-color: var(--silo-bg);
+  /* v3 Gradient 2 + soft accents: white → soft purple → soft cyan → node cyan */
   background-image:
     var(--silo-global-pattern),
     var(--silo-global-pattern),
-    radial-gradient(900px 520px at -10% 8%, rgba(139, 176, 149, 0.44) 0%, rgba(139, 176, 149, 0.16) 34%, transparent 62%),
-    radial-gradient(980px 560px at 108% 12%, rgba(161, 150, 205, 0.46) 0%, rgba(161, 150, 205, 0.18) 36%, transparent 66%),
-    linear-gradient(90deg, #dbe4dd 0%, #dfe3e8 54%, #d9d9ec 100%);
+    radial-gradient(880px 500px at -8% 10%, color-mix(in srgb, var(--silo-mint-accent) 55%, transparent) 0%, transparent 58%),
+    radial-gradient(920px 520px at 108% 8%, color-mix(in srgb, var(--silo-strong-violet) 35%, transparent) 0%, transparent 62%),
+    linear-gradient(100deg, #ffffff 0%, #dbe1fa 38%, #cce4f5 72%, #f0f1fe 100%);
   background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   background-size: 476px 449px, 952px 898px, cover, cover, cover;
   background-position: -238px -58px, calc(100% + 476px) 42px, top left, top right, center;
@@ -82,9 +104,9 @@ body {
   background-image:
     var(--silo-global-pattern),
     var(--silo-global-pattern),
-    radial-gradient(900px 520px at -10% 8%, rgba(125, 166, 143, 0.34) 0%, rgba(125, 166, 143, 0.16) 34%, transparent 62%),
-    radial-gradient(980px 560px at 108% 12%, rgba(149, 141, 204, 0.38) 0%, rgba(149, 141, 204, 0.17) 36%, transparent 66%),
-    linear-gradient(90deg, #2a3946 0%, #314158 52%, #37456a 100%);
+    radial-gradient(880px 500px at -8% 10%, color-mix(in srgb, var(--silo-node-purple) 25%, transparent) 0%, transparent 55%),
+    radial-gradient(920px 520px at 108% 8%, color-mix(in srgb, var(--silo-deep-violet) 22%, transparent) 0%, transparent 58%),
+    linear-gradient(100deg, #232b33 0%, #2c3540 45%, #323e52 100%);
   background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   background-size: 476px 449px, 952px 898px, cover, cover, cover;
   background-position: -238px -58px, calc(100% + 476px) 42px, top left, top right, center;
@@ -106,7 +128,7 @@ body {
   border-color: rgba(255, 255, 255, 0.88);
   background-image:
     var(--silo-card-pattern),
-    linear-gradient(180deg, rgba(167, 183, 255, 0.46) 0%, rgba(209, 219, 255, 0.2) 30%, rgba(247, 248, 250, 0) 58%);
+    linear-gradient(180deg, color-mix(in srgb, var(--silo-deep-purple) 38%, transparent) 0%, color-mix(in srgb, var(--silo-soft-purple) 22%, transparent) 32%, rgba(255, 255, 255, 0) 58%);
   background-repeat: no-repeat, no-repeat;
   background-size: 210px 198px, cover;
   background-position: -38px -76px, top left;
@@ -125,8 +147,8 @@ body {
 }
 
 .silo-selectable-card[data-selected='true'] {
-  border-color: #5a80ff;
-  box-shadow: inset 0 0 0 1px rgba(90, 128, 255, 0.2);
+  border-color: color-mix(in srgb, var(--silo-deep-purple) 85%, #5a6bb8);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--silo-deep-purple) 25%, transparent);
 }
 
 .theme-dark .silo-selectable-card {
@@ -134,8 +156,8 @@ body {
 }
 
 .theme-dark .silo-selectable-card[data-selected='true'] {
-  border-color: #8fa4ff;
-  box-shadow: inset 0 0 0 1px rgba(143, 164, 255, 0.28);
+  border-color: var(--silo-node-purple);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--silo-node-purple) 35%, transparent);
 }
 
 .silo-choice-option {
@@ -155,9 +177,9 @@ body {
 }
 
 .silo-choice-option[data-selected='true'] {
-  border-color: #5a80ff;
-  background: color-mix(in srgb, var(--silo-accent-soft) 52%, var(--silo-surface));
-  box-shadow: inset 0 0 0 1px rgba(90, 128, 255, 0.16);
+  border-color: color-mix(in srgb, var(--silo-deep-purple) 88%, #6a7ac8);
+  background: color-mix(in srgb, var(--silo-accent-soft) 48%, var(--silo-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--silo-deep-purple) 18%, transparent);
 }
 
 .silo-choice-radio {
@@ -171,7 +193,7 @@ body {
 }
 
 .silo-choice-option[data-selected='true'] .silo-choice-radio {
-  border-color: #5a80ff;
+  border-color: var(--silo-accent);
 }
 
 .silo-choice-option[data-selected='true'] .silo-choice-radio::after {
@@ -179,13 +201,27 @@ body {
   position: absolute;
   inset: 2px;
   border-radius: 999px;
-  background: #5a80ff;
+  background: var(--silo-accent);
 }
 
 .silo-panel-soft {
   background: var(--silo-surface-2);
   border: 1px solid var(--silo-border);
   border-radius: 14px;
+}
+
+.silo-callout-info {
+  border-radius: 0.5rem;
+  border: 1px solid var(--silo-border);
+  background: color-mix(in srgb, var(--silo-soft-purple) 22%, var(--silo-surface));
+  padding: 1rem;
+}
+
+.silo-callout-success {
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--silo-signal-green) 55%, var(--silo-border));
+  background: color-mix(in srgb, var(--silo-signal-green) 28%, var(--silo-surface));
+  padding: 1rem;
 }
 
 .silo-text-main { color: var(--silo-text); }
@@ -213,6 +249,31 @@ body {
   outline: none;
   border-color: var(--silo-accent);
   box-shadow: none;
+}
+
+/* Single source for wizard / page text fields (use with class "silo-input") */
+.silo-input--sm {
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.silo-input--md {
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.silo-input--lg {
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 /* Error state: keep red border on focus (no accent ring/shadow). */
@@ -256,21 +317,22 @@ body {
 }
 
 .theme-dark {
-  --foreground-rgb: 233, 238, 247;
-  --background-start-rgb: 15, 18, 25;
-  --background-end-rgb: 19, 23, 33;
-  --silo-bg: #1f2a38;
-  --silo-surface: #263243;
-  --silo-surface-2: #2f3d52;
-  --silo-border: #44526b;
-  --silo-text: #edf1fa;
+  --foreground-rgb: 237, 241, 250;
+  --background-start-rgb: 35, 43, 51;
+  --background-end-rgb: 44, 53, 64;
+  --silo-bg: #232b33;
+  --silo-surface: #2c3540;
+  --silo-surface-2: #343e4c;
+  --silo-border: #4a5666;
+  --silo-text: #f2f4f7;
   --silo-text-soft: #aab4c9;
-  --silo-text-faint: #7f8ba2;
-  --silo-accent: #9eacff;
-  --silo-accent-soft: rgba(128, 147, 255, 0.2);
-  --silo-success: #34d399;
-  --silo-warning: #f4b24b;
-  --silo-danger: #f07a7a;
+  --silo-text-faint: #8b97ab;
+  --silo-accent: #b8c4ff;
+  --silo-accent-soft: rgba(196, 206, 253, 0.22);
+  --silo-brand-highlight: #d4e8a8;
+  --silo-success: #4ade80;
+  --silo-warning: #fbbf24;
+  --silo-danger: #f87171;
   --header-bg: rgba(42, 54, 72, 0.8);
   --header-border: #30384b;
   --header-text: var(--silo-text);
@@ -549,7 +611,7 @@ body {
 
 /* Unify checkbox accent color in light theme. */
 .light-market-theme input[type="checkbox"] {
-  accent-color: #7384ff;
+  accent-color: var(--silo-accent);
 }
 
 .light-market-theme select:focus {
@@ -796,7 +858,7 @@ body {
 
 .theme-dark .light-market-theme input[type='checkbox'],
 .theme-dark .light-market-theme input[type='radio'] {
-  accent-color: #8d9dff;
+  accent-color: var(--silo-accent);
 }
 
 /* Dark overrides for missing color classes */
@@ -856,6 +918,48 @@ body {
   background-color: rgba(141, 157, 255, 0.2) !important;
 }
 
+/* --- Market Config Tree: data-dense UI, brand v3 emphasis (not form silo-input) --- */
+.market-config-tree {
+  --mct-label: var(--silo-text-soft);
+  --mct-body: var(--silo-text);
+  --mct-link: var(--silo-accent);
+  --mct-highlight: var(--silo-brand-highlight);
+  --mct-section-bg: color-mix(in srgb, var(--silo-soft-cyan) 14%, var(--silo-surface));
+  --mct-border: var(--silo-border);
+}
+
+.theme-dark .market-config-tree {
+  --mct-section-bg: color-mix(in srgb, var(--silo-node-purple) 12%, var(--silo-surface));
+}
+
+.market-config-tree .mct-label {
+  color: var(--mct-label);
+}
+
+.market-config-tree .mct-body {
+  color: var(--mct-body);
+}
+
+.market-config-tree .mct-link {
+  color: var(--mct-link);
+  text-decoration: none;
+}
+
+.market-config-tree .mct-link:hover {
+  opacity: 0.88;
+  text-decoration: underline;
+}
+
+.market-config-tree .mct-value-emphasis {
+  color: var(--mct-highlight);
+  font-weight: 600;
+}
+
+.market-config-tree .mct-section-surface {
+  background-color: var(--mct-section-bg);
+  border-color: var(--mct-border);
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -887,11 +991,11 @@ body {
 .tree .tree-item::marker {
   font-size: 0.75em !important;
   font-weight: 500 !important;
-  color: #9ca3af !important; /* gray-400 */
+  color: var(--silo-surface-muted) !important;
 }
 
 .theme-dark .tree .tree-item::marker {
-  color: rgba(190, 242, 100, 0.6) !important; /* lime-300 with opacity */
+  color: var(--silo-text-faint) !important;
 }
 .tree-item .tree-item-content {
   display: inline;
@@ -900,7 +1004,7 @@ body {
 /* Visual separators between main tree sections (SILO CONFIG / SILO 0 / SILO 1) */
 .tree-separator {
   list-style: none;
-  border-top: 1px solid #9ca3af; /* gray-400 – much lighter on dark background */
+  border-top: 1px solid var(--silo-border);
   margin: 1rem 0 1.1rem 0;
 }
 

@@ -10,6 +10,8 @@ import ContractInfo from '@/components/ContractInfo'
 import { getChainName } from '@/utils/networks'
 import { formatToE18 } from '@/utils/formatting'
 import dynamicKinkModelFactoryArtifact from '@/abis/silo/DynamicKinkModelFactory.json'
+import Button from '@/components/Button'
+import { wizardSansInputClass } from '@/constants/formStyles'
 
 type FoundryArtifact = { abi: ethers.InterfaceAbi }
 const dynamicKinkModelFactoryAbi = (dynamicKinkModelFactoryArtifact as FoundryArtifact).abi
@@ -285,11 +287,11 @@ export default function Step4IRMSelection() {
                   sourceContractName="DynamicKinkModelFactory"
                 />
               ) : wizardData.networkInfo?.chainId && kinkFactory?.address ? (
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+                <div className="silo-panel p-4">
                   <p className="text-xs text-amber-400">Loading Interest Rate Model implementation from factory…</p>
                 </div>
               ) : wizardData.networkInfo?.chainId ? (
-                <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+                <div className="silo-panel p-4">
                   <p className="text-xs text-amber-400">Factory address not found for this network. Deploy may require manual config.</p>
                 </div>
               ) : null}
@@ -297,7 +299,7 @@ export default function Step4IRMSelection() {
 
             {/* Two search boxes for Kink */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+              <div className="silo-panel p-4">
                 <label htmlFor="kink-config-search" className="block text-sm font-medium text-gray-300 mb-2">
                   Search Dynamic IRM configs (name / params)
                 </label>
@@ -307,11 +309,11 @@ export default function Step4IRMSelection() {
                   value={kinkConfigSearch}
                   onChange={e => setKinkConfigSearch(e.target.value)}
                   placeholder="e.g. static-2.4-6"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
+                  className={wizardSansInputClass}
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkConfigs.length} config(s)</p>
               </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+              <div className="silo-panel p-4">
                 <label htmlFor="kink-immutable-search" className="block text-sm font-medium text-gray-300 mb-2">
                   Search Dynamic IRM immutables (timelock / rcompCap)
                 </label>
@@ -321,7 +323,7 @@ export default function Step4IRMSelection() {
                   value={kinkImmutableSearch}
                   onChange={e => setKinkImmutableSearch(e.target.value)}
                   placeholder="e.g. T1day_C200"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
+                  className={wizardSansInputClass}
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkImmutables.length} immutable(s)</p>
               </div>
@@ -335,7 +337,7 @@ export default function Step4IRMSelection() {
                   <span className="text-[var(--silo-accent)] font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
                 </h3>
 
-                <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+                <div className="silo-panel p-4">
                   <h4 className="text-base font-medium text-white mb-3">Config</h4>
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {filteredKinkConfigs.length === 0 ? (
@@ -360,7 +362,7 @@ export default function Step4IRMSelection() {
                   </div>
                 </div>
 
-                <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+                <div className="silo-panel p-4">
                   <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {filteredKinkImmutables.length === 0 ? (
@@ -399,7 +401,7 @@ export default function Step4IRMSelection() {
                   <span className="text-[var(--silo-accent)] font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
                 </h3>
 
-                <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+                <div className="silo-panel p-4">
                   <h4 className="text-base font-medium text-white mb-3">Config</h4>
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {filteredKinkConfigs.length === 0 ? (
@@ -424,7 +426,7 @@ export default function Step4IRMSelection() {
                   </div>
                 </div>
 
-                <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+                <div className="silo-panel p-4">
                   <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {filteredKinkImmutables.length === 0 ? (
@@ -459,25 +461,18 @@ export default function Step4IRMSelection() {
             </div>
 
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Manageable Oracle</span>
-          </button>
-          <button
-            type="submit"
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg">
             <span>Oracle/IRM Owner</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
         </div>
       </form>
     </div>

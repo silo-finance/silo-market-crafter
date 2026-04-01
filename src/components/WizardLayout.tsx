@@ -34,8 +34,8 @@ function OwnerAddressRow({ address, chainId }: { address: string; chainId: numbe
       />
       {nameFromJson != null && (
         <>
-          <span className="text-xs text-lime-200/50">—</span>
-          <span className="text-xs text-lime-200/65">{nameFromJson}</span>
+          <span className="text-xs silo-text-faint">—</span>
+          <span className="text-xs silo-text-soft">{nameFromJson}</span>
         </>
       )}
     </div>
@@ -194,10 +194,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 1: Assets */}
               {wizardData.token0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Selected Assets</h3>
+                  <h3 className="text-sm font-medium silo-text-soft mb-3">Selected Assets</h3>
                   <div className="space-y-2">
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 0{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 0{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <AddressDisplayShort
                           address={wizardData.token0.address}
@@ -205,12 +205,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           className="text-xs"
                           showVersion={false}
                         />
-                        <span className="text-xs text-lime-200/65">{wizardData.token0.symbol}</span>
+                        <span className="text-xs silo-text-soft">{wizardData.token0.symbol}</span>
                       </div>
                     </div>
                     {wizardData.token1 && (
-                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-lime-50">Token 1{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="silo-panel-soft p-3">
+                        <div className="text-sm font-medium silo-text-main">Token 1{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <AddressDisplayShort
                             address={wizardData.token1.address}
@@ -218,7 +218,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             className="text-xs"
                             showVersion={false}
                           />
-                          <span className="text-xs text-lime-200/65">{wizardData.token1.symbol}</span>
+                          <span className="text-xs silo-text-soft">{wizardData.token1.symbol}</span>
                         </div>
                       </div>
                     )}
@@ -229,22 +229,22 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 3: Oracle Configuration – not shown on verification (verification uses only on-chain data in the tree) */}
               {wizardData.currentStep !== 13 && (wizardData.oracleType0 || wizardData.oracleConfiguration) && (
                 <div>
-                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Oracle Configuration</h3>
+                  <h3 className="text-sm font-medium silo-text-soft mb-3">Oracle Configuration</h3>
                   {wizardData.manageableOracle && wizardData.manageableOracleTimelock != null && wizardData.manageableOracleTimelock > 0 && (
-                    <p className="text-xs text-lime-200/65 mb-2">
+                    <p className="text-xs silo-text-soft mb-2">
                       Timelock: {Math.round(wizardData.manageableOracleTimelock / 86400)} {Math.round(wizardData.manageableOracleTimelock / 86400) === 1 ? 'day' : 'days'} ({wizardData.manageableOracleTimelock.toLocaleString()} seconds)
                     </p>
                   )}
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
-                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="silo-panel-soft p-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-lime-50">Token 0 Oracle{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</span>
+                          <span className="text-sm font-medium silo-text-main">Token 0 Oracle{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</span>
                           {wizardData.manageableOracle && wizardData.oracleType0.type !== 'none' && (
-                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-lime-800/60 text-white font-medium">manageable</span>
+                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-[var(--silo-accent)] text-white font-medium">manageable</span>
                           )}
                         </div>
-                        <div className="text-xs text-lime-200/65 capitalize mb-2">
+                        <div className="text-xs silo-text-soft capitalize mb-2">
                           Type:{' '}
                           {wizardData.oracleType0.type === 'none'
                             ? 'No Oracle'
@@ -265,7 +265,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <>
-                              <div className="text-xs text-lime-200/65">{scaler.name}</div>
+                              <div className="text-xs silo-text-soft">{scaler.name}</div>
                               <div className="mt-1">
                                 <AddressDisplayShort
                                   address={scaler.address}
@@ -289,7 +289,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <div className="mt-2">
-                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="text-xs silo-text-soft mb-1">Quote token</div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <AddressDisplayShort
                                   address={quoteAddress}
@@ -299,8 +299,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 />
                                 {quoteSymbol && (
                                   <>
-                                    <span className="text-xs text-lime-200/50">—</span>
-                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                    <span className="text-xs silo-text-faint">—</span>
+                                    <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                   </>
                                 )}
                               </div>
@@ -317,7 +317,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           return (
                             <div className="mt-2 space-y-2">
                               <div>
-                                <div className="text-xs text-lime-200/65 mb-1">Vault</div>
+                                <div className="text-xs silo-text-soft mb-1">Vault</div>
                                 <AddressDisplayShort
                                   address={vault.vaultAddress}
                                   chainId={chainId}
@@ -327,7 +327,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                               </div>
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort
                                       address={quoteAddress}
@@ -337,8 +337,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                     />
                                     {quoteSymbol && (
                                       <>
-                                        <span className="text-xs text-lime-200/50">—</span>
-                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                        <span className="text-xs silo-text-faint">—</span>
+                                        <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                       </>
                                     )}
                                   </div>
@@ -358,7 +358,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             <div className="mt-2 space-y-2">
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort
                                       address={quoteAddress}
@@ -368,15 +368,15 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                     />
                                     {quoteSymbol && (
                                       <>
-                                        <span className="text-xs text-lime-200/50">—</span>
-                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                        <span className="text-xs silo-text-faint">—</span>
+                                        <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                       </>
                                     )}
                                   </div>
                                 </div>
                               )}
                               <div>
-                                <div className="text-xs text-lime-200/65 mb-1">Target contract</div>
+                                <div className="text-xs silo-text-soft mb-1">Target contract</div>
                                 <AddressDisplayShort
                                   address={customMethod.target}
                                   chainId={chainId}
@@ -384,10 +384,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   showVersion={false}
                                 />
                               </div>
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Method: <span className="font-mono">{customMethod.methodSignature || '—'}</span>
                               </div>
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Price decimals: {customMethod.priceDecimals}
                               </div>
                             </div>
@@ -404,14 +404,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             <div className="mt-2 space-y-2">
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort address={quoteAddress} chainId={chainId} className="text-xs" showVersion={false} />
-                                    {quoteSymbol && <><span className="text-xs text-lime-200/50">—</span><span className="text-xs text-lime-200/65">{quoteSymbol}</span></>}
+                                    {quoteSymbol && <><span className="text-xs silo-text-faint">—</span><span className="text-xs silo-text-soft">{quoteSymbol}</span></>}
                                   </div>
                                 </div>
                               )}
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Pair ID: <span className="font-mono">{supra.pairId || '—'}</span>
                               </div>
                             </div>
@@ -420,14 +420,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     )}
                     {wizardData.oracleType1 && (
-                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
+                      <div className="silo-panel-soft p-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-lime-50">Token 1 Oracle{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</span>
+                          <span className="text-sm font-medium silo-text-main">Token 1 Oracle{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</span>
                           {wizardData.manageableOracle && wizardData.oracleType1.type !== 'none' && (
-                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-lime-800/60 text-white font-medium">manageable</span>
+                            <span className="manageable-badge text-[10px] px-1.5 py-0.5 rounded bg-[var(--silo-accent)] text-white font-medium">manageable</span>
                           )}
                         </div>
-                        <div className="text-xs text-lime-200/65 capitalize mb-2">
+                        <div className="text-xs silo-text-soft capitalize mb-2">
                           Type:{' '}
                           {wizardData.oracleType1.type === 'none'
                             ? 'No Oracle'
@@ -448,7 +448,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <>
-                              <div className="text-xs text-lime-200/65">{scaler.name}</div>
+                              <div className="text-xs silo-text-soft">{scaler.name}</div>
                               <div className="mt-1">
                                 <AddressDisplayShort
                                   address={scaler.address}
@@ -472,7 +472,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
                             <div className="mt-2">
-                              <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                              <div className="text-xs silo-text-soft mb-1">Quote token</div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <AddressDisplayShort
                                   address={quoteAddress}
@@ -482,8 +482,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 />
                                 {quoteSymbol && (
                                   <>
-                                    <span className="text-xs text-lime-200/50">—</span>
-                                    <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                    <span className="text-xs silo-text-faint">—</span>
+                                    <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                   </>
                                 )}
                               </div>
@@ -500,7 +500,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                           return (
                             <div className="mt-2 space-y-2">
                               <div>
-                                <div className="text-xs text-lime-200/65 mb-1">Vault</div>
+                                <div className="text-xs silo-text-soft mb-1">Vault</div>
                                 <AddressDisplayShort
                                   address={vault.vaultAddress}
                                   chainId={chainId}
@@ -510,7 +510,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                               </div>
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort
                                       address={quoteAddress}
@@ -520,8 +520,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                     />
                                     {quoteSymbol && (
                                       <>
-                                        <span className="text-xs text-lime-200/50">—</span>
-                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                        <span className="text-xs silo-text-faint">—</span>
+                                        <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                       </>
                                     )}
                                   </div>
@@ -541,7 +541,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             <div className="mt-2 space-y-2">
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort
                                       address={quoteAddress}
@@ -551,15 +551,15 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                     />
                                     {quoteSymbol && (
                                       <>
-                                        <span className="text-xs text-lime-200/50">—</span>
-                                        <span className="text-xs text-lime-200/65">{quoteSymbol}</span>
+                                        <span className="text-xs silo-text-faint">—</span>
+                                        <span className="text-xs silo-text-soft">{quoteSymbol}</span>
                                       </>
                                     )}
                                   </div>
                                 </div>
                               )}
                               <div>
-                                <div className="text-xs text-lime-200/65 mb-1">Target contract</div>
+                                <div className="text-xs silo-text-soft mb-1">Target contract</div>
                                 <AddressDisplayShort
                                   address={customMethod.target}
                                   chainId={chainId}
@@ -567,10 +567,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                   showVersion={false}
                                 />
                               </div>
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Method: <span className="font-mono">{customMethod.methodSignature || '—'}</span>
                               </div>
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Price decimals: {customMethod.priceDecimals}
                               </div>
                             </div>
@@ -587,14 +587,14 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             <div className="mt-2 space-y-2">
                               {quoteAddress && (
                                 <div>
-                                  <div className="text-xs text-lime-200/65 mb-1">Quote token</div>
+                                  <div className="text-xs silo-text-soft mb-1">Quote token</div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <AddressDisplayShort address={quoteAddress} chainId={chainId} className="text-xs" showVersion={false} />
-                                    {quoteSymbol && <><span className="text-xs text-lime-200/50">—</span><span className="text-xs text-lime-200/65">{quoteSymbol}</span></>}
+                                    {quoteSymbol && <><span className="text-xs silo-text-faint">—</span><span className="text-xs silo-text-soft">{quoteSymbol}</span></>}
                                   </div>
                                 </div>
                               )}
-                              <div className="text-xs text-lime-200/65">
+                              <div className="text-xs silo-text-soft">
                                 Pair ID: <span className="font-mono">{supra.pairId || '—'}</span>
                               </div>
                             </div>
@@ -609,16 +609,16 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 4: IRM Selection */}
               {wizardData.selectedIRM0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Interest Rate Models</h3>
+                  <h3 className="text-sm font-medium silo-text-soft mb-3">Interest Rate Models</h3>
                   <div className="space-y-2">
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 0 IRM{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-lime-200/65">{wizardData.selectedIRM0.name}</div>
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 0 IRM{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs silo-text-soft">{wizardData.selectedIRM0.name}</div>
                     </div>
                     {wizardData.selectedIRM1 && (
-                      <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-lime-50">Token 1 IRM{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
-                        <div className="text-xs text-lime-200/65">{wizardData.selectedIRM1.name}</div>
+                      <div className="silo-panel-soft p-3">
+                        <div className="text-sm font-medium silo-text-main">Token 1 IRM{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
+                        <div className="text-xs silo-text-soft">{wizardData.selectedIRM1.name}</div>
                       </div>
                     )}
                   </div>
@@ -628,11 +628,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 5: Borrow Configuration */}
               {wizardData.borrowConfiguration && (
                 <div>
-                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Borrow Configuration</h3>
+                  <h3 className="text-sm font-medium silo-text-soft mb-3">Borrow Configuration</h3>
                   <div className="space-y-2">
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 0{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-lime-200/65">
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 0{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs silo-text-soft">
                         {wizardData.borrowConfiguration.token0.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
                         )}
@@ -642,9 +642,9 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                         Target LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 1{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
-                      <div className="text-xs text-lime-200/65">
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 1{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="text-xs silo-text-soft">
                         {wizardData.borrowConfiguration.token1.nonBorrowable && (
                           <span className="text-red-400">Non-borrowable</span>
                         )}
@@ -661,25 +661,25 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               {/* Step 6: Fees Configuration */}
               {wizardData.feesConfiguration && (
                 <div>
-                  <h3 className="text-sm font-medium text-lime-200/80 mb-3">Fees Configuration</h3>
+                  <h3 className="text-sm font-medium silo-text-soft mb-3">Fees Configuration</h3>
                   <div className="space-y-2">
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">General Fees</div>
-                      <div className="text-xs text-lime-200/65">
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">General Fees</div>
+                      <div className="text-xs silo-text-soft">
                         DAO: {bigintToDisplayNumber(wizardData.feesConfiguration.daoFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Deployer: {bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 0 Fees{wizardData.token0?.symbol ? <span className="text-lime-200/65"> - {wizardData.token0.symbol}</span> : ''}</div>
-                      <div className="text-xs text-lime-200/65">
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 0 Fees{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
+                      <div className="text-xs silo-text-soft">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                      <div className="text-sm font-medium text-lime-50">Token 1 Fees{wizardData.token1?.symbol ? <span className="text-lime-200/65"> - {wizardData.token1.symbol}</span> : ''}</div>
-                      <div className="text-xs text-lime-200/65">
+                    <div className="silo-panel-soft p-3">
+                      <div className="text-sm font-medium silo-text-main">Token 1 Fees{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
+                      <div className="text-xs silo-text-soft">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
@@ -690,22 +690,22 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
 
               {/* Owners: Hook Owner + IRM Owner (Kink only) */}
               <div>
-                <h3 className="text-sm font-medium text-lime-200/80 mb-3">Owners</h3>
+                <h3 className="text-sm font-medium silo-text-soft mb-3">Owners</h3>
                 <div className="space-y-2">
-                  <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-lime-50">Hook Owner</div>
+                  <div className="silo-panel-soft p-3">
+                    <div className="text-sm font-medium silo-text-main">Hook Owner</div>
                     {wizardData.hookOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-lime-300/45 mt-1">—</div>
+                      <div className="text-xs silo-text-faint mt-1">—</div>
                     )}
                   </div>
-                  <div className="bg-[#1a241a] border border-lime-900/40 p-3 rounded-lg">
-                    <div className="text-sm font-medium text-lime-50">Oracle/IRM Owner</div>
+                  <div className="silo-panel-soft p-3">
+                    <div className="text-sm font-medium silo-text-main">Oracle/IRM Owner</div>
                     {wizardData.manageableOracleOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.manageableOracleOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
                     ) : (
-                      <div className="text-xs text-lime-300/45 mt-1">—</div>
+                      <div className="text-xs silo-text-faint mt-1">—</div>
                     )}
                   </div>
                 </div>

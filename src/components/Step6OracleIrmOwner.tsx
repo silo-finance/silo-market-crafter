@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { ethers } from 'ethers'
 import OwnerSelectionBlock from '@/components/OwnerSelectionBlock'
+import Button from '@/components/Button'
 
 export default function Step6OracleIrmOwner() {
   const router = useRouter()
@@ -48,13 +49,13 @@ export default function Step6OracleIrmOwner() {
             />
           </div>
         ) : (
-          <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-6 mb-6">
+          <div className="silo-callout-info mb-6 p-6">
             <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-lime-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-[var(--silo-accent)] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="text-lime-200 font-medium">Owner not required</p>
+                <p className="silo-text-main font-medium">Owner not required</p>
                 <p className="text-gray-400 text-sm mt-1">
                   Manageable Oracle is disabled and IRM is not Kink, so no owner address is needed for this configuration.
                 </p>
@@ -64,26 +65,18 @@ export default function Step6OracleIrmOwner() {
         )}
 
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>IRM Selection</span>
-          </button>
-          <button
-            type="submit"
-            disabled={needsOwner && !hasValidOwner}
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg" disabled={needsOwner && !hasValidOwner}>
             <span>Borrow Setup</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
         </div>
       </form>
     </div>

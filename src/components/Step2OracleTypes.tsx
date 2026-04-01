@@ -8,6 +8,7 @@ import {
   getOracleFactoryMissingMessage,
   OracleFactoryType,
 } from '@/utils/oracleFactoryAvailability'
+import Button from '@/components/Button'
 
 export default function Step2OracleTypes() {
   const router = useRouter()
@@ -305,7 +306,7 @@ export default function Step2OracleTypes() {
             Please complete Step 1 first to select your tokens
           </p>
         </div>
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
+        <div className="silo-panel p-8 mb-6">
           <p className="text-gray-400 text-center">No tokens selected. Please go back to Step 1.</p>
         </div>
         <div className="flex justify-between">
@@ -336,7 +337,7 @@ export default function Step2OracleTypes() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Token 0 Oracle Selection */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
             {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
@@ -431,7 +432,7 @@ export default function Step2OracleTypes() {
         </div>
 
         {/* Token 1 Oracle Selection */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
             {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
@@ -537,21 +538,13 @@ export default function Step2OracleTypes() {
         )}
 
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Assets</span>
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg" disabled={loading}>
             {loading ? (
               <>
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -568,7 +561,7 @@ export default function Step2OracleTypes() {
                 </svg>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

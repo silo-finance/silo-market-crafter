@@ -32,7 +32,7 @@ export default function IrmConfigNameWithLink({ configName, variant = 'emphasize
           target="_blank"
           rel="noopener noreferrer"
           title="View config in repository"
-          className="inline-flex items-center justify-center text-gray-400 hover:text-lime-500 transition-colors"
+          className="inline-flex items-center justify-center text-gray-400 hover:text-[var(--silo-accent)] transition-colors"
           aria-label="View config in repository"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

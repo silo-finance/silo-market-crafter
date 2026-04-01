@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import Button from '@/components/Button'
 import { WIZARD_CACHE_KEYS } from '@/contexts/WizardContext'
 import { clearVersionCache } from '@/utils/versionCache'
 
@@ -35,18 +36,12 @@ export default function Error({
           A client-side exception has occurred. If this persists, clear cache and try again.
         </p>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={reset}
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] text-[#141d43] font-medium py-2 px-4 rounded-lg transition-colors"
-          >
+          <Button type="button" variant="primary" size="md" onClick={reset}>
             Try Again
-          </button>
-          <button
-            onClick={handleClearCache}
-            className="bg-[#f4b24b] hover:bg-[#efaa39] text-[#3f2b00] font-medium py-2 px-4 rounded-lg transition-colors"
-          >
+          </Button>
+          <Button type="button" variant="orange" size="md" onClick={handleClearCache}>
             Clear Cache
-          </button>
+          </Button>
         </div>
       </div>
     </div>

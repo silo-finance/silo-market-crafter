@@ -42,7 +42,7 @@ export default function ResetButton() {
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md mx-4">
+          <div className="silo-panel p-6 max-w-md mx-4">
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex-shrink-0">
                 <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

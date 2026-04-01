@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { DM_Mono, DM_Sans } from 'next/font/google'
 import './globals.css'
 import { Suspense } from 'react'
 import Header from '@/components/Header'
@@ -10,7 +10,19 @@ import NetworkWarning from '@/components/NetworkWarning'
 import { WizardProvider } from '@/contexts/WizardContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
-const inter = Inter({ subsets: ['latin'] })
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+})
+
+const dmMono = DM_Mono({
+  subsets: ['latin'],
+  variable: '--font-dm-mono',
+  display: 'swap',
+  weight: ['400', '500'],
+})
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, '') || ''
 const patternCirclesUrl = `${basePath}/pattern-circles.svg`
 
@@ -25,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`} suppressHydrationWarning>
       <head>
         <style>{`:root{--pattern-circles-url:url(${patternCirclesUrl});--pattern-circles-static-url:url(${patternCirclesUrl})}`}</style>
         <script
@@ -44,7 +56,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${dmSans.className} font-sans antialiased`}>
         <AnimatedCirclesBackground />
         <ThemeProvider>
           <WizardProvider>
