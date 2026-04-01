@@ -9,6 +9,7 @@ import { ethers } from 'ethers'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
+import Button from '@/components/Button'
 
 const MANAGEABLE_ORACLE_FACTORY_NAME = 'ManageableOracleFactory'
 
@@ -260,7 +261,7 @@ export default function Step4ManageableOracle() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <label className="flex items-start gap-3 cursor-pointer group">
             <input
               type="checkbox"
@@ -384,25 +385,18 @@ export default function Step4ManageableOracle() {
         )}
 
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Oracle Config</span>
-          </button>
-          <button
-            type="submit"
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg">
             <span>IRM Selection</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
         </div>
       </form>
     </div>

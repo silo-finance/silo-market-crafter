@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard, BorrowConfiguration } from '@/contexts/WizardContext'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 import { formatWizardBigIntToE18 } from '@/utils/formatting'
+import Button from '@/components/Button'
 
 interface InputComponentProps {
   tokenIndex: 0 | 1
@@ -399,9 +400,9 @@ export default function Step5BorrowSetup() {
         {/* Borrow Configuration - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Token 0 Configuration */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+          <div className="silo-panel p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Collateral Configuration for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+              Collateral Configuration for <span className="text-[var(--silo-accent)] font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -459,9 +460,9 @@ export default function Step5BorrowSetup() {
           </div>
 
           {/* Token 1 Configuration */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+          <div className="silo-panel p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Collateral Configuration for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+              Collateral Configuration for <span className="text-[var(--silo-accent)] font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
             {/* Non-borrowable checkbox */}
@@ -520,8 +521,8 @@ export default function Step5BorrowSetup() {
         </div>
 
         {/* Validation Rules Info */}
-        <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4 mb-6">
-          <h4 className="text-lime-500 font-semibold mb-2">Validation Rules:</h4>
+        <div className="silo-callout-info mb-6">
+          <h4 className="text-[var(--silo-accent)] font-semibold mb-2">Validation Rules:</h4>
           <ul className="text-sm text-gray-300 space-y-1">
             <li>• Max LTV must be less than or equal to Liquidation Threshold</li>
             <li>• Liquidation Target LTV must be less than Liquidation Threshold</li>
@@ -531,26 +532,18 @@ export default function Step5BorrowSetup() {
 
         {/* Navigation */}
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Oracle/IRM Owner</span>
-          </button>
-          
-          <button
-            type="submit"
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg">
             <span>Fees</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
         </div>
       </form>
 

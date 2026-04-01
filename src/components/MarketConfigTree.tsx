@@ -19,6 +19,8 @@ import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
 import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
+import Button from '@/components/Button'
+import { wizardSansInputClass } from '@/constants/formStyles'
 import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
 
 
@@ -68,7 +70,7 @@ function renderErc4626OracleBulletBlock(check: Erc4626VaultQuoteCheck, explorerU
                 href={`${explorerUrl}/address/${addr}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                className="mct-link font-mono text-sm"
               >
                 {formatAddress(addr)}
               </a>
@@ -511,7 +513,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
           href={`${explorerUrl}/address/${address}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+          className="mct-link font-mono text-sm"
         >
           {formatAddress(address)}
         </a>
@@ -617,7 +619,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                   href={`${explorerUrl}/address/${address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                  className="mct-link font-mono text-sm"
                 >
                   {formatAddress(address)}
                 </a>
@@ -1075,7 +1077,7 @@ function SiloSection({
                     href={SUPRA_DATA_FEEDS_INDEX_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+                    className="inline-flex items-center gap-1 mct-link text-sm underline"
                   >
                     Check Pair ID Indexes List
                     <svg
@@ -1127,7 +1129,7 @@ function SiloSection({
                       href={`${explorerUrl}/address/${underlying.address}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                      className="mct-link font-mono text-sm"
                     >
                       {formatAddress(underlying.address)}
                     </a>
@@ -1308,7 +1310,7 @@ function SiloSection({
                       href={SUPRA_DATA_FEEDS_INDEX_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+                      className="inline-flex items-center gap-1 mct-link text-sm underline"
                     >
                       Check Pair ID Indexes List
                       <svg
@@ -1342,7 +1344,7 @@ function SiloSection({
                         href={`${explorerUrl}/address/${underlying.address}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                        className="mct-link font-mono text-sm"
                       >
                         {formatAddress(underlying.address)}
                       </a>
@@ -1645,7 +1647,7 @@ function renderChainlinkAggregatorsForConfig(
               href={`${explorerUrl}/address/${primaryAggregator}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+              className="mct-link font-mono text-sm"
             >
               {formatAddress(primaryAggregator)}
             </a>
@@ -1668,7 +1670,7 @@ function renderChainlinkAggregatorsForConfig(
               href={`${explorerUrl}/address/${secondaryAggregator}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+              className="mct-link font-mono text-sm"
             >
               {formatAddress(secondaryAggregator)}
             </a>
@@ -1720,7 +1722,7 @@ function renderCustomMethodOracleDetailsForConfig(
               href={`${explorerUrl}/address/${target}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+              className="mct-link font-mono text-sm"
             >
               {formatAddress(target)}
             </a>
@@ -1757,7 +1759,7 @@ function renderCustomMethodOracleDetailsForConfig(
                     e.stopPropagation()
                     options.onClickSetSignature?.()
                   }}
-                  className="text-lime-600 hover:text-lime-500 text-sm underline"
+                  className="mct-link text-sm underline"
                 >
                   Click here to set it
                 </button>
@@ -1795,7 +1797,7 @@ function renderSupraOracleDetailsForConfig(
             href={SUPRA_DATA_FEEDS_INDEX_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-500 text-sm underline"
+            className="inline-flex items-center gap-1 mct-link text-sm underline"
           >
             Check Pair ID Indexes List
             <svg
@@ -1985,7 +1987,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
   }
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 px-6 pt-6 pb-2">
+    <div className="market-config-tree silo-panel px-6 pt-6 pb-2">
       {customMethodModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -2034,7 +2036,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                   value={customMethodInput}
                   onChange={(e) => setCustomMethodInput(e.target.value)}
                   placeholder="e.g. price or latestAnswer()"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className={wizardSansInputClass}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Only no-argument methods are supported.
@@ -2046,7 +2048,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
               <p className="text-sm text-red-600 dark:text-red-400 mb-3">{customMethodError}</p>
             )}
             {customMethodTxHash && (
-              <p className={`text-sm mb-3 ${customMethodTxConfirmed ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
+              <p className={`text-sm mb-3 ${customMethodTxConfirmed ? 'text-[var(--silo-success)]' : 'text-gray-600 dark:text-gray-300'}`}>
                 {customMethodTxConfirmed ? 'Transaction confirmed:' : 'Transaction submitted:'}{' '}
                 <span className="font-mono">{customMethodTxHash}</span>
               </p>
@@ -2054,30 +2056,24 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
 
             <div className="flex gap-3">
               {customMethodTxConfirmed ? (
-                <button
-                  type="button"
-                  onClick={() => closeCustomMethodModal(true)}
-                  className="flex-1 bg-lime-700 hover:bg-lime-600 text-white font-semibold py-2 px-4 rounded-lg"
-                >
+                <Button type="button" variant="primary" size="md" fullWidth onClick={() => closeCustomMethodModal(true)}>
                   OK
-                </button>
+                </Button>
               ) : (
                 <>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="md"
+                    fullWidth
                     onClick={submitSetMethodSignature}
                     disabled={customMethodSubmitting}
-                    className="flex-1 bg-lime-700 hover:bg-lime-600 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg"
                   >
                     {customMethodSubmitting ? 'Submitting…' : 'Submit transaction'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => closeCustomMethodModal()}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-2 px-4 rounded-lg"
-                  >
+                  </Button>
+                  <Button type="button" variant="secondary" size="md" fullWidth onClick={() => closeCustomMethodModal()}>
                     Cancel
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -2098,7 +2094,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
       </div>
       <h3 className="text-lg font-semibold text-white mb-4">
         Market Configuration Tree:{' '}
-        <span className="text-lime-300">{marketName}</span>
+        <span className="mct-value-emphasis">{marketName}</span>
       </h3>
       
       <ul className="tree tree-root-bullet">
@@ -2280,7 +2276,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                                   href={`${explorerUrl}/address/${hookGaugeInfo.gaugeAddress}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-lime-600 hover:text-lime-500 font-mono text-sm"
+                                  className="mct-link font-mono text-sm"
                                 >
                                   {formatAddress(hookGaugeInfo.gaugeAddress)}
                                 </a>

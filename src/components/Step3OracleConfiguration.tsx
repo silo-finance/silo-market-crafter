@@ -31,6 +31,8 @@ import {
 } from '@/utils/oracleFactoryAvailability'
 import supraSValueFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
 import supraOracleFeedStorageAbi from '@/abis/oracle/ISupraOracleFeedStorage.json'
+import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
+import Button from '@/components/Button'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -203,8 +205,8 @@ function ChainlinkOracleSection({
         </p>
       )}
       {/* Primary aggregator */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-3">
-        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Primary aggregator</h4>
+      <div className="silo-panel p-4 space-y-3">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">Primary aggregator</h4>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Primary aggregator address *</label>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -221,7 +223,7 @@ function ChainlinkOracleSection({
             value={chainlink.primaryAggregator}
             onChange={(e) => setChainlink(prev => ({ ...prev, primaryAggregator: extractHexAddressLike(e.target.value) }))}
             placeholder="0x..."
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+            className={wizardMonoInputClass}
           />
           {(chainlink.aggregatorDescription != null || chainlink.aggregatorLatestAnswer != null || chainlink.primaryAggregatorDecimals != null) && (
             <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
@@ -252,8 +254,8 @@ function ChainlinkOracleSection({
       </div>
 
       {/* Quote token */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
-        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+      <div className="silo-panel p-4 space-y-2">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">
           Quote token
         </h4>
         <div className="flex flex-wrap gap-2">
@@ -313,7 +315,7 @@ function ChainlinkOracleSection({
       </div>
 
       {/* Secondary aggregator */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
+      <div className="silo-panel p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <input
             type="checkbox"
@@ -334,7 +336,7 @@ function ChainlinkOracleSection({
             value={chainlink.secondaryAggregator}
             onChange={(e) => setChainlink(prev => ({ ...prev, secondaryAggregator: extractHexAddressLike(e.target.value) }))}
             placeholder="0x..."
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+            className={wizardMonoInputClass}
           />
         )}
       </div>
@@ -514,7 +516,7 @@ function VaultOracleSection({
           }}
           onBlur={() => resolveVault(vaultInput)}
           placeholder="0x…"
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+          className={wizardMonoInputClass}
         />
       </div>
 
@@ -590,7 +592,7 @@ function VaultOracleSection({
 
       {/* Quote token – copy Chainlink pattern */}
       <div className="mt-4 space-y-2">
-        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">
           Quote token
         </h4>
         <div className="flex flex-wrap gap-2">
@@ -924,9 +926,9 @@ function CustomMethodOracleSection({
       )}
 
       {/* Section 2: Target Contract Method + Price Decimals */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-4">
+      <div className="silo-panel p-4 space-y-4">
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Target contract method</h4>
+          <h4 className="text-sm font-semibold silo-text-main tracking-wide">Target contract method</h4>
           <label className="block text-sm font-medium text-gray-300 mb-1">
             Target contract *
           </label>
@@ -935,7 +937,7 @@ function CustomMethodOracleSection({
             value={config.target ?? ''}
             onChange={(e) => setConfig(prev => ({ ...prev, target: extractHexAddressLike(e.target.value) }))}
             placeholder="0x… or explorer URL"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+            className={wizardMonoInputClass}
           />
         </div>
 
@@ -958,7 +960,7 @@ function CustomMethodOracleSection({
             }
             onBlur={testMethodCall}
             placeholder="e.g. price or latestAnswer()"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+            className={wizardSansInputClass}
           />
           <p className="text-xs text-gray-400">
             Only methods without arguments are supported. If you type just the name, the app uses <span className="font-mono">()</span> internally.
@@ -966,7 +968,7 @@ function CustomMethodOracleSection({
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Price decimals</h4>
+          <h4 className="text-sm font-semibold silo-text-main tracking-wide">Price decimals</h4>
           <p className="text-xs text-gray-400">Select decimals for the raw returned value to format the price.</p>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 13 }).map((_, i) => {
@@ -985,7 +987,7 @@ function CustomMethodOracleSection({
                   }}
                   className={`px-2.5 py-1.5 text-xs rounded border transition-colors ${
                     selected
-                      ? 'border-lime-700 bg-lime-900/20 text-lime-300'
+                      ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_50%,var(--silo-surface))] text-[var(--silo-text)]'
                       : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                   }`}
                 >
@@ -1038,8 +1040,8 @@ function CustomMethodOracleSection({
       </div>
 
       {/* Section 3: Quote Token */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
-        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+      <div className="silo-panel p-4 space-y-2">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">Quote token</h4>
         <div className="flex flex-wrap gap-2">
           <PredefinedOptionButton
             onClick={() => {
@@ -1309,7 +1311,7 @@ function SupraSValueOracleSection({
         <p className="text-sm text-yellow-400">Resolving oracle implementation…</p>
       )}
 
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
+      <div className="silo-panel p-4 space-y-2">
         <label className="block text-sm font-medium text-gray-300 mb-1">Provide pair ID *</label>
         <p className="text-xs text-gray-400 mb-1">
           Based on{' '}
@@ -1337,7 +1339,7 @@ function SupraSValueOracleSection({
           value={config.pairId ?? ''}
           onChange={(e) => setConfig(prev => ({ ...prev, pairId: e.target.value.replace(/[^\d]/g, '') }))}
           placeholder="e.g. 123"
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono"
+          className={wizardMonoInputClass}
         />
         {config.pairId?.trim() && (
           <div className="mt-2">
@@ -1358,8 +1360,8 @@ function SupraSValueOracleSection({
         )}
       </div>
 
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
-        <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+      <div className="silo-panel p-4 space-y-2">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">Quote token</h4>
         <div className="flex flex-wrap gap-2">
           <PredefinedOptionButton onClick={() => {
             const addr = otherTokenAddress || ''
@@ -3134,19 +3136,16 @@ export default function Step3OracleConfiguration() {
             Please complete previous steps first
           </p>
         </div>
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 mb-6">
+        <div className="silo-panel p-8 mb-6">
           <p className="text-gray-400 text-center">Missing required data. Please go back to previous steps.</p>
         </div>
         <div className="flex justify-between">
-          <button
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Oracle Types</span>
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -3165,7 +3164,7 @@ export default function Step3OracleConfiguration() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Token 0 Configuration */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
             {(wizardData.oracleType0.type === 'none'
               ? 'No Oracle'
@@ -3199,12 +3198,12 @@ export default function Step3OracleConfiguration() {
               : 'Chainlink'}
           </p>
           {wizardData.oracleType0.type === 'none' ? (
-            <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
+            <div className="silo-callout-info">
               <div className="flex items-center space-x-2 mb-2">
-                <svg className="w-5 h-5 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-lime-500 font-medium">No Oracle Configuration Needed</span>
+                <span className="text-[var(--silo-accent)] font-medium">No Oracle Configuration Needed</span>
               </div>
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
@@ -3231,7 +3230,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-[var(--silo-accent)]"
+                  className={wizardSansInputClass}
                   value={ptLinear0.maxYieldPercent === 0 ? '' : ptLinear0.maxYieldPercent}
                   onChange={(e) => setPTLinear0(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -3264,7 +3263,7 @@ export default function Step3OracleConfiguration() {
               {!ptLinear0.useSecondTokenAsQuote && (
                 <>
                   <div className="space-y-2 mb-4">
-                    <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+                    <h4 className="text-sm font-semibold silo-text-main tracking-wide">Quote token</h4>
                     <div className="flex flex-wrap gap-2">
                       <PredefinedOptionButton
                         onClick={() => {
@@ -3445,7 +3444,7 @@ export default function Step3OracleConfiguration() {
                           !oracle.valid
                             ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-lime-700 bg-lime-900/20 cursor-pointer'
+                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_40%,var(--silo-surface))] cursor-pointer'
                             : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                         }`}
                       >
@@ -3468,7 +3467,7 @@ export default function Step3OracleConfiguration() {
                                 href={getBlockExplorerUrl(oracle.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-lime-600 hover:text-lime-500"
+                                className="text-[var(--silo-accent)] hover:opacity-90"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {oracle.scaleFactor}
@@ -3510,7 +3509,7 @@ export default function Step3OracleConfiguration() {
         </div>
 
         {/* Token 1 Configuration */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
             {(wizardData.oracleType1.type === 'none'
               ? 'No Oracle'
@@ -3544,12 +3543,12 @@ export default function Step3OracleConfiguration() {
               : 'Chainlink'}
           </p>
           {wizardData.oracleType1.type === 'none' ? (
-            <div className="bg-lime-900/20 border border-lime-700 rounded-lg p-4">
+            <div className="silo-callout-info">
               <div className="flex items-center space-x-2 mb-2">
-                <svg className="w-5 h-5 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-lime-500 font-medium">No Oracle Configuration Needed</span>
+                <span className="text-[var(--silo-accent)] font-medium">No Oracle Configuration Needed</span>
               </div>
               <p className="text-sm text-gray-300">
                 Token value will be equal to the amount since no oracle is being used.
@@ -3576,7 +3575,7 @@ export default function Step3OracleConfiguration() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-[var(--silo-accent)]"
+                  className={wizardSansInputClass}
                   value={ptLinear1.maxYieldPercent === 0 ? '' : ptLinear1.maxYieldPercent}
                   onChange={(e) => setPTLinear1(prev => ({ ...prev, maxYieldPercent: e.target.value ? Number(e.target.value) : 0 }))}
                   placeholder="e.g. 5"
@@ -3609,7 +3608,7 @@ export default function Step3OracleConfiguration() {
               {!ptLinear1.useSecondTokenAsQuote && (
                 <>
                   <div className="space-y-2 mb-4">
-                    <h4 className="text-sm font-semibold text-emerald-900 tracking-wide">Quote token</h4>
+                    <h4 className="text-sm font-semibold silo-text-main tracking-wide">Quote token</h4>
                     <div className="flex flex-wrap gap-2">
                       <PredefinedOptionButton
                         onClick={() => {
@@ -3790,7 +3789,7 @@ export default function Step3OracleConfiguration() {
                           !oracle.valid
                             ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-lime-700 bg-lime-900/20 cursor-pointer'
+                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_40%,var(--silo-surface))] cursor-pointer'
                             : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
                         }`}
                       >
@@ -3813,7 +3812,7 @@ export default function Step3OracleConfiguration() {
                                 href={getBlockExplorerUrl(oracle.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-lime-600 hover:text-lime-500"
+                                className="text-[var(--silo-accent)] hover:opacity-90"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {oracle.scaleFactor}
@@ -3867,21 +3866,13 @@ export default function Step3OracleConfiguration() {
 
 
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span>Oracle Types</span>
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg" disabled={loading}>
             {loading ? (
               <>
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -3898,7 +3889,7 @@ export default function Step3OracleConfiguration() {
                 </svg>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

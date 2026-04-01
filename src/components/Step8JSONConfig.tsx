@@ -64,13 +64,13 @@ export default function Step8JSONConfig() {
       </div>
 
       {/* Information Note */}
-      <div className="bg-lime-900/20 border border-lime-700/50 rounded-lg p-4 mb-6">
+      <div className="silo-callout-info mb-6">
         <div className="flex items-start space-x-3">
-          <svg className="w-5 h-5 text-lime-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-[var(--silo-accent)] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div className="flex-1">
-            <h4 className="text-lime-500 font-semibold mb-2">Deployment Options</h4>
+            <h4 className="text-[var(--silo-accent)] font-semibold mb-2">Deployment Options</h4>
             <p className="text-sm text-gray-300">
               This JSON configuration can be used to deploy a market using a PR request. If you want to deploy the market directly from the wizard, proceed to the final step - deployment.
             </p>
@@ -80,30 +80,23 @@ export default function Step8JSONConfig() {
 
       {/* Navigation */}
       <div className="flex justify-between mb-6">
-        <button
-          type="button"
-          onClick={goToPreviousStep}
-          className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
+        <Button type="button" variant="secondary" size="lg" onClick={goToPreviousStep}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           <span>Hook Owner</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={handleDeploy}
-          className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-        >
+        <Button type="button" variant="primary" size="lg" onClick={handleDeploy}>
           <span>Deployment</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* JSON Configuration Display */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+      <div className="silo-panel p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">Market Configuration</h3>
           <div className="flex space-x-3">

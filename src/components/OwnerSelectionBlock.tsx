@@ -227,14 +227,14 @@ export default function OwnerSelectionBlock({
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-lg border border-gray-700 bg-gray-800 p-6 ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
+      <div className={`silo-panel-soft p-6 ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
         <p className="text-gray-400 text-sm mb-2">
           Supported names (keys) can be viewed{' '}
           <a
             href={chainId ? getAddressesJsonUrl(chainId) : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--silo-accent)] hover:text-[#7f91ff] underline"
+            className="text-[var(--silo-accent)] hover:opacity-90 underline"
           >
             {chainId ? `in this JSON file (${networkName ?? chainId})` : repositoryLinkLabelNoChain}
           </a>
@@ -253,16 +253,16 @@ export default function OwnerSelectionBlock({
           onChange={(e) => setManualAddress(extractHexAddressLike(e.target.value))}
           placeholder="0x... or name (e.g. WETH)"
           disabled={disabled}
-          className={`w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none font-mono text-sm ${
+          className={`silo-input silo-input--lg font-mono focus:outline-none focus:ring-0 ${
             manualAddress
               ? validatingAddress
-                ? 'border-gray-600'
+                ? 'border-[var(--silo-border)]'
                 : addressValidation.error
                   ? 'border-red-500 focus:border-red-500'
                   : addressValidation.isValid
                     ? 'border-[var(--silo-accent)] focus:border-[var(--silo-accent)]'
-                    : 'border-gray-600'
-              : 'border-gray-600 focus:border-[var(--silo-accent)]'
+                    : 'border-[var(--silo-border)]'
+              : 'border-[var(--silo-border)] focus:border-[var(--silo-accent)]'
           }`}
         />
         {manualAddress && (

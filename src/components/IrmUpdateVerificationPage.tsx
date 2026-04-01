@@ -41,13 +41,13 @@ interface VerificationResult {
 function PassFailBadge({ pass }: { pass: boolean }) {
   if (pass) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-lime-700/70 bg-lime-900/20 px-4 py-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lime-600">
-          <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="silo-callout-success flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--silo-accent)]">
+          <svg className="h-6 w-6 text-[var(--silo-surface-strong)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <div className="text-lime-300 text-base font-bold tracking-wide">PASS</div>
+        <div className="silo-text-main text-base font-bold tracking-wide">PASS</div>
       </div>
     )
   }
@@ -293,17 +293,17 @@ export default function IrmUpdateVerificationPage() {
 
       {result && (
         <div className="space-y-4">
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-white mb-2">Summary</h2>
-            <p className="text-gray-300 text-sm">Safe: <span className="font-mono">{result.parsedSafe.safeAddress}</span></p>
-            <p className="text-gray-300 text-sm">Queued `updateConfig` tx count: <span className="font-semibold">{result.rows.length}</span></p>
+          <div className="silo-panel p-6">
+            <h2 className="text-lg font-semibold silo-text-main mb-2">Summary</h2>
+            <p className="silo-text-soft text-sm">Safe: <span className="font-mono silo-text-main">{result.parsedSafe.safeAddress}</span></p>
+            <p className="silo-text-soft text-sm">Queued `updateConfig` tx count: <span className="font-semibold silo-text-main">{result.rows.length}</span></p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length > 0 ? (
-                <div className="inline-flex items-center gap-2 rounded-md border border-lime-700/70 bg-lime-900/20 px-3 py-1.5">
-                  <svg className="h-5 w-5 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="silo-callout-success inline-flex items-center gap-2 py-1.5 px-3">
+                  <svg className="h-5 w-5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-sm font-semibold text-lime-300">
+                  <span className="text-sm font-semibold silo-text-main">
                     success: {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length}
                   </span>
                 </div>
@@ -331,37 +331,37 @@ export default function IrmUpdateVerificationPage() {
           </div>
 
           {result.rows.length === 0 && (
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-              <p className="text-gray-300">No pending `updateConfig` transactions found in this Safe queue.</p>
+            <div className="silo-panel p-6">
+              <p className="silo-text-soft">No pending `updateConfig` transactions found in this Safe queue.</p>
             </div>
           )}
 
           {result.rows.map(({ candidate, assignedSiloAddress, resolvedSiloConfigAddress, marketLabel, expectedIrmTarget, targetMatchesSilo, matchedConfigName }, index) => (
-            <div key={candidate.tx.safeTxHash} className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+            <div key={candidate.tx.safeTxHash} className="silo-panel p-6">
               <div className="mb-4">
                 <PassFailBadge pass={targetMatchesSilo && matchedConfigName != null} />
               </div>
-              <h3 className="text-white font-semibold mb-3">Transaction #{index + 1} (nonce {candidate.tx.nonce})</h3>
+              <h3 className="silo-text-main font-semibold mb-3">Transaction #{index + 1} (nonce {candidate.tx.nonce})</h3>
               <div className="space-y-1 text-sm">
-                <p className="text-gray-300">
+                <p className="silo-text-soft">
                   market:{' '}
                   <span className="irm-config-name-chip" style={{ fontSize: '0.92rem' }}>
                     {marketLabel}
                   </span>
                 </p>
-                <p className="text-gray-300">assigned silo: <span className="font-mono break-all">{assignedSiloAddress}</span></p>
-                <p className="text-gray-300">resolved siloConfig: <span className="font-mono break-all">{resolvedSiloConfigAddress}</span></p>
-                <p className="text-gray-300">transaction target address: <span className="font-mono break-all">{candidate.tx.to}</span></p>
-                <p className="text-gray-300">IRM on chain (IRM config from silo config): <span className="font-mono break-all">{expectedIrmTarget}</span></p>
-                <p className="text-gray-300">
+                <p className="silo-text-soft">assigned silo: <span className="font-mono break-all silo-text-main">{assignedSiloAddress}</span></p>
+                <p className="silo-text-soft">resolved siloConfig: <span className="font-mono break-all silo-text-main">{resolvedSiloConfigAddress}</span></p>
+                <p className="silo-text-soft">transaction target address: <span className="font-mono break-all silo-text-main">{candidate.tx.to}</span></p>
+                <p className="silo-text-soft">IRM on chain (IRM config from silo config): <span className="font-mono break-all silo-text-main">{expectedIrmTarget}</span></p>
+                <p className="silo-text-soft">
                   target matches selected silo IRM:{' '}
-                  <span className={targetMatchesSilo ? 'text-lime-400 font-semibold' : 'text-red-400 font-semibold'}>
+                  <span className={targetMatchesSilo ? 'text-[var(--silo-success)] font-semibold' : 'text-red-400 font-semibold'}>
                     {targetMatchesSilo ? 'yes' : 'no'}
                   </span>
                 </p>
-                <p className="text-gray-300">
+                <p className="silo-text-soft">
                   matched official config:{' '}
-                  <span className={matchedConfigName ? 'text-lime-400 font-semibold' : 'text-yellow-400 font-semibold'}>
+                  <span className={matchedConfigName ? 'text-[var(--silo-success)] font-semibold' : 'text-yellow-400 font-semibold'}>
                     {matchedConfigName ?? 'not matched'}
                   </span>
                 </p>
