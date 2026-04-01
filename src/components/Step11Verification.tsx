@@ -30,6 +30,7 @@ import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import Image from 'next/image'
 import prWorkflowImage from '@/data/pr.png'
 import Button from '@/components/Button'
+import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
 
 function parseChainQueryParam(chainParam: string | null): { chainId: number | null; error: string | null } {
   if (!chainParam) {
@@ -1610,8 +1611,8 @@ export default function Step11Verification() {
 
       {showForm && !loading && (
         <form onSubmit={handleSubmit} className="mb-6">
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-            <label htmlFor="input" className="block text-sm font-medium text-white mb-2">
+          <div className="silo-panel p-6">
+            <label htmlFor="input" className="block text-sm font-medium silo-text-main mb-2">
               Silo Config, Silo Address, or Transaction Hash
             </label>
             <div className="flex gap-2 items-center">
@@ -1621,7 +1622,7 @@ export default function Step11Verification() {
                 value={input}
                 onChange={handleInputChange}
                 placeholder="0x... (Silo Config, Silo address, or tx hash)"
-                className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)]"
+                className={`flex-1 min-w-0 ${wizardMonoInputClass}`}
               />
               <Button
                 type="submit"
@@ -1633,7 +1634,7 @@ export default function Step11Verification() {
                 {loading ? 'Loading...' : 'Verify'}
               </Button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs silo-text-soft mt-2">
               Paste a Silo Config address, Silo address, or transaction hash
             </p>
           </div>
@@ -1641,14 +1642,14 @@ export default function Step11Verification() {
       )}
 
       {txHash && (
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-3">Transaction</h3>
+        <div className="silo-panel p-6 mb-6">
+          <h3 className="text-lg font-semibold silo-text-main mb-3">Transaction</h3>
           <div className="flex flex-wrap items-center gap-2">
             <a
               href={`${explorerUrl}/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lime-600 hover:text-lime-500 font-mono text-sm break-all"
+              className="text-[var(--silo-accent)] hover:opacity-90 font-mono text-sm break-all"
             >
               {txHash}
             </a>
@@ -1734,7 +1735,7 @@ export default function Step11Verification() {
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="mt-3 text-lime-600 hover:text-lime-500 text-sm"
+              className="mt-3 text-[var(--silo-accent)] hover:opacity-90 text-sm"
             >
               Try again with different input
             </button>
@@ -1816,7 +1817,7 @@ export default function Step11Verification() {
                 setPriceSourcesInput(e.target.value)
                 setPriceSourcesError(null)
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent"
+              className={`w-full ${wizardSansInputClass}`}
               rows={3}
               required
             />

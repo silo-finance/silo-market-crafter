@@ -639,12 +639,12 @@ export default function Step10Deployment() {
       </div>
 
       {/* Network Information */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+      <div className="silo-panel p-6 mb-6">
         <p className="text-sm font-medium text-gray-300 mb-4">
           Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">({wizardData.networkInfo?.chainId || '—'})</span>
         </p>
         {loading && (
-          <div className="mb-4 flex items-center space-x-2 text-lime-500">
+          <div className="mb-4 flex items-center space-x-2 text-[var(--silo-accent)]">
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -665,7 +665,7 @@ export default function Step10Deployment() {
               renderVersion={<VersionStatus version={deployerVersion || null} />}
             />
             {siloImplementationAddress && (
-              <div className="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+              <div className="mt-4 silo-panel-soft p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-white">Silo Implementation</p>
                   <span className="text-xs text-gray-400">
@@ -788,8 +788,8 @@ export default function Step10Deployment() {
       )}
 
       {configUnchangedAfterDeploy && txHash && (
-        <div className="bg-[#f6fbf2] border border-lime-300 rounded-lg p-4 mb-6">
-          <div className="text-emerald-800 text-sm font-semibold mb-2">
+        <div className="silo-callout-success mb-6">
+          <div className="silo-text-main text-sm font-semibold mb-2">
             ✓ Transaction submitted successfully!
           </div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -797,7 +797,7 @@ export default function Step10Deployment() {
               href={getBlockExplorerUrl(txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-700 hover:text-emerald-900 text-sm underline"
+              className="text-[var(--silo-accent)] hover:opacity-90 text-sm underline"
             >
               View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
             </a>
@@ -822,7 +822,7 @@ export default function Step10Deployment() {
       )}
 
       {/* Deploy Arguments as JSON */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+      <div className="silo-panel p-6 mb-6">
         <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
         <p className="text-sm text-gray-400 mb-4">
           Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>

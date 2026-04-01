@@ -292,7 +292,7 @@ export default function Header() {
                       </option>
                     ))}
                   </select>
-                  <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
+                  <div className="w-2 h-2 rounded-full bg-[var(--silo-signal-green)] ring-1 ring-[var(--silo-border)]" />
                 </div>
                 <button
                   type="button"

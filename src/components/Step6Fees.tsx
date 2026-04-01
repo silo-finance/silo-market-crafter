@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useWizard, FeesConfiguration } from '@/contexts/WizardContext'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 import { formatWizardBigIntToE18 } from '@/utils/formatting'
+import { wizardMonoInputClass } from '@/constants/formStyles'
 
 interface GeneralFeeInputProps {
   field: 'daoFee' | 'deployerFee'
@@ -38,7 +39,7 @@ const GeneralFeeInput = React.memo(({
   
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-white">
+      <label className="text-sm font-medium silo-text-main">
         {label}
       </label>
       <div className="relative w-32">
@@ -48,7 +49,7 @@ const GeneralFeeInput = React.memo(({
           value={displayValue}
           onChange={(e) => onChange(field, e.target.value)}
           onBlur={() => onBlur(field)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent text-center"
+          className={`${wizardMonoInputClass} text-center`}
           placeholder="0"
         />
         <div className="absolute right-2 top-2 text-gray-400 text-sm">
@@ -79,7 +80,7 @@ const TokenFeeInput = React.memo(({
   
   return (
     <div className="space-y-2">
-      <label className={`text-sm font-medium ${disabled ? 'text-gray-500' : 'text-white'}`}>
+      <label className={`text-sm font-medium ${disabled ? 'silo-text-soft' : 'silo-text-main'}`}>
         {label}
       </label>
       <div className="relative w-32">
@@ -90,11 +91,7 @@ const TokenFeeInput = React.memo(({
           disabled={disabled}
           onChange={(e) => onChange(tokenIndex, field, e.target.value)}
           onBlur={() => onBlur(tokenIndex, field)}
-          className={`w-full rounded-lg px-3 py-2 text-center placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--silo-accent)] focus:border-transparent ${
-            disabled
-              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
-              : 'bg-gray-700 border border-gray-600 text-white'
-          }`}
+          className={`${wizardMonoInputClass} text-center ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           placeholder="0"
         />
         <div className="absolute right-2 top-2 text-gray-400 text-sm">
@@ -353,7 +350,7 @@ export default function Step6Fees() {
 
       <form onSubmit={handleSubmit}>
         {/* General Fees Configuration */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+        <div className="silo-panel p-6 mb-6">
           <h3 className="text-lg font-semibold text-white mb-6">
             General Fees
           </h3>
@@ -385,9 +382,9 @@ export default function Step6Fees() {
         {/* Per-Token Fees Configuration - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Token 0 Fees */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+          <div className="silo-panel p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Fees for <span className="text-lime-600 font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
+              Fees for <span className="text-[var(--silo-accent)] font-bold">{wizardData.token0?.symbol || 'Token 0'}</span>
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
@@ -416,9 +413,9 @@ export default function Step6Fees() {
           </div>
 
           {/* Token 1 Fees */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+          <div className="silo-panel p-6">
             <h3 className="text-lg font-semibold text-white mb-6">
-              Fees for <span className="text-lime-600 font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
+              Fees for <span className="text-[var(--silo-accent)] font-bold">{wizardData.token1?.symbol || 'Token 1'}</span>
             </h3>
             
             <div className="grid grid-cols-2 gap-4">

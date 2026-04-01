@@ -48,7 +48,7 @@ export default function AddressDisplayShort({
         href={explorerUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className={`text-lime-600 hover:text-lime-500 font-mono ${linkClassName}`}
+        className={`text-[var(--silo-accent)] hover:opacity-90 font-mono ${linkClassName}`}
       >
         {shortAddress}
       </a>

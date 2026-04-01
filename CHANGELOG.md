@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.28.0 - 2026-04-01
+### Updated
+- improve styles by apply brandkit 
+
 ## 0.27.1 - 2026-03-31
 ### Updated
 - improve Supra oracle verification details: display Pair ID from on-chain config

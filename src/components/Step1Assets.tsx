@@ -8,6 +8,7 @@ import { getAddressesJsonUrl } from '@/utils/symbolToAddress'
 import { getNetworkDisplayName } from '@/utils/networks'
 import TokenAddressInput from '@/components/TokenAddressInput'
 import PredefinedOptionButton from '@/components/PredefinedOptionButton'
+import Button from '@/components/Button'
 
 interface TokenMetadata {
   symbol: string
@@ -324,7 +325,7 @@ export default function Step1Assets() {
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lime-600 hover:text-lime-500 underline"
+            className="text-[var(--silo-accent)] hover:opacity-90 underline"
           >
             {wizardData.networkInfo?.chainId
               ? `in this JSON file (${wizardData.networkInfo.networkName})`
@@ -335,7 +336,7 @@ export default function Step1Assets() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
+        <div className="silo-panel p-6">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 mb-2">
               <PredefinedOptionButton
@@ -467,21 +468,13 @@ export default function Step1Assets() {
         )}
 
          <div className="flex justify-between">
-           <button
-             type="button"
-             onClick={() => router.push('/wizard')}
-             className="bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-           >
+           <Button type="button" variant="secondary" size="lg" onClick={() => router.push('/wizard')}>
              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
              </svg>
              <span>Back to Landing</span>
-           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-[var(--silo-accent)] hover:bg-[#7688ff] disabled:bg-[var(--silo-border)] disabled:text-[var(--silo-text-faint)] disabled:opacity-60 disabled:cursor-not-allowed text-[#1f2654] font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
+           </Button>
+          <Button type="submit" variant="primary" size="lg" disabled={loading}>
             {loading ? (
               <>
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -498,7 +491,7 @@ export default function Step1Assets() {
                 </svg>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
