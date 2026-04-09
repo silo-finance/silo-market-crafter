@@ -228,7 +228,15 @@ export default function Header() {
               }`}
               aria-current={isVerifyIrmActive ? 'page' : undefined}
             >
-              Verify IRM Update
+              IRM Update
+            </Link>
+            <Link
+              href="https://silo-finance.github.io/actions/vault/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)]"
+            >
+              Actions
             </Link>
             <Link 
               href="https://app.silo.finance" 
@@ -236,7 +244,7 @@ export default function Header() {
               rel="noopener noreferrer"
               className="header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)]"
             >
-              Silo App
+              App
             </Link>
           </nav>
 
