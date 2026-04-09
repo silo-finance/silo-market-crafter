@@ -231,7 +231,7 @@ export default function Header() {
               IRM Update
             </Link>
             <Link
-              href="https://silo-finance.github.io/actions/vault/"
+              href="https://silo-finance.github.io/actions/"
               target="_blank"
               rel="noopener noreferrer"
               className="header-link px-4 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 hover:bg-[var(--silo-surface-2)]"
