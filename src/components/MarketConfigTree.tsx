@@ -968,7 +968,7 @@ function SiloSection({
     : siloConfig.solvencyOracle.quotePrice
 
   return (
-    <TreeNode label={label} isRoot address={siloConfig.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={assetSymbol}>
+    <TreeNode label={label} isRoot address={siloConfig.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={assetSymbol} chainId={chainId}>
       <TreeNode
         label="Token"
         address={siloConfig.token}
