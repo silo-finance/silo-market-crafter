@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - support custom static IRM rate
 - support batch tx for IRM verification
+- support SiloConfig address as IRM verification input
 
 ## 0.28.0 - 2026-04-01
 ### Updated

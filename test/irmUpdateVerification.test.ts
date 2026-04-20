@@ -5,6 +5,11 @@ import {
   isUpdateConfigCalldata,
 } from '@/utils/verification/irmUpdateConfigTx'
 import {
+  classifyRowStatus,
+  matchTxToSiloInPair,
+  PairIrmTargets,
+} from '@/utils/verification/irmRowClassification'
+import {
   getSafeChainId,
   getSafeChainIdHex,
   getSafeTxServiceBaseUrl,
@@ -287,5 +292,86 @@ describe('IRM target matching', () => {
 
   it('returns null when target does not match', () => {
     expect(getMatchingIrmTargetLabel('0x3333333333333333333333333333333333333333', targets)).toBeNull()
+  })
+})
+
+describe('matchTxToSiloInPair', () => {
+  const IRM0 = '0xAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAA0000'
+  const IRM1 = '0xBBBBbbbbBBBBbbbbBBBBbbbbBBBBbbbbBBBB1111'
+  const IRM_OTHER = '0xCCCCccccCCCCccccCCCCccccCCCCccccCCCC2222'
+  const pair: PairIrmTargets = {
+    silo0: { irm: IRM0, tokenSymbol: 'USDC' },
+    silo1: { irm: IRM1, tokenSymbol: 'WETH' }
+  }
+
+  it('returns direct match when intended silo IRM equals tx.to', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, 'silo0')).toEqual({ kind: 'direct', matchedSlot: 'silo0' })
+    expect(matchTxToSiloInPair(IRM1, pair, 'silo1')).toEqual({ kind: 'direct', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to silo1 first when intendedSilo is null and silo1 matches', () => {
+    expect(matchTxToSiloInPair(IRM1, pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to silo0 when intendedSilo is null and only silo0 matches', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo0' })
+  })
+
+  it('prefers silo1 over silo0 when both irms equal tx.to and intendedSilo is null', () => {
+    const collidingPair: PairIrmTargets = {
+      silo0: { irm: IRM0 },
+      silo1: { irm: IRM0 }
+    }
+    expect(matchTxToSiloInPair(IRM0, collidingPair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to sibling silo1 when intendedSilo=silo0 but silo1 IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM1, pair, 'silo0')).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to sibling silo0 when intendedSilo=silo1 but silo0 IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, 'silo1')).toEqual({ kind: 'fallback', matchedSlot: 'silo0' })
+  })
+
+  it('returns none when neither silo IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM_OTHER, pair, 'silo0')).toEqual({ kind: 'none', matchedSlot: null })
+    expect(matchTxToSiloInPair(IRM_OTHER, pair, null)).toEqual({ kind: 'none', matchedSlot: null })
+  })
+
+  it('matches addresses case-insensitively', () => {
+    expect(matchTxToSiloInPair(IRM0.toLowerCase(), pair, 'silo0')).toEqual({ kind: 'direct', matchedSlot: 'silo0' })
+    expect(matchTxToSiloInPair(IRM1.toUpperCase(), pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+})
+
+describe('classifyRowStatus', () => {
+  it('direct + JSON match -> pass', () => {
+    expect(classifyRowStatus('direct', 'PROD-1', null)).toBe('pass')
+  })
+
+  it('direct + custom static (no JSON) -> warning', () => {
+    expect(classifyRowStatus('direct', null, '10.0%')).toBe('warning')
+  })
+
+  it('direct + neither -> fail', () => {
+    expect(classifyRowStatus('direct', null, null)).toBe('fail')
+  })
+
+  it('fallback + JSON match -> warning', () => {
+    expect(classifyRowStatus('fallback', 'PROD-1', null)).toBe('warning')
+  })
+
+  it('fallback + custom static -> warning', () => {
+    expect(classifyRowStatus('fallback', null, '5.0%')).toBe('warning')
+  })
+
+  it('fallback + neither -> fail', () => {
+    expect(classifyRowStatus('fallback', null, null)).toBe('fail')
+  })
+
+  it('none -> fail regardless of config recognition', () => {
+    expect(classifyRowStatus('none', 'PROD-1', null)).toBe('fail')
+    expect(classifyRowStatus('none', null, '5.0%')).toBe('fail')
+    expect(classifyRowStatus('none', null, null)).toBe('fail')
   })
 })

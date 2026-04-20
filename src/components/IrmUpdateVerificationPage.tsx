@@ -19,27 +19,41 @@ import {
   parseSiloConfigAddressesInput,
   ParsedSafeUrl,
 } from '@/utils/verification/safeQueue'
+import {
+  classifyRowStatus,
+  matchTxToSiloInPair,
+  PairIrmTargets,
+  RowStatus,
+  SiloMatchKind,
+  SiloSlot,
+} from '@/utils/verification/irmRowClassification'
+import type { MarketConfig } from '@/utils/fetchMarketConfig'
 
 const KINK_CONFIGS_URL =
   'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
 
+type InputKind = 'silo' | 'siloConfig'
+
 interface VerificationRow {
   candidate: IrmUpdateCandidate
-  assignedSiloAddress: string
-  resolvedSiloConfigAddress: string
+  inputAddress: string
+  inputKind: InputKind
+  siloConfigAddress: string
   marketLabel: string
-  expectedIrmTarget: string
-  targetMatchesSilo: boolean
+  matchKind: SiloMatchKind
+  matchedSlot: SiloSlot | null
+  matchedSiloAddress: string | null
+  matchedSiloSymbol: string | null
+  matchedIrmAddress: string | null
   matchedConfigName: string | null
   customStaticRate: string | null
+  status: RowStatus
 }
 
 interface VerificationResult {
   parsedSafe: ParsedSafeUrl
   rows: VerificationRow[]
 }
-
-type RowStatus = 'pass' | 'warning' | 'fail'
 
 function StatusBadge({ status }: { status: RowStatus }) {
   if (status === 'pass') {
@@ -99,17 +113,6 @@ function StatusBadge({ status }: { status: RowStatus }) {
       <div className="text-red-300 text-base font-bold tracking-wide">FAIL</div>
     </div>
   )
-}
-
-function computeRowStatus(row: {
-  targetMatchesSilo: boolean
-  matchedConfigName: string | null
-  customStaticRate: string | null
-}): RowStatus {
-  if (!row.targetMatchesSilo) return 'fail'
-  if (row.matchedConfigName != null) return 'pass'
-  if (row.customStaticRate != null) return 'warning'
-  return 'fail'
 }
 
 export default function IrmUpdateVerificationPage() {
@@ -180,55 +183,87 @@ export default function IrmUpdateVerificationPage() {
       const pendingTxs = await fetchPendingSafeTransactions(parsedSafe)
       const updateCandidates = extractIrmUpdateCandidates(pendingTxs)
 
-      const siloAddressesRaw = parseSiloConfigAddressesInput(siloAddressInput)
-      if (siloAddressesRaw.length === 0) {
-        throw new Error('Provide at least one Silo address')
+      const inputAddressesRaw = parseSiloConfigAddressesInput(siloAddressInput)
+      if (inputAddressesRaw.length === 0) {
+        throw new Error('Provide at least one Silo or SiloConfig address')
       }
-      if (siloAddressesRaw.some((address) => !ethers.isAddress(address))) {
-        throw new Error('At least one Silo address is invalid')
+      if (inputAddressesRaw.some((address) => !ethers.isAddress(address))) {
+        throw new Error('At least one address is invalid')
       }
-      if (updateCandidates.length !== siloAddressesRaw.length) {
+      if (updateCandidates.length !== inputAddressesRaw.length) {
         throw new Error(
-          `Number of Silo addresses (${siloAddressesRaw.length}) must equal number of pending updateConfig tx (${updateCandidates.length})`
+          `Number of input addresses (${inputAddressesRaw.length}) must equal number of pending updateConfig tx (${updateCandidates.length})`
         )
       }
 
-      const normalizedSiloAddresses = siloAddressesRaw.map((address) => ethers.getAddress(address))
+      const normalizedInputAddresses = inputAddressesRaw.map((address) => ethers.getAddress(address))
       const provider = new ethers.BrowserProvider(window.ethereum)
-      const marketRows: Array<{
-        siloAddress: string
+
+      interface ResolvedInput {
+        inputAddress: string
+        inputKind: InputKind
         siloConfigAddress: string
+        marketConfig: MarketConfig
+        intendedSilo: SiloSlot | null
         marketLabel: string
-        expectedIrmTarget: string
-      }> = []
-      for (let i = 0; i < normalizedSiloAddresses.length; i++) {
-        const siloAddress = normalizedSiloAddresses[i]
+      }
+
+      const marketConfigCache = new Map<string, MarketConfig>()
+      const siloConfigCache = new Map<string, string>()
+      const resolvedInputs: ResolvedInput[] = []
+
+      for (let i = 0; i < normalizedInputAddresses.length; i++) {
+        const inputAddress = normalizedInputAddresses[i]
         try {
-          const siloConfigAddress = await resolveAddressToSiloConfig(provider, siloAddress, {
-            knownSilo: true
-          })
-          const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
-          const normalizedSilo = siloAddress.toLowerCase()
-          const isSilo0 = marketConfig.silo0.silo.toLowerCase() === normalizedSilo
-          const isSilo1 = marketConfig.silo1.silo.toLowerCase() === normalizedSilo
-          if (!isSilo0 && !isSilo1) {
-            throw new Error(`Silo ${siloAddress} is not part of resolved SiloConfig ${siloConfigAddress}`)
+          const cachedSiloConfig = siloConfigCache.get(inputAddress.toLowerCase())
+          const siloConfigAddress =
+            cachedSiloConfig ?? (await resolveAddressToSiloConfig(provider, inputAddress))
+          siloConfigCache.set(inputAddress.toLowerCase(), siloConfigAddress)
+
+          const siloConfigKey = siloConfigAddress.toLowerCase()
+          let marketConfig = marketConfigCache.get(siloConfigKey)
+          if (!marketConfig) {
+            marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
+            marketConfigCache.set(siloConfigKey, marketConfig)
           }
-          const expectedIrmTarget = isSilo0
-            ? marketConfig.silo0.interestRateModel.address
-            : marketConfig.silo1.interestRateModel.address
+
+          const inputLower = inputAddress.toLowerCase()
+          const isInputSiloConfig = inputLower === siloConfigAddress.toLowerCase()
+          const isSilo0 = marketConfig.silo0.silo.toLowerCase() === inputLower
+          const isSilo1 = marketConfig.silo1.silo.toLowerCase() === inputLower
+
+          let inputKind: InputKind
+          let intendedSilo: SiloSlot | null
+          if (isInputSiloConfig) {
+            inputKind = 'siloConfig'
+            intendedSilo = null
+          } else if (isSilo0) {
+            inputKind = 'silo'
+            intendedSilo = 'silo0'
+          } else if (isSilo1) {
+            inputKind = 'silo'
+            intendedSilo = 'silo1'
+          } else {
+            throw new Error(
+              `Address ${inputAddress} is neither the SiloConfig (${siloConfigAddress}) nor one of its silos (${marketConfig.silo0.silo}, ${marketConfig.silo1.silo}).`
+            )
+          }
+
           const marketLabel = `${marketConfig.silo0.tokenSymbol ?? 'TOKEN0'}\u00A0/\u00A0${marketConfig.silo1.tokenSymbol ?? 'TOKEN1'}`
-          marketRows.push({
-            siloAddress,
+
+          resolvedInputs.push({
+            inputAddress,
+            inputKind,
             siloConfigAddress,
-            marketLabel,
-            expectedIrmTarget
+            marketConfig,
+            intendedSilo,
+            marketLabel
           })
-        } catch (marketConfigError) {
+        } catch (resolveError) {
           const errorMessage =
-            marketConfigError instanceof Error ? marketConfigError.message : 'Unknown error'
+            resolveError instanceof Error ? resolveError.message : 'Unknown error'
           throw new Error(
-            `Invalid Silo at position ${i + 1}: ${siloAddress}. This field accepts only Silo addresses (hex or explorer URL).\n${errorMessage}`
+            `Invalid input at position ${i + 1}: ${inputAddress}. This field accepts Silo or SiloConfig addresses (hex or explorer URL).\n${errorMessage}`
           )
         }
       }
@@ -240,9 +275,24 @@ export default function IrmUpdateVerificationPage() {
       const kinkConfigJson = parseJsonPreservingBigInt<KinkConfigItem[]>(await kinkConfigsResponse.text())
 
       const rows: VerificationRow[] = updateCandidates.map((candidate, index) => {
-        const marketRow = marketRows[index]
-        const targetMatchesSilo =
-          candidate.tx.to.toLowerCase() === marketRow.expectedIrmTarget.toLowerCase()
+        const resolved = resolvedInputs[index]
+        const pair: PairIrmTargets = {
+          silo0: {
+            irm: resolved.marketConfig.silo0.interestRateModel.address,
+            tokenSymbol: resolved.marketConfig.silo0.tokenSymbol
+          },
+          silo1: {
+            irm: resolved.marketConfig.silo1.interestRateModel.address,
+            tokenSymbol: resolved.marketConfig.silo1.tokenSymbol
+          }
+        }
+        const match = matchTxToSiloInPair(candidate.tx.to, pair, resolved.intendedSilo)
+        const matchedSlot = match.matchedSlot
+        const matchedSilo = matchedSlot ? resolved.marketConfig[matchedSlot] : null
+        const matchedSiloAddress = matchedSilo?.silo ?? null
+        const matchedSiloSymbol = matchedSilo?.tokenSymbol ?? null
+        const matchedIrmAddress = matchedSlot ? pair[matchedSlot].irm : null
+
         const matchedConfigName = findKinkConfigName(
           {
             type: 'DynamicKinkModel',
@@ -253,21 +303,29 @@ export default function IrmUpdateVerificationPage() {
         const customStaticRate = matchedConfigName
           ? null
           : detectCustomStaticKinkConfig(candidate.decodedConfig)
+
+        const status = classifyRowStatus(match.kind, matchedConfigName, customStaticRate)
+
         return {
           candidate,
-          assignedSiloAddress: marketRow.siloAddress,
-          resolvedSiloConfigAddress: marketRow.siloConfigAddress,
-          marketLabel: marketRow.marketLabel,
-          expectedIrmTarget: marketRow.expectedIrmTarget,
-          targetMatchesSilo,
+          inputAddress: resolved.inputAddress,
+          inputKind: resolved.inputKind,
+          siloConfigAddress: resolved.siloConfigAddress,
+          marketLabel: resolved.marketLabel,
+          matchKind: match.kind,
+          matchedSlot,
+          matchedSiloAddress,
+          matchedSiloSymbol,
+          matchedIrmAddress,
           matchedConfigName,
-          customStaticRate
+          customStaticRate,
+          status
         }
       })
 
       const query = new URLSearchParams()
       query.set('safeUrl', safeUrlInput.trim())
-      query.set('siloAddresses', normalizedSiloAddresses.join(','))
+      query.set('siloAddresses', normalizedInputAddresses.join(','))
       router.replace(`/irm-verification?${query.toString()}`, { scroll: false })
 
       setResult({
@@ -308,7 +366,7 @@ export default function IrmUpdateVerificationPage() {
 
           <div>
             <label htmlFor="silo-config" className="block text-sm font-medium silo-text-main mb-2">
-              Silo Addresses (ordered)
+              Silo or SiloConfig Addresses (ordered)
             </label>
             <textarea
               id="silo-config"
@@ -319,8 +377,10 @@ export default function IrmUpdateVerificationPage() {
               className="w-full rounded-lg px-4 py-2 min-h-[5.5rem] resize-y silo-input focus:outline-none focus:ring-0"
             />
             <p className="mt-2 text-xs silo-text-soft">
-              Provide only Silo addresses (one per line, or separated by commas/spaces). You can
-              paste raw hex address or explorer URL. Order must match transaction order.
+              Provide Silo or SiloConfig addresses (one per line, or separated by commas/spaces).
+              You can paste raw hex addresses or explorer URLs. Order must match transaction order.
+              When a SiloConfig address is given, the intended silo in the pair is detected by
+              matching the transaction IRM target (silo1 first, silo0 fallback).
             </p>
           </div>
         </div>
@@ -350,7 +410,7 @@ export default function IrmUpdateVerificationPage() {
             <p className="silo-text-soft text-sm">Safe: <span className="font-mono silo-text-main">{result.parsedSafe.safeAddress}</span></p>
             <p className="silo-text-soft text-sm">Queued `updateConfig` tx count: <span className="font-semibold silo-text-main">{result.rows.length}</span></p>
             {(() => {
-              const statuses = result.rows.map(computeRowStatus)
+              const statuses = result.rows.map((row) => row.status)
               const successCount = statuses.filter((s) => s === 'pass').length
               const warningCount = statuses.filter((s) => s === 'warning').length
               const failCount = statuses.filter((s) => s === 'fail').length
@@ -413,46 +473,82 @@ export default function IrmUpdateVerificationPage() {
             </div>
           )}
 
-          {result.rows.map(({ candidate, assignedSiloAddress, resolvedSiloConfigAddress, marketLabel, expectedIrmTarget, targetMatchesSilo, matchedConfigName, customStaticRate }, index) => (
-            <div key={candidate.tx.safeTxHash} className="silo-panel p-6">
-              <div className="mb-4">
-                <StatusBadge status={computeRowStatus({ targetMatchesSilo, matchedConfigName, customStaticRate })} />
-              </div>
-              <h3 className="silo-text-main font-semibold mb-3">Transaction #{index + 1} (nonce {candidate.tx.nonce})</h3>
-              <div className="space-y-1 text-sm">
-                <p className="silo-text-soft">
-                  market:{' '}
-                  <span className="irm-config-name-chip" style={{ fontSize: '0.92rem' }}>
-                    {marketLabel}
-                  </span>
-                </p>
-                <p className="silo-text-soft">assigned silo: <span className="font-mono break-all silo-text-main">{assignedSiloAddress}</span></p>
-                <p className="silo-text-soft">resolved siloConfig: <span className="font-mono break-all silo-text-main">{resolvedSiloConfigAddress}</span></p>
-                <p className="silo-text-soft">transaction target address: <span className="font-mono break-all silo-text-main">{candidate.tx.to}</span></p>
-                <p className="silo-text-soft">IRM on chain (IRM config from silo config): <span className="font-mono break-all silo-text-main">{expectedIrmTarget}</span></p>
-                <p className="silo-text-soft">
-                  target matches selected silo IRM:{' '}
-                  <span className={targetMatchesSilo ? 'text-[var(--silo-success)] font-semibold' : 'text-red-400 font-semibold'}>
-                    {targetMatchesSilo ? 'yes' : 'no'}
-                  </span>
-                </p>
-                <p className="silo-text-soft">
-                  matched official config:{' '}
-                  <span className={matchedConfigName ? 'text-[var(--silo-success)] font-semibold' : 'text-yellow-400 font-semibold'}>
-                    {matchedConfigName ?? 'not matched'}
-                  </span>
-                  {!matchedConfigName && customStaticRate && (
-                    <>
-                      {' '}
-                      <span className="text-yellow-400 font-semibold">
-                        | custom static flat rate {customStaticRate}
+          {result.rows.map((row, index) => {
+            const {
+              candidate,
+              inputAddress,
+              inputKind,
+              siloConfigAddress,
+              marketLabel,
+              matchKind,
+              matchedSlot,
+              matchedSiloAddress,
+              matchedSiloSymbol,
+              matchedIrmAddress,
+              matchedConfigName,
+              customStaticRate,
+              status
+            } = row
+            const matchedSiloDisplay = matchedSiloSymbol ?? matchedSiloAddress ?? 'unknown'
+            return (
+              <div key={candidate.tx.safeTxHash} className="silo-panel p-6">
+                <div className="mb-4">
+                  <StatusBadge status={status} />
+                </div>
+                <h3 className="silo-text-main font-semibold mb-3">Transaction #{index + 1} (nonce {candidate.tx.nonce})</h3>
+                <div className="space-y-1 text-sm">
+                  <p className="silo-text-soft">
+                    market:{' '}
+                    <span className="irm-config-name-chip" style={{ fontSize: '0.92rem' }}>
+                      {marketLabel}
+                    </span>
+                  </p>
+                  <p className="silo-text-soft">
+                    input ({inputKind === 'siloConfig' ? 'SiloConfig' : 'Silo'}):{' '}
+                    <span className="font-mono break-all silo-text-main">{inputAddress}</span>
+                  </p>
+                  <p className="silo-text-soft">resolved siloConfig: <span className="font-mono break-all silo-text-main">{siloConfigAddress}</span></p>
+                  <p className="silo-text-soft">transaction target address: <span className="font-mono break-all silo-text-main">{candidate.tx.to}</span></p>
+                  <p className="silo-text-soft">
+                    matched silo in pair:{' '}
+                    {matchKind === 'none' ? (
+                      <span className="text-red-400 font-semibold">none</span>
+                    ) : (
+                      <span className={matchKind === 'direct' ? 'text-[var(--silo-success)] font-semibold' : 'text-yellow-400 font-semibold'}>
+                        {matchedSlot}
                       </span>
-                    </>
-                  )}
-                </p>
+                    )}
+                    {matchKind === 'fallback' && (
+                      <>
+                        {' '}
+                        <span className="text-yellow-400 font-semibold">
+                          | rate changed for silo <strong>{matchedSiloDisplay}</strong>
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  <p className="silo-text-soft">
+                    matched silo IRM:{' '}
+                    <span className="font-mono break-all silo-text-main">{matchedIrmAddress ?? '-'}</span>
+                  </p>
+                  <p className="silo-text-soft">
+                    matched official config:{' '}
+                    <span className={matchedConfigName ? 'text-[var(--silo-success)] font-semibold' : 'text-yellow-400 font-semibold'}>
+                      {matchedConfigName ?? 'not matched'}
+                    </span>
+                    {!matchedConfigName && customStaticRate && (
+                      <>
+                        {' '}
+                        <span className="text-yellow-400 font-semibold">
+                          | custom static flat rate {customStaticRate}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
