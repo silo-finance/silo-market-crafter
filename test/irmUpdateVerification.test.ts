@@ -5,6 +5,11 @@ import {
   isUpdateConfigCalldata,
 } from '@/utils/verification/irmUpdateConfigTx'
 import {
+  classifyRowStatus,
+  matchTxToSiloInPair,
+  PairIrmTargets,
+} from '@/utils/verification/irmRowClassification'
+import {
   getSafeChainId,
   getSafeChainIdHex,
   getSafeTxServiceBaseUrl,
@@ -161,6 +166,77 @@ describe('IRM updateConfig calldata helpers', () => {
     expect(candidates[0].tx.safeTxHash).toBe('0x1')
   })
 
+  it('extracts two updateConfig candidates from a multiSend batch via valueDecoded', () => {
+    const candidates = extractIrmUpdateCandidates([
+      {
+        safeTxHash: '0xbatch',
+        nonce: 5,
+        to: '0x40A2aCCbd92BCA938b02010E17A5b8929b49130D',
+        data: '0x8d80ff0a00',
+        dataDecoded: {
+          method: 'multiSend',
+          parameters: [
+            {
+              name: 'transactions',
+              type: 'bytes',
+              valueDecoded: [
+                {
+                  operation: 0,
+                  to: '0xB524283653E62e95B1776B646aC39b5cAAD87e64',
+                  value: '0',
+                  data: SAMPLE_UPDATE_CONFIG_DATA,
+                  dataDecoded: null,
+                },
+                {
+                  operation: 0,
+                  to: '0x9A6beA616a21A185f698a5Ab10B15697375f1a23',
+                  value: '0',
+                  data: SAMPLE_UPDATE_CONFIG_DATA,
+                  dataDecoded: null,
+                },
+              ],
+            },
+          ],
+        },
+        submissionDate: '',
+        isExecuted: false
+      }
+    ])
+
+    expect(candidates).toHaveLength(2)
+    expect(candidates[0].tx.to).toBe('0xB524283653E62e95B1776B646aC39b5cAAD87e64')
+    expect(candidates[1].tx.to).toBe('0x9A6beA616a21A185f698a5Ab10B15697375f1a23')
+    expect(candidates[0].tx.safeTxHash).toBe('0xbatch#0')
+    expect(candidates[1].tx.safeTxHash).toBe('0xbatch#1')
+    expect(candidates[0].tx.nonce).toBe(5)
+    expect(candidates[1].tx.nonce).toBe(5)
+    expect(candidates[0].decodedConfig.ulow).toBe('800000000000000000')
+    expect(candidates[1].decodedConfig.ulow).toBe('800000000000000000')
+  })
+
+  it('extracts updateConfig candidates from multiSend when only raw calldata is available', () => {
+    const MULTISEND_BATCH_DATA =
+      '0x8d80ff0a000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000003f200b524283653e62e95b1776b646ac39b5caad87e64000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a44b3734cf000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000025cd0f8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009a6bea616a21a185f698a5ab10b15697375f1a23000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a44b3734cf000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000025cd0f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+
+    const candidates = extractIrmUpdateCandidates([
+      {
+        safeTxHash: '0xrawbatch',
+        nonce: 7,
+        to: '0x40A2aCCbd92BCA938b02010E17A5b8929b49130D',
+        data: MULTISEND_BATCH_DATA,
+        submissionDate: '',
+        isExecuted: false
+      }
+    ])
+
+    expect(candidates).toHaveLength(2)
+    expect(candidates[0].tx.to).toBe('0xB524283653E62e95B1776B646aC39b5cAAD87e64')
+    expect(candidates[1].tx.to).toBe('0x9A6beA616a21A185f698a5Ab10B15697375f1a23')
+    expect(candidates[0].tx.safeTxHash).toBe('0xrawbatch#0')
+    expect(candidates[1].tx.safeTxHash).toBe('0xrawbatch#1')
+    expect(candidates[0].decodedConfig.kmax).toBe(candidates[1].decodedConfig.kmax)
+  })
+
   it('extracts updateConfig from dataDecoded when calldata is missing', () => {
     const candidates = extractIrmUpdateCandidates([
       {
@@ -216,5 +292,86 @@ describe('IRM target matching', () => {
 
   it('returns null when target does not match', () => {
     expect(getMatchingIrmTargetLabel('0x3333333333333333333333333333333333333333', targets)).toBeNull()
+  })
+})
+
+describe('matchTxToSiloInPair', () => {
+  const IRM0 = '0xAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAA0000'
+  const IRM1 = '0xBBBBbbbbBBBBbbbbBBBBbbbbBBBBbbbbBBBB1111'
+  const IRM_OTHER = '0xCCCCccccCCCCccccCCCCccccCCCCccccCCCC2222'
+  const pair: PairIrmTargets = {
+    silo0: { irm: IRM0, tokenSymbol: 'USDC' },
+    silo1: { irm: IRM1, tokenSymbol: 'WETH' }
+  }
+
+  it('returns direct match when intended silo IRM equals tx.to', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, 'silo0')).toEqual({ kind: 'direct', matchedSlot: 'silo0' })
+    expect(matchTxToSiloInPair(IRM1, pair, 'silo1')).toEqual({ kind: 'direct', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to silo1 first when intendedSilo is null and silo1 matches', () => {
+    expect(matchTxToSiloInPair(IRM1, pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to silo0 when intendedSilo is null and only silo0 matches', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo0' })
+  })
+
+  it('prefers silo1 over silo0 when both irms equal tx.to and intendedSilo is null', () => {
+    const collidingPair: PairIrmTargets = {
+      silo0: { irm: IRM0 },
+      silo1: { irm: IRM0 }
+    }
+    expect(matchTxToSiloInPair(IRM0, collidingPair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to sibling silo1 when intendedSilo=silo0 but silo1 IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM1, pair, 'silo0')).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+
+  it('falls back to sibling silo0 when intendedSilo=silo1 but silo0 IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM0, pair, 'silo1')).toEqual({ kind: 'fallback', matchedSlot: 'silo0' })
+  })
+
+  it('returns none when neither silo IRM matches', () => {
+    expect(matchTxToSiloInPair(IRM_OTHER, pair, 'silo0')).toEqual({ kind: 'none', matchedSlot: null })
+    expect(matchTxToSiloInPair(IRM_OTHER, pair, null)).toEqual({ kind: 'none', matchedSlot: null })
+  })
+
+  it('matches addresses case-insensitively', () => {
+    expect(matchTxToSiloInPair(IRM0.toLowerCase(), pair, 'silo0')).toEqual({ kind: 'direct', matchedSlot: 'silo0' })
+    expect(matchTxToSiloInPair(IRM1.toUpperCase(), pair, null)).toEqual({ kind: 'fallback', matchedSlot: 'silo1' })
+  })
+})
+
+describe('classifyRowStatus', () => {
+  it('direct + JSON match -> pass', () => {
+    expect(classifyRowStatus('direct', 'PROD-1', null)).toBe('pass')
+  })
+
+  it('direct + custom static (no JSON) -> warning', () => {
+    expect(classifyRowStatus('direct', null, '10.0%')).toBe('warning')
+  })
+
+  it('direct + neither -> fail', () => {
+    expect(classifyRowStatus('direct', null, null)).toBe('fail')
+  })
+
+  it('fallback + JSON match -> warning', () => {
+    expect(classifyRowStatus('fallback', 'PROD-1', null)).toBe('warning')
+  })
+
+  it('fallback + custom static -> warning', () => {
+    expect(classifyRowStatus('fallback', null, '5.0%')).toBe('warning')
+  })
+
+  it('fallback + neither -> fail', () => {
+    expect(classifyRowStatus('fallback', null, null)).toBe('fail')
+  })
+
+  it('none -> fail regardless of config recognition', () => {
+    expect(classifyRowStatus('none', 'PROD-1', null)).toBe('fail')
+    expect(classifyRowStatus('none', null, '5.0%')).toBe('fail')
+    expect(classifyRowStatus('none', null, null)).toBe('fail')
   })
 })
