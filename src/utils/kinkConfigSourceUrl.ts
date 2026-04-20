@@ -1,3 +1,5 @@
+import { isCustomStaticFlatRateLabel } from '@/utils/kinkConfigName'
+
 const KINK_CONFIGS_RAW_URL =
   'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
 const KINK_CONFIGS_BLOB_URL =
@@ -19,7 +21,7 @@ async function fetchRawLines(): Promise<string[]> {
  * or null if not found.
  */
 export async function getKinkConfigLineNumber(configName: string): Promise<number | null> {
-  if (!configName || configName === 'not able to match') return null
+  if (!configName || configName === 'not able to match' || isCustomStaticFlatRateLabel(configName)) return null
   try {
     const lines = await fetchRawLines()
     for (let i = 0; i < lines.length; i++) {
