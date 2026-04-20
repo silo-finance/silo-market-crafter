@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.29.3 - 2026-04-20
+### Added
+- support custom static IRM rate
+- support batch tx for IRM verification
+
 ## 0.28.0 - 2026-04-01
 ### Updated
 - improve styles by apply brandkit 

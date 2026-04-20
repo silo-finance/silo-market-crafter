@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 import Button from '@/components/Button'
 import { fetchMarketConfig } from '@/utils/fetchMarketConfig'
 import { resolveAddressToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
-import { KinkConfigItem, findKinkConfigName } from '@/utils/kinkConfigName'
+import { KinkConfigItem, detectCustomStaticKinkConfig, findKinkConfigName } from '@/utils/kinkConfigName'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 import {
   extractIrmUpdateCandidates,
@@ -31,6 +31,7 @@ interface VerificationRow {
   expectedIrmTarget: string
   targetMatchesSilo: boolean
   matchedConfigName: string | null
+  customStaticRate: string | null
 }
 
 interface VerificationResult {
@@ -38,8 +39,10 @@ interface VerificationResult {
   rows: VerificationRow[]
 }
 
-function PassFailBadge({ pass }: { pass: boolean }) {
-  if (pass) {
+type RowStatus = 'pass' | 'warning' | 'fail'
+
+function StatusBadge({ status }: { status: RowStatus }) {
+  if (status === 'pass') {
     return (
       <div className="silo-callout-success flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--silo-accent)]">
@@ -48,6 +51,40 @@ function PassFailBadge({ pass }: { pass: boolean }) {
           </svg>
         </div>
         <div className="silo-text-main text-base font-bold tracking-wide">PASS</div>
+      </div>
+    )
+  }
+
+  if (status === 'warning') {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-yellow-500/70 bg-yellow-900/30 px-4 py-3">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+          <svg
+            className="h-14 w-14 text-yellow-400"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              fill="currentColor"
+              d="M12 3.2 1.5 21h21L12 3.2z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              stroke="#1a1a1a"
+              fill="none"
+              d="M12 10v5"
+            />
+            <circle cx="12" cy="17.6" r="1.1" fill="#1a1a1a" stroke="none" />
+          </svg>
+        </div>
+        <div className="text-yellow-300 text-base font-bold tracking-wide">WARNING</div>
       </div>
     )
   }
@@ -62,6 +99,17 @@ function PassFailBadge({ pass }: { pass: boolean }) {
       <div className="text-red-300 text-base font-bold tracking-wide">FAIL</div>
     </div>
   )
+}
+
+function computeRowStatus(row: {
+  targetMatchesSilo: boolean
+  matchedConfigName: string | null
+  customStaticRate: string | null
+}): RowStatus {
+  if (!row.targetMatchesSilo) return 'fail'
+  if (row.matchedConfigName != null) return 'pass'
+  if (row.customStaticRate != null) return 'warning'
+  return 'fail'
 }
 
 export default function IrmUpdateVerificationPage() {
@@ -202,6 +250,9 @@ export default function IrmUpdateVerificationPage() {
           },
           kinkConfigJson
         )
+        const customStaticRate = matchedConfigName
+          ? null
+          : detectCustomStaticKinkConfig(candidate.decodedConfig)
         return {
           candidate,
           assignedSiloAddress: marketRow.siloAddress,
@@ -209,7 +260,8 @@ export default function IrmUpdateVerificationPage() {
           marketLabel: marketRow.marketLabel,
           expectedIrmTarget: marketRow.expectedIrmTarget,
           targetMatchesSilo,
-          matchedConfigName
+          matchedConfigName,
+          customStaticRate
         }
       })
 
@@ -297,37 +349,62 @@ export default function IrmUpdateVerificationPage() {
             <h2 className="text-lg font-semibold silo-text-main mb-2">Summary</h2>
             <p className="silo-text-soft text-sm">Safe: <span className="font-mono silo-text-main">{result.parsedSafe.safeAddress}</span></p>
             <p className="silo-text-soft text-sm">Queued `updateConfig` tx count: <span className="font-semibold silo-text-main">{result.rows.length}</span></p>
-            <div className="mt-4 flex flex-wrap items-center gap-4">
-              {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length > 0 ? (
-                <div className="silo-callout-success inline-flex items-center gap-2 py-1.5 px-3">
-                  <svg className="h-5 w-5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-sm font-semibold silo-text-main">
-                    success: {result.rows.filter((row) => row.targetMatchesSilo && row.matchedConfigName != null).length}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-sm font-semibold text-gray-300">
-                  success: 0
-                </span>
-              )}
+            {(() => {
+              const statuses = result.rows.map(computeRowStatus)
+              const successCount = statuses.filter((s) => s === 'pass').length
+              const warningCount = statuses.filter((s) => s === 'warning').length
+              const failCount = statuses.filter((s) => s === 'fail').length
+              return (
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  {successCount > 0 ? (
+                    <div className="silo-callout-success inline-flex items-center gap-2 py-1.5 px-3">
+                      <svg className="h-5 w-5 text-[var(--silo-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-sm font-semibold silo-text-main">
+                        success: {successCount}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-300">
+                      success: 0
+                    </span>
+                  )}
 
-              {result.rows.filter((row) => !(row.targetMatchesSilo && row.matchedConfigName != null)).length > 0 ? (
-                <div className="inline-flex items-center gap-2 rounded-md border border-red-600/70 bg-red-900/30 px-3 py-1.5">
-                  <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span className="text-sm font-semibold text-red-300">
-                    fail: {result.rows.filter((row) => !(row.targetMatchesSilo && row.matchedConfigName != null)).length}
-                  </span>
+                  {warningCount > 0 ? (
+                    <div className="inline-flex items-center gap-2 rounded-md border border-yellow-500/70 bg-yellow-900/30 px-3 py-1.5">
+                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3.2 1.5 21h21L12 3.2z" />
+                        <path d="M11 10h2v5h-2z" fill="#1a1a1a" />
+                        <circle cx="12" cy="17.6" r="1.1" fill="#1a1a1a" />
+                      </svg>
+                      <span className="text-sm font-semibold text-yellow-300">
+                        warning: {warningCount}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-300">
+                      warning: 0
+                    </span>
+                  )}
+
+                  {failCount > 0 ? (
+                    <div className="inline-flex items-center gap-2 rounded-md border border-red-600/70 bg-red-900/30 px-3 py-1.5">
+                      <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="text-sm font-semibold text-red-300">
+                        fail: {failCount}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-300">
+                      fail: 0
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <span className="text-sm font-semibold text-gray-300">
-                  fail: 0
-                </span>
-              )}
-            </div>
+              )
+            })()}
           </div>
 
           {result.rows.length === 0 && (
@@ -336,10 +413,10 @@ export default function IrmUpdateVerificationPage() {
             </div>
           )}
 
-          {result.rows.map(({ candidate, assignedSiloAddress, resolvedSiloConfigAddress, marketLabel, expectedIrmTarget, targetMatchesSilo, matchedConfigName }, index) => (
+          {result.rows.map(({ candidate, assignedSiloAddress, resolvedSiloConfigAddress, marketLabel, expectedIrmTarget, targetMatchesSilo, matchedConfigName, customStaticRate }, index) => (
             <div key={candidate.tx.safeTxHash} className="silo-panel p-6">
               <div className="mb-4">
-                <PassFailBadge pass={targetMatchesSilo && matchedConfigName != null} />
+                <StatusBadge status={computeRowStatus({ targetMatchesSilo, matchedConfigName, customStaticRate })} />
               </div>
               <h3 className="silo-text-main font-semibold mb-3">Transaction #{index + 1} (nonce {candidate.tx.nonce})</h3>
               <div className="space-y-1 text-sm">
@@ -364,6 +441,14 @@ export default function IrmUpdateVerificationPage() {
                   <span className={matchedConfigName ? 'text-[var(--silo-success)] font-semibold' : 'text-yellow-400 font-semibold'}>
                     {matchedConfigName ?? 'not matched'}
                   </span>
+                  {!matchedConfigName && customStaticRate && (
+                    <>
+                      {' '}
+                      <span className="text-yellow-400 font-semibold">
+                        | custom static flat rate {customStaticRate}
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
