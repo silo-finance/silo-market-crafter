@@ -19,6 +19,7 @@ import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
 import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
+import { isCustomStaticFlatRateLabel } from '@/utils/kinkConfigName'
 import Button from '@/components/Button'
 import { wizardSansInputClass } from '@/constants/formStyles'
 import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
@@ -1494,6 +1495,9 @@ function SiloSection({
                   <span className="inline-flex items-center gap-1.5">
                     <span>IRM config:</span>
                     <IrmConfigNameWithLink configName={name} variant="emphasized" />
+                    {isCustomStaticFlatRateLabel(name) && (
+                      <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
+                    )}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">

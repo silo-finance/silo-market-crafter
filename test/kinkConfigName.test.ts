@@ -1,7 +1,9 @@
 import {
   detectCustomStaticKinkConfig,
   findKinkConfigName,
+  isCustomStaticFlatRateLabel,
   KinkConfigItem,
+  resolveKinkConfigDisplayName,
 } from '@/utils/kinkConfigName'
 
 const JSON_CONFIGS: KinkConfigItem[] = [
@@ -124,5 +126,65 @@ describe('detectCustomStaticKinkConfig', () => {
     )).toBe('fixed-10')
     // But the detector itself still recognizes the shape and computes 10.0%.
     expect(detectCustomStaticKinkConfig(staticConfig('3170979198'))).toBe('10.0%')
+  })
+})
+
+describe('resolveKinkConfigDisplayName', () => {
+  it('returns the JSON-matched name when one exists', () => {
+    const result = resolveKinkConfigDisplayName(
+      { type: 'DynamicKinkModel', config: staticConfig('3170979198') },
+      JSON_CONFIGS
+    )
+    expect(result).toBe('fixed-10')
+  })
+
+  it('falls back to "custom static flat rate <pct>" when JSON match fails but shape is static', () => {
+    const result = resolveKinkConfigDisplayName(
+      { type: 'DynamicKinkModel', config: staticConfig('634195840') },
+      JSON_CONFIGS
+    )
+    expect(result).toBe('custom static flat rate 2.0%')
+  })
+
+  it('returns null when neither JSON nor custom-static detector matches', () => {
+    const cfg = staticConfig('634195840')
+    cfg.kmax = '1'
+    const result = resolveKinkConfigDisplayName(
+      { type: 'DynamicKinkModel', config: cfg },
+      JSON_CONFIGS
+    )
+    expect(result).toBeNull()
+  })
+
+  it('returns null when irm type is not DynamicKinkModel', () => {
+    const result = resolveKinkConfigDisplayName(
+      { type: 'OtherModel', config: staticConfig('634195840') },
+      JSON_CONFIGS
+    )
+    expect(result).toBeNull()
+  })
+
+  it('returns null for undefined irm', () => {
+    expect(resolveKinkConfigDisplayName(undefined, JSON_CONFIGS)).toBeNull()
+  })
+})
+
+describe('isCustomStaticFlatRateLabel', () => {
+  it('returns true for custom static labels with a percentage suffix', () => {
+    expect(isCustomStaticFlatRateLabel('custom static flat rate 2.0%')).toBe(true)
+    expect(isCustomStaticFlatRateLabel('custom static flat rate 10.0%')).toBe(true)
+    expect(isCustomStaticFlatRateLabel('custom static flat rate 12.5%')).toBe(true)
+  })
+
+  it('returns false for canonical config names', () => {
+    expect(isCustomStaticFlatRateLabel('fixed-10')).toBe(false)
+    expect(isCustomStaticFlatRateLabel('static-2.4-6')).toBe(false)
+  })
+
+  it('returns false for "not able to match" and falsy inputs', () => {
+    expect(isCustomStaticFlatRateLabel('not able to match')).toBe(false)
+    expect(isCustomStaticFlatRateLabel('')).toBe(false)
+    expect(isCustomStaticFlatRateLabel(null)).toBe(false)
+    expect(isCustomStaticFlatRateLabel(undefined)).toBe(false)
   })
 })

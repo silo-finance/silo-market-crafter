@@ -24,7 +24,7 @@ import { verifyAddress } from '@/utils/verification/addressVerification'
 import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
-import { findKinkConfigName, type KinkConfigItem } from '@/utils/kinkConfigName'
+import { resolveKinkConfigDisplayName, type KinkConfigItem } from '@/utils/kinkConfigName'
 import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
 import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
 import Image from 'next/image'
@@ -1156,8 +1156,8 @@ export default function Step11Verification() {
           // Immutable data is currently not needed here; keep parse for validation side‑effects only.
           parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
 
-          const name0 = findKinkConfigName(marketConfig.silo0.interestRateModel, cfgJson)
-          const name1 = findKinkConfigName(marketConfig.silo1.interestRateModel, cfgJson)
+          const name0 = resolveKinkConfigDisplayName(marketConfig.silo0.interestRateModel, cfgJson)
+          const name1 = resolveKinkConfigDisplayName(marketConfig.silo1.interestRateModel, cfgJson)
           setIrmConfigNames({ silo0: name0, silo1: name1 })
 
           // Fetch pending IRM config for each silo (DynamicKinkModel only)
@@ -1203,7 +1203,7 @@ export default function Step11Verification() {
                 c2: config.c2.toString(),
                 dmax: config.dmax.toString()
               }
-              const pendingName = findKinkConfigName(
+              const pendingName = resolveKinkConfigDisplayName(
                 { type: 'DynamicKinkModel', config: configObj },
                 cfgJson
               )
@@ -1277,7 +1277,7 @@ export default function Step11Verification() {
                   c2: config.c2.toString(),
                   dmax: config.dmax.toString()
                 }
-                const name = findKinkConfigName(
+                const name = resolveKinkConfigDisplayName(
                   { type: 'DynamicKinkModel', config: configObj },
                   cfgJson
                 )
