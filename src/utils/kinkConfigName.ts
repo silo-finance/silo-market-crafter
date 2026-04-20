@@ -77,3 +77,38 @@ export function detectCustomStaticKinkConfig(
 
   return `${integerPart.toString()}.${fractionalDigit.toString()}%`
 }
+
+/**
+ * Prefix used when an IRM `DynamicKinkModel` config does not match any entry in
+ * `DKinkIRMConfigs.json` but does match the "custom static flat rate" shape
+ * (see `detectCustomStaticKinkConfig`). The full label is
+ * `"${CUSTOM_STATIC_FLAT_RATE_PREFIX} ${rate}"`, e.g. `"custom static flat rate 10.0%"`.
+ *
+ * Used as a stable marker so UI components (e.g. `IrmConfigNameWithLink`,
+ * `getKinkConfigLineNumber`) can short-circuit source-URL lookups for these
+ * synthetic names that intentionally have no entry in the JSON file.
+ */
+export const CUSTOM_STATIC_FLAT_RATE_PREFIX = 'custom static flat rate'
+
+export function isCustomStaticFlatRateLabel(name: string | null | undefined): boolean {
+  return typeof name === 'string' && name.startsWith(`${CUSTOM_STATIC_FLAT_RATE_PREFIX} `)
+}
+
+/**
+ * Resolves a display name for an IRM config by first attempting an exact match
+ * against `DKinkIRMConfigs.json` (`findKinkConfigName`), then falling back to
+ * the custom static flat-rate detector (`detectCustomStaticKinkConfig`). When
+ * the fallback applies, returns `"custom static flat rate ${rate}"`. Returns
+ * null when neither path produces a label (caller should render
+ * "not able to match").
+ */
+export function resolveKinkConfigDisplayName(
+  irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined,
+  cfgJson: KinkConfigItem[]
+): string | null {
+  const matched = findKinkConfigName(irm, cfgJson)
+  if (matched) return matched
+  if (!irm || irm.type !== 'DynamicKinkModel') return null
+  const rate = detectCustomStaticKinkConfig(irm.config)
+  return rate ? `${CUSTOM_STATIC_FLAT_RATE_PREFIX} ${rate}` : null
+}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { getKinkConfigSourceUrl } from '@/utils/kinkConfigSourceUrl'
+import { isCustomStaticFlatRateLabel } from '@/utils/kinkConfigName'
 
 export interface IrmConfigNameWithLinkProps {
   /** Config name (e.g. "static-2.4-6") */
@@ -14,7 +15,7 @@ export default function IrmConfigNameWithLink({ configName, variant = 'emphasize
   const [sourceUrl, setSourceUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!configName || configName === 'not able to match') {
+    if (!configName || configName === 'not able to match' || isCustomStaticFlatRateLabel(configName)) {
       setSourceUrl(null)
       return
     }
