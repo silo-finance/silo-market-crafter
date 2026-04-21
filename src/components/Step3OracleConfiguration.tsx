@@ -33,12 +33,60 @@ import supraSValueFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
 import supraOracleFeedStorageAbi from '@/abis/oracle/ISupraOracleFeedStorage.json'
 import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
 import Button from '@/components/Button'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
 const ierc4526Abi = iERC4526Artifact as ethers.InterfaceAbi
 const ierc20Abi = (iERC20Artifact as { abi: ethers.InterfaceAbi }).abi
+
+const erc4626SymbolAssetAbi = [
+  {
+    type: 'function' as const,
+    name: 'symbol',
+    inputs: [],
+    outputs: [{ type: 'string' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'asset',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+    stateMutability: 'view' as const
+  }
+] as const
+
+const aggregatorV3MulticallAbi = [
+  {
+    type: 'function' as const,
+    name: 'description',
+    inputs: [],
+    outputs: [{ type: 'string' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'latestRoundData',
+    inputs: [],
+    outputs: [
+      { type: 'uint80' },
+      { type: 'int256' },
+      { type: 'uint256' },
+      { type: 'uint256' },
+      { type: 'uint80' }
+    ],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'decimals',
+    inputs: [],
+    outputs: [{ type: 'uint8' }],
+    stateMutability: 'view' as const
+  }
+] as const
 
 
 interface OracleDeployments {
@@ -420,12 +468,24 @@ function VaultOracleSection({
     setLocalError(null)
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
-      const vaultContract = new ethers.Contract(address, ierc4526Abi, provider)
-      const [symbol, assetAddress] = await Promise.all([
-        vaultContract.symbol(),
-        vaultContract.asset()
-      ])
-      const assetAddr = ethers.getAddress(assetAddress)
+      void ierc4526Abi // retained for compatibility; reads below go through Multicall3
+      const [symbol, assetAddress] = await executeReadMulticall<unknown>(
+        provider,
+        [
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc4626SymbolAssetAbi,
+            functionName: 'symbol'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc4626SymbolAssetAbi,
+            functionName: 'asset'
+          })
+        ],
+        { debugLabel: 'erc4626SymbolAsset' }
+      )
+      const assetAddr = ethers.getAddress(String(assetAddress))
       const resolvedVault = ethers.getAddress(address)
       setVault(prev => {
         const addrChanged = prev.vaultAddress?.toLowerCase() !== resolvedVault.toLowerCase()
@@ -2304,15 +2364,33 @@ export default function Step3OracleConfiguration() {
       try {
         if (!window.ethereum) return
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const agg = new ethers.Contract(addr, aggregatorV3Abi, provider)
-        const [description, roundData, dec] = await Promise.all([
-          agg.description(),
-          agg.latestRoundData(),
-          agg.decimals()
-        ])
+        void aggregatorV3Abi
+        const [description, roundData, dec] = await executeReadMulticall<unknown>(
+          provider,
+          [
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'description'
+            }),
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'latestRoundData'
+            }),
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'decimals'
+            })
+          ],
+          { debugLabel: 'chainlink0Aggregator' }
+        )
         const aggregatorDecimals = Number(dec)
         if (cancelled) return
-        const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
+        const roundDataTuple = roundData as unknown as [bigint, bigint, bigint, bigint, bigint]
+        const answer = roundDataTuple[1]
+        const answerFormatted = ethers.formatUnits(answer, aggregatorDecimals)
         const base = token0.decimals
         const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
@@ -2372,15 +2450,32 @@ export default function Step3OracleConfiguration() {
       try {
         if (!window.ethereum) return
         const provider = new ethers.BrowserProvider(window.ethereum)
-        const agg = new ethers.Contract(addr, aggregatorV3Abi, provider)
-        const [description, roundData, dec] = await Promise.all([
-          agg.description(),
-          agg.latestRoundData(),
-          agg.decimals()
-        ])
+        const [description, roundData, dec] = await executeReadMulticall<unknown>(
+          provider,
+          [
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'description'
+            }),
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'latestRoundData'
+            }),
+            buildReadMulticallCall<unknown>({
+              target: addr as `0x${string}`,
+              abi: aggregatorV3MulticallAbi,
+              functionName: 'decimals'
+            })
+          ],
+          { debugLabel: 'chainlink1Aggregator' }
+        )
         const aggregatorDecimals = Number(dec)
         if (cancelled) return
-        const answerFormatted = ethers.formatUnits(roundData.answer, aggregatorDecimals)
+        const roundDataTuple = roundData as unknown as [bigint, bigint, bigint, bigint, bigint]
+        const answer = roundDataTuple[1]
+        const answerFormatted = ethers.formatUnits(answer, aggregatorDecimals)
         const base = token1.decimals
         const quote = quoteDecimals
         const { divider, multiplier, mathLineMultiplier, mathLineDivider } = computeChainlinkNormalization(base, quote, aggregatorDecimals)
@@ -2481,49 +2576,118 @@ export default function Step3OracleConfiguration() {
         return
       }
 
-      // Validate oracles for each token
-      const validateOraclesForToken = async (tokenAddress: string, tokenDecimals: number) => {
-        const validOracles: ScalerOracle[] = []
+      // Validate oracles for both tokens using two layered Multicall3 batches:
+      //   Layer 1: read QUOTE_TOKEN() for every scaler oracle in one batch.
+      //   Layer 2: read SCALE_FACTOR() only for scalers whose QUOTE_TOKEN matched either token.
+      void oracleScalerAbi // retained for compatibility; reads below go through Multicall3
 
-        for (const oracle of scalerOracles) {
-          try {
-            if (!window.ethereum) continue
-
-            const provider = new ethers.BrowserProvider(window.ethereum)
-            
-            const contract = new ethers.Contract(oracle.address, oracleScalerAbi, provider)
-            
-            // Check if QUOTE_TOKEN matches our token (case insensitive)
-            const quoteToken = await contract.QUOTE_TOKEN()
-            if (quoteToken.toLowerCase() === tokenAddress.toLowerCase()) {
-              // Get scale factor
-              const scaleFactor = await contract.SCALE_FACTOR()
-              const scaleFactorFormatted = formatScaleFactor(scaleFactor)
-              
-              // Validate if this scaler can be used with the token
-              const validation = validateScalerForToken(scaleFactor, tokenDecimals)
-              
-              validOracles.push({
-                name: oracle.name,
-                address: oracle.address,
-                scaleFactor: scaleFactorFormatted,
-                valid: validation.valid,
-                resultDecimals: validation.resultDecimals
-              })
-            }
-          } catch (err) {
-            console.warn(`Failed to validate oracle ${oracle.name}:`, err)
-          }
+      const scalerMulticallAbi = [
+        {
+          type: 'function' as const,
+          name: 'QUOTE_TOKEN',
+          inputs: [],
+          outputs: [{ type: 'address' }],
+          stateMutability: 'view' as const
+        },
+        {
+          type: 'function' as const,
+          name: 'SCALE_FACTOR',
+          inputs: [],
+          outputs: [{ type: 'uint256' }],
+          stateMutability: 'view' as const
         }
+      ] as const
 
-        return validOracles
+      let token0OraclesRaw: ScalerOracle[] = []
+      let token1OraclesRaw: ScalerOracle[] = []
+      const token0Info = wizardData.token0
+      const token1Info = wizardData.token1
+      if (window.ethereum && scalerOracles.length > 0 && token0Info && token1Info) {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+
+        // Layer 1: QUOTE_TOKEN per scaler oracle (allowFailure: true).
+        const quoteCalls = scalerOracles.map((oracle) =>
+          buildReadMulticallCall<string>({
+            target: oracle.address as `0x${string}`,
+            abi: scalerMulticallAbi,
+            functionName: 'QUOTE_TOKEN',
+            allowFailure: true,
+            decodeResult: (v) => String(v)
+          })
+        )
+        const quoteTokens = await executeReadMulticall<string>(provider, quoteCalls, {
+          debugLabel: 'scalerQuoteTokens'
+        })
+
+        const token0Lower = token0Info.address.toLowerCase()
+        const token1Lower = token1Info.address.toLowerCase()
+
+        const scaleFactorTargets: { oracleIdx: number; tokenSlot: 0 | 1 }[] = []
+        const scaleFactorCalls: ReturnType<typeof buildReadMulticallCall<bigint>>[] = []
+
+        scalerOracles.forEach((oracle, i) => {
+          const qt = quoteTokens[i]
+          if (!qt) return
+          const qtLower = qt.toLowerCase()
+          const matches0 = qtLower === token0Lower
+          const matches1 = qtLower === token1Lower
+          if (!matches0 && !matches1) return
+          if (matches0) {
+            scaleFactorTargets.push({ oracleIdx: i, tokenSlot: 0 })
+            scaleFactorCalls.push(
+              buildReadMulticallCall<bigint>({
+                target: oracle.address as `0x${string}`,
+                abi: scalerMulticallAbi,
+                functionName: 'SCALE_FACTOR',
+                allowFailure: true,
+                decodeResult: (v) => BigInt(String(v))
+              })
+            )
+          }
+          if (matches1) {
+            scaleFactorTargets.push({ oracleIdx: i, tokenSlot: 1 })
+            scaleFactorCalls.push(
+              buildReadMulticallCall<bigint>({
+                target: oracle.address as `0x${string}`,
+                abi: scalerMulticallAbi,
+                functionName: 'SCALE_FACTOR',
+                allowFailure: true,
+                decodeResult: (v) => BigInt(String(v))
+              })
+            )
+          }
+        })
+
+        const scaleFactorResults = scaleFactorCalls.length > 0
+          ? await executeReadMulticall<bigint>(provider, scaleFactorCalls, {
+              debugLabel: 'scalerScaleFactors'
+            })
+          : []
+
+        const token0Collected: ScalerOracle[] = []
+        const token1Collected: ScalerOracle[] = []
+        scaleFactorTargets.forEach((tgt, i) => {
+          const scaleFactor = scaleFactorResults[i]
+          if (scaleFactor == null) return
+          const oracle = scalerOracles[tgt.oracleIdx]
+          const tokenDecimals = tgt.tokenSlot === 0
+            ? token0Info.decimals
+            : token1Info.decimals
+          const scaleFactorFormatted = formatScaleFactor(scaleFactor)
+          const validation = validateScalerForToken(scaleFactor, tokenDecimals)
+          const entry: ScalerOracle = {
+            name: oracle.name,
+            address: oracle.address,
+            scaleFactor: scaleFactorFormatted,
+            valid: validation.valid,
+            resultDecimals: validation.resultDecimals
+          }
+          if (tgt.tokenSlot === 0) token0Collected.push(entry)
+          else token1Collected.push(entry)
+        })
+        token0OraclesRaw = token0Collected
+        token1OraclesRaw = token1Collected
       }
-
-      // Validate for both tokens
-      const [token0OraclesRaw, token1OraclesRaw] = await Promise.all([
-        validateOraclesForToken(wizardData.token0.address, wizardData.token0.decimals),
-        validateOraclesForToken(wizardData.token1.address, wizardData.token1.decimals)
-      ])
 
       let token0Oracles = token0OraclesRaw
       let token1Oracles = token1OraclesRaw

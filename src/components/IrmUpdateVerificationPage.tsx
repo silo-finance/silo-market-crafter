@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import Button from '@/components/Button'
 import { fetchMarketConfig } from '@/utils/fetchMarketConfig'
-import { resolveAddressToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
+import { resolveAddressesToSiloConfigs } from '@/utils/resolveAddressToSiloConfig'
 import { KinkConfigItem, detectCustomStaticKinkConfig, findKinkConfigName } from '@/utils/kinkConfigName'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
 import {
@@ -208,65 +208,82 @@ export default function IrmUpdateVerificationPage() {
         marketLabel: string
       }
 
-      const marketConfigCache = new Map<string, MarketConfig>()
-      const siloConfigCache = new Map<string, string>()
-      const resolvedInputs: ResolvedInput[] = []
+      // Resolve every input address to its SiloConfig in a single multicall batch.
+      let resolvedSiloConfigAddresses: string[]
+      try {
+        resolvedSiloConfigAddresses = await resolveAddressesToSiloConfigs(
+          provider,
+          normalizedInputAddresses
+        )
+      } catch (resolveError) {
+        const errorMessage =
+          resolveError instanceof Error ? resolveError.message : 'Unknown error'
+        throw new Error(`Failed to resolve input addresses to SiloConfig: ${errorMessage}`)
+      }
 
-      for (let i = 0; i < normalizedInputAddresses.length; i++) {
-        const inputAddress = normalizedInputAddresses[i]
-        try {
-          const cachedSiloConfig = siloConfigCache.get(inputAddress.toLowerCase())
-          const siloConfigAddress =
-            cachedSiloConfig ?? (await resolveAddressToSiloConfig(provider, inputAddress))
-          siloConfigCache.set(inputAddress.toLowerCase(), siloConfigAddress)
-
-          const siloConfigKey = siloConfigAddress.toLowerCase()
-          let marketConfig = marketConfigCache.get(siloConfigKey)
-          if (!marketConfig) {
-            marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
-            marketConfigCache.set(siloConfigKey, marketConfig)
+      // Fetch MarketConfig for every unique SiloConfig in parallel (each call itself uses multicall).
+      const uniqueSiloConfigs = Array.from(
+        new Set(resolvedSiloConfigAddresses.map((a) => a.toLowerCase()))
+      )
+      const marketConfigEntries = await Promise.all(
+        uniqueSiloConfigs.map(async (keyLower) => {
+          const canonical = resolvedSiloConfigAddresses.find(
+            (a) => a.toLowerCase() === keyLower
+          ) ?? keyLower
+          try {
+            const cfg = await fetchMarketConfig(provider, canonical)
+            return [keyLower, cfg] as const
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error'
+            throw new Error(`Failed to fetch market config for ${canonical}: ${msg}`)
           }
+        })
+      )
+      const marketConfigCache = new Map<string, MarketConfig>(marketConfigEntries)
 
-          const inputLower = inputAddress.toLowerCase()
-          const isInputSiloConfig = inputLower === siloConfigAddress.toLowerCase()
-          const isSilo0 = marketConfig.silo0.silo.toLowerCase() === inputLower
-          const isSilo1 = marketConfig.silo1.silo.toLowerCase() === inputLower
-
-          let inputKind: InputKind
-          let intendedSilo: SiloSlot | null
-          if (isInputSiloConfig) {
-            inputKind = 'siloConfig'
-            intendedSilo = null
-          } else if (isSilo0) {
-            inputKind = 'silo'
-            intendedSilo = 'silo0'
-          } else if (isSilo1) {
-            inputKind = 'silo'
-            intendedSilo = 'silo1'
-          } else {
-            throw new Error(
-              `Address ${inputAddress} is neither the SiloConfig (${siloConfigAddress}) nor one of its silos (${marketConfig.silo0.silo}, ${marketConfig.silo1.silo}).`
-            )
-          }
-
-          const marketLabel = `${marketConfig.silo0.tokenSymbol ?? 'TOKEN0'}\u00A0/\u00A0${marketConfig.silo1.tokenSymbol ?? 'TOKEN1'}`
-
-          resolvedInputs.push({
-            inputAddress,
-            inputKind,
-            siloConfigAddress,
-            marketConfig,
-            intendedSilo,
-            marketLabel
-          })
-        } catch (resolveError) {
-          const errorMessage =
-            resolveError instanceof Error ? resolveError.message : 'Unknown error'
+      const resolvedInputs: ResolvedInput[] = normalizedInputAddresses.map((inputAddress, i) => {
+        const siloConfigAddress = resolvedSiloConfigAddresses[i]
+        const siloConfigKey = siloConfigAddress.toLowerCase()
+        const marketConfig = marketConfigCache.get(siloConfigKey)
+        if (!marketConfig) {
           throw new Error(
-            `Invalid input at position ${i + 1}: ${inputAddress}. This field accepts Silo or SiloConfig addresses (hex or explorer URL).\n${errorMessage}`
+            `Invalid input at position ${i + 1}: ${inputAddress}. Missing market config for ${siloConfigAddress}.`
           )
         }
-      }
+
+        const inputLower = inputAddress.toLowerCase()
+        const isInputSiloConfig = inputLower === siloConfigAddress.toLowerCase()
+        const isSilo0 = marketConfig.silo0.silo.toLowerCase() === inputLower
+        const isSilo1 = marketConfig.silo1.silo.toLowerCase() === inputLower
+
+        let inputKind: InputKind
+        let intendedSilo: SiloSlot | null
+        if (isInputSiloConfig) {
+          inputKind = 'siloConfig'
+          intendedSilo = null
+        } else if (isSilo0) {
+          inputKind = 'silo'
+          intendedSilo = 'silo0'
+        } else if (isSilo1) {
+          inputKind = 'silo'
+          intendedSilo = 'silo1'
+        } else {
+          throw new Error(
+            `Invalid input at position ${i + 1}: ${inputAddress}. This field accepts Silo or SiloConfig addresses (hex or explorer URL).\nAddress ${inputAddress} is neither the SiloConfig (${siloConfigAddress}) nor one of its silos (${marketConfig.silo0.silo}, ${marketConfig.silo1.silo}).`
+          )
+        }
+
+        const marketLabel = `${marketConfig.silo0.tokenSymbol ?? 'TOKEN0'}\u00A0/\u00A0${marketConfig.silo1.tokenSymbol ?? 'TOKEN1'}`
+
+        return {
+          inputAddress,
+          inputKind,
+          siloConfigAddress,
+          marketConfig,
+          intendedSilo,
+          marketLabel
+        }
+      })
 
       const kinkConfigsResponse = await fetch(KINK_CONFIGS_URL)
       if (!kinkConfigsResponse.ok) {

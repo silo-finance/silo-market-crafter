@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { getCachedVersion, setCachedVersion } from '@/utils/versionCache'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 
 /**
  * Fetch contract versions from Silo Lens using bulk getVersions(address[]),
@@ -72,21 +73,17 @@ export async function fetchSiloLensVersionsWithCache({
     }
 
     if (emptyVersionAddresses.length > 0) {
-      await Promise.all(
-        emptyVersionAddresses.map(async (address) => {
-          try {
-            const version = String(await lensContract.getVersion(address))
-            const normalized = address.toLowerCase()
-            setCachedVersion(chainId, normalized, version)
-            result.set(normalized, version)
-          } catch {
-            // Keep empty value only after explicit single-call attempt.
-            const normalized = address.toLowerCase()
-            setCachedVersion(chainId, normalized, '')
-            result.set(normalized, '')
-          }
-        })
-      )
+      const fallbackVersions = await fetchVersionsIndividually({
+        provider,
+        lensAddress,
+        addresses: emptyVersionAddresses
+      })
+      emptyVersionAddresses.forEach((address, idx) => {
+        const normalized = address.toLowerCase()
+        const version = fallbackVersions[idx] ?? ''
+        setCachedVersion(chainId, normalized, version)
+        result.set(normalized, version)
+      })
     }
 
     return result
@@ -94,18 +91,58 @@ export async function fetchSiloLensVersionsWithCache({
     // Some deployments may not support getVersions yet - fallback to per-address.
   }
 
-  await Promise.all(
-    toFetch.map(async (address) => {
-      try {
-        const version = String(await lensContract.getVersion(address))
-        const normalized = address.toLowerCase()
-        setCachedVersion(chainId, normalized, version)
-        result.set(normalized, version)
-      } catch {
-        // Do not cache failures as empty string to avoid sticky "no version" state.
-      }
-    })
-  )
+  const individualVersions = await fetchVersionsIndividually({
+    provider,
+    lensAddress,
+    addresses: toFetch
+  })
+  toFetch.forEach((address, idx) => {
+    const version = individualVersions[idx]
+    if (version == null) return
+    const normalized = address.toLowerCase()
+    setCachedVersion(chainId, normalized, version)
+    result.set(normalized, version)
+  })
 
   return result
+}
+
+const getVersionAbi = [
+  {
+    type: 'function' as const,
+    name: 'getVersion',
+    stateMutability: 'view' as const,
+    inputs: [{ name: '_contract', type: 'address' as const }],
+    outputs: [{ name: 'version', type: 'string' as const }]
+  }
+] as const
+
+async function fetchVersionsIndividually({
+  provider,
+  lensAddress,
+  addresses
+}: {
+  provider: ethers.Provider
+  lensAddress: string
+  addresses: string[]
+}): Promise<(string | null)[]> {
+  if (addresses.length === 0) return []
+  const calls = addresses.map((addr) =>
+    buildReadMulticallCall<string>({
+      target: lensAddress as `0x${string}`,
+      abi: getVersionAbi,
+      functionName: 'getVersion',
+      args: [addr],
+      allowFailure: true,
+      decodeResult: (v) => String(v)
+    })
+  )
+  try {
+    const results = await executeReadMulticall<string>(provider, calls, {
+      debugLabel: 'siloLensGetVersion'
+    })
+    return results
+  } catch {
+    return addresses.map(() => null)
+  }
 }

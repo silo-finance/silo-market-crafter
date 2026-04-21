@@ -12,7 +12,8 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
-import { verifySiloAddress } from '@/utils/verification/siloAddressVerification'
+import { verifySiloAddresses } from '@/utils/verification/siloAddressVerification'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { detectSiloConfigNetwork } from '@/utils/verification/siloConfigNetworkDetection'
@@ -484,14 +485,15 @@ export default function Step11Verification() {
         // config.silo1.silo: Silo address from on-chain config
         // siloFactory.address: Silo Factory contract address (from repository deployment JSON)
         // provider: Ethers.js provider for making on-chain contract calls
-        const [silo0Verified, silo1Verified] = await Promise.all([
-          verifySiloAddress(config.silo0.silo, siloFactory.address, provider),
-          verifySiloAddress(config.silo1.silo, siloFactory.address, provider)
-        ])
+        const [silo0Verified, silo1Verified] = await verifySiloAddresses(
+          [config.silo0.silo, config.silo1.silo],
+          siloFactory.address,
+          provider
+        )
 
         setSiloVerification({
-          silo0: silo0Verified,
-          silo1: silo1Verified,
+          silo0: silo0Verified ?? false,
+          silo1: silo1Verified ?? false,
           error: null
         })
       } catch (err) {
@@ -843,39 +845,75 @@ export default function Step11Verification() {
               const hookAbi = Array.isArray(siloHookV2Abi)
                 ? (siloHookV2Abi as ethers.InterfaceAbi)
                 : (siloHookV2Abi as unknown as { abi: ethers.InterfaceAbi }).abi
-              const hookContract = new ethers.Contract(hookAddress, hookAbi, providerForHook)
-              
-              // Read LT_MARGIN_FOR_DEFAULTING (18-decimal percentage) when available
-              try {
-                const margin = await hookContract.LT_MARGIN_FOR_DEFAULTING()
-                if (margin != null) {
-                  newHookGaugeInfo = {
-                    hasDefaultingHook: true,
-                    onlyOneBorrowable,
-                    borrowableSilo,
-                    borrowableTokenSymbol: (borrowableSilo === 0
-                      ? marketConfig.silo0.tokenSymbol
-                      : borrowableSilo === 1
-                        ? marketConfig.silo1.tokenSymbol
-                        : null) ?? null,
-                    gaugeAddress: newHookGaugeInfo.gaugeAddress,
-                    gaugeVersion: newHookGaugeInfo.gaugeVersion,
-                    ltMarginForDefaultingRaw: String(margin)
-                  }
+              void hookAbi // ABI retained for reference/typing; reads below go through multicall
+
+              const siloAddressForGauge = onlyOneBorrowable
+                ? (borrowableSilo === 0 ? marketConfig.silo0.silo : marketConfig.silo1.silo)
+                : null
+
+              const hookMulticallAbi = [
+                {
+                  type: 'function' as const,
+                  name: 'LT_MARGIN_FOR_DEFAULTING',
+                  inputs: [],
+                  outputs: [{ type: 'uint256' }],
+                  stateMutability: 'view' as const
+                },
+                {
+                  type: 'function' as const,
+                  name: 'configuredGauges',
+                  inputs: [{ type: 'address' }],
+                  outputs: [{ type: 'address' }],
+                  stateMutability: 'view' as const
                 }
-              } catch (marginErr) {
-                console.warn('Failed to read LT_MARGIN_FOR_DEFAULTING from hook:', marginErr)
+              ] as const
+
+              const hookCalls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = [
+                buildReadMulticallCall<unknown>({
+                  target: hookAddress as `0x${string}`,
+                  abi: hookMulticallAbi,
+                  functionName: 'LT_MARGIN_FOR_DEFAULTING',
+                  allowFailure: true
+                })
+              ]
+              if (siloAddressForGauge && ethers.isAddress(siloAddressForGauge)) {
+                hookCalls.push(
+                  buildReadMulticallCall<unknown>({
+                    target: hookAddress as `0x${string}`,
+                    abi: hookMulticallAbi,
+                    functionName: 'configuredGauges',
+                    args: [siloAddressForGauge],
+                    allowFailure: true
+                  })
+                )
               }
 
-              // If exactly one asset is borrowable, check configured gauge (Silo Incentives Controller)
-              // Hook expects the silo address (collateral silo), not share token
+              const hookResults = await executeReadMulticall<unknown>(providerForHook, hookCalls, {
+                debugLabel: 'hookMarginAndGauge'
+              })
+              const margin = hookResults[0]
+              const gaugeAddrRaw = hookCalls.length > 1 ? hookResults[1] : null
+
+              if (margin != null) {
+                newHookGaugeInfo = {
+                  hasDefaultingHook: true,
+                  onlyOneBorrowable,
+                  borrowableSilo,
+                  borrowableTokenSymbol: (borrowableSilo === 0
+                    ? marketConfig.silo0.tokenSymbol
+                    : borrowableSilo === 1
+                      ? marketConfig.silo1.tokenSymbol
+                      : null) ?? null,
+                  gaugeAddress: newHookGaugeInfo.gaugeAddress,
+                  gaugeVersion: newHookGaugeInfo.gaugeVersion,
+                  ltMarginForDefaultingRaw: String(margin)
+                }
+              }
+
               if (onlyOneBorrowable) {
-                const siloAddress =
-                  borrowableSilo === 0
-                    ? marketConfig.silo0.silo
-                    : marketConfig.silo1.silo
+                const siloAddress = siloAddressForGauge
                 if (siloAddress && ethers.isAddress(siloAddress)) {
-                  const gaugeAddr: string = await hookContract.configuredGauges(siloAddress)
+                  const gaugeAddr = gaugeAddrRaw != null ? String(gaugeAddrRaw) : ''
                   if (gaugeAddr && gaugeAddr !== ethers.ZeroAddress) {
                     const normalizedGauge = ethers.getAddress(gaugeAddr)
                     newHookGaugeInfo = {
@@ -912,12 +950,42 @@ export default function Step11Verification() {
                     }
                     // Fetch gauge owner and notifier for verification (contract exposes NOTIFIER() not notifier())
                     try {
-                      const gaugeAbi = ['function owner() view returns (address)', 'function NOTIFIER() view returns (address)'] as const
-                      const gaugeContract = new ethers.Contract(normalizedGauge, gaugeAbi, providerForHook)
-                      const [gaugeOwner, gaugeNotifier] = await Promise.all([
-                        gaugeContract.owner().catch(() => null),
-                        gaugeContract.NOTIFIER().catch(() => null)
-                      ])
+                      const gaugeAbi = [
+                        {
+                          type: 'function' as const,
+                          name: 'owner',
+                          inputs: [],
+                          outputs: [{ type: 'address' }],
+                          stateMutability: 'view' as const
+                        },
+                        {
+                          type: 'function' as const,
+                          name: 'NOTIFIER',
+                          inputs: [],
+                          outputs: [{ type: 'address' }],
+                          stateMutability: 'view' as const
+                        }
+                      ] as const
+                      const [gaugeOwner, gaugeNotifier] = await executeReadMulticall<string>(
+                        providerForHook,
+                        [
+                          buildReadMulticallCall<string>({
+                            target: normalizedGauge as `0x${string}`,
+                            abi: gaugeAbi,
+                            functionName: 'owner',
+                            allowFailure: true,
+                            decodeResult: (v) => String(v)
+                          }),
+                          buildReadMulticallCall<string>({
+                            target: normalizedGauge as `0x${string}`,
+                            abi: gaugeAbi,
+                            functionName: 'NOTIFIER',
+                            allowFailure: true,
+                            decodeResult: (v) => String(v)
+                          })
+                        ],
+                        { debugLabel: 'gaugeOwnerNotifier' }
+                      )
                       const hookOwnerOnChain = marketConfig.silo0.hookReceiverOwner ?? marketConfig.silo1.hookReceiverOwner ?? null
                       const hookOwnerWizard = isFromWizard ? (wizardData.hookOwnerAddress ?? null) : null
                       newHookGaugeInfo = {
@@ -1160,34 +1228,121 @@ export default function Step11Verification() {
           const name1 = resolveKinkConfigDisplayName(marketConfig.silo1.interestRateModel, cfgJson)
           setIrmConfigNames({ silo0: name0, silo1: name1 })
 
-          // Fetch pending IRM config for each silo (DynamicKinkModel only)
-          const fetchPendingForSilo = async (
-            irmAddress: string,
+          // Fetch pending IRM config for both silos (DynamicKinkModel only) using layered multicalls.
+          type PendingResult = { name: string | null; activateAt: number | null }
+
+          type PendingInput = {
+            irmAddress: string
             version: string | undefined
-          ): Promise<{ name: string | null; activateAt: number | null }> => {
-            if (!irmAddress || irmAddress === ethers.ZeroAddress || !version) {
-              return { name: null, activateAt: null }
+          }
+
+          const pendingInputs: PendingInput[] = [
+            {
+              irmAddress: marketConfig.silo0.interestRateModel.address,
+              version: marketConfig.silo0.interestRateModel.version
+            },
+            {
+              irmAddress: marketConfig.silo1.interestRateModel.address,
+              version: marketConfig.silo1.interestRateModel.version
             }
-            const [contractName] = version.split(' ')
-            if (contractName !== 'DynamicKinkModel') return { name: null, activateAt: null }
+          ]
 
+          const dkmIrmAbi = [
+            {
+              type: 'function' as const,
+              name: 'pendingIrmConfig',
+              inputs: [],
+              outputs: [{ type: 'address' }],
+              stateMutability: 'view' as const
+            },
+            {
+              type: 'function' as const,
+              name: 'activateConfigAt',
+              inputs: [],
+              outputs: [{ type: 'uint256' }],
+              stateMutability: 'view' as const
+            }
+          ] as const
+
+          // Layer 1: for every eligible silo, batch pendingIrmConfig + activateConfigAt in one multicall.
+          type PendingSlot =
+            | { kind: 'skip' }
+            | { kind: 'fetch'; irmAddress: string; pendingIdx: number; activateIdx: number }
+
+          const pendingL1Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+          const slots: PendingSlot[] = pendingInputs.map((input) => {
+            if (!input.irmAddress || input.irmAddress === ethers.ZeroAddress || !input.version) {
+              return { kind: 'skip' }
+            }
+            const [contractName] = input.version.split(' ')
+            if (contractName !== 'DynamicKinkModel') return { kind: 'skip' }
+            const pendingIdx = pendingL1Calls.length
+            pendingL1Calls.push(
+              buildReadMulticallCall<unknown>({
+                target: input.irmAddress as `0x${string}`,
+                abi: dkmIrmAbi,
+                functionName: 'pendingIrmConfig',
+                allowFailure: true
+              })
+            )
+            const activateIdx = pendingL1Calls.length
+            pendingL1Calls.push(
+              buildReadMulticallCall<unknown>({
+                target: input.irmAddress as `0x${string}`,
+                abi: dkmIrmAbi,
+                functionName: 'activateConfigAt',
+                allowFailure: true
+              })
+            )
+            return { kind: 'fetch', irmAddress: input.irmAddress, pendingIdx, activateIdx }
+          })
+
+          const pendingL1Results = pendingL1Calls.length > 0
+            ? await executeReadMulticall<unknown>(provider, pendingL1Calls, { debugLabel: 'irmPendingL1' })
+            : []
+
+          // Layer 2: for each discovered non-zero pending config address, batch getConfig() calls.
+          const dkmConfigAbi = (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi as ethers.InterfaceAbi
+          type L2Slot = { kind: 'skip'; activateAt: number | null } | {
+            kind: 'fetch'
+            activateAt: number | null
+            getConfigIdx: number
+          }
+          const pendingL2Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+          const l2Slots: L2Slot[] = slots.map((slot) => {
+            if (slot.kind === 'skip') return { kind: 'skip', activateAt: null }
+            const pendingRaw = pendingL1Results[slot.pendingIdx]
+            const activateRaw = pendingL1Results[slot.activateIdx]
+            const pendingAddr = pendingRaw != null ? String(pendingRaw) : ''
+            if (!pendingAddr || pendingAddr === ethers.ZeroAddress) {
+              return { kind: 'skip', activateAt: null }
+            }
+            const activateAt = activateRaw != null
+              ? Number(BigInt(String(activateRaw)))
+              : null
+            const getConfigIdx = pendingL2Calls.length
+            pendingL2Calls.push(
+              buildReadMulticallCall<unknown>({
+                target: pendingAddr as `0x${string}`,
+                abi: dkmConfigAbi,
+                functionName: 'getConfig',
+                allowFailure: true
+              })
+            )
+            return { kind: 'fetch', activateAt, getConfigIdx }
+          })
+
+          const pendingL2Results = pendingL2Calls.length > 0
+            ? await executeReadMulticall<unknown>(provider, pendingL2Calls, { debugLabel: 'irmPendingL2' })
+            : []
+
+          const pendingResults: PendingResult[] = l2Slots.map((slot) => {
+            if (slot.kind === 'skip') return { name: null, activateAt: slot.activateAt }
+            const raw = pendingL2Results[slot.getConfigIdx]
+            if (raw == null) return { name: null, activateAt: slot.activateAt }
             try {
-              const irmContract = new ethers.Contract(
-                irmAddress,
-                dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
-                provider
-              )
-              const pendingAddr: string = await irmContract.pendingIrmConfig()
-              if (!pendingAddr || pendingAddr === ethers.ZeroAddress) {
-                return { name: null, activateAt: null }
-              }
-
-              const configContract = new ethers.Contract(
-                pendingAddr,
-                (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi,
-                provider
-              )
-              const [config] = await configContract.getConfig()
+              const tuple = raw as unknown as unknown[]
+              const config = tuple[0] as Record<string, { toString: () => string }>
               const configObj: Record<string, unknown> = {
                 ulow: config.ulow.toString(),
                 u1: config.u1.toString(),
@@ -1207,24 +1362,14 @@ export default function Step11Verification() {
                 { type: 'DynamicKinkModel', config: configObj },
                 cfgJson
               )
-              const activateAtBigInt: bigint = await irmContract.activateConfigAt()
-              const activateAt = Number(activateAtBigInt)
-              return { name: pendingName, activateAt }
+              return { name: pendingName, activateAt: slot.activateAt }
             } catch {
-              return { name: null, activateAt: null }
+              return { name: null, activateAt: slot.activateAt }
             }
-          }
+          })
 
-          const [pending0, pending1] = await Promise.all([
-            fetchPendingForSilo(
-              marketConfig.silo0.interestRateModel.address,
-              marketConfig.silo0.interestRateModel.version
-            ),
-            fetchPendingForSilo(
-              marketConfig.silo1.interestRateModel.address,
-              marketConfig.silo1.interestRateModel.version
-            )
-          ])
+          const pending0 = pendingResults[0] ?? { name: null, activateAt: null }
+          const pending1 = pendingResults[1] ?? { name: null, activateAt: null }
           if (isMountedRef.current) {
             setPendingIrmInfo({ silo0: pending0, silo1: pending1 })
           }
