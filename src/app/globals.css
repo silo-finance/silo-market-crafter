@@ -923,12 +923,16 @@ body {
   --mct-label: var(--silo-text-soft);
   --mct-body: var(--silo-text);
   --mct-link: var(--silo-accent);
-  --mct-highlight: var(--silo-brand-highlight);
+  /* Inline emphasis (e.g. market name) uses the brand purple from Silo v3 palette.
+     In light theme --silo-deep-purple alone is too pale on white, so we darken it
+     toward --silo-surface-strong to reach readable contrast while staying on-brand. */
+  --mct-highlight: color-mix(in srgb, var(--silo-deep-purple) 55%, var(--silo-surface-strong));
   --mct-section-bg: color-mix(in srgb, var(--silo-soft-cyan) 14%, var(--silo-surface));
   --mct-border: var(--silo-border);
 }
 
 .theme-dark .market-config-tree {
+  --mct-highlight: var(--silo-accent);
   --mct-section-bg: color-mix(in srgb, var(--silo-node-purple) 12%, var(--silo-surface));
 }
 
