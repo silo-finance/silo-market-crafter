@@ -88,6 +88,13 @@ Do not hand off with red gates.
 
 Apply this step for delivered code changes unless the user explicitly asks to skip changelog updates.
 
+Changelog entry format and granularity:
+
+- Each changelog item must be exactly one line (single concise sentence, no multi-sentence notes).
+- Iterative refinements within the same feature/refactor implementation must stay in the same changelog line.
+- Do not add extra changelog lines for in-scope tweaks done during implementation; instead, update the existing line to reflect the final delivered scope.
+- Add a separate changelog line only for an independently delivered change (separate feature/fix scope).
+
 ### `release/*` or `hotfix/*`
 
 - Bump `package.json` version (use version from branch name if encoded).

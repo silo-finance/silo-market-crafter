@@ -13,5 +13,7 @@ Follow the branch-aware policy in `senior-coding-actions`:
 
 - On `release/*` or `hotfix/*`: update `package.json` version and matching top version section in `CHANGELOG.md`.
 - On other branches: do not change `package.json` version; add one-line changelog entry under `## [Unreleased]`.
+- Every changelog item must be exactly one line (single concise sentence).
+- Iterative in-scope improvements of the same implementation must not create extra changelog lines; keep or update one line for the final delivered scope.
 - Do not finish with missing or inconsistent changelog/version updates.
 - Write changelog entries in English only.
