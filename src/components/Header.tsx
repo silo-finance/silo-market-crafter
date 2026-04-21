@@ -185,8 +185,8 @@ export default function Header() {
       <div className="max-w-7xl mx-auto">
         <div className="header-shell rounded-[26px] border px-5 py-2.5 shadow-[0_8px_24px_rgba(15,20,31,0.08)] backdrop-blur-md flex justify-between items-center min-h-16">
           {/* Logo + Market Crafter version */}
-          <div className="flex-shrink-0 flex items-center gap-3">
-            <Link href="/" className="flex items-center">
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center gap-3">
               <Image
                 src={unionLogoSrc}
                 alt="Union"
@@ -194,11 +194,11 @@ export default function Header() {
                 height={32}
                 className="header-logo h-8 w-auto"
               />
+              <div className="flex flex-col leading-tight gap-[3px]">
+                <span className="header-text text-[11px] font-semibold uppercase tracking-[0.14em]">Market Crafter</span>
+                <span className="header-text-soft text-[10px]">v{packageJson.version}</span>
+              </div>
             </Link>
-            <div className="flex flex-col leading-tight">
-              <span className="header-text text-[11px] font-semibold uppercase tracking-[0.14em]">Market Crafter</span>
-              <span className="header-text-soft text-[10px]">v{packageJson.version}</span>
-            </div>
           </div>
 
           {/* Navigation Menu */}

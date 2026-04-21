@@ -8,9 +8,34 @@ import { getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import erc20Artifact from '@/abis/IERC20.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const erc20Abi = (erc20Artifact as { abi: ethers.InterfaceAbi }).abi
+
+const erc20MulticallAbi = [
+  {
+    type: 'function' as const,
+    name: 'symbol',
+    inputs: [],
+    outputs: [{ type: 'string' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'decimals',
+    inputs: [],
+    outputs: [{ type: 'uint8' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'name',
+    inputs: [],
+    outputs: [{ type: 'string' }],
+    stateMutability: 'view' as const
+  }
+] as const
 
 interface TokenMetadata {
   symbol: string
@@ -104,21 +129,37 @@ export default function TokenAddressInput({
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum)
-    const contract = new ethers.Contract(address, erc20Abi, provider)
-    
+    void erc20Abi // kept for compatibility; reads below go through Multicall3
+
     try {
-      const [symbol, decimals, name] = await Promise.all([
-        contract.symbol(),
-        contract.decimals(),
-        contract.name()
-      ])
+      const [symbol, decimals, name] = await executeReadMulticall<unknown>(
+        provider,
+        [
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc20MulticallAbi,
+            functionName: 'symbol'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc20MulticallAbi,
+            functionName: 'decimals'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc20MulticallAbi,
+            functionName: 'name'
+          })
+        ],
+        { debugLabel: 'erc20Metadata' }
+      )
 
       return {
-        symbol: symbol.toString(),
-        decimals: Number(decimals), 
-        name: name.toString() 
+        symbol: String(symbol),
+        decimals: Number(decimals),
+        name: String(name)
       }
-    } catch (err) {
+    } catch {
       throw new Error('Failed to fetch token metadata')
     }
   }
