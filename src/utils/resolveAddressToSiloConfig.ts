@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 
 const SILO_CONFIG_ABI = [
   {
@@ -42,4 +43,39 @@ export async function resolveAddressToSiloConfig(
   }
 
   return normalized
+}
+
+/**
+ * Batched resolver: for each address, returns the corresponding SiloConfig address.
+ * - When an address is a Silo, `config()` returns the SiloConfig.
+ * - When an address is already a SiloConfig, `config()` reverts and we keep the input as-is.
+ * Uses a single Multicall3 round-trip with `allowFailure: true` to probe all addresses at once.
+ */
+export async function resolveAddressesToSiloConfigs(
+  provider: ethers.Provider,
+  addresses: string[]
+): Promise<string[]> {
+  if (addresses.length === 0) return []
+
+  const normalized = addresses.map((addr) => ethers.getAddress(addr))
+
+  const calls = normalized.map((addr) =>
+    buildReadMulticallCall<string>({
+      target: addr as `0x${string}`,
+      abi: SILO_CONFIG_ABI,
+      functionName: 'config',
+      allowFailure: true,
+      decodeResult: (v) => ethers.getAddress(String(v))
+    })
+  )
+
+  const results = await executeReadMulticall<string>(provider, calls, {
+    debugLabel: 'resolveAddressesToSiloConfigs'
+  })
+
+  return normalized.map((addr, i) => {
+    const resolved = results[i]
+    if (resolved && resolved !== ethers.ZeroAddress) return resolved
+    return addr
+  })
 }

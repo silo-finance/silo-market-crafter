@@ -10,6 +10,7 @@ import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import Button from '@/components/Button'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 
 const MANAGEABLE_ORACLE_FACTORY_NAME = 'ManageableOracleFactory'
 
@@ -165,9 +166,21 @@ export default function Step4ManageableOracle() {
     if (!oracleImplementation || !window.ethereum) return
 
     const implTimelockAbi = [
-      'function MIN_TIMELOCK() view returns (uint32)',
-      'function MAX_TIMELOCK() view returns (uint32)'
-    ]
+      {
+        type: 'function' as const,
+        name: 'MIN_TIMELOCK',
+        inputs: [],
+        outputs: [{ type: 'uint32' }],
+        stateMutability: 'view' as const
+      },
+      {
+        type: 'function' as const,
+        name: 'MAX_TIMELOCK',
+        inputs: [],
+        outputs: [{ type: 'uint32' }],
+        stateMutability: 'view' as const
+      }
+    ] as const
 
     const fetchTimelockRange = async () => {
       try {
@@ -177,11 +190,22 @@ export default function Step4ManageableOracle() {
           return
         }
         const provider = new ethers.BrowserProvider(eth)
-        const contract = new ethers.Contract(oracleImplementation, implTimelockAbi, provider)
-        const [minSec, maxSec] = await Promise.all([
-          contract.MIN_TIMELOCK(),
-          contract.MAX_TIMELOCK()
-        ])
+        const [minSec, maxSec] = await executeReadMulticall<unknown>(
+          provider,
+          [
+            buildReadMulticallCall<unknown>({
+              target: oracleImplementation as `0x${string}`,
+              abi: implTimelockAbi,
+              functionName: 'MIN_TIMELOCK'
+            }),
+            buildReadMulticallCall<unknown>({
+              target: oracleImplementation as `0x${string}`,
+              abi: implTimelockAbi,
+              functionName: 'MAX_TIMELOCK'
+            })
+          ],
+          { debugLabel: 'manageableOracleTimelockRange' }
+        )
         const minDays = Math.round(Number(minSec) / SECONDS_PER_DAY)
         const maxDays = Math.round(Number(maxSec) / SECONDS_PER_DAY)
         setTimelockRange({ minDays: Math.max(1, minDays), maxDays: Math.max(minDays, maxDays) })
