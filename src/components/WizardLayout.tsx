@@ -196,7 +196,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <div>
                   <h3 className="text-sm font-medium silo-text-soft mb-3">Selected Assets</h3>
                   <div className="space-y-2">
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 0{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <AddressDisplayShort
@@ -209,7 +209,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     </div>
                     {wizardData.token1 && (
-                      <div className="silo-panel-soft p-3">
+                      <div className="silo-panel p-3">
                         <div className="text-sm font-medium silo-text-main">Token 1{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <AddressDisplayShort
@@ -237,7 +237,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   )}
                   <div className="space-y-2">
                     {wizardData.oracleType0 && (
-                      <div className="silo-panel-soft p-3">
+                      <div className="silo-panel p-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium silo-text-main">Token 0 Oracle{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</span>
                           {wizardData.manageableOracle && wizardData.oracleType0.type !== 'none' && (
@@ -420,7 +420,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       </div>
                     )}
                     {wizardData.oracleType1 && (
-                      <div className="silo-panel-soft p-3">
+                      <div className="silo-panel p-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium silo-text-main">Token 1 Oracle{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</span>
                           {wizardData.manageableOracle && wizardData.oracleType1.type !== 'none' && (
@@ -611,12 +611,12 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <div>
                   <h3 className="text-sm font-medium silo-text-soft mb-3">Interest Rate Models</h3>
                   <div className="space-y-2">
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 0 IRM{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs silo-text-soft">{wizardData.selectedIRM0.name}</div>
                     </div>
                     {wizardData.selectedIRM1 && (
-                      <div className="silo-panel-soft p-3">
+                      <div className="silo-panel p-3">
                         <div className="text-sm font-medium silo-text-main">Token 1 IRM{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
                         <div className="text-xs silo-text-soft">{wizardData.selectedIRM1.name}</div>
                       </div>
@@ -630,7 +630,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <div>
                   <h3 className="text-sm font-medium silo-text-soft mb-3">Borrow Configuration</h3>
                   <div className="space-y-2">
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 0{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs silo-text-soft">
                         {wizardData.borrowConfiguration.token0.nonBorrowable && (
@@ -642,7 +642,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                         Target LTV: {bigintToDisplayNumber(wizardData.borrowConfiguration.token0.liquidationTargetLTV).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 1{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs silo-text-soft">
                         {wizardData.borrowConfiguration.token1.nonBorrowable && (
@@ -663,21 +663,21 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                 <div>
                   <h3 className="text-sm font-medium silo-text-soft mb-3">Fees Configuration</h3>
                   <div className="space-y-2">
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">General Fees</div>
                       <div className="text-xs silo-text-soft">
                         DAO: {bigintToDisplayNumber(wizardData.feesConfiguration.daoFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Deployer: {bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 0 Fees{wizardData.token0?.symbol ? <span className="silo-text-soft"> - {wizardData.token0.symbol}</span> : ''}</div>
                       <div className="text-xs silo-text-soft">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
                         Flashloan: {bigintToDisplayNumber(wizardData.feesConfiguration.token0.flashloanFee).toFixed(10).replace(/\.?0+$/, '')}%
                       </div>
                     </div>
-                    <div className="silo-panel-soft p-3">
+                    <div className="silo-panel p-3">
                       <div className="text-sm font-medium silo-text-main">Token 1 Fees{wizardData.token1?.symbol ? <span className="silo-text-soft"> - {wizardData.token1.symbol}</span> : ''}</div>
                       <div className="text-xs silo-text-soft">
                         Liquidation: {bigintToDisplayNumber(wizardData.feesConfiguration.token1.liquidationFee).toFixed(10).replace(/\.?0+$/, '')}% | 
@@ -692,7 +692,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
               <div>
                 <h3 className="text-sm font-medium silo-text-soft mb-3">Owners</h3>
                 <div className="space-y-2">
-                  <div className="silo-panel-soft p-3">
+                  <div className="silo-panel p-3">
                     <div className="text-sm font-medium silo-text-main">Hook Owner</div>
                     {wizardData.hookOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.hookOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />
@@ -700,7 +700,7 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                       <div className="text-xs silo-text-faint mt-1">—</div>
                     )}
                   </div>
-                  <div className="silo-panel-soft p-3">
+                  <div className="silo-panel p-3">
                     <div className="text-sm font-medium silo-text-main">Oracle/IRM Owner</div>
                     {wizardData.manageableOracleOwnerAddress ? (
                       <OwnerAddressRow address={wizardData.manageableOracleOwnerAddress} chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1} />

@@ -326,16 +326,16 @@ export default function Step4ManageableOracle() {
             />
             {/* Oracle Implementation - source link points to Factory deployment */}
             {oracleImplementation && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+              <div className="silo-panel p-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">Oracle Implementation</p>
-                  <span className="text-xs text-gray-400">
+                  <p className="text-sm font-medium silo-text-main">Oracle Implementation</p>
+                  <span className="text-xs silo-text-soft">
                     Source (Factory): {' '}
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo!.chainId, manageableFactory.address)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-300 underline"
+                      className="text-[var(--silo-accent)] hover:opacity-90 underline"
                     >
                       source
                     </a>
@@ -349,8 +349,8 @@ export default function Step4ManageableOracle() {
                       linkClassName="text-[var(--silo-accent)] hover:text-[#7f91ff]"
                     />
                   </div>
-                  <div className="text-sm text-gray-300 whitespace-nowrap">
-                    version: <span className="text-gray-400">{oracleImplementationVersion || 'Loading…'}</span>
+                  <div className="text-sm silo-text-soft whitespace-nowrap">
+                    version: <span className="text-version-muted">{oracleImplementationVersion || 'Loading…'}</span>
                   </div>
                 </div>
               </div>
@@ -358,9 +358,9 @@ export default function Step4ManageableOracle() {
 
             {/* Timelock selection */}
             {manageableEnabled && oracleImplementation && timelockDayOptions.length > 0 && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
-                <p className="text-sm font-medium text-white">Timelock (days)</p>
-                <p className="text-xs text-gray-400">
+              <div className="silo-panel p-4 space-y-3">
+                <p className="text-sm font-medium silo-text-main">Timelock (days)</p>
+                <p className="text-xs silo-text-soft">
                   Duration before oracle changes can take effect. Owner can propose changes; they execute after this period.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -380,8 +380,8 @@ export default function Step4ManageableOracle() {
                   ))}
                 </div>
                 {selectedTimelockDays !== undefined && (
-                  <p className="text-xs text-gray-400 pt-1">
-                    Used in transaction: <span className="text-gray-300 font-medium">{selectedTimelockDays * SECONDS_PER_DAY} seconds</span>
+                  <p className="text-xs silo-text-soft pt-1">
+                    Used in transaction: <span className="silo-text-main font-medium">{selectedTimelockDays * SECONDS_PER_DAY} seconds</span>
                   </p>
                 )}
               </div>
