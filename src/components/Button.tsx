@@ -17,7 +17,7 @@ const variantStyles = {
   primaryLightDisabled:
     'bg-[var(--silo-deep-purple)] hover:bg-[#8898e8] disabled:bg-[var(--silo-border)] disabled:cursor-not-allowed text-[var(--silo-black)] disabled:text-[var(--silo-text-faint)]',
   secondary:
-    'bg-[var(--silo-surface-2)] hover:bg-[#e6ebf5] text-[var(--silo-text)] border border-[var(--silo-border)]',
+    'bg-[var(--silo-surface)] hover:bg-[var(--silo-surface-2)] text-[var(--silo-text)] border border-[var(--silo-border)]',
   destructive:
     'bg-[#e76969] hover:bg-[#dc5a5a] text-white',
   orange:

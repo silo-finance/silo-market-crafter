@@ -3564,16 +3564,16 @@ export default function Step3OracleConfiguration() {
           ) : (
             <div>
               {loadingOracles ? (
-                <div className="flex items-center space-x-2 text-gray-400">
+                <div className="silo-callout-info flex items-center space-x-2">
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Loading available scaler oracles...</span>
+                  <span className="silo-text-soft">Loading available scaler oracles...</span>
                 </div>
               ) : availableScalers.token0.length === 0 ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
-                  <p className="text-sm font-medium text-gray-300">
+                <div className="space-y-4">
+                  <p className="text-sm font-medium silo-text-main">
                     No pre-defined scaler found for this token. The scaler will be deployed together with the market.
                   </p>
                   {oracleScalerFactory ? (
@@ -3585,7 +3585,7 @@ export default function Step3OracleConfiguration() {
                         chainId={wizardData.networkInfo?.chainId}
                         isOracle={true}
                       />
-                      <p className="text-xs text-gray-500">Quote token: Token 0 ({wizardData.token0.symbol})</p>
+                      <p className="text-xs silo-text-soft">Quote token: Token 0 ({wizardData.token0.symbol})</p>
                     </>
                   ) : oracleScalerFactoryMissing ? (
                     <p className="text-sm text-red-400">{oracleScalerFactoryMissing}</p>
@@ -3595,7 +3595,7 @@ export default function Step3OracleConfiguration() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium silo-text-main mb-2">
                     {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
@@ -3606,10 +3606,10 @@ export default function Step3OracleConfiguration() {
                         key={`${oracle.address}-${isSelected}`}
                         className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
                           !oracle.valid
-                            ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                            ? 'border-red-500 bg-[color-mix(in_srgb,var(--silo-danger)_18%,transparent)] cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_40%,var(--silo-surface))] cursor-pointer'
-                            : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
+                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_34%,transparent)] cursor-pointer'
+                            : 'border-[var(--silo-border)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_16%,transparent)] hover:border-[var(--silo-accent)]/45 hover:bg-[color-mix(in_srgb,var(--silo-accent-soft)_24%,transparent)] cursor-pointer'
                         }`}
                       >
                         <input
@@ -3619,13 +3619,13 @@ export default function Step3OracleConfiguration() {
                           checked={isSelected}
                           onChange={() => setSelectedScalers(prev => ({ ...prev, token0: oracle }))}
                           disabled={!oracle.valid}
-                          className="mt-1"
+                          className="mt-1 accent-[var(--silo-accent)]"
                         />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-white">{oracle.name}</span>
+                          <span className="font-medium silo-text-main">{oracle.name}</span>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm silo-text-soft">
                               Factor:{' '}
                               <a
                                 href={getBlockExplorerUrl(oracle.address)}
@@ -3909,16 +3909,16 @@ export default function Step3OracleConfiguration() {
           ) : (
             <div>
               {loadingOracles ? (
-                <div className="flex items-center space-x-2 text-gray-400">
+                <div className="silo-callout-info flex items-center space-x-2">
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Loading available scaler oracles...</span>
+                  <span className="silo-text-soft">Loading available scaler oracles...</span>
                 </div>
               ) : availableScalers.token1.length === 0 ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
-                  <p className="text-sm font-medium text-gray-300">
+                <div className="space-y-4">
+                  <p className="text-sm font-medium silo-text-main">
                     No pre-defined scaler found for this token. The scaler will be deployed together with the market.
                   </p>
                   {oracleScalerFactory ? (
@@ -3930,7 +3930,7 @@ export default function Step3OracleConfiguration() {
                         chainId={wizardData.networkInfo?.chainId}
                         isOracle={true}
                       />
-                      <p className="text-xs text-gray-500">Quote token: Token 1 ({wizardData.token1.symbol})</p>
+                      <p className="text-xs silo-text-soft">Quote token: Token 1 ({wizardData.token1.symbol})</p>
                     </>
                   ) : oracleScalerFactoryMissing ? (
                     <p className="text-sm text-red-400">{oracleScalerFactoryMissing}</p>
@@ -3940,7 +3940,7 @@ export default function Step3OracleConfiguration() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium silo-text-main mb-2">
                     {/* eslint-disable-next-line react/no-unescaped-entities */}
                     Select Scaler Oracle:
                   </label>
@@ -3951,10 +3951,10 @@ export default function Step3OracleConfiguration() {
                         key={`${oracle.address}-${isSelected}`}
                         className={`flex items-start space-x-3 p-4 rounded-lg border transition-all ${
                           !oracle.valid
-                            ? 'border-red-500 bg-red-900/20 cursor-not-allowed opacity-60'
+                            ? 'border-red-500 bg-[color-mix(in_srgb,var(--silo-danger)_18%,transparent)] cursor-not-allowed opacity-60'
                             : isSelected
-                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_40%,var(--silo-surface))] cursor-pointer'
-                            : 'border-gray-700 hover:border-gray-600 bg-gray-800 cursor-pointer'
+                            ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_34%,transparent)] cursor-pointer'
+                            : 'border-[var(--silo-border)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_16%,transparent)] hover:border-[var(--silo-accent)]/45 hover:bg-[color-mix(in_srgb,var(--silo-accent-soft)_24%,transparent)] cursor-pointer'
                         }`}
                       >
                         <input
@@ -3964,13 +3964,13 @@ export default function Step3OracleConfiguration() {
                           checked={isSelected}
                           onChange={() => setSelectedScalers(prev => ({ ...prev, token1: oracle }))}
                           disabled={!oracle.valid}
-                          className="mt-1"
+                          className="mt-1 accent-[var(--silo-accent)]"
                         />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-white">{oracle.name}</span>
+                          <span className="font-medium silo-text-main">{oracle.name}</span>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm silo-text-soft">
                               Factor:{' '}
                               <a
                                 href={getBlockExplorerUrl(oracle.address)}

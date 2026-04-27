@@ -55,17 +55,17 @@ export default function ContractInfo({
   const sourceUrl = getSourceUrl(chainId, nameForSource, isOracle, isImplementation)
 
   return (
-    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2 ${className}`}>
+    <div className={`silo-panel p-4 space-y-2 ${className}`}>
       <div className="flex items-center gap-2">
-        <p className="text-sm font-medium text-white">{contractName}</p>
+        <p className="text-sm font-medium silo-text-main">{contractName}</p>
         {sourceUrl && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs silo-text-soft">
             Fetched from SILO repository: {' '}
             <a
               href={sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-300 underline"
+              className="text-[var(--silo-accent)] hover:opacity-90 underline"
             >
               source
             </a>
@@ -81,7 +81,7 @@ export default function ContractInfo({
           />
           {verificationIcon && verificationIcon}
         </div>
-        <div className="text-sm text-gray-300 whitespace-nowrap">
+        <div className="text-sm silo-text-soft whitespace-nowrap">
           {renderVersion !== undefined ? (
             <>version: {renderVersion}</>
           ) : (

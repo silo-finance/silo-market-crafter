@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useWizard } from '@/contexts/WizardContext'
 import { normalizeAddress } from '@/utils/addressValidation'
-import { getNetworkDisplayName, NETWORK_CONFIGS } from '@/utils/networks'
+import { getNetworkDisplayName, getWalletAddEthereumChainParams, NETWORK_CONFIGS } from '@/utils/networks'
 import packageJson from '../../package.json'
 import CopyButton from '@/components/CopyButton'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -157,7 +157,6 @@ export default function Header() {
 
   const switchNetwork = async (targetChainId: number) => {
     if (!window.ethereum) return
-    if (!networkId) return
     if (Number(networkId) === targetChainId) return
 
     setSwitchingNetwork(true)
@@ -166,15 +165,45 @@ export default function Header() {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${targetChainId.toString(16)}` }]
       })
+      const updatedChainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
+      await getNetworkInfo(updatedChainId)
     } catch (error) {
       const walletError = error as { code?: number; message?: string }
       if (walletError.code === 4001) {
         // User rejected the request.
       } else if (walletError.code === -32002) {
         alert('Network switch request is already pending in wallet.')
+      } else if (
+        walletError.code === 4902 ||
+        walletError.message?.toLowerCase().includes('unrecognized chain') ||
+        walletError.message?.toLowerCase().includes('unknown chain') ||
+        walletError.message?.toLowerCase().includes('not added')
+      ) {
+        const addParams = getWalletAddEthereumChainParams(targetChainId)
+        if (!addParams) {
+          alert('This network is not available in your wallet yet and cannot be auto-added because RPC metadata is missing.')
+          return
+        }
+        const shouldAdd = window.confirm(
+          `${addParams.chainName} is not available in your wallet. Do you want to add it now?`
+        )
+        if (!shouldAdd) return
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [addParams]
+        })
+
+        // Some wallets add the network without switching or without emitting
+        // `chainChanged` immediately, so we explicitly request the switch.
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${targetChainId.toString(16)}` }]
+        })
       } else {
         alert(`Failed to switch network.${walletError.message ? ` ${walletError.message}` : ''}`)
       }
+      const updatedChainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
+      await getNetworkInfo(updatedChainId)
     } finally {
       setSwitchingNetwork(false)
     }
