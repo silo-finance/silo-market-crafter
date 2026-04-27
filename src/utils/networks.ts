@@ -10,6 +10,8 @@ export interface NetworkConfig {
   chainName: string // For GitHub repo paths (e.g., "mainnet", "arbitrum_one")
   explorerBaseUrl: string // Base URL for block explorer (without /address/ or /tx/)
   nativeTokenSymbol: string
+  nativeTokenName?: string // For wallet_addEthereumChain metadata
+  rpcUrls?: string[] // Optional RPCs used for wallet_addEthereumChain
   iconPath: string
 }
 
@@ -96,6 +98,8 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     chainName: 'megaeth',
     explorerBaseUrl: 'https://mega.etherscan.io',
     nativeTokenSymbol: 'ETH',
+    nativeTokenName: 'Ether',
+    rpcUrls: ['https://mainnet.megaeth.com/rpc'],
     iconPath: '/network-icons/megaeth.ico',
   },
   {
@@ -104,6 +108,8 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     chainName: 'mantle',
     explorerBaseUrl: 'https://mantlescan.xyz',
     nativeTokenSymbol: 'MNT',
+    nativeTokenName: 'Mantle',
+    rpcUrls: ['https://rpc.mantle.xyz'],
     iconPath: '/network-icons/mantle.ico',
   },
 ]
@@ -220,6 +226,41 @@ export function getSupportedChainIds(): number[] {
 export function isChainSupported(chainId: number | string): boolean {
   const id = typeof chainId === 'string' ? parseInt(chainId, 10) : chainId
   return NETWORK_CONFIG_MAP.has(id)
+}
+
+export interface WalletAddEthereumChainParams {
+  chainId: `0x${string}`
+  chainName: string
+  nativeCurrency: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+  rpcUrls: string[]
+  blockExplorerUrls: string[]
+}
+
+/**
+ * Build EIP-3085 params for wallet_addEthereumChain.
+ * Returns null when required metadata (RPC URL) is unavailable.
+ */
+export function getWalletAddEthereumChainParams(
+  chainId: number | string
+): WalletAddEthereumChainParams | null {
+  const config = getNetworkConfig(chainId)
+  if (!config?.rpcUrls?.length) return null
+
+  return {
+    chainId: `0x${config.chainId.toString(16)}`,
+    chainName: config.displayName,
+    nativeCurrency: {
+      name: config.nativeTokenName ?? config.nativeTokenSymbol,
+      symbol: config.nativeTokenSymbol,
+      decimals: 18,
+    },
+    rpcUrls: config.rpcUrls,
+    blockExplorerUrls: [config.explorerBaseUrl],
+  }
 }
 
 /**

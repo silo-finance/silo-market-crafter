@@ -87,7 +87,7 @@ export default function Step7Hook() {
         <h1 className="text-4xl font-bold text-white mb-4">
           Step 9: Hook Selection
         </h1>
-        <p className="text-gray-300 text-lg">
+        <p className="silo-text-soft text-lg">
           Choose a hook implementation for your market
         </p>
       </div>
@@ -100,8 +100,8 @@ export default function Step7Hook() {
               key={option.value}
               className={`flex items-start space-x-4 p-6 rounded-lg border cursor-pointer transition-all ${
                 selectedHook === option.value
-                  ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_40%,var(--silo-surface))]'
-                  : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                  ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_46%,var(--silo-surface))]'
+                  : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[var(--silo-accent)]/45 hover:bg-[var(--silo-surface)]'
               }`}
             >
               <input
@@ -110,25 +110,25 @@ export default function Step7Hook() {
                 value={option.value}
                 checked={selectedHook === option.value}
                 onChange={(e) => setSelectedHook(e.target.value as HookType)}
-                className="mt-1"
+                className="mt-1 accent-[var(--silo-accent)]"
               />
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
-                  <span className="font-semibold text-white text-lg">
+                  <span className="font-semibold silo-text-main text-lg">
                     {option.name}
                   </span>
                   {selectedHook === option.value && (
                     <span className="status-muted-success text-sm">✓ Selected</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-400 mb-3">
+                <p className="text-sm silo-text-soft mb-3">
                   {option.description}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {option.features.map((feature, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded"
+                      className="px-2 py-1 text-xs rounded border border-[var(--silo-border)] bg-[var(--silo-surface)] silo-text-soft"
                     >
                       {feature}
                     </span>

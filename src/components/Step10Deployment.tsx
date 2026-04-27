@@ -665,16 +665,16 @@ export default function Step10Deployment() {
               renderVersion={<VersionStatus version={deployerVersion || null} />}
             />
             {siloImplementationAddress && (
-              <div className="mt-4 silo-panel-soft p-4 space-y-2">
+              <div className="mt-4 silo-panel p-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">Silo Implementation</p>
-                  <span className="text-xs text-gray-400">
+                  <p className="text-sm font-medium silo-text-main">Silo Implementation</p>
+                  <span className="text-xs silo-text-soft">
                     Source (SiloDeployer): {' '}
                     <a
                       href={getExplorerAddressUrl(wizardData.networkInfo?.chainId ?? 1, deployerAddress)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-300 underline"
+                      className="text-[var(--silo-accent)] hover:opacity-90 underline"
                     >
                       source
                     </a>
@@ -687,7 +687,7 @@ export default function Step10Deployment() {
                       chainId={wizardData.networkInfo?.chainId}
                     />
                   </div>
-                  <div className="text-sm text-gray-300 whitespace-nowrap">
+                  <div className="text-sm silo-text-soft whitespace-nowrap">
                     version: <VersionStatus version={siloImplementationVersion || null} />
                   </div>
                 </div>

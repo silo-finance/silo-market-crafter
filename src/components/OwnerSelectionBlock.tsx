@@ -227,8 +227,8 @@ export default function OwnerSelectionBlock({
 
   return (
     <div className="space-y-4">
-      <div className={`silo-panel-soft p-6 ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
-        <p className="text-gray-400 text-sm mb-2">
+      <div className={`silo-panel p-6 border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] bg-[color-mix(in_srgb,var(--silo-accent-soft)_26%,var(--silo-surface))] ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
+        <p className="silo-text-soft text-sm mb-2">
           Supported names (keys) can be viewed{' '}
           <a
             href={chainId ? getAddressesJsonUrl(chainId) : 'https://github.com/silo-finance/silo-contracts-v2/tree/master/common/addresses'}

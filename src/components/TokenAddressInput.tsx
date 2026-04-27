@@ -104,6 +104,11 @@ export default function TokenAddressInput({
   const [metadata, setMetadata] = useState<TokenMetadata | null>(initialMetadata || null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const latestValueRef = useRef<string>(value)
+
+  useEffect(() => {
+    latestValueRef.current = value
+  }, [value])
 
   // Initialize with existing metadata/resolved address if provided
   useEffect(() => {
@@ -165,9 +170,13 @@ export default function TokenAddressInput({
   }
 
   const validateAndFetchToken = useCallback(async (
-    address: string
+    address: string,
+    sourceInput: string
   ) => {
+    const isCurrentInput = () => latestValueRef.current === sourceInput
+
     if (!address.trim()) {
+      if (!isCurrentInput()) return
       setMetadata(null)
       setError('')
       setResolvedAddress(null)
@@ -183,6 +192,7 @@ export default function TokenAddressInput({
     // Try to normalize the address (fix checksum)
     const normalizedAddress = normalizeAddress(address)
     if (!normalizedAddress) {
+      if (!isCurrentInput()) return
       const errorMsg = 'Invalid address format'
       setMetadata(null)
       setError(errorMsg)
@@ -197,6 +207,7 @@ export default function TokenAddressInput({
       return
     }
 
+    if (!isCurrentInput()) return
     setResolvedAddress(normalizedAddress)
 
     // Set loading state
@@ -205,12 +216,14 @@ export default function TokenAddressInput({
 
     try {
       const tokenMetadata = await fetchTokenMetadata(normalizedAddress)
+      if (!isCurrentInput()) return
       setMetadata(tokenMetadata)
       setError('')
       if (onResolve) {
         onResolve(normalizedAddress, tokenMetadata)
       }
     } catch (err) {
+      if (!isCurrentInput()) return
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch token metadata'
       setMetadata(null)
       setError(errorMessage)
@@ -222,6 +235,7 @@ export default function TokenAddressInput({
         onError(errorMessage)
       }
     } finally {
+      if (!isCurrentInput()) return
       setLoading(false)
     }
   }, [onResolve, onError])
@@ -231,7 +245,10 @@ export default function TokenAddressInput({
    * If not hex -> treat as symbol, lookup in addresses JSON (case-insensitive); if found use that address and fetch metadata; if not show error.
    */
   const processTokenInput = useCallback(async (inputValue: string) => {
+    const isCurrentInput = () => latestValueRef.current === inputValue
+
     if (!inputValue.trim()) {
+      if (!isCurrentInput()) return
       setMetadata(null)
       setError('')
       setResolvedAddress(null)
@@ -242,7 +259,7 @@ export default function TokenAddressInput({
     }
 
     if (isHexAddress(inputValue)) {
-      await validateAndFetchToken(inputValue)
+      await validateAndFetchToken(inputValue, inputValue)
       return
     }
 
@@ -253,6 +270,7 @@ export default function TokenAddressInput({
     try {
       if (!chainId) {
         if (!window.ethereum) {
+          if (!isCurrentInput()) return
           const errorMsg = 'Connect your wallet to look up token by symbol.'
           setError(errorMsg)
           setResolvedAddress(null)
@@ -266,11 +284,13 @@ export default function TokenAddressInput({
           return
         }
         const hex = await window.ethereum.request({ method: 'eth_chainId' }) as string
+        if (!isCurrentInput()) return
         currentChainId = parseInt(hex, 16).toString()
       } else {
         currentChainId = chainId
       }
     } catch {
+      if (!isCurrentInput()) return
       const errorMsg = 'Could not read network. Please enter the token address manually.'
       setError(errorMsg)
       setResolvedAddress(null)
@@ -284,12 +304,14 @@ export default function TokenAddressInput({
       return
     }
 
+    if (!isCurrentInput()) return
     setLoading(true)
     setError('')
     setResolvedAddress(null)
     setMetadata(null)
 
     const result = await resolveSymbolToAddress(currentChainId, inputValue)
+    if (!isCurrentInput()) return
     if (!result) {
       const errorMsg = 'Please enter the token address manually.'
       setLoading(false)
@@ -305,7 +327,8 @@ export default function TokenAddressInput({
     }
 
     setResolvedAddress(result.address)
-    await validateAndFetchToken(result.address)
+    await validateAndFetchToken(result.address, inputValue)
+    if (!isCurrentInput()) return
     setLoading(false)
   }, [chainId, validateAndFetchToken, onResolve, onError])
 
