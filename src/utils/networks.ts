@@ -90,6 +90,22 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     nativeTokenSymbol: 'INJ',
     iconPath: '/network-icons/injective.svg',
   },
+  {
+    chainId: 4326,
+    displayName: 'MegaETH',
+    chainName: 'megaeth',
+    explorerBaseUrl: 'https://mega.etherscan.io',
+    nativeTokenSymbol: 'ETH',
+    iconPath: '/network-icons/megaeth.ico',
+  },
+  {
+    chainId: 5000,
+    displayName: 'Mantle',
+    chainName: 'mantle',
+    explorerBaseUrl: 'https://mantlescan.xyz',
+    nativeTokenSymbol: 'MNT',
+    iconPath: '/network-icons/mantle.ico',
+  },
 ]
 
 /**
