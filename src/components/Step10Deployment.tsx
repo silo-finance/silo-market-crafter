@@ -640,8 +640,8 @@ export default function Step10Deployment() {
 
       {/* Network Information */}
       <div className="silo-panel p-6 mb-6">
-        <p className="text-sm font-medium text-gray-300 mb-4">
-          Current Network: <span className="text-white">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="text-gray-400">({wizardData.networkInfo?.chainId || '—'})</span>
+        <p className="text-sm font-medium silo-text-soft mb-4">
+          Current Network: <span className="silo-text-main">{wizardData.networkInfo?.networkName || 'Unknown'}</span> <span className="silo-text-faint">({wizardData.networkInfo?.chainId || '—'})</span>
         </p>
         {loading && (
           <div className="mb-4 flex items-center space-x-2 text-[var(--silo-accent)]">
@@ -823,19 +823,19 @@ export default function Step10Deployment() {
 
       {/* Deploy Arguments as JSON */}
       <div className="silo-panel p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Deploy Arguments</h3>
-        <p className="text-sm text-gray-400 mb-4">
+        <h3 className="text-lg font-semibold silo-text-main mb-4">Deploy Arguments</h3>
+        <p className="text-sm silo-text-soft mb-4">
           Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>
         </p>
         {deployArgs ? (
-          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
-            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+          <div className="silo-panel rounded-lg p-4 overflow-x-auto">
+            <pre className="text-sm silo-text-soft whitespace-pre-wrap font-mono">
               <code>{JSON.stringify(deployArgs, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2)}</code>
             </pre>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-gray-400 text-sm">
+          <div className="silo-panel rounded-lg p-4 text-center">
+            <p className="silo-text-soft text-sm">
               {!wizardData.token0 || !wizardData.token1 
                 ? 'Please complete previous steps to generate deployment arguments.'
                 : 'Preparing deployment arguments...'}
