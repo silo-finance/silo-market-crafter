@@ -888,6 +888,21 @@ function VaultWithUnderlyingOracleSection({
   const [deploying, setDeploying] = useState(false)
   const [deployError, setDeployError] = useState<string | null>(null)
 
+  // Parent restores `vault` from wizard/localStorage after mount; keep inputs in sync.
+  useEffect(() => {
+    setVaultInput(vault.vaultAddress ?? '')
+  }, [vault.vaultAddress])
+
+  // Mirror vault.underlyingOracleAddress into the input when it updates from outside (e.g. restore
+  // from wizard, deploy adapter). Do not mirror while probing or when we intentionally cleared the
+  // vault field for "aggregator pending" (user must keep the aggregator address in the input until deploy).
+  useEffect(() => {
+    const next = vault.underlyingOracleAddress ?? ''
+    if (probe.kind === 'loading') return
+    if (probe.kind === 'aggregator' && next === '') return
+    setUnderlyingInput(next)
+  }, [vault.underlyingOracleAddress, probe.kind])
+
   const resolveVault = async (address: string) => {
     if (!address || !ethers.isAddress(address) || !window.ethereum) {
       setVault(prev => ({
@@ -1096,7 +1111,12 @@ function VaultWithUnderlyingOracleSection({
         decimals: Number.isFinite(dec) ? dec : 0,
         latestAnswer: answer
       })
-      setVault(prev => ({ ...prev, underlyingOracleAddress: '' }))
+      setVault(prev => ({
+        ...prev,
+        underlyingOracleAddress: '',
+        underlyingOracleSourceAggregator: ethers.getAddress(oracleAddr),
+        underlyingOracleDeployTxHash: undefined
+      }))
     } catch (err) {
       console.warn('Underlying oracle probe failed both ISiloOracle and Aggregator:', err)
       setProbe({
