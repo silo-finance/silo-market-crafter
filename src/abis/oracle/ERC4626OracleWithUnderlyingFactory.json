@@ -1,0 +1,146 @@
+[
+    {
+        "inputs": [],
+        "name": "AssetZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ExistingAddress",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentNonce",
+                "type": "uint256"
+            }
+        ],
+        "name": "InvalidAccountNonce",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NewOracleZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "QuoteTokenZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroQuote",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "oracle",
+                "type": "address"
+            }
+        ],
+        "name": "NewOracle",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract IERC4626",
+                "name": "_vault",
+                "type": "address"
+            },
+            {
+                "internalType": "contract ISiloOracle",
+                "name": "_oracle",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_externalSalt",
+                "type": "bytes32"
+            }
+        ],
+        "name": "create",
+        "outputs": [
+            {
+                "internalType": "contract ERC4626OracleWithUnderlying",
+                "name": "oracle",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "deployedOracle",
+                "type": "address"
+            }
+        ],
+        "name": "madeByFactory",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isMade",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "nonces",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract IERC4626",
+                "name": "_vault",
+                "type": "address"
+            },
+            {
+                "internalType": "contract ISiloOracle",
+                "name": "_oracle",
+                "type": "address"
+            }
+        ],
+        "name": "verifyConfig",
+        "outputs": [],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

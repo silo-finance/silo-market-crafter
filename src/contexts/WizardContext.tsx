@@ -33,7 +33,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
   enabled: boolean
   reason?: string
 }
@@ -78,6 +78,43 @@ export interface VaultOracleConfig {
   customQuoteTokenMetadata?: { symbol: string; decimals: number }
   /** User acknowledged vault price-manipulation risk (Step 3); optional in saved JSON. */
   priceManipulationRiskAcknowledged?: boolean
+}
+
+/**
+ * ERC4626 vault-based oracle with an additional underlying ISiloOracle
+ * (ERC4626OracleWithUnderlying). The underlying oracle prices the vault asset
+ * against the configured quote token, so vault.asset() does not need to equal
+ * the quote token directly.
+ */
+export interface VaultWithUnderlyingOracleConfig {
+  /** Which token is the base (token0 or token1). */
+  baseToken: 'token0' | 'token1'
+  /** ERC4626 vault address. */
+  vaultAddress: string
+  /** If true, use the other market token as quote; otherwise use customQuoteTokenAddress. */
+  useOtherTokenAsQuote?: boolean
+  /** When useOtherTokenAsQuote is false, user-provided quote token address. */
+  customQuoteTokenAddress?: string
+  /** Resolved metadata when using custom quote (for display). */
+  customQuoteTokenMetadata?: { symbol: string; decimals: number }
+  /** User acknowledged vault price-manipulation risk (Step 3); optional in saved JSON. */
+  priceManipulationRiskAcknowledged?: boolean
+  /**
+   * Underlying ISiloOracle address that prices vault.asset() against the quote
+   * token. After a successful in-wizard adapter deploy, this points to the
+   * freshly deployed adapter (not the original aggregator address).
+   */
+  underlyingOracleAddress: string
+  /**
+   * Tx hash of the in-wizard adapter deploy (Chainlink V3 oracle factory).
+   * Set only when the adapter was deployed in this wizard run.
+   */
+  underlyingOracleDeployTxHash?: string
+  /**
+   * Original aggregator address provided by the user before adapter deploy.
+   * Kept for transparency in summary panel after the adapter replacement.
+   */
+  underlyingOracleSourceAggregator?: string
 }
 
 /** Custom Method oracle deployment config. Calls a no-arg method on target and interprets result as price. */
@@ -133,20 +170,22 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
+    vaultWithUnderlyingOracle?: VaultWithUnderlyingOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
     supraSValueOracle?: SupraSValueOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
     vaultOracle?: VaultOracleConfig
+    vaultWithUnderlyingOracle?: VaultWithUnderlyingOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
     supraSValueOracle?: SupraSValueOracleConfig
   }
@@ -455,6 +494,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
+        if (t === 'vaultWithUnderlying') return 'VaultOracleWithUnderlying'
         if (t === 'customMethod') return 'CustomMethodOracle'
         if (t === 'supraSValue') return 'SupraSValueOracle'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
@@ -507,6 +547,24 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'vaultWithUnderlying' && wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle
+        ? {
+            vaultWithUnderlyingOracle0: {
+              baseToken: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.useOtherTokenAsQuote ?? true,
+              vaultAddress: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.vaultAddress,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.customQuoteTokenMetadata,
+              priceManipulationRiskAcknowledged:
+                wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.priceManipulationRiskAcknowledged === true,
+              underlyingOracleAddress: wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.underlyingOracleAddress,
+              underlyingOracleDeployTxHash:
+                wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.underlyingOracleDeployTxHash || '',
+              underlyingOracleSourceAggregator:
+                wizardData.oracleConfiguration.token0.vaultWithUnderlyingOracle.underlyingOracleSourceAggregator || ''
+            }
+          }
+        : {}),
       ...(wizardData.oracleConfiguration?.token0?.type === 'customMethod' && wizardData.oracleConfiguration?.token0?.customMethodOracle
         ? {
             customMethodOracle0: {
@@ -538,6 +596,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'chainlink') return 'Chainlink'
         if (t === 'ptLinear') return 'PT-Linear'
         if (t === 'vault') return 'VaultOracle'
+        if (t === 'vaultWithUnderlying') return 'VaultOracleWithUnderlying'
         if (t === 'customMethod') return 'CustomMethodOracle'
         if (t === 'supraSValue') return 'SupraSValueOracle'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
@@ -587,6 +646,24 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultOracle.customQuoteTokenMetadata,
               priceManipulationRiskAcknowledged:
                 wizardData.oracleConfiguration.token1.vaultOracle.priceManipulationRiskAcknowledged === true
+            }
+          }
+        : {}),
+      ...(wizardData.oracleConfiguration?.token1?.type === 'vaultWithUnderlying' && wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle
+        ? {
+            vaultWithUnderlyingOracle1: {
+              baseToken: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.baseToken,
+              useOtherTokenAsQuote: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.useOtherTokenAsQuote ?? true,
+              vaultAddress: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.vaultAddress,
+              customQuoteTokenAddress: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.customQuoteTokenAddress || '',
+              customQuoteTokenMetadata: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.customQuoteTokenMetadata,
+              priceManipulationRiskAcknowledged:
+                wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.priceManipulationRiskAcknowledged === true,
+              underlyingOracleAddress: wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.underlyingOracleAddress,
+              underlyingOracleDeployTxHash:
+                wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.underlyingOracleDeployTxHash || '',
+              underlyingOracleSourceAggregator:
+                wizardData.oracleConfiguration.token1.vaultWithUnderlyingOracle.underlyingOracleSourceAggregator || ''
             }
           }
         : {}),
@@ -649,6 +726,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'ptLinear'
           : config.solvencyOracle0 === 'VaultOracle'
           ? 'vault'
+          : config.solvencyOracle0 === 'VaultOracleWithUnderlying'
+          ? 'vaultWithUnderlying'
           : config.solvencyOracle0 === 'CustomMethodOracle'
           ? 'customMethod'
           : config.solvencyOracle0 === 'SupraSValueOracle'
@@ -663,6 +742,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'ptLinear'
           : config.solvencyOracle1 === 'VaultOracle'
           ? 'vault'
+          : config.solvencyOracle1 === 'VaultOracleWithUnderlying'
+          ? 'vaultWithUnderlying'
           : config.solvencyOracle1 === 'CustomMethodOracle'
           ? 'customMethod'
           : config.solvencyOracle1 === 'SupraSValueOracle'
@@ -756,6 +837,68 @@ export function WizardProvider({ children }: { children: ReactNode }) {
                 Boolean(config.vaultOracle1.priceManipulationRiskAcknowledged) === true
             }
           : undefined
+      const vaultWithUnderlying0 =
+        config.vaultWithUnderlyingOracle0 && oracleType0 === 'vaultWithUnderlying'
+          ? {
+              baseToken: (config.vaultWithUnderlyingOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote:
+                config.vaultWithUnderlyingOracle0.useOtherTokenAsQuote !== false,
+              vaultAddress: String(config.vaultWithUnderlyingOracle0.vaultAddress ?? ''),
+              customQuoteTokenAddress: String(
+                config.vaultWithUnderlyingOracle0.customQuoteTokenAddress ?? ''
+              ),
+              customQuoteTokenMetadata: config.vaultWithUnderlyingOracle0.customQuoteTokenMetadata
+                ? {
+                    symbol: String(
+                      config.vaultWithUnderlyingOracle0.customQuoteTokenMetadata.symbol ?? ''
+                    ),
+                    decimals: Number(
+                      config.vaultWithUnderlyingOracle0.customQuoteTokenMetadata.decimals ?? 18
+                    )
+                  }
+                : undefined,
+              priceManipulationRiskAcknowledged:
+                Boolean(config.vaultWithUnderlyingOracle0.priceManipulationRiskAcknowledged) === true,
+              underlyingOracleAddress: String(config.vaultWithUnderlyingOracle0.underlyingOracleAddress ?? ''),
+              underlyingOracleDeployTxHash: config.vaultWithUnderlyingOracle0.underlyingOracleDeployTxHash
+                ? String(config.vaultWithUnderlyingOracle0.underlyingOracleDeployTxHash)
+                : undefined,
+              underlyingOracleSourceAggregator: config.vaultWithUnderlyingOracle0.underlyingOracleSourceAggregator
+                ? String(config.vaultWithUnderlyingOracle0.underlyingOracleSourceAggregator)
+                : undefined
+            }
+          : undefined
+      const vaultWithUnderlying1 =
+        config.vaultWithUnderlyingOracle1 && oracleType1 === 'vaultWithUnderlying'
+          ? {
+              baseToken: (config.vaultWithUnderlyingOracle1.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              useOtherTokenAsQuote:
+                config.vaultWithUnderlyingOracle1.useOtherTokenAsQuote !== false,
+              vaultAddress: String(config.vaultWithUnderlyingOracle1.vaultAddress ?? ''),
+              customQuoteTokenAddress: String(
+                config.vaultWithUnderlyingOracle1.customQuoteTokenAddress ?? ''
+              ),
+              customQuoteTokenMetadata: config.vaultWithUnderlyingOracle1.customQuoteTokenMetadata
+                ? {
+                    symbol: String(
+                      config.vaultWithUnderlyingOracle1.customQuoteTokenMetadata.symbol ?? ''
+                    ),
+                    decimals: Number(
+                      config.vaultWithUnderlyingOracle1.customQuoteTokenMetadata.decimals ?? 18
+                    )
+                  }
+                : undefined,
+              priceManipulationRiskAcknowledged:
+                Boolean(config.vaultWithUnderlyingOracle1.priceManipulationRiskAcknowledged) === true,
+              underlyingOracleAddress: String(config.vaultWithUnderlyingOracle1.underlyingOracleAddress ?? ''),
+              underlyingOracleDeployTxHash: config.vaultWithUnderlyingOracle1.underlyingOracleDeployTxHash
+                ? String(config.vaultWithUnderlyingOracle1.underlyingOracleDeployTxHash)
+                : undefined,
+              underlyingOracleSourceAggregator: config.vaultWithUnderlyingOracle1.underlyingOracleSourceAggregator
+                ? String(config.vaultWithUnderlyingOracle1.underlyingOracleSourceAggregator)
+                : undefined
+            }
+          : undefined
       const customMethod0 =
         config.customMethodOracle0 && oracleType0 === 'customMethod'
           ? {
@@ -836,6 +979,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
           ptLinearOracle: oracleType0 === 'ptLinear' ? ptLinear0 : undefined,
           vaultOracle: oracleType0 === 'vault' ? vault0 : undefined,
+          vaultWithUnderlyingOracle: oracleType0 === 'vaultWithUnderlying' ? vaultWithUnderlying0 : undefined,
           customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined,
           supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined
         },
@@ -851,6 +995,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
           ptLinearOracle: oracleType1 === 'ptLinear' ? ptLinear1 : undefined,
           vaultOracle: oracleType1 === 'vault' ? vault1 : undefined,
+          vaultWithUnderlyingOracle: oracleType1 === 'vaultWithUnderlying' ? vaultWithUnderlying1 : undefined,
           customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined,
           supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined
         }
