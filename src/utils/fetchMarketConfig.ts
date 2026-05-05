@@ -11,6 +11,7 @@ import supraSValueOracleAbi from '@/abis/oracle/ISupraSValueOracle.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
 import erc4626OracleHardcodeQuoteArtifact from '@/abis/oracle/ERC4626OracleHardcodeQuote.json'
+import erc4626OracleWithUnderlyingArtifact from '@/abis/oracle/ERC4626OracleWithUnderlying.json'
 import ierc4626VaultArtifact from '@/abis/IERC4526.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
 import { getChainName } from '@/utils/networks'
@@ -107,6 +108,14 @@ export interface OracleInfo {
   timelockSeconds?: number
   /** ERC4626OracleHardcodeQuote: vault underlying asset vs oracle quoteToken() */
   erc4626VaultQuoteCheck?: Erc4626VaultQuoteCheck
+  /**
+   * ERC4626OracleWithUnderlying: the inner ISiloOracle that prices vault.asset()
+   * against the configured quote token. Populated from the outer oracle's
+   * `getConfig()` result and version-resolved through Silo Lens; per-type details
+   * (Chainlink/PT-Linear/CustomMethod/Supra/ERC4626Hardcode) are enriched on this
+   * nested object the same way they are on the outer oracle.
+   */
+  vaultUnderlyingOracle?: OracleInfo
 }
 
 export interface Erc4626VaultQuoteCheck {
@@ -147,6 +156,7 @@ const chainlinkOracleConfigInterfaceAbi = chainlinkOracleConfigAbi as unknown as
 const supraSValueOracleInterfaceAbi = supraSValueOracleAbi as unknown as ethers.InterfaceAbi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
 const erc4626OracleHardcodeQuoteAbi = erc4626OracleHardcodeQuoteArtifact as ethers.InterfaceAbi
+const erc4626OracleWithUnderlyingAbi = erc4626OracleWithUnderlyingArtifact as unknown as ethers.InterfaceAbi
 const ierc4626VaultAbi = ierc4626VaultArtifact as ethers.InterfaceAbi
 const dynamicKinkModelInterfaceAbi = dynamicKinkModelAbi as unknown as ethers.InterfaceAbi
 
@@ -999,45 +1009,44 @@ export async function fetchMarketConfig(
     }
   }
 
-  // Layer 8: Chainlink enrichment – 2 dependent multicalls.
-  await enrichChainlinkOracles(provider, [
+  // Layer 7.5: ERC4626OracleWithUnderlying inner-oracle resolution.
+  // For each detected outer oracle (direct or under ManageableOracle wrapper),
+  // read getConfig() to obtain the inner ISiloOracle, then resolve its version
+  // via Silo Lens. The inner oracle is later enriched alongside the outer ones.
+  await enrichErc4626WithUnderlyingInnerOracle(provider, siloLensAddress, chainId, [
     config0.solvencyOracle,
     config1.solvencyOracle,
     config0.maxLtvOracle,
     config1.maxLtvOracle
   ])
+
+  // Build a flat enrichment list that also includes any inner oracles from
+  // ERC4626OracleWithUnderlying so that per-type details (Chainlink / PT-Linear /
+  // CustomMethod / Supra / ERC4626 vault check) are populated for them too.
+  const flatOracles: OracleInfo[] = [
+    config0.solvencyOracle,
+    config1.solvencyOracle,
+    config0.maxLtvOracle,
+    config1.maxLtvOracle
+  ]
+  for (const o of [config0.solvencyOracle, config1.solvencyOracle, config0.maxLtvOracle, config1.maxLtvOracle]) {
+    if (o.vaultUnderlyingOracle) flatOracles.push(o.vaultUnderlyingOracle)
+  }
+
+  // Layer 8: Chainlink enrichment – 2 dependent multicalls.
+  await enrichChainlinkOracles(provider, flatOracles)
 
   // Layer 9: PTLinear enrichment (batched)
-  await enrichPTLinearOracles(provider, [
-    config0.solvencyOracle,
-    config1.solvencyOracle,
-    config0.maxLtvOracle,
-    config1.maxLtvOracle
-  ])
+  await enrichPTLinearOracles(provider, flatOracles)
 
   // Layer 10: CustomMethodOracle enrichment (batched).
-  await enrichCustomMethodOracles(provider, [
-    config0.solvencyOracle,
-    config1.solvencyOracle,
-    config0.maxLtvOracle,
-    config1.maxLtvOracle
-  ])
+  await enrichCustomMethodOracles(provider, flatOracles)
 
   // Layer 11: SupraSValueOracle enrichment (batched).
-  await enrichSupraSValueOracles(provider, [
-    config0.solvencyOracle,
-    config1.solvencyOracle,
-    config0.maxLtvOracle,
-    config1.maxLtvOracle
-  ])
+  await enrichSupraSValueOracles(provider, flatOracles)
 
-  // Layer 12: ERC4626OracleHardcodeQuote check (batched).
-  await enrichErc4626VaultChecks(provider, [
-    config0.solvencyOracle,
-    config1.solvencyOracle,
-    config0.maxLtvOracle,
-    config1.maxLtvOracle
-  ])
+  // Layer 12: ERC4626OracleHardcodeQuote check (batched). Includes inner oracles.
+  await enrichErc4626VaultChecks(provider, flatOracles)
 
   // Layer 13: Owner meta (isContract via getCode + JSON name).
   await resolveOwnerMeta(provider, chainId, config0, config1)
@@ -1424,6 +1433,78 @@ async function enrichSupraSValueOracles(provider: ethers.Provider, oracles: Orac
   }
 }
 
+/**
+ * For each oracle detected as ERC4626OracleWithUnderlying, read `getConfig()`
+ * (one multicall across all detected addresses) to discover the inner ISiloOracle
+ * address, then resolve the inner oracle's version via the same Silo Lens cache
+ * used for top-level oracles. Stores result on `oracle.vaultUnderlyingOracle`.
+ */
+async function enrichErc4626WithUnderlyingInnerOracle(
+  provider: ethers.Provider,
+  siloLensAddress: string | null,
+  chainId: string,
+  oracles: OracleInfo[]
+): Promise<void> {
+  const targets: { oracle: OracleInfo; outerAddress: string }[] = []
+  for (const oracle of oracles) {
+    const addr = getErc4626OracleWithUnderlyingContractAddress(oracle)
+    if (addr) targets.push({ oracle, outerAddress: addr })
+  }
+  if (targets.length === 0) return
+
+  const uniqueOuter = Array.from(new Set(targets.map((t) => toLower(t.outerAddress))))
+  const idxByAddr = new Map<string, number>()
+  const calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+  for (const lower of uniqueOuter) {
+    idxByAddr.set(lower, calls.length)
+    calls.push(
+      buildReadMulticallCall({
+        target: ethers.getAddress(lower),
+        abi: erc4626OracleWithUnderlyingAbi,
+        functionName: 'getConfig',
+        allowFailure: true
+      })
+    )
+  }
+  const results = await executeReadMulticall<unknown>(provider, calls)
+  const innerByOuter = new Map<string, string>()
+  for (const lower of uniqueOuter) {
+    const idx = idxByAddr.get(lower)
+    if (idx == null) continue
+    const cfg = results[idx] as ReadonlyArray<unknown> | Record<string, unknown> | null | undefined
+    let innerRaw: unknown = undefined
+    if (cfg && typeof cfg === 'object') {
+      const arr = cfg as ReadonlyArray<unknown>
+      if (Array.isArray(arr) && arr.length >= 4) innerRaw = arr[3]
+      else innerRaw = (cfg as { oracle?: unknown }).oracle
+    }
+    const innerAddr = normalizeAddressSafe(innerRaw)
+    if (innerAddr && innerAddr !== ethers.ZeroAddress) {
+      innerByOuter.set(lower, innerAddr)
+    }
+  }
+
+  const innerAddresses = Array.from(new Set(Array.from(innerByOuter.values()).map((a) => toLower(a))))
+  let versionByInner = new Map<string, string>()
+  if (siloLensAddress && innerAddresses.length > 0) {
+    versionByInner = await fetchSiloLensVersionsWithCache({
+      provider,
+      lensAddress: siloLensAddress,
+      chainId,
+      addresses: innerAddresses
+    })
+  }
+
+  for (const { oracle, outerAddress } of targets) {
+    const inner = innerByOuter.get(toLower(outerAddress))
+    if (!inner) continue
+    oracle.vaultUnderlyingOracle = {
+      address: inner,
+      version: versionByInner.get(toLower(inner)) ?? undefined
+    }
+  }
+}
+
 async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: OracleInfo[]): Promise<void> {
   const uniqueOracleAddresses = new Set<string>()
   const oracleByLower = new Map<string, OracleInfo[]>()
@@ -1683,6 +1764,35 @@ function isSupraSValueOracleByVersion(version: string | undefined): boolean {
 export function isErc4626OracleHardcodeQuoteByVersion(version: string | undefined): boolean {
   if (!version) return false
   return version.toLowerCase().includes('erc4626oraclehardcodequote')
+}
+
+export function isErc4626OracleWithUnderlyingByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  return version.toLowerCase().includes('erc4626oraclewithunderlying')
+}
+
+/**
+ * Returns the address of the ERC4626OracleWithUnderlying contract if `oracle`
+ * (or its ManageableOracle wrapper underlying) is detected as that type by
+ * version. Mirrors `getErc4626OracleHardcodeQuoteContractAddress`.
+ */
+function getErc4626OracleWithUnderlyingContractAddress(oracle: OracleInfo): string | null {
+  if (isNonZeroAddress(oracle.address) && isErc4626OracleWithUnderlyingByVersion(oracle.version)) {
+    try {
+      return ethers.getAddress(oracle.address)
+    } catch {
+      return null
+    }
+  }
+  const u = oracle.underlying
+  if (u?.address && isErc4626OracleWithUnderlyingByVersion(u.version)) {
+    try {
+      return ethers.getAddress(u.address)
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
 function getErc4626OracleHardcodeQuoteContractAddress(oracle: OracleInfo): string | null {

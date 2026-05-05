@@ -10,10 +10,11 @@ import {
   ChainlinkOracleConfig,
   PTLinearOracleConfig,
   VaultOracleConfig,
+  VaultWithUnderlyingOracleConfig,
   CustomMethodOracleConfig,
   SupraSValueOracleConfig
 } from '@/contexts/WizardContext'
-import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
+import { getChainName, getExplorerAddressUrl, getExplorerTxUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
@@ -31,6 +32,8 @@ import {
 } from '@/utils/oracleFactoryAvailability'
 import supraSValueFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
 import supraOracleFeedStorageAbi from '@/abis/oracle/ISupraOracleFeedStorage.json'
+import chainlinkV3OracleFactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
+import { getAbi } from '@/utils/abiArtifact'
 import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
 import Button from '@/components/Button'
 import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
@@ -87,6 +90,73 @@ const aggregatorV3MulticallAbi = [
     stateMutability: 'view' as const
   }
 ] as const
+
+/**
+ * ISiloOracle quote amounts in Silo oracles are normalized to 18 decimals (quote token precision for display).
+ */
+const SILO_ORACLE_QUOTE_DISPLAY_DECIMALS = 18
+
+/**
+ * Normalize `quote()` return value from multicall / ethers decode for display and formatUnits.
+ */
+function siloOracleQuoteRawToString(amount: unknown): string {
+  if (amount == null) return ''
+  if (typeof amount === 'bigint') return amount.toString()
+  if (typeof amount === 'number' && Number.isFinite(amount))
+    return BigInt(Math.floor(amount)).toString()
+  if (typeof amount === 'string' && amount !== '') {
+    try {
+      return ethers.getBigInt(amount).toString()
+    } catch {
+      return amount
+    }
+  }
+  try {
+    return ethers.getBigInt(amount as ethers.BigNumberish).toString()
+  } catch {
+    /* decode sometimes nests single uint256 */
+    if (typeof amount === 'object' && amount !== null && 0 in amount) {
+      return siloOracleQuoteRawToString((amount as { 0: unknown })[0])
+    }
+  }
+  return ''
+}
+
+/**
+ * Minimal ISiloOracle multicall ABI for probing whether an arbitrary contract
+ * implements the Silo oracle interface. Matches on-chain call order: Silo invokes
+ * `beforeQuote(base)` then `quote` / reads; Multicall3 runs sub-calls in one
+ * execution so that hook runs before `quote` when the oracle relies on it.
+ */
+const iSiloOracleMulticallAbi = [
+  {
+    type: 'function' as const,
+    name: 'beforeQuote',
+    inputs: [{ type: 'address', name: '_baseToken' }],
+    outputs: [],
+    stateMutability: 'nonpayable' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'quoteToken',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'quote',
+    inputs: [
+      { type: 'uint256', name: '_baseAmount' },
+      { type: 'address', name: '_baseToken' }
+    ],
+    outputs: [{ type: 'uint256', name: 'quoteAmount' }],
+    stateMutability: 'view' as const
+  }
+] as const
+
+/** ABI helpers for the Chainlink V3 adapter deploy fallback. */
+const chainlinkV3FactoryInterfaceAbi = getAbi(chainlinkV3OracleFactoryAbi)
 
 
 interface OracleDeployments {
@@ -729,6 +799,987 @@ function VaultOracleSection({
         <p className="text-xs text-red-400">
           {localError}
         </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Underlying-probe state for `ERC4626 Oracle With Underlying`.
+ * `silo` = ISiloOracle probe succeeded, oracle is usable directly.
+ * `aggregator` = Aggregator probe succeeded; an adapter must be deployed first.
+ * `error` = neither probe matched.
+ */
+type UnderlyingProbeStatus =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | {
+      kind: 'silo'
+      quoteToken: string
+      quoteTokenSymbol?: string
+      /** Raw uint256 from quote(1 unit of vault asset in vault-asset decimals, vaultAsset) */
+      quoteValueRaw: string
+    }
+  | {
+      kind: 'aggregator'
+      description: string
+      decimals: number
+      latestAnswer: string
+    }
+  | { kind: 'error'; message: string }
+
+interface VaultWithUnderlyingOracleSectionProps {
+  baseTokenSymbol: string
+  baseTokenName: string
+  otherTokenAddress?: string
+  otherTokenSymbol?: string
+  vault: Partial<VaultWithUnderlyingOracleConfig> & {
+    vaultSymbol?: string
+    vaultAssetAddress?: string
+    vaultAssetSymbol?: string
+    vaultAssetDecimals?: number
+    assetMatchesBase?: boolean
+    priceManipulationRiskAcknowledged?: boolean
+    /** After ISiloOracle probe: true if quoteToken() matches configured vault oracle quote. */
+    underlyingOracleQuoteMatchesConfigured?: boolean
+  }
+  setVault: React.Dispatch<
+    React.SetStateAction<
+      Partial<VaultWithUnderlyingOracleConfig> & {
+        vaultSymbol?: string
+        vaultAssetAddress?: string
+        vaultAssetSymbol?: string
+        vaultAssetDecimals?: number
+        assetMatchesBase?: boolean
+        priceManipulationRiskAcknowledged?: boolean
+        underlyingOracleQuoteMatchesConfigured?: boolean
+      }
+    >
+  >
+  quoteInput: string
+  setQuoteInput: (value: string) => void
+  virtualTokenOptions: VirtualTokenOption[]
+  usdcAddress: string | null
+  networkChainId?: string
+  vaultFactory: { address: string; version: string } | null
+  vaultFactoryMissing?: string | null
+  chainlinkV3OracleFactory: { address: string; version: string } | null
+}
+
+function VaultWithUnderlyingOracleSection({
+  baseTokenSymbol,
+  baseTokenName,
+  otherTokenAddress,
+  otherTokenSymbol,
+  vault,
+  setVault,
+  quoteInput,
+  setQuoteInput,
+  virtualTokenOptions,
+  usdcAddress,
+  networkChainId,
+  vaultFactory,
+  vaultFactoryMissing,
+  chainlinkV3OracleFactory
+}: VaultWithUnderlyingOracleSectionProps) {
+  const [vaultInput, setVaultInput] = useState(vault.vaultAddress ?? '')
+  const [loadingVault, setLoadingVault] = useState(false)
+  const [loadingAsset, setLoadingAsset] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [underlyingInput, setUnderlyingInput] = useState(vault.underlyingOracleAddress ?? '')
+  const [probe, setProbe] = useState<UnderlyingProbeStatus>({ kind: 'idle' })
+  const [deploying, setDeploying] = useState(false)
+  const [deployError, setDeployError] = useState<string | null>(null)
+
+  // Parent restores `vault` from wizard/localStorage after mount; keep inputs in sync.
+  useEffect(() => {
+    setVaultInput(vault.vaultAddress ?? '')
+  }, [vault.vaultAddress])
+
+  // Mirror vault.underlyingOracleAddress into the input when it updates from outside (e.g. restore
+  // from wizard, deploy adapter). Do not mirror while probing or when we intentionally cleared the
+  // vault field for "aggregator pending" (user must keep the aggregator address in the input until deploy).
+  useEffect(() => {
+    const next = vault.underlyingOracleAddress ?? ''
+    if (probe.kind === 'loading') return
+    if (probe.kind === 'aggregator' && next === '') return
+    setUnderlyingInput(next)
+  }, [vault.underlyingOracleAddress, probe.kind])
+
+  const resolveVault = async (address: string) => {
+    if (!address || !ethers.isAddress(address) || !window.ethereum) {
+      setVault(prev => ({
+        ...prev,
+        vaultAddress: '',
+        vaultSymbol: undefined,
+        vaultAssetAddress: undefined,
+        vaultAssetSymbol: undefined,
+        vaultAssetDecimals: undefined,
+        assetMatchesBase: undefined,
+        priceManipulationRiskAcknowledged: false,
+        underlyingOracleQuoteMatchesConfigured: undefined
+      }))
+      setLocalError(null)
+      return
+    }
+    setLoadingVault(true)
+    setLoadingAsset(true)
+    setLocalError(null)
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const [symbol, assetAddress] = await executeReadMulticall<unknown>(
+        provider,
+        [
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc4626SymbolAssetAbi,
+            functionName: 'symbol'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: address as `0x${string}`,
+            abi: erc4626SymbolAssetAbi,
+            functionName: 'asset'
+          })
+        ],
+        { debugLabel: 'erc4626SymbolAsset' }
+      )
+      const assetAddr = ethers.getAddress(String(assetAddress))
+      const resolvedVault = ethers.getAddress(address)
+      setVault(prev => {
+        const addrChanged = prev.vaultAddress?.toLowerCase() !== resolvedVault.toLowerCase()
+        return {
+          ...prev,
+          vaultAddress: resolvedVault,
+          vaultSymbol: String(symbol ?? ''),
+          vaultAssetAddress: assetAddr,
+          ...(addrChanged
+            ? {
+                priceManipulationRiskAcknowledged: false,
+                underlyingOracleQuoteMatchesConfigured: undefined
+              }
+            : {})
+        }
+      })
+      const erc20 = new ethers.Contract(assetAddr, ierc20Abi, provider)
+      const [assetSymbol, assetDecimalsRaw] = await Promise.all([erc20.symbol(), erc20.decimals()])
+      const assetDecimals = Number(assetDecimalsRaw)
+      const assetNorm = assetAddr.toLowerCase()
+      let otherNorm = ''
+      if (otherTokenAddress != null && otherTokenAddress.trim() !== '') {
+        try {
+          otherNorm = ethers.getAddress(otherTokenAddress.trim()).toLowerCase()
+        } catch {
+          otherNorm = otherTokenAddress.trim().toLowerCase()
+        }
+      }
+      const matchesOtherToken = otherNorm !== '' && assetNorm === otherNorm
+      setVault(prev => ({
+        ...prev,
+        vaultAssetSymbol: String(assetSymbol ?? ''),
+        vaultAssetDecimals: Number.isFinite(assetDecimals) ? assetDecimals : undefined,
+        assetMatchesBase: matchesOtherToken
+      }))
+      setLocalError(null)
+    } catch (err) {
+      console.warn('Failed to resolve ERC4626 vault metadata:', err)
+      setVault(prev => ({
+        ...prev,
+        vaultSymbol: undefined,
+        vaultAssetAddress: undefined,
+        vaultAssetSymbol: undefined,
+        vaultAssetDecimals: undefined,
+        assetMatchesBase: undefined,
+        priceManipulationRiskAcknowledged: false,
+        underlyingOracleQuoteMatchesConfigured: undefined
+      }))
+      setLocalError('Failed to load vault metadata. Check address and network.')
+    } finally {
+      setLoadingVault(false)
+      setLoadingAsset(false)
+    }
+  }
+
+  const resolvedQuoteToken = (): { address: string; decimals?: number; symbol?: string } | null => {
+    if (vault.useOtherTokenAsQuote !== false) {
+      if (!otherTokenAddress || !ethers.isAddress(otherTokenAddress)) return null
+      return { address: ethers.getAddress(otherTokenAddress), symbol: otherTokenSymbol }
+    }
+    const customAddr = vault.customQuoteTokenAddress?.trim()
+    if (!customAddr || !ethers.isAddress(customAddr)) return null
+    return {
+      address: ethers.getAddress(customAddr),
+      decimals: vault.customQuoteTokenMetadata?.decimals,
+      symbol: vault.customQuoteTokenMetadata?.symbol
+    }
+  }
+
+  /**
+   * Probe the underlying oracle address: first try ISiloOracle (preferred), then
+   * fall back to Chainlink-style Aggregator. Updates `probe` state used by the UI.
+   */
+  const probeUnderlyingOracle = async (rawAddress: string) => {
+    setDeployError(null)
+    setVault(prev => ({ ...prev, underlyingOracleQuoteMatchesConfigured: undefined }))
+    if (!rawAddress || !ethers.isAddress(rawAddress) || !window.ethereum) {
+      setProbe({ kind: 'idle' })
+      setVault(prev => ({ ...prev, underlyingOracleAddress: '' }))
+      return
+    }
+    if (!vault.vaultAssetAddress || !ethers.isAddress(vault.vaultAssetAddress)) {
+      setProbe({ kind: 'error', message: 'Resolve the vault first to derive vault.asset() before probing the underlying oracle.' })
+      return
+    }
+    const baseToken = vault.vaultAssetAddress
+    const sampleAmount = (() => {
+      const d = Number(vault.vaultAssetDecimals)
+      const safe = Number.isFinite(d) && d >= 0 && d <= 36 ? d : 18
+      let acc = BigInt(1)
+      for (let i = 0; i < safe; i++) acc *= BigInt(10)
+      return acc
+    })()
+    setProbe({ kind: 'loading' })
+    const oracleAddr = ethers.getAddress(rawAddress)
+    const provider = new ethers.BrowserProvider(window.ethereum)
+    try {
+      const probeResults = await executeReadMulticall<unknown>(
+        provider,
+        [
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: iSiloOracleMulticallAbi,
+            functionName: 'beforeQuote',
+            args: [baseToken as `0x${string}`],
+            allowFailure: true
+          }),
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: iSiloOracleMulticallAbi,
+            functionName: 'quoteToken'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: iSiloOracleMulticallAbi,
+            functionName: 'quote',
+            args: [sampleAmount, baseToken as `0x${string}`]
+          })
+        ],
+        { debugLabel: 'iSiloOracleProbe' }
+      )
+      const quoteToken = probeResults[1]
+      const quoteValue = probeResults[2]
+      const qt = ethers.getAddress(String(quoteToken))
+      const quoteValueRaw = siloOracleQuoteRawToString(quoteValue)
+      let qtSymbol: string | undefined
+      try {
+        const erc20 = new ethers.Contract(qt, ierc20Abi, provider)
+        qtSymbol = String(await erc20.symbol())
+      } catch {
+        qtSymbol = undefined
+      }
+      const expectedQt = resolvedQuoteToken()
+      let underlyingOracleQuoteMatchesConfigured: boolean | undefined
+      if (expectedQt != null && expectedQt.address && ethers.isAddress(expectedQt.address)) {
+        underlyingOracleQuoteMatchesConfigured =
+          qt.toLowerCase() === ethers.getAddress(expectedQt.address).toLowerCase()
+      }
+      setProbe({
+        kind: 'silo',
+        quoteToken: qt,
+        quoteTokenSymbol: qtSymbol,
+        quoteValueRaw
+      })
+      setVault(prev => ({
+        ...prev,
+        underlyingOracleAddress: oracleAddr,
+        underlyingOracleSourceAggregator: prev.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured
+      }))
+      return
+    } catch {
+      // ISiloOracle probe failed – attempt aggregator fallback.
+    }
+    try {
+      const [description, latestRoundData, decimalsRaw] = await executeReadMulticall<unknown>(
+        provider,
+        [
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: aggregatorV3MulticallAbi,
+            functionName: 'description'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: aggregatorV3MulticallAbi,
+            functionName: 'latestRoundData'
+          }),
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: aggregatorV3MulticallAbi,
+            functionName: 'decimals'
+          })
+        ],
+        { debugLabel: 'aggregatorProbe' }
+      )
+      const dec = Number(decimalsRaw)
+      const lr = latestRoundData as ReadonlyArray<unknown>
+      const answer = lr && lr.length >= 2 ? String(lr[1]) : ''
+      setProbe({
+        kind: 'aggregator',
+        description: String(description ?? ''),
+        decimals: Number.isFinite(dec) ? dec : 0,
+        latestAnswer: answer
+      })
+      setVault(prev => ({
+        ...prev,
+        underlyingOracleAddress: '',
+        underlyingOracleSourceAggregator: ethers.getAddress(oracleAddr),
+        underlyingOracleDeployTxHash: undefined,
+        underlyingOracleQuoteMatchesConfigured: undefined
+      }))
+    } catch (err) {
+      console.warn('Underlying oracle probe failed both ISiloOracle and Aggregator:', err)
+      setProbe({
+        kind: 'error',
+        message: 'Address does not implement ISiloOracle or Chainlink AggregatorV3Interface.'
+      })
+      setVault(prev => ({ ...prev, underlyingOracleAddress: '' }))
+    }
+  }
+
+  /**
+   * Build the Chainlink adapter config for the user-supplied aggregator and
+   * deploy via ChainlinkV3OracleFactory. The deployed adapter then becomes the
+   * underlying ISiloOracle for the vault oracle.
+   */
+  const buildAdapterConfigTuple = (): [string, string, string, number, string, number, bigint, bigint, boolean] | null => {
+    if (probe.kind !== 'aggregator') return null
+    const baseAddr = vault.vaultAssetAddress
+    const baseDecimals = Number(vault.vaultAssetDecimals)
+    if (!baseAddr || !Number.isFinite(baseDecimals)) return null
+    const quote = resolvedQuoteToken()
+    if (!quote) return null
+    const aggregatorAddr = underlyingInput.trim()
+    if (!ethers.isAddress(aggregatorAddr)) return null
+    const { divider, multiplier } = computeChainlinkNormalization(baseDecimals, 18, probe.decimals)
+    return [
+      ethers.getAddress(baseAddr),
+      ethers.getAddress(quote.address),
+      ethers.getAddress(aggregatorAddr),
+      0,
+      ethers.ZeroAddress,
+      0,
+      BigInt(divider || '0'),
+      BigInt(multiplier || '0'),
+      false
+    ]
+  }
+
+  const handleDeployAdapter = async () => {
+    setDeployError(null)
+    if (!chainlinkV3OracleFactory?.address) {
+      setDeployError('ChainlinkV3OracleFactory address is not available on this chain.')
+      return
+    }
+    if (!window.ethereum) {
+      setDeployError('Wallet not connected.')
+      return
+    }
+    const tuple = buildAdapterConfigTuple()
+    if (!tuple) {
+      setDeployError('Cannot build adapter config: vault, quote token, and aggregator must all be valid first.')
+      return
+    }
+    const aggregatorAddr = underlyingInput.trim()
+    setDeploying(true)
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+      const factory = new ethers.Contract(
+        chainlinkV3OracleFactory.address,
+        chainlinkV3FactoryInterfaceAbi,
+        signer
+      )
+      // Deterministic prediction for verification post-tx.
+      let predictedAddr = ''
+      try {
+        const predicted = await factory.create.staticCall(tuple, ethers.ZeroHash)
+        predictedAddr = ethers.getAddress(String(predicted))
+      } catch (err) {
+        console.warn('Adapter staticCall prediction failed (will rely on event log):', err)
+      }
+      // estimateGas preflight per repo policy (senior-coding-actions skill).
+      try {
+        await factory.create.estimateGas(tuple, ethers.ZeroHash)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        throw new Error(`Adapter deploy preflight (estimateGas) failed: ${msg}`)
+      }
+      const tx = await factory.create(tuple, ethers.ZeroHash)
+      const receipt = await tx.wait()
+      let deployedAddr = predictedAddr
+      try {
+        const iface = new ethers.Interface(chainlinkV3FactoryInterfaceAbi)
+        const evTopic = iface.getEvent('NewOracle')?.topicHash
+        const log = receipt?.logs?.find(
+          (l: { topics: ReadonlyArray<string>; address: string }) =>
+            l.address.toLowerCase() === chainlinkV3OracleFactory.address.toLowerCase() &&
+            l.topics?.[0] === evTopic
+        )
+        if (log) {
+          const parsed = iface.parseLog(log)
+          if (parsed?.args?.[0]) deployedAddr = ethers.getAddress(String(parsed.args[0]))
+        }
+      } catch (err) {
+        console.warn('Failed to parse NewOracle event from adapter receipt:', err)
+      }
+      if (!deployedAddr || !ethers.isAddress(deployedAddr)) {
+        throw new Error('Adapter deployed but its address could not be determined (no event and no static-call prediction).')
+      }
+      // Confirm on-chain code present.
+      const code = await provider.getCode(deployedAddr)
+      if (!code || code === '0x') {
+        throw new Error(`Adapter address ${deployedAddr} has no code on chain (deploy may have failed silently).`)
+      }
+      setVault(prev => ({
+        ...prev,
+        underlyingOracleAddress: deployedAddr,
+        underlyingOracleSourceAggregator: ethers.getAddress(aggregatorAddr),
+        underlyingOracleDeployTxHash: tx.hash
+      }))
+      setUnderlyingInput(deployedAddr)
+      // Re-run ISiloOracle probe against the deployed adapter.
+      await probeUnderlyingOracle(deployedAddr)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setDeployError(msg)
+    } finally {
+      setDeploying(false)
+    }
+  }
+
+  const vaultAssetSymLabel = vault.vaultAssetSymbol ?? '?'
+  const otherMarketSymLabel = otherTokenSymbol ?? '?'
+  const parsedUnderlyingInput =
+    underlyingInput.trim() !== '' && ethers.isAddress(underlyingInput.trim())
+      ? ethers.getAddress(underlyingInput.trim())
+      : null
+  const chainIdNum = networkChainId ? parseInt(networkChainId, 10) : undefined
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-400 mb-2">
+        Base token:{' '}
+        <span className="text-white font-medium">{baseTokenSymbol}</span>{' '}
+        <span className="text-gray-500">({baseTokenName})</span>
+      </p>
+
+      {vaultFactory ? (
+        <ContractInfo
+          contractName="ERC4626OracleWithUnderlyingFactory"
+          address={vaultFactory.address}
+          version={vaultFactory.version || '…'}
+          chainId={networkChainId}
+          isOracle={true}
+        />
+      ) : vaultFactoryMissing ? (
+        <p className="text-sm text-red-400">{vaultFactoryMissing}</p>
+      ) : (
+        <p className="text-sm text-yellow-400">Loading ERC4626OracleWithUnderlyingFactory for this chain…</p>
+      )}
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300 mb-1">
+          Vault address (ERC4626) *
+        </label>
+        <input
+          type="text"
+          value={vaultInput}
+          onChange={e => setVaultInput(e.target.value.trim())}
+          onBlur={() => resolveVault(vaultInput)}
+          placeholder="0x…"
+          className={wizardMonoInputClass}
+        />
+      </div>
+
+      {(vault.vaultSymbol || vault.vaultAssetAddress) && (
+        <div className="mt-2 p-3 border border-gray-700 rounded-lg text-sm space-y-1">
+          <p className="text-gray-500 text-xs uppercase tracking-wide">Vault metadata</p>
+          {vault.vaultSymbol && (
+            <p>
+              <span className="text-gray-500">Vault symbol:</span>{' '}
+              <span className="text-gray-300">{vault.vaultSymbol}</span>
+            </p>
+          )}
+          {vault.vaultAssetAddress && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-gray-500">Asset address:</span>
+              <AddressDisplayShort
+                address={vault.vaultAssetAddress}
+                chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
+                className="text-sm"
+                showVersion={false}
+              />
+            </div>
+          )}
+          {vault.vaultAssetSymbol && (
+            <p>
+              <span className="text-gray-500">Asset symbol:</span>{' '}
+              <span className="text-gray-300">{vault.vaultAssetSymbol}</span>
+            </p>
+          )}
+          {typeof vault.vaultAssetDecimals === 'number' && (
+            <p>
+              <span className="text-gray-500">Asset decimals:</span>{' '}
+              <span className="text-gray-300">{vault.vaultAssetDecimals}</span>
+            </p>
+          )}
+          {vault.assetMatchesBase === true && (
+            <p className="text-xs status-muted-success flex items-center gap-1">
+              <span>✓</span>
+              <span>
+                Vault asset matches the other token{otherTokenSymbol ? ` (${otherTokenSymbol})` : ''}
+              </span>
+            </p>
+          )}
+          {vault.assetMatchesBase === false && (
+            <p className="text-xs text-yellow-400 flex items-center gap-1">
+              <span>⚠</span>
+              <span>
+                Vault asset does not match the other token. Symbol differs: vault asset is &quot;{vaultAssetSymLabel}&quot;, other token is &quot;{otherMarketSymLabel}&quot;. With an underlying oracle this is expected: the underlying oracle prices vault.asset() against the configured quote token.
+              </span>
+            </p>
+          )}
+          <div className="mt-3 pt-3 border-t border-gray-600/50 space-y-2">
+            <p className="text-xs text-amber-400/95 leading-relaxed">
+              <span className="font-semibold">Warning:</span> Vault-based oracles can be susceptible to{' '}
+              <span className="font-medium">price manipulation</span>, which can seriously harm the market. Use this only if you are confident the vault has adequate protections.
+            </p>
+            <label className="flex items-start gap-2 cursor-pointer text-xs text-gray-300 leading-snug">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-[var(--silo-accent)] shrink-0"
+                checked={vault.priceManipulationRiskAcknowledged === true}
+                onChange={e =>
+                  setVault(prev => ({
+                    ...prev,
+                    priceManipulationRiskAcknowledged: e.target.checked
+                  }))
+                }
+              />
+              <span>
+                I understand that if the vault is not resistant to price manipulation, this poses a serious risk to the Silo market.
+              </span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Quote token */}
+      <div className="mt-4 space-y-2">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">Quote token</h4>
+        <div className="flex flex-wrap gap-2">
+          <PredefinedOptionButton
+            onClick={() => {
+              const addr = otherTokenAddress || ''
+              setQuoteInput(addr)
+              setVault(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: true,
+                customQuoteTokenAddress: addr,
+                underlyingOracleQuoteMatchesConfigured: undefined
+              }))
+            }}
+          >
+            <span>Other token</span>
+          </PredefinedOptionButton>
+          {usdcAddress && (
+            <PredefinedOptionButton
+              onClick={() => {
+                setQuoteInput('USDC')
+                setVault(prev => ({
+                  ...prev,
+                  useOtherTokenAsQuote: false,
+                  underlyingOracleQuoteMatchesConfigured: undefined
+                }))
+              }}
+            >
+              <span>USDC</span>
+            </PredefinedOptionButton>
+          )}
+          {virtualTokenOptions.map((virtualToken) => (
+            <PredefinedOptionButton
+              key={virtualToken.key}
+              onClick={() => {
+                setQuoteInput(virtualToken.key)
+                setVault(prev => ({
+                  ...prev,
+                  useOtherTokenAsQuote: false,
+                  underlyingOracleQuoteMatchesConfigured: undefined
+                }))
+              }}
+            >
+              <span>{virtualToken.label}</span>
+            </PredefinedOptionButton>
+          ))}
+        </div>
+        <TokenAddressInput
+          value={quoteInput}
+          onChange={value => {
+            setQuoteInput(value)
+            setVault(prev => ({
+              ...prev,
+              useOtherTokenAsQuote: false,
+              underlyingOracleQuoteMatchesConfigured: undefined
+            }))
+          }}
+          onResolve={(address, metadata) => {
+            if (metadata && address) {
+              setVault(prev => ({
+                ...prev,
+                useOtherTokenAsQuote: false,
+                customQuoteTokenAddress: address,
+                customQuoteTokenMetadata: {
+                  symbol: metadata.symbol,
+                  decimals: metadata.decimals
+                },
+                underlyingOracleQuoteMatchesConfigured: undefined
+              }))
+            } else {
+              setVault(prev => ({
+                ...prev,
+                customQuoteTokenAddress: '',
+                customQuoteTokenMetadata: undefined,
+                underlyingOracleQuoteMatchesConfigured: undefined
+              }))
+            }
+          }}
+          chainId={networkChainId}
+          label="Quote token address or symbol"
+          placeholder="0x… or symbol from addresses JSON"
+        />
+      </div>
+
+      {/* Underlying ISiloOracle */}
+      <div className="mt-4 space-y-2 p-3 border border-gray-700 rounded-lg">
+        <h4 className="text-sm font-semibold silo-text-main tracking-wide">
+          Underlying ISiloOracle *
+        </h4>
+        <p className="text-xs text-gray-400">
+          Address of the oracle that prices vault.asset()
+          {vault.vaultAssetSymbol ? ` (${vault.vaultAssetSymbol})` : ''} against the quote token.
+        </p>
+        <input
+          type="text"
+          value={underlyingInput}
+          onChange={e => {
+            const v = extractHexAddressLike(e.target.value)
+            setUnderlyingInput(v)
+            setVault(prev => ({ ...prev, underlyingOracleQuoteMatchesConfigured: undefined }))
+          }}
+          onBlur={() => probeUnderlyingOracle(underlyingInput.trim())}
+          placeholder="0x…"
+          className={wizardMonoInputClass}
+        />
+        {parsedUnderlyingInput != null && (
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <span className="text-xs text-gray-500">Address:</span>
+            <AddressDisplayShort
+              address={parsedUnderlyingInput}
+              chainId={chainIdNum}
+              className="text-xs"
+              showVersion={false}
+            />
+          </div>
+        )}
+
+        {probe.kind === 'loading' && (
+          <p className="text-xs text-gray-400">Probing underlying oracle…</p>
+        )}
+
+        {probe.kind === 'silo' && (() => {
+          let quoteWithDecimals = '—'
+          try {
+            if (probe.quoteValueRaw !== '') {
+              quoteWithDecimals = ethers.formatUnits(
+                probe.quoteValueRaw,
+                SILO_ORACLE_QUOTE_DISPLAY_DECIMALS
+              )
+            }
+          } catch {
+            quoteWithDecimals = '—'
+          }
+          const expectedQuote = resolvedQuoteToken()
+          return (
+          <div className="mt-2 p-3 border border-gray-700 rounded-lg text-xs space-y-1">
+            <p className="status-muted-success">✓ ISiloOracle interface confirmed.</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-gray-500">Quote token:</span>
+              <AddressDisplayShort
+                address={probe.quoteToken}
+                chainId={networkChainId ? parseInt(networkChainId, 10) : undefined}
+                className="text-xs"
+                showVersion={false}
+              />
+              {probe.quoteTokenSymbol && (
+                <span className="text-gray-300">({probe.quoteTokenSymbol})</span>
+              )}
+            </div>
+            {expectedQuote == null ? (
+              <p className="text-xs text-amber-400/95 mt-2 leading-relaxed">
+                Set and resolve a quote token above to verify it matches this oracle&apos;s{' '}
+                <span className="font-mono">quoteToken()</span>.
+              </p>
+            ) : vault.underlyingOracleQuoteMatchesConfigured === true ? (
+              <p className="text-xs status-muted-success mt-2 leading-relaxed">
+                ✓ Underlying <span className="font-mono">quoteToken()</span> matches the quote token configured for this
+                vault oracle.
+              </p>
+            ) : vault.underlyingOracleQuoteMatchesConfigured === false ? (
+              <p className="text-xs text-red-400 mt-2 leading-relaxed">
+                <span className="font-semibold">Quote token mismatch.</span> This ISiloOracle uses a different{' '}
+                <span className="font-mono">quoteToken()</span> than the quote selected for this vault oracle (see Quote
+                token above). Choose a compatible oracle or change the quote token.
+              </p>
+            ) : null}
+            <p>
+              <span className="text-gray-500">Decimals:</span>{' '}
+              <span className="text-gray-300">{SILO_ORACLE_QUOTE_DISPLAY_DECIMALS}</span>
+            </p>
+            <p className="text-gray-300">
+              <span className="text-gray-500">Raw price:</span>{' '}
+              <span className="font-mono">{probe.quoteValueRaw || '—'}</span>{' '}
+              <span className="text-gray-500">
+                (with decimals:{' '}
+                <span className="font-mono text-gray-300">{quoteWithDecimals}</span>)
+              </span>
+            </p>
+          </div>
+          )
+        })()}
+
+        {probe.kind === 'aggregator' && (() => {
+          const baseDec = Number(vault.vaultAssetDecimals)
+          const adapterNorm =
+            Number.isFinite(baseDec) && baseDec >= 0
+              ? computeChainlinkNormalization(baseDec, 18, probe.decimals)
+              : null
+          const quoteRes = resolvedQuoteToken()
+          let latestAnswerHuman = '—'
+          try {
+            if (
+              probe.latestAnswer !== '' &&
+              Number.isFinite(probe.decimals) &&
+              probe.decimals >= 0
+            ) {
+              latestAnswerHuman = ethers.formatUnits(probe.latestAnswer, probe.decimals)
+            }
+          } catch {
+            latestAnswerHuman = '—'
+          }
+          return (
+          <div className="mt-2 p-3 border border-yellow-700/60 rounded-lg text-xs space-y-2">
+            <p className="text-yellow-300">
+              ⚠ Address is a Chainlink-style Aggregator, not an ISiloOracle. An adapter
+              must be deployed before this can be used.
+            </p>
+            <ul className="text-gray-300 list-disc list-inside text-xs space-y-1">
+              <li>
+                <span className="text-gray-500">Description:</span>{' '}
+                <span className="text-gray-300">{probe.description || '—'}</span>
+              </li>
+              <li>
+                <span className="text-gray-500">Decimals:</span>{' '}
+                <span className="text-gray-300">{probe.decimals}</span>
+              </li>
+              <li>
+                <span className="text-gray-500">Latest answer:</span>{' '}
+                <span className="font-mono">{probe.latestAnswer || '—'}</span>{' '}
+                <span className="text-gray-500">
+                  (with decimals:{' '}
+                  <span className="font-mono text-gray-300">{latestAnswerHuman}</span>)
+                </span>
+              </li>
+            </ul>
+            <div className="pt-2 border-t border-gray-700">
+              <p className="text-gray-400">Adapter inputs that will be sent to ChainlinkV3OracleFactory.create:</p>
+              <ul className="text-gray-300 list-disc list-outside text-[11px] mt-1 space-y-1.5 pl-5 marker:text-gray-500">
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">baseToken:</span>
+                  {vault.vaultAssetAddress ? (
+                    <>
+                      <AddressDisplayShort
+                        address={vault.vaultAssetAddress}
+                        chainId={chainIdNum}
+                        className="text-[11px]"
+                        showVersion={false}
+                      />
+                      {vault.vaultAssetSymbol ? (
+                        <span className="text-gray-400">({vault.vaultAssetSymbol})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </li>
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">quoteToken:</span>
+                  {quoteRes?.address ? (
+                    <>
+                      <AddressDisplayShort
+                        address={quoteRes.address}
+                        chainId={chainIdNum}
+                        className="text-[11px]"
+                        showVersion={false}
+                      />
+                      {quoteRes.symbol ? (
+                        <span className="text-gray-400">({quoteRes.symbol})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </li>
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">primaryAggregator:</span>
+                  {parsedUnderlyingInput ? (
+                    <AddressDisplayShort
+                      address={parsedUnderlyingInput}
+                      chainId={chainIdNum}
+                      className="text-[11px]"
+                      showVersion={false}
+                    />
+                  ) : (
+                    <span>—</span>
+                  )}
+                </li>
+                <li>
+                  <span className="text-gray-500">secondaryAggregator:</span>{' '}
+                  <span className="font-mono text-gray-300">{ethers.ZeroAddress}</span>
+                </li>
+                <li>
+                  <span className="text-gray-500">primaryHeartbeat / secondaryHeartbeat:</span>{' '}
+                  <span className="text-gray-300">0 / 0</span>
+                </li>
+                <li>
+                  <span className="text-gray-500">invertSecondPrice:</span>{' '}
+                  <span className="text-gray-300">false</span>
+                </li>
+                {adapterNorm &&
+                  (adapterNorm.divider !== '0' || adapterNorm.multiplier !== '0') && (
+                    <li>
+                      <span className="text-gray-500">
+                        normalization (same as Chainlink oracle step):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
+                        <div
+                          className={
+                            adapterNorm.multiplier === '0' ? 'opacity-60' : ''
+                          }
+                        >
+                          <p
+                            className={`font-medium text-gray-300 mb-0.5 ${
+                              adapterNorm.multiplier === '0' ? 'line-through' : ''
+                            }`}
+                          >
+                            normalizationMultiplier
+                          </p>
+                          <p className="text-white font-mono">
+                            {formatPowerOfTen(adapterNorm.multiplier)}
+                          </p>
+                          {adapterNorm.multiplier !== '0' &&
+                            adapterNorm.mathLineMultiplier && (
+                              <p className="text-[10px] text-gray-400">
+                                {adapterNorm.mathLineMultiplier}
+                              </p>
+                            )}
+                        </div>
+                        <div
+                          className={adapterNorm.divider === '0' ? 'opacity-60' : ''}
+                        >
+                          <p
+                            className={`font-medium text-gray-300 mb-0.5 ${
+                              adapterNorm.divider === '0' ? 'line-through' : ''
+                            }`}
+                          >
+                            normalizationDivider
+                          </p>
+                          <p className="text-white font-mono">
+                            {formatPowerOfTen(adapterNorm.divider)}
+                          </p>
+                          {adapterNorm.divider !== '0' &&
+                            adapterNorm.mathLineDivider && (
+                              <p className="text-[10px] text-gray-400">
+                                {adapterNorm.mathLineDivider}
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                {adapterNorm &&
+                  adapterNorm.divider === '0' &&
+                  adapterNorm.multiplier === '0' && (
+                    <li className="text-gray-500">
+                      normalization: resolve vault asset decimals to compute multiplier/divider.
+                    </li>
+                  )}
+              </ul>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleDeployAdapter}
+              disabled={
+                deploying ||
+                !chainlinkV3OracleFactory?.address ||
+                !vault.vaultAssetAddress ||
+                !resolvedQuoteToken()
+              }
+            >
+              {deploying ? 'Deploying adapter…' : 'Deploy ChainlinkV3 adapter'}
+            </Button>
+            {!chainlinkV3OracleFactory?.address && (
+              <p className="text-[11px] text-red-400">
+                ChainlinkV3OracleFactory not available on this chain – adapter cannot be deployed here.
+              </p>
+            )}
+          </div>
+          )
+        })()}
+
+        {probe.kind === 'error' && (
+          <p className="text-xs text-red-400">{probe.message}</p>
+        )}
+
+        {vault.underlyingOracleDeployTxHash && (
+          <p className="text-xs text-gray-400">
+            Adapter deployed in this wizard: tx{' '}
+            {networkChainId ? (
+              <a
+                href={getExplorerTxUrl(networkChainId, vault.underlyingOracleDeployTxHash)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--silo-accent)] underline break-all"
+              >
+                {vault.underlyingOracleDeployTxHash}
+              </a>
+            ) : (
+              <span className="font-mono break-all">{vault.underlyingOracleDeployTxHash}</span>
+            )}
+          </p>
+        )}
+
+        {deployError && (
+          <p className="text-xs text-red-400">{deployError}</p>
+        )}
+      </div>
+
+      {(loadingVault || loadingAsset) && (
+        <p className="text-xs text-gray-400">Loading vault metadata…</p>
+      )}
+      {localError && (
+        <p className="text-xs text-red-400">{localError}</p>
       )}
     </div>
   )
@@ -1562,6 +2613,8 @@ export default function Step3OracleConfiguration() {
   const [useSecondaryAggregator1, setUseSecondaryAggregator1] = useState(false)
   const [erc4626OracleFactory, setErc4626OracleFactory] = useState<{ address: string; version: string } | null>(null)
   const [vaultFactoryMissing, setVaultFactoryMissing] = useState<string | null>(null)
+  const [erc4626OracleWithUnderlyingFactory, setErc4626OracleWithUnderlyingFactory] = useState<{ address: string; version: string } | null>(null)
+  const [vaultWithUnderlyingFactoryMissing, setVaultWithUnderlyingFactoryMissing] = useState<string | null>(null)
 
   const [vault0, setVault0] = useState<
     Partial<VaultOracleConfig> & {
@@ -1591,6 +2644,38 @@ export default function Step3OracleConfiguration() {
   const [vault1QuoteInput, setVault1QuoteInput] = useState('')
   const [vault0Valid, setVault0Valid] = useState(false)
   const [vault1Valid, setVault1Valid] = useState(false)
+  const [vaultWithUnderlying0, setVaultWithUnderlying0] = useState<
+    Partial<VaultWithUnderlyingOracleConfig> & {
+      vaultSymbol?: string
+      vaultAssetAddress?: string
+      vaultAssetSymbol?: string
+      vaultAssetDecimals?: number
+      assetMatchesBase?: boolean
+      underlyingOracleQuoteMatchesConfigured?: boolean
+    }
+  >({
+    baseToken: 'token0',
+    useOtherTokenAsQuote: true,
+    vaultAddress: '',
+    underlyingOracleAddress: ''
+  })
+  const [vaultWithUnderlying1, setVaultWithUnderlying1] = useState<
+    Partial<VaultWithUnderlyingOracleConfig> & {
+      vaultSymbol?: string
+      vaultAssetAddress?: string
+      vaultAssetSymbol?: string
+      vaultAssetDecimals?: number
+      assetMatchesBase?: boolean
+      underlyingOracleQuoteMatchesConfigured?: boolean
+    }
+  >({
+    baseToken: 'token1',
+    useOtherTokenAsQuote: true,
+    vaultAddress: '',
+    underlyingOracleAddress: ''
+  })
+  const [vaultWithUnderlying0QuoteInput, setVaultWithUnderlying0QuoteInput] = useState('')
+  const [vaultWithUnderlying1QuoteInput, setVaultWithUnderlying1QuoteInput] = useState('')
 
   const [ptLinear0, setPTLinear0] = useState<Partial<PTLinearOracleConfig>>({
     maxYieldPercent: 0,
@@ -1703,6 +2788,7 @@ export default function Step3OracleConfiguration() {
   const needsChainlinkFactory = selectedOracleTypes.includes('chainlink')
   const needsPtLinearFactory = selectedOracleTypes.includes('ptLinear')
   const needsVaultFactory = selectedOracleTypes.includes('vault')
+  const needsVaultWithUnderlyingFactory = selectedOracleTypes.includes('vaultWithUnderlying')
   const needsCustomMethodFactory = selectedOracleTypes.includes('customMethod')
   const needsSupraSValueFactory = selectedOracleTypes.includes('supraSValue')
 
@@ -1829,10 +2915,13 @@ export default function Step3OracleConfiguration() {
     fetchScalerFactory()
   }, [wizardData.networkInfo?.chainId, needsScalerFactory])
 
-  // Fetch ChainlinkV3OracleFactory address for current chain (master only)
+  // Fetch ChainlinkV3OracleFactory address for current chain (master only).
+  // We also load it when vaultWithUnderlying is selected because that type may
+  // need an adapter deploy via ChainlinkV3OracleFactory when the supplied
+  // underlying address is an Aggregator (not an ISiloOracle).
   useEffect(() => {
     const fetchChainlinkFactory = async () => {
-      if (!wizardData.networkInfo?.chainId || !needsChainlinkFactory) {
+      if (!wizardData.networkInfo?.chainId || (!needsChainlinkFactory && !needsVaultWithUnderlyingFactory)) {
         setChainlinkV3OracleFactory(null)
         return
       }
@@ -1844,7 +2933,7 @@ export default function Step3OracleConfiguration() {
       }
     }
     fetchChainlinkFactory()
-  }, [wizardData.networkInfo?.chainId, needsChainlinkFactory])
+  }, [wizardData.networkInfo?.chainId, needsChainlinkFactory, needsVaultWithUnderlyingFactory])
 
   // Fetch PTLinearOracleFactory address for current chain
   useEffect(() => {
@@ -1889,6 +2978,28 @@ export default function Step3OracleConfiguration() {
     }
     fetchVaultFactory()
   }, [wizardData.networkInfo?.chainId, needsVaultFactory])
+
+  // Fetch ERC4626OracleWithUnderlyingFactory address for current chain
+  useEffect(() => {
+    const fetchVaultWithUnderlyingFactory = async () => {
+      if (!wizardData.networkInfo?.chainId || !needsVaultWithUnderlyingFactory) {
+        setErc4626OracleWithUnderlyingFactory(null)
+        setVaultWithUnderlyingFactoryMissing(null)
+        return
+      }
+      try {
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'vaultWithUnderlying')
+        setErc4626OracleWithUnderlyingFactory(address ? { address, version: '' } : null)
+        setVaultWithUnderlyingFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('vaultWithUnderlying', wizardData.networkInfo.chainId)
+        )
+      } catch {
+        setErc4626OracleWithUnderlyingFactory(null)
+        setVaultWithUnderlyingFactoryMissing('Failed to load ERC4626OracleWithUnderlyingFactory for this chain.')
+      }
+    }
+    fetchVaultWithUnderlyingFactory()
+  }, [wizardData.networkInfo?.chainId, needsVaultWithUnderlyingFactory])
 
   // Fetch CustomMethodOracleFactory address for current chain
   useEffect(() => {
@@ -2062,6 +3173,7 @@ export default function Step3OracleConfiguration() {
       chainlinkV3OracleFactory?.address,
       ptLinearFactory?.address,
       erc4626OracleFactory?.address,
+      erc4626OracleWithUnderlyingFactory?.address,
       customMethodFactory?.address,
       supraSValueFactory?.address,
       customMethodImplementationAddress,
@@ -2095,6 +3207,9 @@ export default function Step3OracleConfiguration() {
         setErc4626OracleFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
+        setErc4626OracleWithUnderlyingFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
         setCustomMethodFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
@@ -2117,6 +3232,7 @@ export default function Step3OracleConfiguration() {
         setChainlinkV3OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setPTLinearFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setErc4626OracleFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setErc4626OracleWithUnderlyingFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setSupraSValueFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodImplementationVersion(
@@ -2134,6 +3250,7 @@ export default function Step3OracleConfiguration() {
     chainlinkV3OracleFactory?.address,
     ptLinearFactory?.address,
     erc4626OracleFactory?.address,
+    erc4626OracleWithUnderlyingFactory?.address,
     customMethodFactory?.address,
     supraSValueFactory?.address,
     customMethodImplementationAddress,
@@ -2201,6 +3318,52 @@ export default function Step3OracleConfiguration() {
   }, [
     wizardData.oracleConfiguration?.token0?.vaultOracle,
     wizardData.oracleConfiguration?.token1?.vaultOracle
+  ])
+
+  // Sync Vault With Underlying oracle state from wizard when returning to step
+  useEffect(() => {
+    const v0 = wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle
+    if (v0) {
+      setVaultWithUnderlying0(prev => ({
+        ...prev,
+        baseToken: v0.baseToken,
+        useOtherTokenAsQuote: v0.useOtherTokenAsQuote ?? true,
+        vaultAddress: v0.vaultAddress,
+        customQuoteTokenAddress: v0.customQuoteTokenAddress,
+        customQuoteTokenMetadata: v0.customQuoteTokenMetadata,
+        priceManipulationRiskAcknowledged:
+          prev.priceManipulationRiskAcknowledged === true ||
+          v0.priceManipulationRiskAcknowledged === true,
+        underlyingOracleAddress: v0.underlyingOracleAddress,
+        underlyingOracleDeployTxHash: v0.underlyingOracleDeployTxHash,
+        underlyingOracleSourceAggregator: v0.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured: undefined
+      }))
+      setVaultWithUnderlying0QuoteInput(v0.customQuoteTokenAddress ?? '')
+    }
+    const v1 = wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle
+    if (v1) {
+      setVaultWithUnderlying1(prev => ({
+        ...prev,
+        baseToken: v1.baseToken,
+        useOtherTokenAsQuote: v1.useOtherTokenAsQuote ?? true,
+        vaultAddress: v1.vaultAddress,
+        customQuoteTokenAddress: v1.customQuoteTokenAddress,
+        customQuoteTokenMetadata: v1.customQuoteTokenMetadata,
+        priceManipulationRiskAcknowledged:
+          prev.priceManipulationRiskAcknowledged === true ||
+          v1.priceManipulationRiskAcknowledged === true,
+        underlyingOracleAddress: v1.underlyingOracleAddress,
+        underlyingOracleDeployTxHash: v1.underlyingOracleDeployTxHash,
+        underlyingOracleSourceAggregator: v1.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured: undefined
+      }))
+      setVaultWithUnderlying1QuoteInput(v1.customQuoteTokenAddress ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle,
+    wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle
   ])
 
   // Sync Custom Method oracle state from wizard when returning to step
@@ -2960,6 +4123,74 @@ export default function Step3OracleConfiguration() {
         )
       }
     }
+    if (wizardData.oracleType0?.type === 'vaultWithUnderlying') {
+      if (!erc4626OracleWithUnderlyingFactory) {
+        errors.push('Vault With Underlying Oracle (Token 0): this oracle is not available on the selected chain (missing ERC4626OracleWithUnderlyingFactory).')
+      }
+      const addr = vaultWithUnderlying0.vaultAddress?.trim() ?? ''
+      if (!addr || !ethers.isAddress(addr)) {
+        errors.push('Vault With Underlying Oracle (Token 0): vault address is required and must be a valid address')
+      }
+      if (
+        addr &&
+        ethers.isAddress(addr) &&
+        vaultWithUnderlying0.priceManipulationRiskAcknowledged !== true
+      ) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 0): confirm the price-manipulation risk acknowledgement.'
+        )
+      }
+      const underlying = vaultWithUnderlying0.underlyingOracleAddress?.trim() ?? ''
+      if (!underlying || !ethers.isAddress(underlying)) {
+        errors.push('Vault With Underlying Oracle (Token 0): underlying ISiloOracle address is required (deploy adapter if needed).')
+      }
+      if (vaultWithUnderlying0.underlyingOracleQuoteMatchesConfigured === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 0): underlying ISiloOracle quoteToken() does not match the quote token configured for this vault oracle. Use a compatible oracle or change the quote token.'
+        )
+      }
+      const quoteAddr0 = vaultWithUnderlying0.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
+      if (quoteEmpty0 && vaultWithUnderlying0.useOtherTokenAsQuote === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 0): quote token is required when not using the other token as quote'
+        )
+      }
+    }
+    if (wizardData.oracleType1?.type === 'vaultWithUnderlying') {
+      if (!erc4626OracleWithUnderlyingFactory) {
+        errors.push('Vault With Underlying Oracle (Token 1): this oracle is not available on the selected chain (missing ERC4626OracleWithUnderlyingFactory).')
+      }
+      const addr = vaultWithUnderlying1.vaultAddress?.trim() ?? ''
+      if (!addr || !ethers.isAddress(addr)) {
+        errors.push('Vault With Underlying Oracle (Token 1): vault address is required and must be a valid address')
+      }
+      if (
+        addr &&
+        ethers.isAddress(addr) &&
+        vaultWithUnderlying1.priceManipulationRiskAcknowledged !== true
+      ) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 1): confirm the price-manipulation risk acknowledgement.'
+        )
+      }
+      const underlying = vaultWithUnderlying1.underlyingOracleAddress?.trim() ?? ''
+      if (!underlying || !ethers.isAddress(underlying)) {
+        errors.push('Vault With Underlying Oracle (Token 1): underlying ISiloOracle address is required (deploy adapter if needed).')
+      }
+      if (vaultWithUnderlying1.underlyingOracleQuoteMatchesConfigured === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 1): underlying ISiloOracle quoteToken() does not match the quote token configured for this vault oracle. Use a compatible oracle or change the quote token.'
+        )
+      }
+      const quoteAddr1 = vaultWithUnderlying1.customQuoteTokenAddress?.trim() ?? ''
+      const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
+      if (quoteEmpty1 && vaultWithUnderlying1.useOtherTokenAsQuote === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 1): quote token is required when not using the other token as quote'
+        )
+      }
+    }
     if (wizardData.oracleType0?.type === 'customMethod') {
       if (customMethodFactoryMissing || !customMethodFactory) {
         errors.push('Custom Method Oracle (Token 0): this oracle is not available on the selected chain (factory missing).')
@@ -3057,7 +4288,7 @@ export default function Step3OracleConfiguration() {
       }
     }
 
-    // Effective quote token address: none/scaler = token itself; chainlink/vault/ptLinear = stored quote address only.
+    // Effective quote token address: none/scaler = token itself; chainlink/vault/vaultWithUnderlying/ptLinear = stored quote address only.
     // "Other token" is just a predefined option that fills the address field – we only read that field.
     const getEffectiveQuoteAddress = (side: '0' | '1'): string => {
       const type = side === '0' ? wizardData.oracleType0?.type : wizardData.oracleType1?.type
@@ -3076,6 +4307,10 @@ export default function Step3OracleConfiguration() {
       }
       if (type === 'vault') {
         const v = side === '0' ? vault0 : vault1
+        return (v.customQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'vaultWithUnderlying') {
+        const v = side === '0' ? vaultWithUnderlying0 : vaultWithUnderlying1
         return (v.customQuoteTokenAddress?.trim() ?? '')
       }
       if (type === 'customMethod') {
@@ -3155,6 +4390,22 @@ export default function Step3OracleConfiguration() {
                 priceManipulationRiskAcknowledged: vault0.priceManipulationRiskAcknowledged === true
               }
             : undefined,
+          vaultWithUnderlyingOracle: wizardData.oracleType0!.type === 'vaultWithUnderlying'
+            ? {
+                baseToken: 'token0',
+                useOtherTokenAsQuote: vaultWithUnderlying0.useOtherTokenAsQuote ?? true,
+                vaultAddress: vaultWithUnderlying0.vaultAddress!.trim(),
+                customQuoteTokenAddress:
+                  vaultWithUnderlying0.useOtherTokenAsQuote !== false && wizardData.token1?.address
+                    ? wizardData.token1.address
+                    : vaultWithUnderlying0.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata: vaultWithUnderlying0.customQuoteTokenMetadata,
+                priceManipulationRiskAcknowledged: vaultWithUnderlying0.priceManipulationRiskAcknowledged === true,
+                underlyingOracleAddress: (vaultWithUnderlying0.underlyingOracleAddress ?? '').trim(),
+                underlyingOracleDeployTxHash: vaultWithUnderlying0.underlyingOracleDeployTxHash,
+                underlyingOracleSourceAggregator: vaultWithUnderlying0.underlyingOracleSourceAggregator
+              }
+            : undefined,
           customMethodOracle: wizardData.oracleType0!.type === 'customMethod'
             ? {
                 baseToken: 'token0',
@@ -3224,6 +4475,22 @@ export default function Step3OracleConfiguration() {
                     : vault1.customQuoteTokenAddress?.trim(),
                 customQuoteTokenMetadata: vault1.customQuoteTokenMetadata,
                 priceManipulationRiskAcknowledged: vault1.priceManipulationRiskAcknowledged === true
+              }
+            : undefined,
+          vaultWithUnderlyingOracle: wizardData.oracleType1!.type === 'vaultWithUnderlying'
+            ? {
+                baseToken: 'token1',
+                useOtherTokenAsQuote: vaultWithUnderlying1.useOtherTokenAsQuote ?? true,
+                vaultAddress: vaultWithUnderlying1.vaultAddress!.trim(),
+                customQuoteTokenAddress:
+                  vaultWithUnderlying1.useOtherTokenAsQuote !== false && wizardData.token0?.address
+                    ? wizardData.token0.address
+                    : vaultWithUnderlying1.customQuoteTokenAddress?.trim(),
+                customQuoteTokenMetadata: vaultWithUnderlying1.customQuoteTokenMetadata,
+                priceManipulationRiskAcknowledged: vaultWithUnderlying1.priceManipulationRiskAcknowledged === true,
+                underlyingOracleAddress: (vaultWithUnderlying1.underlyingOracleAddress ?? '').trim(),
+                underlyingOracleDeployTxHash: vaultWithUnderlying1.underlyingOracleDeployTxHash,
+                underlyingOracleSourceAggregator: vaultWithUnderlying1.underlyingOracleSourceAggregator
               }
             : undefined,
           customMethodOracle: wizardData.oracleType1!.type === 'customMethod'
@@ -3338,6 +4605,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType0.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType0.type === 'vaultWithUnderlying'
+              ? 'Vault Oracle With Underlying'
               : wizardData.oracleType0.type === 'customMethod'
               ? 'Custom Method Oracle'
               : wizardData.oracleType0.type === 'supraSValue'
@@ -3355,6 +4624,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType0.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType0.type === 'vaultWithUnderlying'
+              ? 'Vault Oracle With Underlying'
               : wizardData.oracleType0.type === 'customMethod'
               ? 'Custom Method Oracle'
               : wizardData.oracleType0.type === 'supraSValue'
@@ -3517,6 +4788,23 @@ export default function Step3OracleConfiguration() {
               vaultFactory={erc4626OracleFactory}
               vaultFactoryMissing={vaultFactoryMissing}
               onValidationChange={setVault0Valid}
+            />
+          ) : wizardData.oracleType0.type === 'vaultWithUnderlying' ? (
+            <VaultWithUnderlyingOracleSection
+              baseTokenSymbol={wizardData.token0.symbol}
+              baseTokenName={wizardData.token0.name}
+              otherTokenAddress={wizardData.token1?.address}
+              otherTokenSymbol={wizardData.token1?.symbol}
+              vault={vaultWithUnderlying0}
+              setVault={setVaultWithUnderlying0}
+              quoteInput={vaultWithUnderlying0QuoteInput}
+              setQuoteInput={setVaultWithUnderlying0QuoteInput}
+              virtualTokenOptions={virtualTokenOptions}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              vaultFactory={erc4626OracleWithUnderlyingFactory}
+              vaultFactoryMissing={vaultWithUnderlyingFactoryMissing}
+              chainlinkV3OracleFactory={chainlinkV3OracleFactory}
             />
           ) : wizardData.oracleType0.type === 'customMethod' ? (
             <CustomMethodOracleSection
@@ -3683,6 +4971,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType1.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType1.type === 'vaultWithUnderlying'
+              ? 'Vault Oracle With Underlying'
               : wizardData.oracleType1.type === 'customMethod'
               ? 'Custom Method Oracle'
               : wizardData.oracleType1.type === 'supraSValue'
@@ -3700,6 +4990,8 @@ export default function Step3OracleConfiguration() {
               ? 'PT-Linear'
               : wizardData.oracleType1.type === 'vault'
               ? 'Vault Oracle'
+              : wizardData.oracleType1.type === 'vaultWithUnderlying'
+              ? 'Vault Oracle With Underlying'
               : wizardData.oracleType1.type === 'customMethod'
               ? 'Custom Method Oracle'
               : wizardData.oracleType1.type === 'supraSValue'
@@ -3862,6 +5154,23 @@ export default function Step3OracleConfiguration() {
               vaultFactory={erc4626OracleFactory}
               vaultFactoryMissing={vaultFactoryMissing}
               onValidationChange={setVault1Valid}
+            />
+          ) : wizardData.oracleType1.type === 'vaultWithUnderlying' ? (
+            <VaultWithUnderlyingOracleSection
+              baseTokenSymbol={wizardData.token1.symbol}
+              baseTokenName={wizardData.token1.name}
+              otherTokenAddress={wizardData.token0?.address}
+              otherTokenSymbol={wizardData.token0?.symbol}
+              vault={vaultWithUnderlying1}
+              setVault={setVaultWithUnderlying1}
+              quoteInput={vaultWithUnderlying1QuoteInput}
+              setQuoteInput={setVaultWithUnderlying1QuoteInput}
+              virtualTokenOptions={virtualTokenOptions}
+              usdcAddress={usdcAddress}
+              networkChainId={wizardData.networkInfo?.chainId}
+              vaultFactory={erc4626OracleWithUnderlyingFactory}
+              vaultFactoryMissing={vaultWithUnderlyingFactoryMissing}
+              chainlinkV3OracleFactory={chainlinkV3OracleFactory}
             />
           ) : wizardData.oracleType1.type === 'customMethod' ? (
             <CustomMethodOracleSection

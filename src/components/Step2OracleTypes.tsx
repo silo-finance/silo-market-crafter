@@ -14,8 +14,8 @@ export default function Step2OracleTypes() {
   const router = useRouter()
   const { wizardData, updateOracleType0, updateOracleType1, markStepCompleted } = useWizard()
   
-  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null>(null)
-  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null>(null)
+  const [selectedOracle0, setSelectedOracle0] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | null>(null)
+  const [selectedOracle1, setSelectedOracle1] = useState<'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [factoryAvailabilityLoading, setFactoryAvailabilityLoading] = useState(false)
@@ -24,6 +24,7 @@ export default function Step2OracleTypes() {
     chainlink: false,
     ptLinear: false,
     vault: false,
+    vaultWithUnderlying: false,
     customMethod: false,
     supraSValue: false,
   })
@@ -48,6 +49,7 @@ export default function Step2OracleTypes() {
         'chainlink',
         'ptLinear',
         'vault',
+        'vaultWithUnderlying',
         'customMethod',
         'supraSValue',
       ])
@@ -74,7 +76,7 @@ export default function Step2OracleTypes() {
     tokenDecimals: number,
     tokenSymbol: string
   ): {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
     enabled: boolean
     reason: string
   }[] => {
@@ -125,6 +127,13 @@ export default function Step2OracleTypes() {
           : getFactoryReason('vault')
       },
       {
+        type: 'vaultWithUnderlying',
+        enabled: !factoryAvailabilityLoading && factoryAvailability.vaultWithUnderlying,
+        reason: !factoryAvailabilityLoading && factoryAvailability.vaultWithUnderlying
+          ? 'ERC4626 Vault Oracle that prices vault.asset() through an additional underlying ISiloOracle'
+          : getFactoryReason('vaultWithUnderlying')
+      },
+      {
         type: 'customMethod',
         enabled: !factoryAvailabilityLoading && factoryAvailability.customMethod,
         reason: !factoryAvailabilityLoading && factoryAvailability.customMethod
@@ -145,23 +154,25 @@ export default function Step2OracleTypes() {
   const oracleTypes1 = wizardData.token1 ? getOracleTypes(wizardData.token1.decimals, wizardData.token1.symbol) : []
 
   const isFactoryBackedTypeUnavailable = (
-    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | null
   ): boolean => {
     if (selectedType === 'chainlink') return !factoryAvailability.chainlink
     if (selectedType === 'ptLinear') return !factoryAvailability.ptLinear
     if (selectedType === 'vault') return !factoryAvailability.vault
+    if (selectedType === 'vaultWithUnderlying') return !factoryAvailability.vaultWithUnderlying
     if (selectedType === 'customMethod') return !factoryAvailability.customMethod
     if (selectedType === 'supraSValue') return !factoryAvailability.supraSValue
     return false
   }
 
   const getFactoryBackedTypeError = (
-    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue' | null
+    selectedType: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | null
   ): string | null => {
     if (!selectedType || !wizardData.networkInfo?.chainId) return null
     if (selectedType === 'chainlink') return getOracleFactoryMissingMessage('chainlink', wizardData.networkInfo.chainId)
     if (selectedType === 'ptLinear') return getOracleFactoryMissingMessage('ptLinear', wizardData.networkInfo.chainId)
     if (selectedType === 'vault') return getOracleFactoryMissingMessage('vault', wizardData.networkInfo.chainId)
+    if (selectedType === 'vaultWithUnderlying') return getOracleFactoryMissingMessage('vaultWithUnderlying', wizardData.networkInfo.chainId)
     if (selectedType === 'customMethod') return getOracleFactoryMissingMessage('customMethod', wizardData.networkInfo.chainId)
     if (selectedType === 'supraSValue') return getOracleFactoryMissingMessage('supraSValue', wizardData.networkInfo.chainId)
     return null
@@ -220,6 +231,7 @@ export default function Step2OracleTypes() {
       selectedOracle0 !== 'chainlink' &&
       selectedOracle0 !== 'ptLinear' &&
       selectedOracle0 !== 'vault' &&
+      selectedOracle0 !== 'vaultWithUnderlying' &&
       selectedOracle0 !== 'customMethod' &&
       selectedOracle0 !== 'supraSValue'
     ) {
@@ -232,6 +244,7 @@ export default function Step2OracleTypes() {
       selectedOracle1 !== 'chainlink' &&
       selectedOracle1 !== 'ptLinear' &&
       selectedOracle1 !== 'vault' &&
+      selectedOracle1 !== 'vaultWithUnderlying' &&
       selectedOracle1 !== 'customMethod' &&
       selectedOracle1 !== 'supraSValue'
     ) {
@@ -370,6 +383,7 @@ export default function Step2OracleTypes() {
                         | 'chainlink'
                         | 'ptLinear'
                         | 'vault'
+                        | 'vaultWithUnderlying'
                         | 'customMethod'
                         | 'supraSValue'
                     )
@@ -392,6 +406,8 @@ export default function Step2OracleTypes() {
                         ? 'Custom Method Oracle'
                         : oracleType.type === 'supraSValue'
                         ? 'Supra s-value Oracle'
+                        : oracleType.type === 'vaultWithUnderlying'
+                        ? 'Vault Oracle With Underlying'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
@@ -414,6 +430,16 @@ export default function Step2OracleTypes() {
                     <>
                       <p className="text-sm text-gray-400 mt-1">
                         ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                      </p>
+                      <p className="text-sm text-amber-400/90 mt-1">
+                        Note: vault-based pricing may be susceptible to price manipulation.
+                      </p>
+                    </>
+                  )}
+                  {oracleType.type === 'vaultWithUnderlying' && oracleType.enabled && (
+                    <>
+                      <p className="text-sm text-gray-400 mt-1">
+                        ERC4626 Vault Oracle With Underlying: prices vault.asset() through an additional ISiloOracle so vault asset can differ from quote token.
                       </p>
                       <p className="text-sm text-amber-400/90 mt-1">
                         Note: vault-based pricing may be susceptible to price manipulation.
@@ -465,6 +491,7 @@ export default function Step2OracleTypes() {
                         | 'chainlink'
                         | 'ptLinear'
                         | 'vault'
+                        | 'vaultWithUnderlying'
                         | 'customMethod'
                         | 'supraSValue'
                     )
@@ -487,6 +514,8 @@ export default function Step2OracleTypes() {
                         ? 'Custom Method Oracle'
                         : oracleType.type === 'supraSValue'
                         ? 'Supra s-value Oracle'
+                        : oracleType.type === 'vaultWithUnderlying'
+                        ? 'Vault Oracle With Underlying'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
                     {oracleType.enabled ? (
@@ -509,6 +538,16 @@ export default function Step2OracleTypes() {
                     <>
                       <p className="text-sm text-gray-400 mt-1">
                         ERC4626 Vault Oracle: oracle that derives price directly from the vault. This oracle allows configuring any quote token.
+                      </p>
+                      <p className="text-sm text-amber-400/90 mt-1">
+                        Note: vault-based pricing may be susceptible to price manipulation.
+                      </p>
+                    </>
+                  )}
+                  {oracleType.type === 'vaultWithUnderlying' && oracleType.enabled && (
+                    <>
+                      <p className="text-sm text-gray-400 mt-1">
+                        ERC4626 Vault Oracle With Underlying: prices vault.asset() through an additional ISiloOracle so vault asset can differ from quote token.
                       </p>
                       <p className="text-sm text-amber-400/90 mt-1">
                         Note: vault-based pricing may be susceptible to price manipulation.

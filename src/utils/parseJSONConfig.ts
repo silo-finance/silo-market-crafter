@@ -56,7 +56,7 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     name: config.token1 || ''
   }
   
-  // Parse oracle configuration (match WizardContext: none | scaler | chainlink | ptLinear | vault | customMethod | supraSValue)
+  // Parse oracle configuration (match WizardContext: none | scaler | chainlink | ptLinear | vault | vaultWithUnderlying | customMethod | supraSValue)
   const oracleType0 =
     config.solvencyOracle0 === 'NO_ORACLE'
       ? 'none'
@@ -66,6 +66,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'ptLinear'
       : config.solvencyOracle0 === 'VaultOracle'
       ? 'vault'
+      : config.solvencyOracle0 === 'VaultOracleWithUnderlying'
+      ? 'vaultWithUnderlying'
       : config.solvencyOracle0 === 'CustomMethodOracle'
       ? 'customMethod'
       : config.solvencyOracle0 === 'SupraSValueOracle'
@@ -80,6 +82,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'ptLinear'
       : config.solvencyOracle1 === 'VaultOracle'
       ? 'vault'
+      : config.solvencyOracle1 === 'VaultOracleWithUnderlying'
+      ? 'vaultWithUnderlying'
       : config.solvencyOracle1 === 'CustomMethodOracle'
       ? 'customMethod'
       : config.solvencyOracle1 === 'SupraSValueOracle'
