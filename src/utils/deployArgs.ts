@@ -191,45 +191,7 @@ export function prepareDeployArgs(
         txInput
       }
     }
-    if (vault && oracleDeployments?.erc4626OracleFactory) {
-      if (vault.priceManipulationRiskAcknowledged !== true) {
-        throw new Error(
-          'Vault oracle: confirm the price-manipulation risk acknowledgement in Oracle Configuration (Step 3) before deploying.'
-        )
-      }
-      const baseToken =
-        vault.baseToken === 'token0'
-          ? ethers.getAddress(wizardData.token0!.address)
-          : ethers.getAddress(wizardData.token1!.address)
-      let quoteToken: string
-      if (vault.useOtherTokenAsQuote !== false) {
-        quoteToken =
-          vault.baseToken === 'token0'
-            ? ethers.getAddress(wizardData.token1!.address)
-            : ethers.getAddress(wizardData.token0!.address)
-      } else {
-        const customAddr = vault.customQuoteTokenAddress?.trim()
-        if (!customAddr || !ethers.isAddress(customAddr)) {
-          throw new Error(
-            'Vault oracle requires a valid custom quote token address. Please set the quote token in Oracle Configuration (Step 3).'
-          )
-        }
-        quoteToken = ethers.getAddress(customAddr)
-      }
-      if (!quoteToken || quoteToken === ethers.ZeroAddress) {
-        throw new Error('Vault oracle quote token is required and cannot be zero.')
-      }
-      const configTuple = [baseToken, quoteToken]
-      const txInput = erc4626FactoryInterface.encodeFunctionData(
-        'createERC4626Oracle',
-        [configTuple[0], configTuple[1], ethers.ZeroHash]
-      )
-      return {
-        deployed: ethers.ZeroAddress,
-        factory: oracleDeployments.erc4626OracleFactory,
-        txInput
-      }
-    }
+    // Before plain `vault`: same-shape configs + stale localStorage can leave both set; underlying variant must win.
     if (vaultWithUnderlying && oracleDeployments?.erc4626OracleWithUnderlyingFactory) {
       if (vaultWithUnderlying.priceManipulationRiskAcknowledged !== true) {
         throw new Error(
@@ -254,6 +216,44 @@ export function prepareDeployArgs(
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.erc4626OracleWithUnderlyingFactory,
+        txInput
+      }
+    }
+    if (vault && oracleDeployments?.erc4626OracleFactory) {
+      if (vault.priceManipulationRiskAcknowledged !== true) {
+        throw new Error(
+          'Vault oracle: confirm the price-manipulation risk acknowledgement in Oracle Configuration (Step 3) before deploying.'
+        )
+      }
+      const erc4626VaultAddr = vault.vaultAddress?.trim()
+      if (!erc4626VaultAddr || !ethers.isAddress(erc4626VaultAddr)) {
+        throw new Error('Vault oracle requires a valid ERC4626 vault contract address.')
+      }
+      let quoteToken: string
+      if (vault.useOtherTokenAsQuote !== false) {
+        quoteToken =
+          vault.baseToken === 'token0'
+            ? ethers.getAddress(wizardData.token1!.address)
+            : ethers.getAddress(wizardData.token0!.address)
+      } else {
+        const customAddr = vault.customQuoteTokenAddress?.trim()
+        if (!customAddr || !ethers.isAddress(customAddr)) {
+          throw new Error(
+            'Vault oracle requires a valid custom quote token address. Please set the quote token in Oracle Configuration (Step 3).'
+          )
+        }
+        quoteToken = ethers.getAddress(customAddr)
+      }
+      if (!quoteToken || quoteToken === ethers.ZeroAddress) {
+        throw new Error('Vault oracle quote token is required and cannot be zero.')
+      }
+      const txInput = erc4626FactoryInterface.encodeFunctionData(
+        'createERC4626Oracle',
+        [ethers.getAddress(erc4626VaultAddr), quoteToken, ethers.ZeroHash]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.erc4626OracleFactory,
         txInput
       }
     }
