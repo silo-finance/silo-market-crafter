@@ -14,7 +14,7 @@ import {
   CustomMethodOracleConfig,
   SupraSValueOracleConfig
 } from '@/contexts/WizardContext'
-import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
+import { getChainName, getExplorerAddressUrl, getExplorerTxUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { resolveSymbolToAddress } from '@/utils/symbolToAddress'
 import oracleScalerArtifact from '@/abis/oracle/OracleScaler.json'
@@ -1182,7 +1182,11 @@ function VaultWithUnderlyingOracleSection({
 
   const vaultAssetSymLabel = vault.vaultAssetSymbol ?? '?'
   const otherMarketSymLabel = otherTokenSymbol ?? '?'
-  const explorerBase = networkChainId ? getExplorerAddressUrl(networkChainId, '') : ''
+  const parsedUnderlyingInput =
+    underlyingInput.trim() !== '' && ethers.isAddress(underlyingInput.trim())
+      ? ethers.getAddress(underlyingInput.trim())
+      : null
+  const chainIdNum = networkChainId ? parseInt(networkChainId, 10) : undefined
 
   return (
     <div className="space-y-4">
@@ -1221,7 +1225,7 @@ function VaultWithUnderlyingOracleSection({
       </div>
 
       {(vault.vaultSymbol || vault.vaultAssetAddress) && (
-        <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-sm space-y-1">
+        <div className="mt-2 p-3 border border-gray-700 rounded-lg text-sm space-y-1">
           <p className="text-gray-500 text-xs uppercase tracking-wide">Vault metadata</p>
           {vault.vaultSymbol && (
             <p>
@@ -1364,7 +1368,7 @@ function VaultWithUnderlyingOracleSection({
       </div>
 
       {/* Underlying ISiloOracle */}
-      <div className="mt-4 space-y-2 p-3 border border-gray-700 rounded-lg bg-gray-900/40">
+      <div className="mt-4 space-y-2 p-3 border border-gray-700 rounded-lg">
         <h4 className="text-sm font-semibold silo-text-main tracking-wide">
           Underlying ISiloOracle *
         </h4>
@@ -1380,13 +1384,24 @@ function VaultWithUnderlyingOracleSection({
           placeholder="0x…"
           className={wizardMonoInputClass}
         />
+        {parsedUnderlyingInput != null && (
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <span className="text-xs text-gray-500">Address:</span>
+            <AddressDisplayShort
+              address={parsedUnderlyingInput}
+              chainId={chainIdNum}
+              className="text-xs"
+              showVersion={false}
+            />
+          </div>
+        )}
 
         {probe.kind === 'loading' && (
           <p className="text-xs text-gray-400">Probing underlying oracle…</p>
         )}
 
         {probe.kind === 'silo' && (
-          <div className="mt-2 p-3 bg-gray-800/80 border border-gray-700 rounded-lg text-xs space-y-1">
+          <div className="mt-2 p-3 border border-gray-700 rounded-lg text-xs space-y-1">
             <p className="status-muted-success">✓ ISiloOracle interface confirmed.</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-gray-500">Quote token:</span>
@@ -1412,42 +1427,172 @@ function VaultWithUnderlyingOracleSection({
           </div>
         )}
 
-        {probe.kind === 'aggregator' && (
-          <div className="mt-2 p-3 bg-gray-800/80 border border-yellow-700/60 rounded-lg text-xs space-y-2">
+        {probe.kind === 'aggregator' && (() => {
+          const baseDec = Number(vault.vaultAssetDecimals)
+          const adapterNorm =
+            Number.isFinite(baseDec) && baseDec >= 0
+              ? computeChainlinkNormalization(baseDec, 18, probe.decimals)
+              : null
+          const quoteRes = resolvedQuoteToken()
+          let latestAnswerHuman = '—'
+          try {
+            if (
+              probe.latestAnswer !== '' &&
+              Number.isFinite(probe.decimals) &&
+              probe.decimals >= 0
+            ) {
+              latestAnswerHuman = ethers.formatUnits(probe.latestAnswer, probe.decimals)
+            }
+          } catch {
+            latestAnswerHuman = '—'
+          }
+          return (
+          <div className="mt-2 p-3 border border-yellow-700/60 rounded-lg text-xs space-y-2">
             <p className="text-yellow-300">
               ⚠ Address is a Chainlink-style Aggregator, not an ISiloOracle. An adapter
               must be deployed before this can be used.
             </p>
-            <p>
-              <span className="text-gray-500">Description:</span>{' '}
-              <span className="text-gray-300">{probe.description || '—'}</span>
-            </p>
-            <p>
-              <span className="text-gray-500">Decimals:</span>{' '}
-              <span className="text-gray-300">{probe.decimals}</span>
-            </p>
-            <p>
-              <span className="text-gray-500">Latest answer (raw):</span>{' '}
-              <span className="text-gray-300 font-mono">{probe.latestAnswer}</span>
-            </p>
+            <ul className="text-gray-300 list-disc list-inside text-xs space-y-1">
+              <li>
+                <span className="text-gray-500">Description:</span>{' '}
+                <span className="text-gray-300">{probe.description || '—'}</span>
+              </li>
+              <li>
+                <span className="text-gray-500">Decimals:</span>{' '}
+                <span className="text-gray-300">{probe.decimals}</span>
+              </li>
+              <li>
+                <span className="text-gray-500">Latest answer:</span>{' '}
+                <span className="font-mono">{probe.latestAnswer || '—'}</span>{' '}
+                <span className="text-gray-500">
+                  (with decimals:{' '}
+                  <span className="font-mono text-gray-300">{latestAnswerHuman}</span>)
+                </span>
+              </li>
+            </ul>
             <div className="pt-2 border-t border-gray-700">
               <p className="text-gray-400">Adapter inputs that will be sent to ChainlinkV3OracleFactory.create:</p>
-              <ul className="text-gray-300 list-disc list-inside text-[11px] mt-1 space-y-0.5">
-                <li>
-                  baseToken: {vault.vaultAssetAddress || '—'}
-                  {vault.vaultAssetSymbol ? ` (${vault.vaultAssetSymbol})` : ''}
+              <ul className="text-gray-300 list-disc list-outside text-[11px] mt-1 space-y-1.5 pl-5 marker:text-gray-500">
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">baseToken:</span>
+                  {vault.vaultAssetAddress ? (
+                    <>
+                      <AddressDisplayShort
+                        address={vault.vaultAssetAddress}
+                        chainId={chainIdNum}
+                        className="text-[11px]"
+                        showVersion={false}
+                      />
+                      {vault.vaultAssetSymbol ? (
+                        <span className="text-gray-400">({vault.vaultAssetSymbol})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </li>
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">quoteToken:</span>
+                  {quoteRes?.address ? (
+                    <>
+                      <AddressDisplayShort
+                        address={quoteRes.address}
+                        chainId={chainIdNum}
+                        className="text-[11px]"
+                        showVersion={false}
+                      />
+                      {quoteRes.symbol ? (
+                        <span className="text-gray-400">({quoteRes.symbol})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </li>
+                <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-gray-500 shrink-0">primaryAggregator:</span>
+                  {parsedUnderlyingInput ? (
+                    <AddressDisplayShort
+                      address={parsedUnderlyingInput}
+                      chainId={chainIdNum}
+                      className="text-[11px]"
+                      showVersion={false}
+                    />
+                  ) : (
+                    <span>—</span>
+                  )}
                 </li>
                 <li>
-                  quoteToken: {resolvedQuoteToken()?.address || '—'}
-                  {resolvedQuoteToken()?.symbol ? ` (${resolvedQuoteToken()?.symbol})` : ''}
+                  <span className="text-gray-500">secondaryAggregator:</span>{' '}
+                  <span className="font-mono text-gray-300">{ethers.ZeroAddress}</span>
                 </li>
-                <li>primaryAggregator: {underlyingInput || '—'}</li>
-                <li>secondaryAggregator: 0x0…0 (none)</li>
-                <li>heartbeats: 0 / 0</li>
-                <li>invertSecondPrice: false</li>
                 <li>
-                  normalization computed from base decimals {vault.vaultAssetDecimals ?? '?'} and aggregator decimals {probe.decimals}
+                  <span className="text-gray-500">primaryHeartbeat / secondaryHeartbeat:</span>{' '}
+                  <span className="text-gray-300">0 / 0</span>
                 </li>
+                <li>
+                  <span className="text-gray-500">invertSecondPrice:</span>{' '}
+                  <span className="text-gray-300">false</span>
+                </li>
+                {adapterNorm &&
+                  (adapterNorm.divider !== '0' || adapterNorm.multiplier !== '0') && (
+                    <li>
+                      <span className="text-gray-500">
+                        normalization (same as Chainlink oracle step):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
+                        <div
+                          className={
+                            adapterNorm.multiplier === '0' ? 'opacity-60' : ''
+                          }
+                        >
+                          <p
+                            className={`font-medium text-gray-300 mb-0.5 ${
+                              adapterNorm.multiplier === '0' ? 'line-through' : ''
+                            }`}
+                          >
+                            normalizationMultiplier
+                          </p>
+                          <p className="text-white font-mono">
+                            {formatPowerOfTen(adapterNorm.multiplier)}
+                          </p>
+                          {adapterNorm.multiplier !== '0' &&
+                            adapterNorm.mathLineMultiplier && (
+                              <p className="text-[10px] text-gray-400">
+                                {adapterNorm.mathLineMultiplier}
+                              </p>
+                            )}
+                        </div>
+                        <div
+                          className={adapterNorm.divider === '0' ? 'opacity-60' : ''}
+                        >
+                          <p
+                            className={`font-medium text-gray-300 mb-0.5 ${
+                              adapterNorm.divider === '0' ? 'line-through' : ''
+                            }`}
+                          >
+                            normalizationDivider
+                          </p>
+                          <p className="text-white font-mono">
+                            {formatPowerOfTen(adapterNorm.divider)}
+                          </p>
+                          {adapterNorm.divider !== '0' &&
+                            adapterNorm.mathLineDivider && (
+                              <p className="text-[10px] text-gray-400">
+                                {adapterNorm.mathLineDivider}
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                {adapterNorm &&
+                  adapterNorm.divider === '0' &&
+                  adapterNorm.multiplier === '0' && (
+                    <li className="text-gray-500">
+                      normalization: resolve vault asset decimals to compute multiplier/divider.
+                    </li>
+                  )}
               </ul>
             </div>
             <Button
@@ -1470,7 +1615,8 @@ function VaultWithUnderlyingOracleSection({
               </p>
             )}
           </div>
-        )}
+          )
+        })()}
 
         {probe.kind === 'error' && (
           <p className="text-xs text-red-400">{probe.message}</p>
@@ -1479,9 +1625,9 @@ function VaultWithUnderlyingOracleSection({
         {vault.underlyingOracleDeployTxHash && (
           <p className="text-xs text-gray-400">
             Adapter deployed in this wizard: tx{' '}
-            {explorerBase ? (
+            {networkChainId ? (
               <a
-                href={getExplorerAddressUrl(networkChainId!, vault.underlyingOracleDeployTxHash).replace('/address/', '/tx/')}
+                href={getExplorerTxUrl(networkChainId, vault.underlyingOracleDeployTxHash)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--silo-accent)] underline break-all"
