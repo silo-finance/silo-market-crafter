@@ -822,7 +822,6 @@ interface VaultWithUnderlyingOracleSectionProps {
   vaultFactory: { address: string; version: string } | null
   vaultFactoryMissing?: string | null
   chainlinkV3OracleFactory: { address: string; version: string } | null
-  onValidationChange: (valid: boolean) => void
 }
 
 function VaultWithUnderlyingOracleSection({
@@ -839,8 +838,7 @@ function VaultWithUnderlyingOracleSection({
   networkChainId,
   vaultFactory,
   vaultFactoryMissing,
-  chainlinkV3OracleFactory,
-  onValidationChange
+  chainlinkV3OracleFactory
 }: VaultWithUnderlyingOracleSectionProps) {
   const [vaultInput, setVaultInput] = useState(vault.vaultAddress ?? '')
   const [loadingVault, setLoadingVault] = useState(false)
@@ -850,14 +848,6 @@ function VaultWithUnderlyingOracleSection({
   const [probe, setProbe] = useState<UnderlyingProbeStatus>({ kind: 'idle' })
   const [deploying, setDeploying] = useState(false)
   const [deployError, setDeployError] = useState<string | null>(null)
-
-  /** Valid only when address resolves AND silo probe passes AND risk acknowledged. */
-  useEffect(() => {
-    const addressOk = !!vault.vaultAddress && ethers.isAddress(vault.vaultAddress)
-    const ack = vault.priceManipulationRiskAcknowledged === true
-    const underlyingOk = probe.kind === 'silo' && !!vault.underlyingOracleAddress && ethers.isAddress(vault.underlyingOracleAddress)
-    onValidationChange(addressOk && ack && underlyingOk)
-  }, [vault.vaultAddress, vault.underlyingOracleAddress, vault.priceManipulationRiskAcknowledged, probe.kind, onValidationChange])
 
   const resolveVault = async (address: string) => {
     if (!address || !ethers.isAddress(address) || !window.ethereum) {
@@ -2544,8 +2534,6 @@ export default function Step3OracleConfiguration() {
   })
   const [vaultWithUnderlying0QuoteInput, setVaultWithUnderlying0QuoteInput] = useState('')
   const [vaultWithUnderlying1QuoteInput, setVaultWithUnderlying1QuoteInput] = useState('')
-  const [vaultWithUnderlying0Valid, setVaultWithUnderlying0Valid] = useState(false)
-  const [vaultWithUnderlying1Valid, setVaultWithUnderlying1Valid] = useState(false)
 
   const [ptLinear0, setPTLinear0] = useState<Partial<PTLinearOracleConfig>>({
     maxYieldPercent: 0,
@@ -3201,7 +3189,9 @@ export default function Step3OracleConfiguration() {
         vaultAddress: v0.vaultAddress,
         customQuoteTokenAddress: v0.customQuoteTokenAddress,
         customQuoteTokenMetadata: v0.customQuoteTokenMetadata,
-        priceManipulationRiskAcknowledged: v0.priceManipulationRiskAcknowledged === true,
+        priceManipulationRiskAcknowledged:
+          prev.priceManipulationRiskAcknowledged === true ||
+          v0.priceManipulationRiskAcknowledged === true,
         underlyingOracleAddress: v0.underlyingOracleAddress,
         underlyingOracleDeployTxHash: v0.underlyingOracleDeployTxHash,
         underlyingOracleSourceAggregator: v0.underlyingOracleSourceAggregator
@@ -3217,7 +3207,9 @@ export default function Step3OracleConfiguration() {
         vaultAddress: v1.vaultAddress,
         customQuoteTokenAddress: v1.customQuoteTokenAddress,
         customQuoteTokenMetadata: v1.customQuoteTokenMetadata,
-        priceManipulationRiskAcknowledged: v1.priceManipulationRiskAcknowledged === true,
+        priceManipulationRiskAcknowledged:
+          prev.priceManipulationRiskAcknowledged === true ||
+          v1.priceManipulationRiskAcknowledged === true,
         underlyingOracleAddress: v1.underlyingOracleAddress,
         underlyingOracleDeployTxHash: v1.underlyingOracleDeployTxHash,
         underlyingOracleSourceAggregator: v1.underlyingOracleSourceAggregator
@@ -3995,14 +3987,18 @@ export default function Step3OracleConfiguration() {
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault With Underlying Oracle (Token 0): vault address is required and must be a valid address')
       }
+      if (
+        addr &&
+        ethers.isAddress(addr) &&
+        vaultWithUnderlying0.priceManipulationRiskAcknowledged !== true
+      ) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 0): confirm the price-manipulation risk acknowledgement.'
+        )
+      }
       const underlying = vaultWithUnderlying0.underlyingOracleAddress?.trim() ?? ''
       if (!underlying || !ethers.isAddress(underlying)) {
         errors.push('Vault With Underlying Oracle (Token 0): underlying ISiloOracle address is required (deploy adapter if needed).')
-      }
-      if (!vaultWithUnderlying0Valid) {
-        errors.push(
-          'Vault With Underlying Oracle (Token 0): confirm the price-manipulation risk acknowledgement and verify the underlying ISiloOracle.'
-        )
       }
       const quoteAddr0 = vaultWithUnderlying0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
@@ -4020,14 +4016,18 @@ export default function Step3OracleConfiguration() {
       if (!addr || !ethers.isAddress(addr)) {
         errors.push('Vault With Underlying Oracle (Token 1): vault address is required and must be a valid address')
       }
+      if (
+        addr &&
+        ethers.isAddress(addr) &&
+        vaultWithUnderlying1.priceManipulationRiskAcknowledged !== true
+      ) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 1): confirm the price-manipulation risk acknowledgement.'
+        )
+      }
       const underlying = vaultWithUnderlying1.underlyingOracleAddress?.trim() ?? ''
       if (!underlying || !ethers.isAddress(underlying)) {
         errors.push('Vault With Underlying Oracle (Token 1): underlying ISiloOracle address is required (deploy adapter if needed).')
-      }
-      if (!vaultWithUnderlying1Valid) {
-        errors.push(
-          'Vault With Underlying Oracle (Token 1): confirm the price-manipulation risk acknowledgement and verify the underlying ISiloOracle.'
-        )
       }
       const quoteAddr1 = vaultWithUnderlying1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
@@ -4647,7 +4647,6 @@ export default function Step3OracleConfiguration() {
               vaultFactory={erc4626OracleWithUnderlyingFactory}
               vaultFactoryMissing={vaultWithUnderlyingFactoryMissing}
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
-              onValidationChange={setVaultWithUnderlying0Valid}
             />
           ) : wizardData.oracleType0.type === 'customMethod' ? (
             <CustomMethodOracleSection
@@ -5014,7 +5013,6 @@ export default function Step3OracleConfiguration() {
               vaultFactory={erc4626OracleWithUnderlyingFactory}
               vaultFactoryMissing={vaultWithUnderlyingFactoryMissing}
               chainlinkV3OracleFactory={chainlinkV3OracleFactory}
-              onValidationChange={setVaultWithUnderlying1Valid}
             />
           ) : wizardData.oracleType1.type === 'customMethod' ? (
             <CustomMethodOracleSection
