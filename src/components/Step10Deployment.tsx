@@ -80,11 +80,13 @@ export default function Step10Deployment() {
   const [oracleDeployments, setOracleDeployments] = useState<OracleDeployments>({})
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
+  const [simulating, setSimulating] = useState(false)
   const [error, setError] = useState('')
   const [txErrorDebug, setTxErrorDebug] = useState<{ to: string; data: string } | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
+  const [simulatedSiloConfigAddress, setSimulatedSiloConfigAddress] = useState<string>('')
 
   // Hash of current deploy arguments; used to allow re-deploy when config changes after a previous deploy
   const currentArgsHash = useMemo(() => {
@@ -114,6 +116,10 @@ export default function Step10Deployment() {
       setTxHash(wizardData.lastDeployTxHash)
     }
   }, [wizardData.lastDeployTxHash, txHash])
+
+  useEffect(() => {
+    setSimulatedSiloConfigAddress('')
+  }, [currentArgsHash])
 
   // Fetch SiloDeployer address and SiloCore deployments
   useEffect(() => {
@@ -430,6 +436,94 @@ export default function Step10Deployment() {
     }
   }, [wizardData, siloCoreDeployments, oracleDeployments])
 
+  const validateDeployInputs = (args: DeployArgs): string[] => {
+    const validationErrors: string[] = []
+
+    if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
+      validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+    }
+
+    const needsOracleIrmOwner = wizardData.manageableOracle || true
+    if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
+      validationErrors.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
+    }
+
+    if (args._clonableHookReceiver.implementation === ethers.ZeroAddress) {
+      validationErrors.push('Hook implementation address is missing. Please ensure the hook is properly configured.')
+    }
+
+    if (args._siloInitData.interestRateModel0 === ethers.ZeroAddress) {
+      validationErrors.push('Interest Rate Model 0 address is missing. Please ensure IRM is properly configured.')
+    }
+
+    if (args._siloInitData.interestRateModel1 === ethers.ZeroAddress) {
+      validationErrors.push('Interest Rate Model 1 address is missing. Please ensure IRM is properly configured.')
+    }
+
+    if (!args._irmConfigData0.encoded || args._irmConfigData0.encoded === '0x') {
+      validationErrors.push('IRM Config Data 0 is empty. Please ensure IRM configuration is properly set.')
+    }
+
+    if (!args._irmConfigData1.encoded || args._irmConfigData1.encoded === '0x') {
+      validationErrors.push('IRM Config Data 1 is empty. Please ensure IRM configuration is properly set.')
+    }
+
+    if (!args._clonableHookReceiver.initializationData || args._clonableHookReceiver.initializationData === '0x') {
+      validationErrors.push('Hook initialization data is empty. Please ensure hook owner is properly set.')
+    }
+
+    return validationErrors
+  }
+
+  const handleSimulate = async () => {
+    if (!window.ethereum) {
+      setError('Wallet is not available. Connect your wallet to run simulation.')
+      return
+    }
+
+    if (!deployerAddress) {
+      setError('SiloDeployer address not loaded')
+      return
+    }
+
+    if (!deployArgs) {
+      setError('Deployment arguments not ready')
+      return
+    }
+
+    const validationErrors = validateDeployInputs(deployArgs)
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(' '))
+      return
+    }
+
+    setSimulating(true)
+    setError('')
+    setTxErrorDebug(null)
+    setSimulatedSiloConfigAddress('')
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const deployerContract = new ethers.Contract(deployerAddress, deployerAbi, provider)
+
+      const simulatedSiloConfig = await deployerContract.deploy.staticCall(
+        deployArgs._oracles,
+        deployArgs._irmConfigData0.encoded,
+        deployArgs._irmConfigData1.encoded,
+        deployArgs._clonableHookReceiver,
+        deployArgs._siloInitData
+      )
+
+      const predictedSiloConfigAddress = ethers.getAddress(String(simulatedSiloConfig))
+      setSimulatedSiloConfigAddress(predictedSiloConfigAddress)
+    } catch (err: unknown) {
+      const errorMessage = formatContractError(err, deployerInterface)
+      setError(`Simulation failed: ${errorMessage}`)
+    } finally {
+      setSimulating(false)
+    }
+  }
+
   const handleDeploy = async () => {
     if (!window.ethereum) {
       setError('MetaMask is not installed. Please install MetaMask to continue.')
@@ -447,41 +541,8 @@ export default function Step10Deployment() {
     }
 
     // Validate all required data before attempting deployment
-    const validationErrors: string[] = []
-    
-    if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
-      validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
-    }
+    const validationErrors = validateDeployInputs(deployArgs)
 
-    const needsOracleIrmOwner = wizardData.manageableOracle || true
-    if (needsOracleIrmOwner && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) {
-      validationErrors.push('Oracle & IRM owner is not set. Please complete Step 4 and enter the owner address.')
-    }
-    
-    if (deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress) {
-      validationErrors.push('Hook implementation address is missing. Please ensure the hook is properly configured.')
-    }
-    
-    if (deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress) {
-      validationErrors.push('Interest Rate Model 0 address is missing. Please ensure IRM is properly configured.')
-    }
-    
-    if (deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress) {
-      validationErrors.push('Interest Rate Model 1 address is missing. Please ensure IRM is properly configured.')
-    }
-    
-    if (!deployArgs._irmConfigData0.encoded || deployArgs._irmConfigData0.encoded === '0x') {
-      validationErrors.push('IRM Config Data 0 is empty. Please ensure IRM configuration is properly set.')
-    }
-    
-    if (!deployArgs._irmConfigData1.encoded || deployArgs._irmConfigData1.encoded === '0x') {
-      validationErrors.push('IRM Config Data 1 is empty. Please ensure IRM configuration is properly set.')
-    }
-    
-    if (!deployArgs._clonableHookReceiver.initializationData || deployArgs._clonableHookReceiver.initializationData === '0x') {
-      validationErrors.push('Hook initialization data is empty. Please ensure hook owner is properly set.')
-    }
-    
     if (validationErrors.length > 0) {
       setError(validationErrors.join(' '))
       return
@@ -712,43 +773,94 @@ export default function Step10Deployment() {
           JSON Config
         </Button>
         {!configUnchangedAfterDeploy && (
-          <Button
-            onClick={handleDeploy}
-            disabled={
-              deploying ||
-              !deployerAddress ||
-              !deployArgs ||
-              !wizardData.hookOwnerAddress ||
-              !ethers.isAddress(wizardData.hookOwnerAddress) ||
-              ((wizardData.manageableOracle || true) && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
-              (deployArgs && (
-                deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
-                deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
-                deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
-              ))
-            }
-            variant="primary"
-            size="lg"
-          >
-            {deploying ? (
-              <>
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Deploying...</span>
-              </>
-            ) : (
-              <>
-                <span>Execute Transaction</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleSimulate}
+              disabled={
+                simulating ||
+                deploying ||
+                !deployerAddress ||
+                !deployArgs ||
+                !wizardData.hookOwnerAddress ||
+                !ethers.isAddress(wizardData.hookOwnerAddress) ||
+                ((wizardData.manageableOracle || true) && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
+                (deployArgs && (
+                  deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
+                  deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
+                  deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
+                ))
+              }
+              variant="secondary"
+              size="lg"
+              className="border-[color-mix(in_srgb,var(--silo-success)_40%,var(--silo-border))] bg-[color-mix(in_srgb,var(--silo-success)_16%,var(--silo-surface))] hover:bg-[color-mix(in_srgb,var(--silo-success)_24%,var(--silo-surface))] text-[var(--silo-text)]"
+            >
+              {simulating ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Simulating...</span>
+                </>
+              ) : (
+                <>
+                  <span>Simulate</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m0 0v8m0-8L8 15" />
+                  </svg>
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleDeploy}
+              disabled={
+                deploying ||
+                simulating ||
+                !deployerAddress ||
+                !deployArgs ||
+                !wizardData.hookOwnerAddress ||
+                !ethers.isAddress(wizardData.hookOwnerAddress) ||
+                ((wizardData.manageableOracle || true) && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||
+                (deployArgs && (
+                  deployArgs._clonableHookReceiver.implementation === ethers.ZeroAddress ||
+                  deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress ||
+                  deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress
+                ))
+              }
+              variant="primary"
+              size="lg"
+            >
+              {deploying ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Deploying...</span>
+                </>
+              ) : (
+                <>
+                  <span>Execute</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
+
+      {simulatedSiloConfigAddress && (
+        <div className="silo-callout-success mb-6">
+          <div className="silo-text-main text-sm font-semibold mb-2">
+            ✓ Simulation successful.
+          </div>
+          <div className="text-sm silo-text-soft">
+            Predicted Silo contract address: <span className="font-mono break-all">{simulatedSiloConfigAddress}</span>
+          </div>
+        </div>
+      )}
 
       {/* Warnings and Errors */}
       {warnings.length > 0 && (
