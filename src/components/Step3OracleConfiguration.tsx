@@ -92,11 +92,50 @@ const aggregatorV3MulticallAbi = [
 ] as const
 
 /**
+ * ISiloOracle quote amounts in Silo oracles are normalized to 18 decimals (quote token precision for display).
+ */
+const SILO_ORACLE_QUOTE_DISPLAY_DECIMALS = 18
+
+/**
+ * Normalize `quote()` return value from multicall / ethers decode for display and formatUnits.
+ */
+function siloOracleQuoteRawToString(amount: unknown): string {
+  if (amount == null) return ''
+  if (typeof amount === 'bigint') return amount.toString()
+  if (typeof amount === 'number' && Number.isFinite(amount))
+    return BigInt(Math.floor(amount)).toString()
+  if (typeof amount === 'string' && amount !== '') {
+    try {
+      return ethers.getBigInt(amount).toString()
+    } catch {
+      return amount
+    }
+  }
+  try {
+    return ethers.getBigInt(amount as ethers.BigNumberish).toString()
+  } catch {
+    /* decode sometimes nests single uint256 */
+    if (typeof amount === 'object' && amount !== null && 0 in amount) {
+      return siloOracleQuoteRawToString((amount as { 0: unknown })[0])
+    }
+  }
+  return ''
+}
+
+/**
  * Minimal ISiloOracle multicall ABI for probing whether an arbitrary contract
- * implements the Silo oracle interface. Calls quoteToken() and quote(amount,baseToken)
- * in one multicall.
+ * implements the Silo oracle interface. Matches on-chain call order: Silo invokes
+ * `beforeQuote(base)` then `quote` / reads; Multicall3 runs sub-calls in one
+ * execution so that hook runs before `quote` when the oracle relies on it.
  */
 const iSiloOracleMulticallAbi = [
+  {
+    type: 'function' as const,
+    name: 'beforeQuote',
+    inputs: [{ type: 'address', name: '_baseToken' }],
+    outputs: [],
+    stateMutability: 'nonpayable' as const
+  },
   {
     type: 'function' as const,
     name: 'quoteToken',
@@ -778,8 +817,8 @@ type UnderlyingProbeStatus =
       kind: 'silo'
       quoteToken: string
       quoteTokenSymbol?: string
-      quoteValue: string
-      sampleAmount: string
+      /** Raw uint256 from quote(1 unit of vault asset in vault-asset decimals, vaultAsset) */
+      quoteValueRaw: string
     }
   | {
       kind: 'aggregator'
@@ -976,9 +1015,16 @@ function VaultWithUnderlyingOracleSection({
     const oracleAddr = ethers.getAddress(rawAddress)
     const provider = new ethers.BrowserProvider(window.ethereum)
     try {
-      const [quoteToken, quoteValue] = await executeReadMulticall<unknown>(
+      const probeResults = await executeReadMulticall<unknown>(
         provider,
         [
+          buildReadMulticallCall<unknown>({
+            target: oracleAddr as `0x${string}`,
+            abi: iSiloOracleMulticallAbi,
+            functionName: 'beforeQuote',
+            args: [baseToken as `0x${string}`],
+            allowFailure: true
+          }),
           buildReadMulticallCall<unknown>({
             target: oracleAddr as `0x${string}`,
             abi: iSiloOracleMulticallAbi,
@@ -993,7 +1039,10 @@ function VaultWithUnderlyingOracleSection({
         ],
         { debugLabel: 'iSiloOracleProbe' }
       )
+      const quoteToken = probeResults[1]
+      const quoteValue = probeResults[2]
       const qt = ethers.getAddress(String(quoteToken))
+      const quoteValueRaw = siloOracleQuoteRawToString(quoteValue)
       let qtSymbol: string | undefined
       try {
         const erc20 = new ethers.Contract(qt, ierc20Abi, provider)
@@ -1005,8 +1054,7 @@ function VaultWithUnderlyingOracleSection({
         kind: 'silo',
         quoteToken: qt,
         quoteTokenSymbol: qtSymbol,
-        quoteValue: String(quoteValue),
-        sampleAmount: sampleAmount.toString()
+        quoteValueRaw
       })
       setVault(prev => ({
         ...prev,
@@ -1390,7 +1438,19 @@ function VaultWithUnderlyingOracleSection({
           <p className="text-xs text-gray-400">Probing underlying oracle…</p>
         )}
 
-        {probe.kind === 'silo' && (
+        {probe.kind === 'silo' && (() => {
+          let quoteWithDecimals = '—'
+          try {
+            if (probe.quoteValueRaw !== '') {
+              quoteWithDecimals = ethers.formatUnits(
+                probe.quoteValueRaw,
+                SILO_ORACLE_QUOTE_DISPLAY_DECIMALS
+              )
+            }
+          } catch {
+            quoteWithDecimals = '—'
+          }
+          return (
           <div className="mt-2 p-3 border border-gray-700 rounded-lg text-xs space-y-1">
             <p className="status-muted-success">✓ ISiloOracle interface confirmed.</p>
             <div className="flex items-center gap-2 flex-wrap">
@@ -1406,16 +1466,20 @@ function VaultWithUnderlyingOracleSection({
               )}
             </div>
             <p>
-              <span className="text-gray-500">Sample input:</span>{' '}
-              <span className="text-gray-300 font-mono">{probe.sampleAmount}</span>{' '}
-              <span className="text-gray-500">of vault asset</span>
+              <span className="text-gray-500">Decimals:</span>{' '}
+              <span className="text-gray-300">{SILO_ORACLE_QUOTE_DISPLAY_DECIMALS}</span>
             </p>
-            <p>
-              <span className="text-gray-500">Quoted value (raw):</span>{' '}
-              <span className="text-gray-300 font-mono">{probe.quoteValue}</span>
+            <p className="text-gray-300">
+              <span className="text-gray-500">Raw price:</span>{' '}
+              <span className="font-mono">{probe.quoteValueRaw || '—'}</span>{' '}
+              <span className="text-gray-500">
+                (with decimals:{' '}
+                <span className="font-mono text-gray-300">{quoteWithDecimals}</span>)
+              </span>
             </p>
           </div>
-        )}
+          )
+        })()}
 
         {probe.kind === 'aggregator' && (() => {
           const baseDec = Number(vault.vaultAssetDecimals)
