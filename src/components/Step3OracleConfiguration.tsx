@@ -840,6 +840,8 @@ interface VaultWithUnderlyingOracleSectionProps {
     vaultAssetDecimals?: number
     assetMatchesBase?: boolean
     priceManipulationRiskAcknowledged?: boolean
+    /** After ISiloOracle probe: true if quoteToken() matches configured vault oracle quote. */
+    underlyingOracleQuoteMatchesConfigured?: boolean
   }
   setVault: React.Dispatch<
     React.SetStateAction<
@@ -850,6 +852,7 @@ interface VaultWithUnderlyingOracleSectionProps {
         vaultAssetDecimals?: number
         assetMatchesBase?: boolean
         priceManipulationRiskAcknowledged?: boolean
+        underlyingOracleQuoteMatchesConfigured?: boolean
       }
     >
   >
@@ -913,7 +916,8 @@ function VaultWithUnderlyingOracleSection({
         vaultAssetSymbol: undefined,
         vaultAssetDecimals: undefined,
         assetMatchesBase: undefined,
-        priceManipulationRiskAcknowledged: false
+        priceManipulationRiskAcknowledged: false,
+        underlyingOracleQuoteMatchesConfigured: undefined
       }))
       setLocalError(null)
       return
@@ -948,7 +952,12 @@ function VaultWithUnderlyingOracleSection({
           vaultAddress: resolvedVault,
           vaultSymbol: String(symbol ?? ''),
           vaultAssetAddress: assetAddr,
-          ...(addrChanged ? { priceManipulationRiskAcknowledged: false } : {})
+          ...(addrChanged
+            ? {
+                priceManipulationRiskAcknowledged: false,
+                underlyingOracleQuoteMatchesConfigured: undefined
+              }
+            : {})
         }
       })
       const erc20 = new ethers.Contract(assetAddr, ierc20Abi, provider)
@@ -980,7 +989,8 @@ function VaultWithUnderlyingOracleSection({
         vaultAssetSymbol: undefined,
         vaultAssetDecimals: undefined,
         assetMatchesBase: undefined,
-        priceManipulationRiskAcknowledged: false
+        priceManipulationRiskAcknowledged: false,
+        underlyingOracleQuoteMatchesConfigured: undefined
       }))
       setLocalError('Failed to load vault metadata. Check address and network.')
     } finally {
@@ -1009,6 +1019,7 @@ function VaultWithUnderlyingOracleSection({
    */
   const probeUnderlyingOracle = async (rawAddress: string) => {
     setDeployError(null)
+    setVault(prev => ({ ...prev, underlyingOracleQuoteMatchesConfigured: undefined }))
     if (!rawAddress || !ethers.isAddress(rawAddress) || !window.ethereum) {
       setProbe({ kind: 'idle' })
       setVault(prev => ({ ...prev, underlyingOracleAddress: '' }))
@@ -1065,6 +1076,12 @@ function VaultWithUnderlyingOracleSection({
       } catch {
         qtSymbol = undefined
       }
+      const expectedQt = resolvedQuoteToken()
+      let underlyingOracleQuoteMatchesConfigured: boolean | undefined
+      if (expectedQt != null && expectedQt.address && ethers.isAddress(expectedQt.address)) {
+        underlyingOracleQuoteMatchesConfigured =
+          qt.toLowerCase() === ethers.getAddress(expectedQt.address).toLowerCase()
+      }
       setProbe({
         kind: 'silo',
         quoteToken: qt,
@@ -1074,7 +1091,8 @@ function VaultWithUnderlyingOracleSection({
       setVault(prev => ({
         ...prev,
         underlyingOracleAddress: oracleAddr,
-        underlyingOracleSourceAggregator: prev.underlyingOracleSourceAggregator
+        underlyingOracleSourceAggregator: prev.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured
       }))
       return
     } catch {
@@ -1115,7 +1133,8 @@ function VaultWithUnderlyingOracleSection({
         ...prev,
         underlyingOracleAddress: '',
         underlyingOracleSourceAggregator: ethers.getAddress(oracleAddr),
-        underlyingOracleDeployTxHash: undefined
+        underlyingOracleDeployTxHash: undefined,
+        underlyingOracleQuoteMatchesConfigured: undefined
       }))
     } catch (err) {
       console.warn('Underlying oracle probe failed both ISiloOracle and Aggregator:', err)
@@ -1366,7 +1385,8 @@ function VaultWithUnderlyingOracleSection({
               setVault(prev => ({
                 ...prev,
                 useOtherTokenAsQuote: true,
-                customQuoteTokenAddress: addr
+                customQuoteTokenAddress: addr,
+                underlyingOracleQuoteMatchesConfigured: undefined
               }))
             }}
           >
@@ -1376,7 +1396,11 @@ function VaultWithUnderlyingOracleSection({
             <PredefinedOptionButton
               onClick={() => {
                 setQuoteInput('USDC')
-                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+                setVault(prev => ({
+                  ...prev,
+                  useOtherTokenAsQuote: false,
+                  underlyingOracleQuoteMatchesConfigured: undefined
+                }))
               }}
             >
               <span>USDC</span>
@@ -1387,7 +1411,11 @@ function VaultWithUnderlyingOracleSection({
               key={virtualToken.key}
               onClick={() => {
                 setQuoteInput(virtualToken.key)
-                setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+                setVault(prev => ({
+                  ...prev,
+                  useOtherTokenAsQuote: false,
+                  underlyingOracleQuoteMatchesConfigured: undefined
+                }))
               }}
             >
               <span>{virtualToken.label}</span>
@@ -1398,7 +1426,11 @@ function VaultWithUnderlyingOracleSection({
           value={quoteInput}
           onChange={value => {
             setQuoteInput(value)
-            setVault(prev => ({ ...prev, useOtherTokenAsQuote: false }))
+            setVault(prev => ({
+              ...prev,
+              useOtherTokenAsQuote: false,
+              underlyingOracleQuoteMatchesConfigured: undefined
+            }))
           }}
           onResolve={(address, metadata) => {
             if (metadata && address) {
@@ -1409,13 +1441,15 @@ function VaultWithUnderlyingOracleSection({
                 customQuoteTokenMetadata: {
                   symbol: metadata.symbol,
                   decimals: metadata.decimals
-                }
+                },
+                underlyingOracleQuoteMatchesConfigured: undefined
               }))
             } else {
               setVault(prev => ({
                 ...prev,
                 customQuoteTokenAddress: '',
-                customQuoteTokenMetadata: undefined
+                customQuoteTokenMetadata: undefined,
+                underlyingOracleQuoteMatchesConfigured: undefined
               }))
             }
           }}
@@ -1437,7 +1471,11 @@ function VaultWithUnderlyingOracleSection({
         <input
           type="text"
           value={underlyingInput}
-          onChange={e => setUnderlyingInput(extractHexAddressLike(e.target.value))}
+          onChange={e => {
+            const v = extractHexAddressLike(e.target.value)
+            setUnderlyingInput(v)
+            setVault(prev => ({ ...prev, underlyingOracleQuoteMatchesConfigured: undefined }))
+          }}
           onBlur={() => probeUnderlyingOracle(underlyingInput.trim())}
           placeholder="0x…"
           className={wizardMonoInputClass}
@@ -1470,6 +1508,7 @@ function VaultWithUnderlyingOracleSection({
           } catch {
             quoteWithDecimals = '—'
           }
+          const expectedQuote = resolvedQuoteToken()
           return (
           <div className="mt-2 p-3 border border-gray-700 rounded-lg text-xs space-y-1">
             <p className="status-muted-success">✓ ISiloOracle interface confirmed.</p>
@@ -1485,6 +1524,23 @@ function VaultWithUnderlyingOracleSection({
                 <span className="text-gray-300">({probe.quoteTokenSymbol})</span>
               )}
             </div>
+            {expectedQuote == null ? (
+              <p className="text-xs text-amber-400/95 mt-2 leading-relaxed">
+                Set and resolve a quote token above to verify it matches this oracle&apos;s{' '}
+                <span className="font-mono">quoteToken()</span>.
+              </p>
+            ) : vault.underlyingOracleQuoteMatchesConfigured === true ? (
+              <p className="text-xs status-muted-success mt-2 leading-relaxed">
+                ✓ Underlying <span className="font-mono">quoteToken()</span> matches the quote token configured for this
+                vault oracle.
+              </p>
+            ) : vault.underlyingOracleQuoteMatchesConfigured === false ? (
+              <p className="text-xs text-red-400 mt-2 leading-relaxed">
+                <span className="font-semibold">Quote token mismatch.</span> This ISiloOracle uses a different{' '}
+                <span className="font-mono">quoteToken()</span> than the quote selected for this vault oracle (see Quote
+                token above). Choose a compatible oracle or change the quote token.
+              </p>
+            ) : null}
             <p>
               <span className="text-gray-500">Decimals:</span>{' '}
               <span className="text-gray-300">{SILO_ORACLE_QUOTE_DISPLAY_DECIMALS}</span>
@@ -2595,6 +2651,7 @@ export default function Step3OracleConfiguration() {
       vaultAssetSymbol?: string
       vaultAssetDecimals?: number
       assetMatchesBase?: boolean
+      underlyingOracleQuoteMatchesConfigured?: boolean
     }
   >({
     baseToken: 'token0',
@@ -2609,6 +2666,7 @@ export default function Step3OracleConfiguration() {
       vaultAssetSymbol?: string
       vaultAssetDecimals?: number
       assetMatchesBase?: boolean
+      underlyingOracleQuoteMatchesConfigured?: boolean
     }
   >({
     baseToken: 'token1',
@@ -3278,7 +3336,8 @@ export default function Step3OracleConfiguration() {
           v0.priceManipulationRiskAcknowledged === true,
         underlyingOracleAddress: v0.underlyingOracleAddress,
         underlyingOracleDeployTxHash: v0.underlyingOracleDeployTxHash,
-        underlyingOracleSourceAggregator: v0.underlyingOracleSourceAggregator
+        underlyingOracleSourceAggregator: v0.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured: undefined
       }))
       setVaultWithUnderlying0QuoteInput(v0.customQuoteTokenAddress ?? '')
     }
@@ -3296,7 +3355,8 @@ export default function Step3OracleConfiguration() {
           v1.priceManipulationRiskAcknowledged === true,
         underlyingOracleAddress: v1.underlyingOracleAddress,
         underlyingOracleDeployTxHash: v1.underlyingOracleDeployTxHash,
-        underlyingOracleSourceAggregator: v1.underlyingOracleSourceAggregator
+        underlyingOracleSourceAggregator: v1.underlyingOracleSourceAggregator,
+        underlyingOracleQuoteMatchesConfigured: undefined
       }))
       setVaultWithUnderlying1QuoteInput(v1.customQuoteTokenAddress ?? '')
     }
@@ -4084,6 +4144,11 @@ export default function Step3OracleConfiguration() {
       if (!underlying || !ethers.isAddress(underlying)) {
         errors.push('Vault With Underlying Oracle (Token 0): underlying ISiloOracle address is required (deploy adapter if needed).')
       }
+      if (vaultWithUnderlying0.underlyingOracleQuoteMatchesConfigured === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 0): underlying ISiloOracle quoteToken() does not match the quote token configured for this vault oracle. Use a compatible oracle or change the quote token.'
+        )
+      }
       const quoteAddr0 = vaultWithUnderlying0.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty0 = !quoteAddr0 || !ethers.isAddress(quoteAddr0)
       if (quoteEmpty0 && vaultWithUnderlying0.useOtherTokenAsQuote === false) {
@@ -4112,6 +4177,11 @@ export default function Step3OracleConfiguration() {
       const underlying = vaultWithUnderlying1.underlyingOracleAddress?.trim() ?? ''
       if (!underlying || !ethers.isAddress(underlying)) {
         errors.push('Vault With Underlying Oracle (Token 1): underlying ISiloOracle address is required (deploy adapter if needed).')
+      }
+      if (vaultWithUnderlying1.underlyingOracleQuoteMatchesConfigured === false) {
+        errors.push(
+          'Vault With Underlying Oracle (Token 1): underlying ISiloOracle quoteToken() does not match the quote token configured for this vault oracle. Use a compatible oracle or change the quote token.'
+        )
       }
       const quoteAddr1 = vaultWithUnderlying1.customQuoteTokenAddress?.trim() ?? ''
       const quoteEmpty1 = !quoteAddr1 || !ethers.isAddress(quoteAddr1)
@@ -4218,7 +4288,7 @@ export default function Step3OracleConfiguration() {
       }
     }
 
-    // Effective quote token address: none/scaler = token itself; chainlink/vault/ptLinear = stored quote address only.
+    // Effective quote token address: none/scaler = token itself; chainlink/vault/vaultWithUnderlying/ptLinear = stored quote address only.
     // "Other token" is just a predefined option that fills the address field – we only read that field.
     const getEffectiveQuoteAddress = (side: '0' | '1'): string => {
       const type = side === '0' ? wizardData.oracleType0?.type : wizardData.oracleType1?.type
@@ -4237,6 +4307,10 @@ export default function Step3OracleConfiguration() {
       }
       if (type === 'vault') {
         const v = side === '0' ? vault0 : vault1
+        return (v.customQuoteTokenAddress?.trim() ?? '')
+      }
+      if (type === 'vaultWithUnderlying') {
+        const v = side === '0' ? vaultWithUnderlying0 : vaultWithUnderlying1
         return (v.customQuoteTokenAddress?.trim() ?? '')
       }
       if (type === 'customMethod') {
