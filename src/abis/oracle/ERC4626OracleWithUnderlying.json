@@ -1,0 +1,299 @@
+[
+    {
+        "type": "constructor",
+        "inputs": [
+            {
+                "name": "_vault",
+                "type": "address",
+                "internalType": "contract IERC4626"
+            },
+            {
+                "name": "_oracle",
+                "type": "address",
+                "internalType": "contract ISiloOracle"
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "VERSION",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "version",
+                "type": "string",
+                "internalType": "string"
+            }
+        ],
+        "stateMutability": "pure"
+    },
+    {
+        "type": "function",
+        "name": "baseToken",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "token",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "beforeQuote",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "pure"
+    },
+    {
+        "type": "function",
+        "name": "decimals",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint8",
+                "internalType": "uint8"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "description",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "string",
+                "internalType": "string"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getConfig",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "tuple",
+                "internalType": "struct IERC4626OracleWithUnderlying.Config",
+                "components": [
+                    {
+                        "name": "baseToken",
+                        "type": "address",
+                        "internalType": "contract IERC4626"
+                    },
+                    {
+                        "name": "quoteToken",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "vaultAsset",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "oracle",
+                        "type": "address",
+                        "internalType": "contract ISiloOracle"
+                    }
+                ]
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getRoundData",
+        "inputs": [
+            {
+                "name": "",
+                "type": "uint80",
+                "internalType": "uint80"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint80",
+                "internalType": "uint80"
+            },
+            {
+                "name": "",
+                "type": "int256",
+                "internalType": "int256"
+            },
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "",
+                "type": "uint80",
+                "internalType": "uint80"
+            }
+        ],
+        "stateMutability": "pure"
+    },
+    {
+        "type": "function",
+        "name": "latestRoundData",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "roundId",
+                "type": "uint80",
+                "internalType": "uint80"
+            },
+            {
+                "name": "answer",
+                "type": "int256",
+                "internalType": "int256"
+            },
+            {
+                "name": "startedAt",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "updatedAt",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "answeredInRound",
+                "type": "uint80",
+                "internalType": "uint80"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "quote",
+        "inputs": [
+            {
+                "name": "_baseAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "_baseToken",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "quoteAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "quoteToken",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "version",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "pure"
+    },
+    {
+        "type": "event",
+        "name": "ERC4626OracleWithUnderlyingDeployed",
+        "inputs": [
+            {
+                "name": "configAddress",
+                "type": "address",
+                "indexed": false,
+                "internalType": "address"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "error",
+        "name": "AssetNotSupported",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "AssetZero",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "BaseAmountOverflow",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "QuoteTokenZero",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "SafeCastOverflowedUintToInt",
+        "inputs": [
+            {
+                "name": "value",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ]
+    },
+    {
+        "type": "error",
+        "name": "TokenIsNotAContract",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "ZeroAddress",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "ZeroQuote",
+        "inputs": []
+    }
+]

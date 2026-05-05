@@ -1,36 +1,26 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig, CustomMethodOracleConfig, SupraSValueOracleConfig } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig, VaultWithUnderlyingOracleConfig, CustomMethodOracleConfig, SupraSValueOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
 import ptLinearOracleFactoryAbi from '@/abis/oracle/IPTLinearOracleFactory.json'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import erc4626OracleFactoryAbi from '@/abis/oracle/ERC4626OracleHardcodeQuoteFactory.json'
+import erc4626OracleWithUnderlyingFactoryAbi from '@/abis/oracle/ERC4626OracleWithUnderlyingFactory.json'
 import customMethodOracleFactoryAbi from '@/abis/oracle/CustomMethodOracleFactory.json'
 import supraSValueOracleFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
+import { getAbi } from '@/utils/abiArtifact'
 
-/** Foundry artifact: ABI under "abi" key, never modify – use as-is for contract calls */
-type FoundryArtifact = { abi: ethers.InterfaceAbi }
-
-const deployerAbi = (deployerArtifact as FoundryArtifact).abi
-const scalerFactoryAbi = (oracleScalerFactoryAbi as FoundryArtifact).abi
-const scalerFactoryInterface = new ethers.Interface(scalerFactoryAbi)
-const chainlinkV3FactoryAbiTyped = (chainlinkV3FactoryAbi as FoundryArtifact).abi
-const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryAbiTyped)
-const ptLinearFactoryAbi = (ptLinearOracleFactoryAbi as FoundryArtifact).abi
-const ptLinearFactoryInterface = new ethers.Interface(ptLinearFactoryAbi)
-const manageableFactoryAbi = (manageableOracleFactoryAbi as FoundryArtifact).abi
-const manageableFactoryInterface = new ethers.Interface(manageableFactoryAbi)
-const erc4626FactoryInterface = new ethers.Interface(
-  (erc4626OracleFactoryAbi as unknown as ethers.InterfaceAbi)
-)
-const customMethodFactoryInterface = new ethers.Interface(
-  (customMethodOracleFactoryAbi as unknown as ethers.InterfaceAbi)
-)
-const supraSValueFactoryInterface = new ethers.Interface(
-  (supraSValueOracleFactoryAbi as unknown as ethers.InterfaceAbi)
-)
+const deployerAbi = getAbi(deployerArtifact)
+const scalerFactoryInterface = new ethers.Interface(getAbi(oracleScalerFactoryAbi))
+const chainlinkV3FactoryInterface = new ethers.Interface(getAbi(chainlinkV3FactoryAbi))
+const ptLinearFactoryInterface = new ethers.Interface(getAbi(ptLinearOracleFactoryAbi))
+const manageableFactoryInterface = new ethers.Interface(getAbi(manageableOracleFactoryAbi))
+const erc4626FactoryInterface = new ethers.Interface(getAbi(erc4626OracleFactoryAbi))
+const erc4626WithUnderlyingFactoryInterface = new ethers.Interface(getAbi(erc4626OracleWithUnderlyingFactoryAbi))
+const customMethodFactoryInterface = new ethers.Interface(getAbi(customMethodOracleFactoryAbi))
+const supraSValueFactoryInterface = new ethers.Interface(getAbi(supraSValueOracleFactoryAbi))
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -104,6 +94,7 @@ export interface OracleDeployments {
   ptLinearOracleFactory?: string
   manageableOracleFactory?: string
   erc4626OracleFactory?: string
+  erc4626OracleWithUnderlyingFactory?: string
   customMethodOracleFactory?: string
   supraSValueOracleFactory?: string
 }
@@ -159,6 +150,7 @@ export function prepareDeployArgs(
     chainlink: ChainlinkOracleConfig | null | undefined,
     ptLinear: PTLinearOracleConfig | null | undefined,
     vault: VaultOracleConfig | null | undefined,
+    vaultWithUnderlying: VaultWithUnderlyingOracleConfig | null | undefined,
     customMethod: CustomMethodOracleConfig | null | undefined,
     supraSValue: SupraSValueOracleConfig | null | undefined
   ) => {
@@ -235,6 +227,33 @@ export function prepareDeployArgs(
       return {
         deployed: ethers.ZeroAddress,
         factory: oracleDeployments.erc4626OracleFactory,
+        txInput
+      }
+    }
+    if (vaultWithUnderlying && oracleDeployments?.erc4626OracleWithUnderlyingFactory) {
+      if (vaultWithUnderlying.priceManipulationRiskAcknowledged !== true) {
+        throw new Error(
+          'Vault With Underlying oracle: confirm the price-manipulation risk acknowledgement in Oracle Configuration (Step 3) before deploying.'
+        )
+      }
+      const vaultAddress = vaultWithUnderlying.vaultAddress?.trim()
+      if (!vaultAddress || !ethers.isAddress(vaultAddress)) {
+        throw new Error('Vault With Underlying oracle requires a valid ERC4626 vault address.')
+      }
+      const underlyingAddress = vaultWithUnderlying.underlyingOracleAddress?.trim()
+      if (!underlyingAddress || !ethers.isAddress(underlyingAddress)) {
+        throw new Error(
+          'Vault With Underlying oracle requires a valid underlying ISiloOracle address. ' +
+          'Set or deploy it in Oracle Configuration (Step 3).'
+        )
+      }
+      const txInput = erc4626WithUnderlyingFactoryInterface.encodeFunctionData(
+        'create',
+        [ethers.getAddress(vaultAddress), ethers.getAddress(underlyingAddress), ethers.ZeroHash]
+      )
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.erc4626OracleWithUnderlyingFactory,
         txInput
       }
     }
@@ -406,6 +425,7 @@ export function prepareDeployArgs(
     wizardData.oracleConfiguration?.token0?.chainlinkOracle,
     wizardData.oracleConfiguration?.token0?.ptLinearOracle,
     wizardData.oracleConfiguration?.token0?.vaultOracle,
+    wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle,
     wizardData.oracleConfiguration?.token0?.customMethodOracle,
     wizardData.oracleConfiguration?.token0?.supraSValueOracle
   )
@@ -414,6 +434,7 @@ export function prepareDeployArgs(
     wizardData.oracleConfiguration?.token1?.chainlinkOracle,
     wizardData.oracleConfiguration?.token1?.ptLinearOracle,
     wizardData.oracleConfiguration?.token1?.vaultOracle,
+    wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle,
     wizardData.oracleConfiguration?.token1?.customMethodOracle,
     wizardData.oracleConfiguration?.token1?.supraSValueOracle
   )

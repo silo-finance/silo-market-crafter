@@ -8,7 +8,9 @@ import {
   formatAddress,
   formatQuotePriceAs18Decimals,
   isErc4626OracleHardcodeQuoteByVersion,
-  type Erc4626VaultQuoteCheck
+  isErc4626OracleWithUnderlyingByVersion,
+  type Erc4626VaultQuoteCheck,
+  type OracleInfo
 } from '@/utils/fetchMarketConfig'
 import { formatWizardBigIntToE18, formatBigIntToE18 } from '@/utils/formatting'
 import CopyButton from '@/components/CopyButton'
@@ -85,6 +87,45 @@ function renderErc4626OracleBulletBlock(check: Erc4626VaultQuoteCheck, explorerU
       </li>
       <li>{renderErc4626VaultQuoteCheckContent(check)}</li>
     </ul>
+  )
+}
+
+/**
+ * Render the inner ISiloOracle of an `ERC4626OracleWithUnderlying` outer oracle
+ * as nested bullets: address + version, then the type-specific detail block
+ * (Chainlink aggregators, Custom Method details, Supra pair ID, ERC4626 vault
+ * quote check) reusing the same renderers used for the top-level oracle.
+ */
+function renderVaultUnderlyingOracleBlock(
+  inner: OracleInfo,
+  explorerUrl: string
+): React.ReactNode {
+  const innerConfig = inner.config as Record<string, unknown> | undefined
+  return (
+    <>
+      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <span>Inner ISiloOracle:</span>
+        <a
+          href={`${explorerUrl}/address/${inner.address}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mct-link font-mono text-sm"
+        >
+          {formatAddress(inner.address)}
+        </a>
+        <CopyButton
+          value={inner.address}
+          title="Copy address"
+          iconClassName="w-3.5 h-3.5 inline align-middle"
+        />
+        <VersionStatus version={inner.version} />
+      </span>
+      {isErc4626OracleHardcodeQuoteByVersion(inner.version) && inner.erc4626VaultQuoteCheck &&
+        renderErc4626OracleBulletBlock(inner.erc4626VaultQuoteCheck, explorerUrl)}
+      {renderChainlinkAggregatorsForConfig(innerConfig, explorerUrl)}
+      {renderCustomMethodOracleDetailsForConfig(innerConfig, explorerUrl, {})}
+      {renderSupraOracleDetailsForConfig(innerConfig)}
+    </>
   )
 }
 
@@ -1215,6 +1256,33 @@ function SiloSection({
               text: renderErc4626OracleBulletBlock(erc4626SolvencyChk, explorerUrl)
             })
           }
+          // ERC4626OracleWithUnderlying: render inner oracle (address + version + type-specific details).
+          if (
+            siloConfig.solvencyOracle.vaultUnderlyingOracle &&
+            (isErc4626OracleWithUnderlyingByVersion(siloConfig.solvencyOracle.version) ||
+              (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
+          ) {
+            base.push({
+              key: `oracle.erc4626WithUnderlying.inner.${siloKey}.solvency`,
+              text: renderVaultUnderlyingOracleBlock(
+                siloConfig.solvencyOracle.vaultUnderlyingOracle,
+                explorerUrl
+              )
+            })
+          }
+          if (
+            siloConfig.solvencyOracle.erc4626VaultQuoteCheck &&
+            (isErc4626OracleWithUnderlyingByVersion(siloConfig.solvencyOracle.version) ||
+              (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
+          ) {
+            base.push({
+              key: `oracle.erc4626WithUnderlying.vaultQuote.${siloKey}.solvency`,
+              text: renderErc4626OracleBulletBlock(
+                siloConfig.solvencyOracle.erc4626VaultQuoteCheck,
+                explorerUrl
+              )
+            })
+          }
           const solvencyVersion = siloConfig.solvencyOracle.version
           const timelockSecondsSolvency =
             siloConfig.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
@@ -1404,6 +1472,33 @@ function SiloSection({
               base.push({
                 key: `oracle.erc4626.vaultQuote.${siloKey}.maxLtv`,
                 text: renderErc4626OracleBulletBlock(erc4626MaxLtvChk, explorerUrl)
+              })
+            }
+            // ERC4626OracleWithUnderlying: render inner oracle for max LTV oracle.
+            if (
+              siloConfig.maxLtvOracle.vaultUnderlyingOracle &&
+              (isErc4626OracleWithUnderlyingByVersion(siloConfig.maxLtvOracle.version) ||
+                (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
+            ) {
+              base.push({
+                key: `oracle.erc4626WithUnderlying.inner.${siloKey}.maxLtv`,
+                text: renderVaultUnderlyingOracleBlock(
+                  siloConfig.maxLtvOracle.vaultUnderlyingOracle,
+                  explorerUrl
+                )
+              })
+            }
+            if (
+              siloConfig.maxLtvOracle.erc4626VaultQuoteCheck &&
+              (isErc4626OracleWithUnderlyingByVersion(siloConfig.maxLtvOracle.version) ||
+                (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
+            ) {
+              base.push({
+                key: `oracle.erc4626WithUnderlying.vaultQuote.${siloKey}.maxLtv`,
+                text: renderErc4626OracleBulletBlock(
+                  siloConfig.maxLtvOracle.erc4626VaultQuoteCheck,
+                  explorerUrl
+                )
               })
             }
             const maxLtvVersion = siloConfig.maxLtvOracle.version

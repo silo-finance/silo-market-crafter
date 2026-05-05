@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { getChainName } from '@/utils/networks'
 
-export type OracleFactoryType = 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'customMethod' | 'supraSValue'
+export type OracleFactoryType = 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
 
 interface FactoryDescriptor {
   contractName: string
@@ -24,6 +24,10 @@ const FACTORY_DESCRIPTORS: Record<OracleFactoryType, FactoryDescriptor> = {
   vault: {
     contractName: 'ERC4626OracleHardcodeQuoteFactory',
     fileName: 'ERC4626OracleHardcodeQuoteFactory.sol.json',
+  },
+  vaultWithUnderlying: {
+    contractName: 'ERC4626OracleWithUnderlyingFactory',
+    fileName: 'ERC4626OracleWithUnderlyingFactory.sol.json',
   },
   customMethod: {
     contractName: 'CustomMethodOracleFactory',
@@ -90,6 +94,7 @@ export async function fetchOracleFactoryAvailability(
     chainlink: false,
     ptLinear: false,
     vault: false,
+    vaultWithUnderlying: false,
     customMethod: false,
     supraSValue: false,
   }

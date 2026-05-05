@@ -256,6 +256,10 @@ export default function Step10Deployment() {
           const address = await fetchOracleFactoryAddress(chainId, 'vault')
           if (address) result.erc4626OracleFactory = address
         }
+        if (selectedTypes.has('vaultWithUnderlying')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'vaultWithUnderlying')
+          if (address) result.erc4626OracleWithUnderlyingFactory = address
+        }
         if (selectedTypes.has('customMethod')) {
           const address = await fetchOracleFactoryAddress(chainId, 'customMethod')
           if (address) result.customMethodOracleFactory = address
