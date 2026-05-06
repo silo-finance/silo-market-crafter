@@ -10,7 +10,6 @@ import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
 import supraSValueOracleAbi from '@/abis/oracle/ISupraSValueOracle.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
-import erc4626OracleHardcodeQuoteArtifact from '@/abis/oracle/ERC4626OracleHardcodeQuote.json'
 import erc4626OracleWithUnderlyingArtifact from '@/abis/oracle/ERC4626OracleWithUnderlying.json'
 import ierc4626VaultArtifact from '@/abis/IERC4526.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
@@ -121,6 +120,7 @@ export interface OracleInfo {
 export interface Erc4626VaultQuoteCheck {
   /** null if RPC/compare could not complete */
   match: boolean | null
+  vaultAddress?: string
   vaultAssetAddress?: string
   quoteTokenAddress?: string
   vaultAssetSymbol?: string
@@ -155,7 +155,6 @@ const chainlinkV3OracleInterfaceAbi = chainlinkV3OracleAbi as unknown as ethers.
 const chainlinkOracleConfigInterfaceAbi = chainlinkOracleConfigAbi as unknown as ethers.InterfaceAbi
 const supraSValueOracleInterfaceAbi = supraSValueOracleAbi as unknown as ethers.InterfaceAbi
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
-const erc4626OracleHardcodeQuoteAbi = erc4626OracleHardcodeQuoteArtifact as ethers.InterfaceAbi
 const erc4626OracleWithUnderlyingAbi = erc4626OracleWithUnderlyingArtifact as unknown as ethers.InterfaceAbi
 const ierc4626VaultAbi = ierc4626VaultArtifact as ethers.InterfaceAbi
 const dynamicKinkModelInterfaceAbi = dynamicKinkModelAbi as unknown as ethers.InterfaceAbi
@@ -1506,33 +1505,100 @@ async function enrichErc4626WithUnderlyingInnerOracle(
 }
 
 async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: OracleInfo[]): Promise<void> {
-  const uniqueOracleAddresses = new Set<string>()
-  const oracleByLower = new Map<string, OracleInfo[]>()
+  type VaultCheckTarget =
+    | {
+        oracle: OracleInfo
+        quoteOracle: string
+        mode: 'hardcode'
+        vaultOracle: string
+      }
+    | {
+        oracle: OracleInfo
+        quoteOracle: string
+        mode: 'withUnderlying'
+        withUnderlyingOracle: string
+      }
+  const targets: VaultCheckTarget[] = []
   for (const oracle of oracles) {
-    const addr = getErc4626OracleHardcodeQuoteContractAddress(oracle)
-    if (!addr) continue
-    const lower = toLower(addr)
-    uniqueOracleAddresses.add(lower)
-    const list = oracleByLower.get(lower) ?? []
-    list.push(oracle)
-    oracleByLower.set(lower, list)
-  }
-  if (uniqueOracleAddresses.size === 0) return
+    const outerAddr = isNonZeroAddress(oracle.address) ? ethers.getAddress(oracle.address) : null
+    const innerAddr = isNonZeroAddress(oracle.vaultUnderlyingOracle?.address)
+      ? ethers.getAddress(oracle.vaultUnderlyingOracle!.address)
+      : null
+    const underlyingOuterAddr = isNonZeroAddress(oracle.underlying?.address)
+      ? ethers.getAddress(oracle.underlying!.address)
+      : null
 
-  const oracleAddresses = Array.from(uniqueOracleAddresses)
-  const oracleIdx = new Map<string, { quote: number; vault: number }>()
+    // Direct ERC4626OracleHardcodeQuote.
+    if (outerAddr && isErc4626OracleHardcodeQuoteByVersion(oracle.version)) {
+      targets.push({ oracle, quoteOracle: outerAddr, mode: 'hardcode', vaultOracle: outerAddr })
+      continue
+    }
+
+    // Direct ERC4626OracleWithUnderlying:
+    // - quoteToken() comes from inner ISiloOracle
+    // - VAULT() comes from outer oracle.
+    if (outerAddr && innerAddr && isErc4626OracleWithUnderlyingByVersion(oracle.version)) {
+      targets.push({
+        oracle,
+        quoteOracle: innerAddr,
+        mode: 'withUnderlying',
+        withUnderlyingOracle: outerAddr
+      })
+      continue
+    }
+
+    // Wrapped (manageable) variants where actual oracle lives in `underlying`.
+    if (underlyingOuterAddr && isErc4626OracleHardcodeQuoteByVersion(oracle.underlying?.version)) {
+      targets.push({
+        oracle,
+        quoteOracle: underlyingOuterAddr,
+        mode: 'hardcode',
+        vaultOracle: underlyingOuterAddr
+      })
+      continue
+    }
+    if (underlyingOuterAddr && innerAddr && isErc4626OracleWithUnderlyingByVersion(oracle.underlying?.version)) {
+      targets.push({
+        oracle,
+        quoteOracle: innerAddr,
+        mode: 'withUnderlying',
+        withUnderlyingOracle: underlyingOuterAddr
+      })
+      continue
+    }
+  }
+  if (targets.length === 0) return
+
+  const hardcodeTargets = targets.filter(
+    (t): t is Extract<VaultCheckTarget, { mode: 'hardcode' }> => t.mode === 'hardcode'
+  )
+  const withUnderlyingTargets = targets.filter(
+    (t): t is Extract<VaultCheckTarget, { mode: 'withUnderlying' }> => t.mode === 'withUnderlying'
+  )
+  const uniqueQuoteOracles = Array.from(new Set(targets.map((t) => toLower(t.quoteOracle))))
+  const uniqueHardcodeVaultOracles = Array.from(
+    new Set(hardcodeTargets.map((t) => toLower(t.vaultOracle)))
+  )
+  const uniqueWithUnderlyingOracles = Array.from(
+    new Set(withUnderlyingTargets.map((t) => toLower(t.withUnderlyingOracle)))
+  )
+  const quoteIdx = new Map<string, number>()
+  const vaultIdx = new Map<string, number>() // hardcode only: VAULT()
+  const withUnderlyingConfigIdx = new Map<string, number>() // withUnderlying: getConfig()
   const l1Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
-  for (const addrLower of oracleAddresses) {
-    const ix = { quote: l1Calls.length, vault: -1 }
+  for (const addrLower of uniqueQuoteOracles) {
+    quoteIdx.set(addrLower, l1Calls.length)
     l1Calls.push(
       buildReadMulticallCall({
         target: ethers.getAddress(addrLower),
-        abi: erc4626OracleHardcodeQuoteAbi,
+        abi: erc4626OracleQuoteAndVaultAbi as unknown as ethers.InterfaceAbi,
         functionName: 'quoteToken',
         allowFailure: true
       })
     )
-    ix.vault = l1Calls.length
+  }
+  for (const addrLower of uniqueHardcodeVaultOracles) {
+    vaultIdx.set(addrLower, l1Calls.length)
     l1Calls.push(
       buildReadMulticallCall({
         target: ethers.getAddress(addrLower),
@@ -1541,20 +1607,58 @@ async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: Orac
         allowFailure: true
       })
     )
-    oracleIdx.set(addrLower, ix)
+  }
+  for (const addrLower of uniqueWithUnderlyingOracles) {
+    withUnderlyingConfigIdx.set(addrLower, l1Calls.length)
+    l1Calls.push(
+      buildReadMulticallCall({
+        target: ethers.getAddress(addrLower),
+        abi: erc4626OracleWithUnderlyingAbi,
+        functionName: 'getConfig',
+        allowFailure: true
+      })
+    )
   }
   const l1Results = await executeReadMulticall<unknown>(provider, l1Calls)
 
-  const quoteTokenByOracle = new Map<string, string>()
-  const vaultByOracle = new Map<string, string>()
-  for (const [addrLower, ix] of oracleIdx) {
-    const qt = normalizeAddressSafe(l1Results[ix.quote])
-    if (qt && qt !== ethers.ZeroAddress) quoteTokenByOracle.set(addrLower, qt)
-    const vault = normalizeAddressSafe(l1Results[ix.vault])
-    if (vault && vault !== ethers.ZeroAddress) vaultByOracle.set(addrLower, vault)
+  const quoteTokenBySource = new Map<string, string>()
+  const vaultBySource = new Map<string, string>()
+  const withUnderlyingVaultBySource = new Map<string, string>()
+  const withUnderlyingAssetBySource = new Map<string, string>()
+  for (const [addrLower, idx] of quoteIdx) {
+    const qt = normalizeAddressSafe(l1Results[idx])
+    if (qt && qt !== ethers.ZeroAddress) quoteTokenBySource.set(addrLower, qt)
+  }
+  for (const [addrLower, idx] of vaultIdx) {
+    const vault = normalizeAddressSafe(l1Results[idx])
+    if (vault && vault !== ethers.ZeroAddress) vaultBySource.set(addrLower, vault)
+  }
+  for (const [addrLower, idx] of withUnderlyingConfigIdx) {
+    const cfg = l1Results[idx] as ReadonlyArray<unknown> | Record<string, unknown> | null | undefined
+    if (!cfg || typeof cfg !== 'object') continue
+    const arr = cfg as ReadonlyArray<unknown>
+    const vaultRaw =
+      Array.isArray(arr) && arr.length >= 1
+        ? arr[0]
+        : (cfg as { baseToken?: unknown }).baseToken
+    const assetRaw =
+      Array.isArray(arr) && arr.length >= 3
+        ? arr[2]
+        : (cfg as { vaultAsset?: unknown }).vaultAsset
+    const vault = normalizeAddressSafe(vaultRaw)
+    const asset = normalizeAddressSafe(assetRaw)
+    if (vault && vault !== ethers.ZeroAddress) withUnderlyingVaultBySource.set(addrLower, vault)
+    if (asset && asset !== ethers.ZeroAddress) withUnderlyingAssetBySource.set(addrLower, asset)
   }
 
-  const uniqueVaults = Array.from(new Set(Array.from(vaultByOracle.values()).map((v) => toLower(v))))
+  const uniqueVaults = Array.from(
+    new Set(
+      [
+        ...Array.from(vaultBySource.values()),
+        ...Array.from(withUnderlyingVaultBySource.values())
+      ].map((v) => toLower(v))
+    )
+  )
   const vaultAssetIdx = new Map<string, number>()
   const l2Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
   for (const vaultLower of uniqueVaults) {
@@ -1577,7 +1681,7 @@ async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: Orac
 
   // Symbols for quote + asset tokens.
   const tokenLowerSet = new Set<string>()
-  for (const qt of quoteTokenByOracle.values()) tokenLowerSet.add(toLower(qt))
+  for (const qt of quoteTokenBySource.values()) tokenLowerSet.add(toLower(qt))
   for (const asset of assetByVault.values()) tokenLowerSet.add(toLower(asset))
   const symbolIdx = new Map<string, number>()
   const l3Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
@@ -1599,31 +1703,42 @@ async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: Orac
     if (v != null) symbolByToken.set(tLower, String(v))
   }
 
-  for (const [oracleLower, oracleList] of oracleByLower) {
-    const quote = quoteTokenByOracle.get(oracleLower)
+  for (const target of targets) {
+    const quote = quoteTokenBySource.get(toLower(target.quoteOracle))
     if (!quote) {
       const check: Erc4626VaultQuoteCheck = { match: null, error: 'Could not read oracle quoteToken().' }
-      for (const oracle of oracleList) oracle.erc4626VaultQuoteCheck = check
+      target.oracle.erc4626VaultQuoteCheck = check
       continue
     }
-    const vault = vaultByOracle.get(oracleLower)
+    const vault =
+      target.mode === 'hardcode'
+        ? vaultBySource.get(toLower(target.vaultOracle))
+        : withUnderlyingVaultBySource.get(toLower(target.withUnderlyingOracle))
     if (!vault) {
       const check: Erc4626VaultQuoteCheck = {
         match: null,
         quoteTokenAddress: ethers.getAddress(quote),
-        error: 'Could not read oracle VAULT().'
+        error:
+          target.mode === 'hardcode'
+            ? 'Could not read oracle VAULT().'
+            : 'Could not read ERC4626OracleWithUnderlying.getConfig().baseToken.'
       }
-      for (const oracle of oracleList) oracle.erc4626VaultQuoteCheck = check
+      target.oracle.erc4626VaultQuoteCheck = check
       continue
     }
-    const asset = assetByVault.get(toLower(vault))
+    const asset =
+      target.mode === 'hardcode'
+        ? assetByVault.get(toLower(vault))
+        : withUnderlyingAssetBySource.get(toLower(target.withUnderlyingOracle)) ??
+          assetByVault.get(toLower(vault))
     if (!asset) {
       const check: Erc4626VaultQuoteCheck = {
         match: null,
+        vaultAddress: ethers.getAddress(vault),
         quoteTokenAddress: ethers.getAddress(quote),
         error: 'Could not read vault asset().'
       }
-      for (const oracle of oracleList) oracle.erc4626VaultQuoteCheck = check
+      target.oracle.erc4626VaultQuoteCheck = check
       continue
     }
     const quoteNorm = ethers.getAddress(quote)
@@ -1631,12 +1746,13 @@ async function enrichErc4626VaultChecks(provider: ethers.Provider, oracles: Orac
     const match = toLower(quoteNorm) === toLower(assetNorm)
     const check: Erc4626VaultQuoteCheck = {
       match,
+      vaultAddress: ethers.getAddress(vault),
       vaultAssetAddress: assetNorm,
       quoteTokenAddress: quoteNorm,
       vaultAssetSymbol: symbolByToken.get(toLower(assetNorm)),
       quoteTokenSymbol: symbolByToken.get(toLower(quoteNorm))
     }
-    for (const oracle of oracleList) oracle.erc4626VaultQuoteCheck = check
+    target.oracle.erc4626VaultQuoteCheck = check
   }
 }
 
@@ -1774,7 +1890,7 @@ export function isErc4626OracleWithUnderlyingByVersion(version: string | undefin
 /**
  * Returns the address of the ERC4626OracleWithUnderlying contract if `oracle`
  * (or its ManageableOracle wrapper underlying) is detected as that type by
- * version. Mirrors `getErc4626OracleHardcodeQuoteContractAddress`.
+ * version.
  */
 function getErc4626OracleWithUnderlyingContractAddress(oracle: OracleInfo): string | null {
   if (isNonZeroAddress(oracle.address) && isErc4626OracleWithUnderlyingByVersion(oracle.version)) {
@@ -1786,25 +1902,6 @@ function getErc4626OracleWithUnderlyingContractAddress(oracle: OracleInfo): stri
   }
   const u = oracle.underlying
   if (u?.address && isErc4626OracleWithUnderlyingByVersion(u.version)) {
-    try {
-      return ethers.getAddress(u.address)
-    } catch {
-      return null
-    }
-  }
-  return null
-}
-
-function getErc4626OracleHardcodeQuoteContractAddress(oracle: OracleInfo): string | null {
-  if (isNonZeroAddress(oracle.address) && isErc4626OracleHardcodeQuoteByVersion(oracle.version)) {
-    try {
-      return ethers.getAddress(oracle.address)
-    } catch {
-      return null
-    }
-  }
-  const u = oracle.underlying
-  if (u?.address && isErc4626OracleHardcodeQuoteByVersion(u.version)) {
     try {
       return ethers.getAddress(u.address)
     } catch {
