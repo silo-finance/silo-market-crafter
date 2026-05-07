@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - add FlatPriceOracle support
 
+### Removed
+- remove "Load Existing Config" section
+
 ## 0.34.0 - 2026-05-05
 ### Added
 - support ERC4626 oracle with underlying ISiloOracle plus aggregator-adapter fallback deploy
