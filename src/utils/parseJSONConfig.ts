@@ -72,6 +72,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'customMethod'
       : config.solvencyOracle0 === 'SupraSValueOracle'
       ? 'supraSValue'
+      : config.solvencyOracle0 === 'FlatPriceOracle'
+      ? 'flatPrice'
       : 'scaler'
   const oracleType1 =
     config.solvencyOracle1 === 'NO_ORACLE'
@@ -88,6 +90,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       ? 'customMethod'
       : config.solvencyOracle1 === 'SupraSValueOracle'
       ? 'supraSValue'
+      : config.solvencyOracle1 === 'FlatPriceOracle'
+      ? 'flatPrice'
       : 'scaler'
   const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
     ? {
@@ -177,6 +181,26 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
         pairId: String(config.supraSValueOracle1.pairId ?? '')
       }
     : undefined
+  const flatPrice0 = config.flatPriceOracle0 && oracleType0 === 'flatPrice'
+    ? {
+        priceInput: String(config.flatPriceOracle0.priceInput ?? ''),
+        priceRawWei: String(config.flatPriceOracle0.priceRawWei ?? '0'),
+        baseToken: (config.flatPriceOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        quoteToken: (config.flatPriceOracle0.quoteToken === 'token0' ? 'token0' : 'token1') as 'token0' | 'token1',
+        baseTokenAddress: String(config.flatPriceOracle0.baseTokenAddress ?? ''),
+        quoteTokenAddress: String(config.flatPriceOracle0.quoteTokenAddress ?? '')
+      }
+    : undefined
+  const flatPrice1 = config.flatPriceOracle1 && oracleType1 === 'flatPrice'
+    ? {
+        priceInput: String(config.flatPriceOracle1.priceInput ?? ''),
+        priceRawWei: String(config.flatPriceOracle1.priceRawWei ?? '0'),
+        baseToken: (config.flatPriceOracle1.baseToken === 'token0' ? 'token0' : 'token1') as 'token0' | 'token1',
+        quoteToken: (config.flatPriceOracle1.quoteToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+        baseTokenAddress: String(config.flatPriceOracle1.baseTokenAddress ?? ''),
+        quoteTokenAddress: String(config.flatPriceOracle1.quoteTokenAddress ?? '')
+      }
+    : undefined
   const oracleConfig: OracleConfiguration = {
     token0: {
       type: oracleType0,
@@ -189,7 +213,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       } : undefined,
       chainlinkOracle: oracleType0 === 'chainlink' ? chainlink0 : undefined,
       customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined,
-      supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined
+      supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined,
+      flatPriceOracle: oracleType0 === 'flatPrice' ? flatPrice0 : undefined
     },
     token1: {
       type: oracleType1,
@@ -202,7 +227,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
       } : undefined,
       chainlinkOracle: oracleType1 === 'chainlink' ? chainlink1 : undefined,
       customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined,
-      supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined
+      supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined,
+      flatPriceOracle: oracleType1 === 'flatPrice' ? flatPrice1 : undefined
     }
   }
 

@@ -37,6 +37,8 @@ export interface ContractInfoProps {
   renderVersion?: React.ReactNode
   /** When provided, used as the contract name for the repo source URL (e.g. "DynamicKinkModelFactory" for Interest Rate Model). */
   sourceContractName?: string
+  /** Label used for the version row (defaults to "version"). */
+  versionLabel?: string
 }
 
 export default function ContractInfo({
@@ -49,7 +51,8 @@ export default function ContractInfo({
   className = '',
   verificationIcon,
   renderVersion,
-  sourceContractName
+  sourceContractName,
+  versionLabel = 'version'
 }: ContractInfoProps) {
   const nameForSource = sourceContractName ?? contractName
   const sourceUrl = getSourceUrl(chainId, nameForSource, isOracle, isImplementation)
@@ -83,9 +86,9 @@ export default function ContractInfo({
         </div>
         <div className="text-sm silo-text-soft whitespace-nowrap">
           {renderVersion !== undefined ? (
-            <>version: {renderVersion}</>
+            <>{versionLabel}: {renderVersion}</>
           ) : (
-            <>version: <span className="text-version-muted">{version || '…'}</span></>
+            <>{versionLabel}: <span className="text-version-muted">{version || '…'}</span></>
           )}
         </div>
       </div>

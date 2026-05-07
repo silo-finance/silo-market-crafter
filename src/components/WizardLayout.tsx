@@ -83,6 +83,10 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
   }
 
   const showSummarySidebar = !isStep13Standalone && isSummaryOpen
+  const formatFlatPriceForSummary = (rawInput: string | undefined): string => {
+    if (!rawInput) return '—'
+    return rawInput.replace('.', ',')
+  }
 
   return (
     <div className="silo-page light-market-theme">
@@ -261,9 +265,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             ? 'Custom Method Oracle'
                             : wizardData.oracleType0.type === 'supraSValue'
                             ? 'Supra s-value Oracle'
+                            : wizardData.oracleType0.type === 'flatPrice'
+                            ? 'FlatPrice Oracle'
                             : 'Chainlink'}
                         </div>
-                        {wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
+                        {wizardData.oracleType0?.type === 'scaler' && wizardData.oracleConfiguration?.token0.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token0.scalerOracle
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
@@ -281,6 +287,20 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
+                          )
+                        })()}
+                        {wizardData.oracleType0?.type === 'flatPrice' && (() => {
+                          const flat = wizardData.oracleConfiguration?.token0?.flatPriceOracle
+                          if (!flat) return null
+                          const baseSymbol = wizardData.token0?.symbol ?? 'TOKEN0'
+                          const quoteSymbol = wizardData.token1?.symbol ?? 'TOKEN1'
+                          return (
+                            <div className="mt-2 space-y-1">
+                              <div className="text-xs silo-text-soft">FlatPrice Oracle</div>
+                              <div className="text-xs silo-text-soft">
+                                {baseSymbol} / {quoteSymbol}: <span className="font-mono">{formatFlatPriceForSummary(flat.priceInput)}</span>
+                              </div>
+                            </div>
                           )
                         })()}
                         {wizardData.oracleType0?.type === 'chainlink' && (() => {
@@ -530,9 +550,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                             ? 'Custom Method Oracle'
                             : wizardData.oracleType1.type === 'supraSValue'
                             ? 'Supra s-value Oracle'
+                            : wizardData.oracleType1.type === 'flatPrice'
+                            ? 'FlatPrice Oracle'
                             : 'Chainlink'}
                         </div>
-                        {wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
+                        {wizardData.oracleType1?.type === 'scaler' && wizardData.oracleConfiguration?.token1.scalerOracle && (() => {
                           const scaler = wizardData.oracleConfiguration.token1.scalerOracle
                           const chainId = wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1
                           return (
@@ -550,6 +572,20 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                                 {scaler.valid ? 'Valid' : 'Invalid'}
                               </div>
                             </>
+                          )
+                        })()}
+                        {wizardData.oracleType1?.type === 'flatPrice' && (() => {
+                          const flat = wizardData.oracleConfiguration?.token1?.flatPriceOracle
+                          if (!flat) return null
+                          const baseSymbol = wizardData.token1?.symbol ?? 'TOKEN1'
+                          const quoteSymbol = wizardData.token0?.symbol ?? 'TOKEN0'
+                          return (
+                            <div className="mt-2 space-y-1">
+                              <div className="text-xs silo-text-soft">FlatPrice Oracle</div>
+                              <div className="text-xs silo-text-soft">
+                                {baseSymbol} / {quoteSymbol}: <span className="font-mono">{formatFlatPriceForSummary(flat.priceInput)}</span>
+                              </div>
+                            </div>
                           )
                         })()}
                         {wizardData.oracleType1?.type === 'chainlink' && (() => {

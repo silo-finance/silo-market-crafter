@@ -11,6 +11,7 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { VersionStatus } from '@/components/VersionStatus'
+import NewFeatureBadge from '@/components/NewFeatureBadge'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -87,6 +88,7 @@ export default function Step10Deployment() {
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
   const [simulatedSiloConfigAddress, setSimulatedSiloConfigAddress] = useState<string>('')
+  const [hasSimulatedOnce, setHasSimulatedOnce] = useState(false)
 
   // Hash of current deploy arguments; used to allow re-deploy when config changes after a previous deploy
   const currentArgsHash = useMemo(() => {
@@ -273,6 +275,10 @@ export default function Step10Deployment() {
         if (selectedTypes.has('supraSValue')) {
           const address = await fetchOracleFactoryAddress(chainId, 'supraSValue')
           if (address) result.supraSValueOracleFactory = address
+        }
+        if (selectedTypes.has('flatPrice')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'flatPrice')
+          if (address) result.flatPriceOracleFactory = address
         }
       } catch (err) {
         console.warn('Failed to fetch selected oracle factory deployments:', err)
@@ -476,6 +482,10 @@ export default function Step10Deployment() {
   }
 
   const handleSimulate = async () => {
+    if (hasSimulatedOnce) {
+      return
+    }
+
     if (!window.ethereum) {
       setError('Wallet is not available. Connect your wallet to run simulation.')
       return
@@ -521,6 +531,7 @@ export default function Step10Deployment() {
       setError(`Simulation failed: ${errorMessage}`)
     } finally {
       setSimulating(false)
+      setHasSimulatedOnce(true)
     }
   }
 
@@ -778,6 +789,7 @@ export default function Step10Deployment() {
               onClick={handleSimulate}
               disabled={
                 simulating ||
+                hasSimulatedOnce ||
                 deploying ||
                 !deployerAddress ||
                 !deployArgs ||
@@ -804,7 +816,8 @@ export default function Step10Deployment() {
                 </>
               ) : (
                 <>
-                  <span>Simulate</span>
+                  <span>{hasSimulatedOnce ? 'Simulated' : 'Simulate'}</span>
+                  <NewFeatureBadge compact className="ml-1" />
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m0 0v8m0-8L8 15" />
                   </svg>

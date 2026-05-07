@@ -58,8 +58,12 @@ function renderErc4626VaultQuoteCheckContent(check: Erc4626VaultQuoteCheck): Rea
   )
 }
 
-/** Indented sub-bullets: vault asset row, then match / warning / unavailable. */
-function renderErc4626OracleBulletBlock(check: Erc4626VaultQuoteCheck, explorerUrl: string): React.ReactNode {
+/** Indented sub-bullets: vault asset row, optionally match / warning / unavailable. */
+function renderErc4626OracleBulletBlock(
+  check: Erc4626VaultQuoteCheck,
+  explorerUrl: string,
+  showVaultQuoteCheck: boolean = true
+): React.ReactNode {
   const addr = check.vaultAssetAddress
   const hasAddr = addr && ethers.isAddress(addr)
   return (
@@ -85,47 +89,70 @@ function renderErc4626OracleBulletBlock(check: Erc4626VaultQuoteCheck, explorerU
           )}
         </span>
       </li>
-      <li>{renderErc4626VaultQuoteCheckContent(check)}</li>
+      {showVaultQuoteCheck && <li>{renderErc4626VaultQuoteCheckContent(check)}</li>}
     </ul>
   )
 }
 
-/**
- * Render the inner ISiloOracle of an `ERC4626OracleWithUnderlying` outer oracle
- * as nested bullets: address + version, then the type-specific detail block
- * (Chainlink aggregators, Custom Method details, Supra pair ID, ERC4626 vault
- * quote check) reusing the same renderers used for the top-level oracle.
- */
-function renderVaultUnderlyingOracleBlock(
+/** Render a nested details tree for ERC4626OracleWithUnderlying. */
+function renderVaultWithUnderlyingOracleBlock(
   inner: OracleInfo,
-  explorerUrl: string
+  explorerUrl: string,
+  outerCheck?: Erc4626VaultQuoteCheck
 ): React.ReactNode {
   const innerConfig = inner.config as Record<string, unknown> | undefined
+  const vaultAddr = outerCheck?.vaultAddress
+  const hasVaultAddr = !!vaultAddr && ethers.isAddress(vaultAddr)
   return (
-    <>
-      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-        <span>Inner ISiloOracle:</span>
-        <a
-          href={`${explorerUrl}/address/${inner.address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mct-link font-mono text-sm"
-        >
-          {formatAddress(inner.address)}
-        </a>
-        <CopyButton
-          value={inner.address}
-          title="Copy address"
-          iconClassName="w-3.5 h-3.5 inline align-middle"
-        />
-        <VersionStatus version={inner.version} />
-      </span>
-      {isErc4626OracleHardcodeQuoteByVersion(inner.version) && inner.erc4626VaultQuoteCheck &&
-        renderErc4626OracleBulletBlock(inner.erc4626VaultQuoteCheck, explorerUrl)}
-      {renderChainlinkAggregatorsForConfig(innerConfig, explorerUrl)}
-      {renderCustomMethodOracleDetailsForConfig(innerConfig, explorerUrl, {})}
-      {renderSupraOracleDetailsForConfig(innerConfig)}
-    </>
+    <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-1">
+      {outerCheck && (
+        <li>
+          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <span>Vault:</span>
+            {hasVaultAddr ? (
+              <>
+                <a
+                  href={`${explorerUrl}/address/${vaultAddr}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mct-link font-mono text-sm"
+                >
+                  {formatAddress(vaultAddr)}
+                </a>
+                <CopyButton value={vaultAddr} title="Copy address" iconClassName="w-3.5 h-3.5 inline align-middle" />
+              </>
+            ) : (
+              <span className="text-gray-500 text-sm">—</span>
+            )}
+          </span>
+          {renderErc4626OracleBulletBlock(outerCheck, explorerUrl, false)}
+        </li>
+      )}
+      <li>
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span>Inner ISiloOracle:</span>
+          <a
+            href={`${explorerUrl}/address/${inner.address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mct-link font-mono text-sm"
+          >
+            {formatAddress(inner.address)}
+          </a>
+          <CopyButton
+            value={inner.address}
+            title="Copy address"
+            iconClassName="w-3.5 h-3.5 inline align-middle"
+          />
+          <VersionStatus version={inner.version} />
+        </span>
+        {isErc4626OracleHardcodeQuoteByVersion(inner.version) && inner.erc4626VaultQuoteCheck &&
+          renderErc4626OracleBulletBlock(inner.erc4626VaultQuoteCheck, explorerUrl)}
+        {renderChainlinkAggregatorsForConfig(innerConfig, explorerUrl)}
+        {renderCustomMethodOracleDetailsForConfig(innerConfig, explorerUrl, {})}
+        {renderSupraOracleDetailsForConfig(innerConfig)}
+      </li>
+    </ul>
   )
 }
 
@@ -185,6 +212,7 @@ function buildOracleBullets(
   options?: { excludeBaseDiscount?: boolean }
 ): OracleBulletItem[] {
   const bullets: OracleBulletItem[] = []
+  const isFlatPriceOracle = (_type ?? '').toLowerCase().includes('flatpriceoracle')
   if (quotePrice != null && quotePrice !== '') {
     const priceStr = formatQuotePriceAs18Decimals(quotePrice)
     bullets.push({
@@ -200,7 +228,7 @@ function buildOracleBullets(
       )
     })
   }
-  if (tokenInfo?.baseTokenAddress && ethers.isAddress(tokenInfo.baseTokenAddress)) {
+  if (!isFlatPriceOracle && tokenInfo?.baseTokenAddress && ethers.isAddress(tokenInfo.baseTokenAddress)) {
     bullets.push({
       key: 'oracle.baseToken',
       text: (
@@ -238,7 +266,9 @@ function buildOracleBullets(
 
   if (config && typeof config === 'object') {
     for (const [configKey, val] of Object.entries(config)) {
+      if (isFlatPriceOracle && configKey !== 'rawPrice') continue
       if (/quoteToken/i.test(configKey)) continue
+      if (isFlatPriceOracle && /normalizationDivider/i.test(configKey)) continue
       const isBaseDiscount = /baseDiscount/i.test(configKey)
       if (isBaseDiscount && options?.excludeBaseDiscount) continue
       const raw = typeof val === 'string' ? val : String(val)
@@ -840,6 +870,13 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
             const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
             const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
             const hasPriceVerified = isPriceLine && !priceLowWarning && !priceHighWarning && !priceDecimalsWarning
+            const isStandaloneList =
+              React.isValidElement(item.text) &&
+              typeof item.text.type === 'string' &&
+              item.text.type.toLowerCase() === 'ul'
+            if (isStandaloneList) {
+              return <React.Fragment key={i}>{item.text}</React.Fragment>
+            }
             return (
               <li key={i}>
                 {item.text}
@@ -1264,22 +1301,10 @@ function SiloSection({
           ) {
             base.push({
               key: `oracle.erc4626WithUnderlying.inner.${siloKey}.solvency`,
-              text: renderVaultUnderlyingOracleBlock(
+              text: renderVaultWithUnderlyingOracleBlock(
                 siloConfig.solvencyOracle.vaultUnderlyingOracle,
-                explorerUrl
-              )
-            })
-          }
-          if (
-            siloConfig.solvencyOracle.erc4626VaultQuoteCheck &&
-            (isErc4626OracleWithUnderlyingByVersion(siloConfig.solvencyOracle.version) ||
-              (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
-          ) {
-            base.push({
-              key: `oracle.erc4626WithUnderlying.vaultQuote.${siloKey}.solvency`,
-              text: renderErc4626OracleBulletBlock(
-                siloConfig.solvencyOracle.erc4626VaultQuoteCheck,
-                explorerUrl
+                explorerUrl,
+                siloConfig.solvencyOracle.erc4626VaultQuoteCheck
               )
             })
           }
@@ -1482,22 +1507,10 @@ function SiloSection({
             ) {
               base.push({
                 key: `oracle.erc4626WithUnderlying.inner.${siloKey}.maxLtv`,
-                text: renderVaultUnderlyingOracleBlock(
+                text: renderVaultWithUnderlyingOracleBlock(
                   siloConfig.maxLtvOracle.vaultUnderlyingOracle,
-                  explorerUrl
-                )
-              })
-            }
-            if (
-              siloConfig.maxLtvOracle.erc4626VaultQuoteCheck &&
-              (isErc4626OracleWithUnderlyingByVersion(siloConfig.maxLtvOracle.version) ||
-                (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
-            ) {
-              base.push({
-                key: `oracle.erc4626WithUnderlying.vaultQuote.${siloKey}.maxLtv`,
-                text: renderErc4626OracleBulletBlock(
-                  siloConfig.maxLtvOracle.erc4626VaultQuoteCheck,
-                  explorerUrl
+                  explorerUrl,
+                  siloConfig.maxLtvOracle.erc4626VaultQuoteCheck
                 )
               })
             }

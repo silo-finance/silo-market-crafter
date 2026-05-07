@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWizard } from '@/contexts/WizardContext'
+import { useWizard, type OracleType, type WizardData } from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { ethers } from 'ethers'
@@ -11,8 +11,300 @@ import AddressDisplayLong from '@/components/AddressDisplayLong'
 import manageableOracleFactoryAbi from '@/abis/oracle/IManageableOracleFactory.json'
 import Button from '@/components/Button'
 import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
+import { prepareDeployArgs, type OracleDeployments } from '@/utils/deployArgs'
+import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
+import customErrorsSelectors from '@/data/customErrorsSelectors.json'
+import NewFeatureBadge from '@/components/NewFeatureBadge'
 
 const MANAGEABLE_ORACLE_FACTORY_NAME = 'ManageableOracleFactory'
+
+/** eth_call omits explicit gas unless set; simulations that deploy contracts can exhaust that cap and revert with payload 0x. */
+const MANAGE_ORACLE_SIMULATION_CALL_GAS = BigInt(50000000)
+
+function callExceptionRevertPayloadEmpty(ex: ethers.CallExceptionError): boolean {
+  const d = ex.data
+  return d === null || d === undefined || d === '' || d === '0x'
+}
+
+function getOracleTypeDisplayName(oracleType: OracleType | null | undefined): string {
+  const t = oracleType?.type ?? 'none'
+  switch (t) {
+    case 'none':
+      return 'No Oracle'
+    case 'scaler':
+      return 'Scaler Oracle'
+    case 'ptLinear':
+      return 'PT-Linear'
+    case 'vault':
+      return 'Vault Oracle'
+    case 'vaultWithUnderlying':
+      return 'Vault Oracle With Underlying'
+    case 'customMethod':
+      return 'Custom Method Oracle'
+    case 'supraSValue':
+      return 'Supra s-value Oracle'
+    case 'flatPrice':
+      return 'FlatPrice Oracle'
+    case 'chainlink':
+      return 'Chainlink'
+  }
+}
+
+const SOLIDITY_PANIC_SELECTOR = '0x4e487b71'
+
+function describeSolidityPanicData(data: string): string | null {
+  if (!data.startsWith('0x') || data.length < 10) return null
+  if (data.slice(0, 10).toLowerCase() !== SOLIDITY_PANIC_SELECTOR) return null
+  const payload = `0x${data.slice(10)}`
+  try {
+    const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['uint256'], payload)
+    const code = decoded[0] as bigint
+    const n = Number(code)
+    const labels: Record<number, string> = {
+      0x01: 'assert / internal check failed (often wrong arguments or illegal state)',
+      0x11: 'arithmetic underflow or overflow',
+      0x12: 'division or modulo by zero',
+      0x21: 'enum conversion out of bounds',
+      0x22: 'incorrect storage byte array access',
+      0x31: 'pop on empty array',
+      0x32: 'out-of-bounds array access',
+      0x41: 'too much memory allocated',
+      0x51: 'zero-initialized variable of internal type',
+    }
+    const label = labels[n]
+    const hexCode = `0x${n.toString(16)}`
+    return label ? `Solidity panic ${hexCode}: ${label}` : `Solidity panic ${hexCode}`
+  } catch {
+    return null
+  }
+}
+
+/** 10^n for n in [0, 36] — avoid BigInt ** under legacy TS target */
+function pow10BigInt(n: number): bigint {
+  let r = BigInt(1)
+  for (let i = 0; i < n; i++) r *= BigInt(10)
+  return r
+}
+
+const MANAGEABLE_ORACLE_UNDERLYING_ABI = [
+  'function baseToken() view returns (address)',
+  'function quote(uint256 baseAmount, address baseToken) view returns (uint256)',
+] as const
+
+const ERC20_DECIMALS_ABI = ['function decimals() view returns (uint8)'] as const
+
+function summarizeWalletProviderInfo(info: unknown): Record<string, unknown> {
+  if (info === undefined) return {}
+  try {
+    return JSON.parse(
+      JSON.stringify(info, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))
+    ) as Record<string, unknown>
+  } catch {
+    const out: Record<string, unknown> = {}
+    const o = info as { error?: { code?: unknown; message?: unknown; data?: unknown } }
+    if (o.error) {
+      out.errorCode = o.error.code
+      out.errorMessage = o.error.message
+      out.errorData = o.error.data
+    }
+    return out
+  }
+}
+
+function tokenDecimalsFromWizard(wizardData: WizardData, tokenAddress: string): number | undefined {
+  const normalized = ethers.getAddress(tokenAddress)
+  if (
+    wizardData.token0?.address &&
+    ethers.getAddress(wizardData.token0.address) === normalized
+  )
+    return wizardData.token0.decimals
+  if (
+    wizardData.token1?.address &&
+    ethers.getAddress(wizardData.token1.address) === normalized
+  )
+    return wizardData.token1.decimals
+  return undefined
+}
+
+/**
+ * ManageableOracle.initialize runs oracleVerification: dust quote against base token.
+ * Run the same probe in isolation so users see a reverting payload even when wallet omits factory revert data.
+ */
+async function diagnoseManageableWrappedOracleQuote(
+  provider: ethers.BrowserProvider,
+  wizardData: WizardData,
+  underlyingOracleAddress: string,
+  fromAddress: string
+): Promise<string | null> {
+  const addr = ethers.getAddress(underlyingOracleAddress)
+  const iface = new ethers.Interface(MANAGEABLE_ORACLE_UNDERLYING_ABI)
+  const oracle = new ethers.Contract(addr, MANAGEABLE_ORACLE_UNDERLYING_ABI, provider)
+  let baseToken: string
+  try {
+    baseToken = ethers.getAddress(await oracle.baseToken())
+  } catch (e) {
+    return (
+      `Isolated check: baseToken() on underlying oracle ${addr} failed (ManageableOracle reads this first):\n` +
+      formatOracleSimulationError(e)
+    )
+  }
+  let dec = tokenDecimalsFromWizard(wizardData, baseToken)
+  if (dec === undefined) {
+    try {
+      const erc = new ethers.Contract(baseToken, ERC20_DECIMALS_ABI, provider)
+      dec = Number(await erc.decimals())
+    } catch (e) {
+      return (
+        `Isolated check: could not read decimals for base token ${baseToken} (needed to match ManageableOracle initialize dust quote):\n` +
+        formatOracleSimulationError(e)
+      )
+    }
+  }
+  if (!Number.isInteger(dec) || dec < 0 || dec > 36) {
+    return 'Isolated check: invalid decimals for base token — cannot synthesize `10 ** decimals`.'
+  }
+  const dust = pow10BigInt(dec)
+  const quoteCalldata = iface.encodeFunctionData('quote', [dust, baseToken])
+  try {
+    const ret = await provider.call({
+      to: addr,
+      data: quoteCalldata,
+      from: fromAddress,
+      gasLimit: MANAGE_ORACLE_SIMULATION_CALL_GAS
+    })
+    const decoded = iface.decodeFunctionResult('quote', ret)
+    const price = decoded[0] as bigint
+    if (price === BigInt(0)) {
+      return (
+        `Isolated check: quote(10**${dec}, ${baseToken}) on ${addr} returned 0. ` +
+          `ManageableOracle.initialize() rejects zero quotes during oracleVerification.`
+      )
+    }
+    return (
+      `Isolated check: quote(10**${dec}, ${baseToken}) on ${addr} returned a non-zero value. ` +
+        `The factory revert is likely not this dust quote alone (timelock bounds, CREATE2/nonce, base-token decimals assert, or RPC hid the real revert).`
+    )
+  } catch (e) {
+    return (
+      `Isolated check: ManageableOracle.initialize() calls underlying quote(10**${dec}, ${baseToken}) — that call fails in isolation:\n` +
+      formatOracleSimulationError(e)
+    )
+  }
+}
+
+function formatRevertArgValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'bigint') return value.toString()
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : String(value)
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'string') {
+    if (ethers.isAddress(value)) {
+      try {
+        return ethers.getAddress(value)
+      } catch {
+        return value
+      }
+    }
+    return value
+  }
+  return String(value)
+}
+
+function serializeCallExceptionForRpcLog(ex: ethers.CallExceptionError): Record<string, unknown> {
+  const ext = ex as ethers.CallExceptionError & { info?: unknown }
+  return {
+    code: ex.code,
+    action: ex.action,
+    reason: ex.reason ?? undefined,
+    shortMessage: ex.shortMessage ?? undefined,
+    message: ex.message ?? undefined,
+    data: ex.data ?? undefined,
+    transaction: ex.transaction ?? undefined,
+    invocation: ex.invocation ?? undefined,
+    revert: ex.revert
+      ? {
+          name: ex.revert.name,
+          signature: ex.revert.signature,
+          args: ex.revert.args?.map((a) => (typeof a === 'bigint' ? a.toString() : a)),
+        }
+      : undefined,
+    walletProviderEcho: summarizeWalletProviderInfo(ext.info),
+  }
+}
+
+/**
+ * Readable contract revert for oracle factory static calls — decoded custom errors with
+ * comma-separated args (no JSON dump). Falls back to selector map / RPC messages.
+ */
+function formatOracleSimulationError(err: unknown): string {
+  if (ethers.isError(err, 'ACTION_REJECTED')) {
+    return 'Action rejected.'
+  }
+  if (ethers.isError(err, 'CALL_EXCEPTION')) {
+    const ex = err as ethers.CallExceptionError
+    const parts: string[] = []
+
+    if (ex.revert) {
+      const name =
+        typeof ex.revert.name === 'string' && ex.revert.name.length > 0
+          ? ex.revert.name
+          : typeof ex.revert.signature === 'string' && ex.revert.signature.includes('(')
+            ? ex.revert.signature.split('(')[0]!
+            : 'Revert'
+      const args = ex.revert.args
+      const argStr =
+        Array.isArray(args) && args.length > 0 ? args.map(formatRevertArgValue).join(', ') : ''
+      parts.push(argStr.length > 0 ? `${name}(${argStr})` : `${name}()`)
+    } else if (ex.data && typeof ex.data === 'string' && ex.data.startsWith('0x')) {
+      const panicLine = describeSolidityPanicData(ex.data)
+      if (panicLine) {
+        parts.push(panicLine)
+      } else if (ex.data.length >= 10) {
+        const selectorHex = ex.data.slice(0, 10)
+        const known = (customErrorsSelectors as { bySelector: Record<string, string> }).bySelector[selectorHex]
+        parts.push(known ?? `Unknown revert (selector ${selectorHex})`)
+      }
+    }
+
+    if (typeof ex.reason === 'string' && ex.reason.length > 0) {
+      const reason = ex.reason
+      if (!parts.some((p) => p.includes(reason))) {
+        parts.push(reason)
+      }
+    }
+
+    if (parts.some((p) => p.includes('require(false)'))) {
+      parts.push(
+        'Note: ethers uses require(false) as a fallback label when revert data is missing.'
+      )
+    }
+
+    if (callExceptionRevertPayloadEmpty(ex)) {
+      parts.push(
+        [
+          '',
+          'Empty revert blob (`data`: "0x"): usually OOG/default eth_call gas, bare revert(), or the wallet/RPC omitting ABI errors.',
+          'Silo: ManageableOracle.initialize() runs oracleVerification on the WRAPPED oracle — quote(10**baseDecimals, baseToken) must succeed and be non-zero; failures here often correlate with scaler issues even when factory data is omitted.',
+          'Technical block includes walletProviderEcho (raw JSON-RPC-ish echo) when ethers captured it.',
+        ].join('\n')
+      )
+    }
+
+    let human = ''
+    if (parts.length > 0) human = parts.join('\n')
+    else if (ex.shortMessage) human = ex.shortMessage
+    else human = 'Simulation call reverted'
+
+    try {
+      const technical = JSON.stringify(serializeCallExceptionForRpcLog(ex), null, 2)
+      return `${human}\n\nTechnical (RPC):\n${technical}`
+    } catch {
+      return human
+    }
+  }
+  if (err instanceof Error) return err.message
+  return String(err)
+}
 
 export default function Step4ManageableOracle() {
   const router = useRouter()
@@ -31,6 +323,10 @@ export default function Step4ManageableOracle() {
   const [selectedTimelockDays, setSelectedTimelockDays] = useState<number | undefined>(undefined)
   const [siloLensAddress, setSiloLensAddress] = useState<string>('')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [simulate0State, setSimulate0State] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [simulate1State, setSimulate1State] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [simulate0Error, setSimulate0Error] = useState<string>('')
+  const [simulate1Error, setSimulate1Error] = useState<string>('')
 
   const SECONDS_PER_DAY = 86400
 
@@ -54,6 +350,19 @@ export default function Step4ManageableOracle() {
       setSelectedTimelockDays(undefined)
     }
   }, [timelockRange, selectedTimelockDays])
+
+  useEffect(() => {
+    setSimulate0State('idle')
+    setSimulate1State('idle')
+    setSimulate0Error('')
+    setSimulate1Error('')
+  }, [
+    manageableEnabled,
+    selectedTimelockDays,
+    wizardData.oracleConfiguration,
+    wizardData.manageableOracleOwnerAddress,
+    wizardData.networkInfo?.chainId
+  ])
 
   // Fetch ManageableOracleFactory address
   useEffect(() => {
@@ -273,8 +582,159 @@ export default function Step4ManageableOracle() {
     router.push('/wizard?step=3')
   }
 
+  const resolveSelectedOracleDeployments = async (): Promise<OracleDeployments> => {
+    const chainId = wizardData.networkInfo?.chainId
+    if (!chainId) return {}
+    const result: OracleDeployments = {}
+    const selectedTypes = new Set([
+      wizardData.oracleConfiguration?.token0?.type,
+      wizardData.oracleConfiguration?.token1?.type
+    ])
+    if (selectedTypes.has('chainlink')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'chainlink')
+      if (address) result.chainlinkV3OracleFactory = address
+    }
+    if (selectedTypes.has('ptLinear')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'ptLinear')
+      if (address) result.ptLinearOracleFactory = address
+    }
+    if (selectedTypes.has('vault')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'vault')
+      if (address) result.erc4626OracleFactory = address
+    }
+    if (selectedTypes.has('vaultWithUnderlying')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'vaultWithUnderlying')
+      if (address) result.erc4626OracleWithUnderlyingFactory = address
+    }
+    if (selectedTypes.has('customMethod')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'customMethod')
+      if (address) result.customMethodOracleFactory = address
+    }
+    if (selectedTypes.has('supraSValue')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'supraSValue')
+      if (address) result.supraSValueOracleFactory = address
+    }
+    if (selectedTypes.has('flatPrice')) {
+      const address = await fetchOracleFactoryAddress(chainId, 'flatPrice')
+      if (address) result.flatPriceOracleFactory = address
+    }
+    if (manageableFactory?.address) {
+      result.manageableOracleFactory = manageableFactory.address
+    }
+    return result
+  }
+
+  const simulateManageableOracle = async (tokenSide: 0 | 1) => {
+    const setState = tokenSide === 0 ? setSimulate0State : setSimulate1State
+    const setError = tokenSide === 0 ? setSimulate0Error : setSimulate1Error
+    if (!manageableEnabled) return
+    if (!window.ethereum) {
+      setState('error')
+      setError('Wallet provider is not available.')
+      return
+    }
+    if (!wizardData.token0 || !wizardData.token1 || !wizardData.oracleConfiguration) {
+      setState('error')
+      setError('Missing wizard configuration.')
+      return
+    }
+    if (!manageableFactory?.address) {
+      setState('error')
+      setError('ManageableOracleFactory is not available.')
+      return
+    }
+    const timelockSeconds =
+      selectedTimelockDays !== undefined
+        ? selectedTimelockDays * SECONDS_PER_DAY
+        : wizardData.manageableOracleTimelock
+    if (!timelockSeconds || timelockSeconds <= 0) {
+      setState('error')
+      setError('Select timelock first.')
+      return
+    }
+
+    setState('loading')
+    setError('')
+    let ownerForSim = ''
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const rawOwner = wizardData.manageableOracleOwnerAddress?.trim()
+      if (
+        rawOwner &&
+        ethers.isAddress(rawOwner) &&
+        ethers.getAddress(rawOwner) !== ethers.ZeroAddress
+      ) {
+        ownerForSim = ethers.getAddress(rawOwner)
+      } else {
+        try {
+          ownerForSim = ethers.getAddress(await (await provider.getSigner()).getAddress())
+        } catch {
+          setState('error')
+          setError(
+            'Oracle/IRM owner is not set yet (Step 6) and no wallet account is available — cannot simulate ManageableOracle with a valid owner. Connect your wallet or complete Step 6 first.'
+          )
+          return
+        }
+      }
+
+      const oracleDeployments = await resolveSelectedOracleDeployments()
+      const simulationWizardData = {
+        ...wizardData,
+        manageableOracle: true,
+        manageableOracleTimelock: timelockSeconds,
+        manageableOracleOwnerAddress: ownerForSim,
+      }
+      const deployArgs = prepareDeployArgs(simulationWizardData, {}, oracleDeployments)
+      const txData =
+        tokenSide === 0
+          ? deployArgs._oracles.solvencyOracle0
+          : deployArgs._oracles.solvencyOracle1
+      if (!txData.factory || txData.factory === ethers.ZeroAddress || !txData.txInput || txData.txInput === '0x') {
+        throw new Error('Manageable oracle tx payload is empty.')
+      }
+      await provider.call({
+        to: txData.factory,
+        data: txData.txInput,
+        from: ownerForSim,
+        gasLimit: MANAGE_ORACLE_SIMULATION_CALL_GAS,
+      })
+      setState('success')
+    } catch (err) {
+      let msg = formatOracleSimulationError(err)
+      if (
+        ownerForSim &&
+        ethers.isError(err, 'CALL_EXCEPTION') &&
+        callExceptionRevertPayloadEmpty(err as ethers.CallExceptionError)
+      ) {
+        const ot = tokenSide === 0 ? wizardData.oracleType0 : wizardData.oracleType1
+        const scaler =
+          tokenSide === 0
+            ? wizardData.oracleConfiguration?.token0?.scalerOracle
+            : wizardData.oracleConfiguration?.token1?.scalerOracle
+        if (
+          ot?.type === 'scaler' &&
+          scaler &&
+          !scaler.customCreate &&
+          scaler.address &&
+          ethers.isAddress(scaler.address)
+        ) {
+          const provider = new ethers.BrowserProvider(window.ethereum)
+          const isolated = await diagnoseManageableWrappedOracleQuote(
+            provider,
+            wizardData,
+            scaler.address,
+            ownerForSim
+          )
+          if (isolated) msg += `\n\n${isolated}`
+        }
+      }
+      setState('error')
+      setError(msg)
+    }
+  }
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
           Step 4: Manageable Oracle
@@ -385,6 +845,84 @@ export default function Step4ManageableOracle() {
                   </p>
                 )}
               </div>
+            )}
+
+            {manageableEnabled && (
+              <>
+                <p className="text-xs silo-text-soft">
+                  Until Oracle/IRM Owner is set in Step 6, simulations use your connected wallet address as the
+                  manageable oracle owner so the ManageableOracleFactory call matches a real deployment payload.
+                </p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="silo-panel p-4 flex flex-col gap-3 h-full">
+                  <p className="text-sm silo-text-main leading-relaxed">
+                    Simulation for Manageable Oracle with{' '}
+                    <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType0)}</span>
+                    {' '}and for{' '}
+                    <span className="font-medium">{wizardData.token0?.symbol ?? 'token 0'}</span>
+                  </p>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => void simulateManageableOracle(0)}
+                      disabled={simulate0State === 'loading' || simulate0State === 'success'}
+                      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                        simulate0State === 'success'
+                          ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
+                          : simulate0State === 'loading'
+                          ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
+                          : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
+                      }`}
+                    >
+                      {simulate0State === 'success' && (
+                        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
+                      )}
+                      {simulate0State === 'loading' ? 'Simulating…' : 'Simulate'}
+                      <NewFeatureBadge compact className="ml-1" />
+                    </button>
+                  </div>
+                  {simulate0State === 'error' && (
+                    <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
+                      {simulate0Error}
+                    </pre>
+                  )}
+                </div>
+
+                <div className="silo-panel p-4 flex flex-col gap-3 h-full">
+                  <p className="text-sm silo-text-main leading-relaxed">
+                    Simulation for Manageable Oracle with{' '}
+                    <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType1)}</span>
+                    {' '}and for{' '}
+                    <span className="font-medium">{wizardData.token1?.symbol ?? 'token 1'}</span>
+                  </p>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => void simulateManageableOracle(1)}
+                      disabled={simulate1State === 'loading' || simulate1State === 'success'}
+                      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                        simulate1State === 'success'
+                          ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
+                          : simulate1State === 'loading'
+                          ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
+                          : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
+                      }`}
+                    >
+                      {simulate1State === 'success' && (
+                        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
+                      )}
+                      {simulate1State === 'loading' ? 'Simulating…' : 'Simulate'}
+                      <NewFeatureBadge compact className="ml-1" />
+                    </button>
+                  </div>
+                  {simulate1State === 'error' && (
+                    <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
+                      {simulate1Error}
+                    </pre>
+                  )}
+                </div>
+              </div>
+              </>
             )}
           </div>
         )}

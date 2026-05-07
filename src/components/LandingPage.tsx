@@ -8,64 +8,15 @@ import { NETWORK_CONFIGS } from '@/utils/networks'
 
 export default function LandingPage() {
   const router = useRouter()
-  const { parseJSONConfig, resetWizardWithCache } = useWizard()
-  const [jsonInput, setJsonInput] = useState('')
-  const [isUploadMode, setIsUploadMode] = useState(false)
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const { resetWizardWithCache } = useWizard()
   const [cacheMessage, setCacheMessage] = useState('')
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const content = e.target?.result as string
-        setJsonInput(content)
-        setError('')
-      }
-      reader.readAsText(file)
-    }
-  }
-
 
   const handleStartWizard = () => {
     router.push('/wizard?step=1')
   }
 
-  const handleLoadConfig = async () => {
-    if (!jsonInput.trim()) {
-      setError('Please provide a JSON configuration')
-      return
-    }
-
-    setIsLoading(true)
-    setError('')
-
-    try {
-      const success = await parseJSONConfig(jsonInput)
-      if (success) {
-        router.push('/wizard?step=11') // Go directly to Step 11 (JSON Config)
-      } else {
-        setError('Failed to parse JSON configuration. Please check the format and ensure all required fields are present.')
-      }
-    } catch (err) {
-      console.error('JSON parsing error:', err)
-      setError(`Invalid JSON format: ${err instanceof Error ? err.message : 'Unknown error'}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const clearInput = () => {
-    setJsonInput('')
-    setError('')
-  }
-
   const handleClearCache = () => {
     resetWizardWithCache()
-    setJsonInput('')
-    setError('')
     setCacheMessage('Cache cleared. You can retry Verify Market now.')
   }
 
@@ -78,12 +29,12 @@ export default function LandingPage() {
             Silo Market Crafter
           </h1>
           <p className="text-xl silo-text-soft">
-            Create or load Silo market configurations
+            Create Silo market configurations
           </p>
         </div>
 
         {/* Main Options */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="max-w-2xl mx-auto">
           {/* Start New Wizard */}
           <div className="silo-panel silo-top-card p-8">
             <div className="text-center">
@@ -118,95 +69,6 @@ export default function LandingPage() {
                   ))}
                 </ul>
               </div>
-            </div>
-          </div>
-
-          {/* Load Existing Config */}
-          <div className="silo-panel silo-top-card p-8">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-[var(--silo-accent-soft)] text-[var(--silo-accent)]">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-semibold silo-text-main mb-4">
-                Load Existing Config
-              </h2>
-              <p className="silo-text-soft mb-6">
-                Upload or paste an existing JSON configuration to edit and deploy.
-              </p>
-            </div>
-
-            {/* Input Mode Toggle */}
-            <div className="flex mb-4">
-              <button
-                onClick={() => setIsUploadMode(false)}
-                className={`flex-1 py-2 px-4 rounded-l-lg font-medium transition-colors ${
-                  !isUploadMode
-                    ? 'bg-[var(--silo-accent-soft)] text-[var(--silo-text)] border border-[var(--silo-border)]'
-                    : 'bg-transparent text-[var(--silo-text-soft)] border border-[var(--silo-border)] hover:bg-[var(--silo-surface-2)]'
-                }`}
-              >
-                Paste JSON
-              </button>
-              <button
-                onClick={() => setIsUploadMode(true)}
-                className={`flex-1 py-2 px-4 rounded-r-lg font-medium transition-colors ${
-                  isUploadMode
-                    ? 'bg-[var(--silo-accent-soft)] text-[var(--silo-text)] border border-[var(--silo-border)]'
-                    : 'bg-transparent text-[var(--silo-text-soft)] border border-[var(--silo-border)] hover:bg-[var(--silo-surface-2)]'
-                }`}
-              >
-                Upload File
-              </button>
-            </div>
-
-            {/* File Upload */}
-            {isUploadMode && (
-              <div className="mb-4">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileUpload}
-                  className="w-full p-3 silo-input rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--silo-accent-soft)] file:text-[var(--silo-text)] hover:file:bg-[#cfd6ff]"
-                />
-              </div>
-            )}
-
-            {/* JSON Input */}
-            <div className="mb-4">
-              <textarea
-                value={jsonInput}
-                onChange={(e) => {
-                  setJsonInput(e.target.value)
-                  if (error) setError('') // Clear error when user types
-                }}
-                placeholder="Paste your JSON configuration here..."
-                className="w-full h-32 p-3 silo-input rounded-lg resize-none"
-              />
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="mb-4 silo-alert silo-alert-error">
-                {error}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <Button fullWidth variant="outlineLight" size="sm" onClick={clearInput}>
-                Clear
-              </Button>
-              <Button
-                fullWidth
-                variant="primaryLightDisabled"
-                size="sm"
-                onClick={handleLoadConfig}
-                disabled={isLoading || !jsonInput.trim()}
-              >
-                {isLoading ? 'Loading...' : 'Load Config'}
-              </Button>
             </div>
           </div>
         </div>
