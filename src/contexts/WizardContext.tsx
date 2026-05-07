@@ -33,7 +33,7 @@ export interface NetworkInfo {
 }
 
 export interface OracleType {
-  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
+  type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | 'flatPrice'
   enabled: boolean
   reason?: string
 }
@@ -151,6 +151,17 @@ export interface SupraSValueOracleConfig {
   pairId: string
 }
 
+/** Flat price oracle config. */
+export interface FlatPriceOracleConfig {
+  priceInput: string
+  priceRawWei: string
+  baseToken: 'token0' | 'token1'
+  quoteToken: 'token0' | 'token1'
+  /** Exact addresses shown in FlatPrice bullet points and sent to factory create(). */
+  baseTokenAddress?: string
+  quoteTokenAddress?: string
+}
+
 /** When set, oracle will be created at deploy time via factory (OracleScalerFactory.createOracleScaler). */
 export interface CustomScalerCreate {
   factoryAddress: string
@@ -170,7 +181,7 @@ export interface ScalerOracle {
 
 export interface OracleConfiguration {
   token0: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | 'flatPrice'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
@@ -178,9 +189,10 @@ export interface OracleConfiguration {
     vaultWithUnderlyingOracle?: VaultWithUnderlyingOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
     supraSValueOracle?: SupraSValueOracleConfig
+    flatPriceOracle?: FlatPriceOracleConfig
   }
   token1: {
-    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue'
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | 'flatPrice'
     scalerOracle?: ScalerOracle
     chainlinkOracle?: ChainlinkOracleConfig
     ptLinearOracle?: PTLinearOracleConfig
@@ -188,6 +200,7 @@ export interface OracleConfiguration {
     vaultWithUnderlyingOracle?: VaultWithUnderlyingOracleConfig
     customMethodOracle?: CustomMethodOracleConfig
     supraSValueOracle?: SupraSValueOracleConfig
+    flatPriceOracle?: FlatPriceOracleConfig
   }
 }
 
@@ -497,6 +510,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'vaultWithUnderlying') return 'VaultOracleWithUnderlying'
         if (t === 'customMethod') return 'CustomMethodOracle'
         if (t === 'supraSValue') return 'SupraSValueOracle'
+        if (t === 'flatPrice') return 'FlatPriceOracle'
         const n = wizardData.oracleConfiguration?.token0?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -590,6 +604,18 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {}),
+      ...(wizardData.oracleConfiguration?.token0?.type === 'flatPrice' && wizardData.oracleConfiguration?.token0?.flatPriceOracle
+        ? {
+            flatPriceOracle0: {
+              priceInput: wizardData.oracleConfiguration.token0.flatPriceOracle.priceInput,
+              priceRawWei: wizardData.oracleConfiguration.token0.flatPriceOracle.priceRawWei,
+              baseToken: wizardData.oracleConfiguration.token0.flatPriceOracle.baseToken,
+              quoteToken: wizardData.oracleConfiguration.token0.flatPriceOracle.quoteToken,
+              baseTokenAddress: wizardData.oracleConfiguration.token0.flatPriceOracle.baseTokenAddress || '',
+              quoteTokenAddress: wizardData.oracleConfiguration.token0.flatPriceOracle.quoteTokenAddress || ''
+            }
+          }
+        : {}),
       token1: wizardData.token1?.symbol || "",
       solvencyOracle1: (() => {
         const t = wizardData.oracleConfiguration?.token1?.type
@@ -599,6 +625,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         if (t === 'vaultWithUnderlying') return 'VaultOracleWithUnderlying'
         if (t === 'customMethod') return 'CustomMethodOracle'
         if (t === 'supraSValue') return 'SupraSValueOracle'
+        if (t === 'flatPrice') return 'FlatPriceOracle'
         const n = wizardData.oracleConfiguration?.token1?.scalerOracle?.name || "NO_ORACLE"
         return n === "Custom Scaler" ? "PLACEHOLDER" : n
       })(),
@@ -693,6 +720,19 @@ export function WizardProvider({ children }: { children: ReactNode }) {
             }
           }
         : {})
+      ,
+      ...(wizardData.oracleConfiguration?.token1?.type === 'flatPrice' && wizardData.oracleConfiguration?.token1?.flatPriceOracle
+        ? {
+            flatPriceOracle1: {
+              priceInput: wizardData.oracleConfiguration.token1.flatPriceOracle.priceInput,
+              priceRawWei: wizardData.oracleConfiguration.token1.flatPriceOracle.priceRawWei,
+              baseToken: wizardData.oracleConfiguration.token1.flatPriceOracle.baseToken,
+              quoteToken: wizardData.oracleConfiguration.token1.flatPriceOracle.quoteToken,
+              baseTokenAddress: wizardData.oracleConfiguration.token1.flatPriceOracle.baseTokenAddress || '',
+              quoteTokenAddress: wizardData.oracleConfiguration.token1.flatPriceOracle.quoteTokenAddress || ''
+            }
+          }
+        : {})
     }
     return JSON.stringify(config, null, 4)
   }
@@ -732,6 +772,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'customMethod'
           : config.solvencyOracle0 === 'SupraSValueOracle'
           ? 'supraSValue'
+          : config.solvencyOracle0 === 'FlatPriceOracle'
+          ? 'flatPrice'
           : 'scaler'
       const oracleType1 =
         config.solvencyOracle1 === 'NO_ORACLE'
@@ -748,6 +790,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           ? 'customMethod'
           : config.solvencyOracle1 === 'SupraSValueOracle'
           ? 'supraSValue'
+          : config.solvencyOracle1 === 'FlatPriceOracle'
+          ? 'flatPrice'
           : 'scaler'
       const chainlink0 = config.chainlinkOracle0 && oracleType0 === 'chainlink'
         ? {
@@ -965,6 +1009,28 @@ export function WizardProvider({ children }: { children: ReactNode }) {
               pairId: String(config.supraSValueOracle1.pairId ?? '')
             }
           : undefined
+      const flatPrice0 =
+        config.flatPriceOracle0 && oracleType0 === 'flatPrice'
+          ? {
+              priceInput: String(config.flatPriceOracle0.priceInput ?? ''),
+              priceRawWei: String(config.flatPriceOracle0.priceRawWei ?? '0'),
+              baseToken: (config.flatPriceOracle0.baseToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              quoteToken: (config.flatPriceOracle0.quoteToken === 'token0' ? 'token0' : 'token1') as 'token0' | 'token1',
+              baseTokenAddress: String(config.flatPriceOracle0.baseTokenAddress ?? ''),
+              quoteTokenAddress: String(config.flatPriceOracle0.quoteTokenAddress ?? '')
+            }
+          : undefined
+      const flatPrice1 =
+        config.flatPriceOracle1 && oracleType1 === 'flatPrice'
+          ? {
+              priceInput: String(config.flatPriceOracle1.priceInput ?? ''),
+              priceRawWei: String(config.flatPriceOracle1.priceRawWei ?? '0'),
+              baseToken: (config.flatPriceOracle1.baseToken === 'token0' ? 'token0' : 'token1') as 'token0' | 'token1',
+              quoteToken: (config.flatPriceOracle1.quoteToken === 'token1' ? 'token1' : 'token0') as 'token0' | 'token1',
+              baseTokenAddress: String(config.flatPriceOracle1.baseTokenAddress ?? ''),
+              quoteTokenAddress: String(config.flatPriceOracle1.quoteTokenAddress ?? '')
+            }
+          : undefined
 
       const oracleConfig: OracleConfiguration = {
         token0: {
@@ -981,7 +1047,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           vaultOracle: oracleType0 === 'vault' ? vault0 : undefined,
           vaultWithUnderlyingOracle: oracleType0 === 'vaultWithUnderlying' ? vaultWithUnderlying0 : undefined,
           customMethodOracle: oracleType0 === 'customMethod' ? customMethod0 : undefined,
-          supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined
+          supraSValueOracle: oracleType0 === 'supraSValue' ? supra0 : undefined,
+          flatPriceOracle: oracleType0 === 'flatPrice' ? flatPrice0 : undefined
         },
         token1: {
           type: oracleType1,
@@ -997,7 +1064,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           vaultOracle: oracleType1 === 'vault' ? vault1 : undefined,
           vaultWithUnderlyingOracle: oracleType1 === 'vaultWithUnderlying' ? vaultWithUnderlying1 : undefined,
           customMethodOracle: oracleType1 === 'customMethod' ? customMethod1 : undefined,
-          supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined
+          supraSValueOracle: oracleType1 === 'supraSValue' ? supra1 : undefined,
+          flatPriceOracle: oracleType1 === 'flatPrice' ? flatPrice1 : undefined
         }
       }
       

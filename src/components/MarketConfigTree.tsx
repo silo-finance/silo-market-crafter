@@ -212,6 +212,7 @@ function buildOracleBullets(
   options?: { excludeBaseDiscount?: boolean }
 ): OracleBulletItem[] {
   const bullets: OracleBulletItem[] = []
+  const isFlatPriceOracle = (_type ?? '').toLowerCase().includes('flatpriceoracle')
   if (quotePrice != null && quotePrice !== '') {
     const priceStr = formatQuotePriceAs18Decimals(quotePrice)
     bullets.push({
@@ -227,7 +228,7 @@ function buildOracleBullets(
       )
     })
   }
-  if (tokenInfo?.baseTokenAddress && ethers.isAddress(tokenInfo.baseTokenAddress)) {
+  if (!isFlatPriceOracle && tokenInfo?.baseTokenAddress && ethers.isAddress(tokenInfo.baseTokenAddress)) {
     bullets.push({
       key: 'oracle.baseToken',
       text: (
@@ -265,7 +266,9 @@ function buildOracleBullets(
 
   if (config && typeof config === 'object') {
     for (const [configKey, val] of Object.entries(config)) {
+      if (isFlatPriceOracle && configKey !== 'rawPrice') continue
       if (/quoteToken/i.test(configKey)) continue
+      if (isFlatPriceOracle && /normalizationDivider/i.test(configKey)) continue
       const isBaseDiscount = /baseDiscount/i.test(configKey)
       if (isBaseDiscount && options?.excludeBaseDiscount) continue
       const raw = typeof val === 'string' ? val : String(val)

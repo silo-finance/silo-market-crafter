@@ -226,6 +226,16 @@ const ptLinearReadAbi = [
   }
 ] as const
 
+const flatPriceReadAbi = [
+  {
+    type: 'function' as const,
+    name: 'price',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view' as const
+  }
+] as const
+
 const customMethodOracleReadAbi: ethers.InterfaceAbi = [
   {
     type: 'function',
@@ -1043,6 +1053,9 @@ export async function fetchMarketConfig(
 
   // Layer 11: SupraSValueOracle enrichment (batched).
   await enrichSupraSValueOracles(provider, flatOracles)
+
+  // Layer 11.5: FlatPriceOracle enrichment (batched).
+  await enrichFlatPriceOracles(provider, flatOracles)
 
   // Layer 12: ERC4626OracleHardcodeQuote check (batched). Includes inner oracles.
   await enrichErc4626VaultChecks(provider, flatOracles)
@@ -1875,6 +1888,55 @@ function isSupraSValueOracleByVersion(version: string | undefined): boolean {
   if (!version) return false
   const v = version.toLowerCase()
   return v.includes('suprasvalueoracle') || v.includes('supra s-value oracle')
+}
+
+function isFlatPriceOracleByVersion(version: string | undefined): boolean {
+  if (!version) return false
+  const v = version.toLowerCase()
+  return v.includes('flatpriceoracle') || v.includes('flat price oracle')
+}
+
+async function enrichFlatPriceOracles(provider: ethers.Provider, oracles: OracleInfo[]): Promise<void> {
+  interface Target {
+    oracle: OracleInfo
+    address: string
+  }
+  const targets: Target[] = []
+  for (const oracle of oracles) {
+    if (isFlatPriceOracleByVersion(oracle.version)) {
+      targets.push({ oracle, address: oracle.address })
+    } else if (oracle.underlying && isFlatPriceOracleByVersion(oracle.underlying.version)) {
+      targets.push({ oracle, address: oracle.underlying.address })
+    }
+  }
+  if (targets.length === 0) return
+
+  const uniqueAddresses = Array.from(new Set(targets.map((t) => toLower(t.address))))
+  const indices = new Map<string, number>()
+  const calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+  for (const addr of uniqueAddresses) {
+    indices.set(addr, calls.length)
+    calls.push(
+      buildReadMulticallCall({
+        target: ethers.getAddress(addr),
+        abi: flatPriceReadAbi as unknown as ethers.InterfaceAbi,
+        functionName: 'price',
+        allowFailure: true
+      })
+    )
+  }
+  const results = await executeReadMulticall<unknown>(provider, calls)
+  for (const t of targets) {
+    const idx = indices.get(toLower(t.address))
+    if (idx == null) continue
+    const raw = results[idx]
+    if (raw == null) continue
+    t.oracle.type = 'FlatPriceOracle'
+    t.oracle.config = {
+      ...(t.oracle.config ?? {}),
+      rawPrice: raw.toString()
+    }
+  }
 }
 
 export function isErc4626OracleHardcodeQuoteByVersion(version: string | undefined): boolean {

@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig, VaultWithUnderlyingOracleConfig, CustomMethodOracleConfig, SupraSValueOracleConfig } from '@/contexts/WizardContext'
+import type { WizardData, ScalerOracle, ChainlinkOracleConfig, PTLinearOracleConfig, VaultOracleConfig, VaultWithUnderlyingOracleConfig, CustomMethodOracleConfig, SupraSValueOracleConfig, FlatPriceOracleConfig } from '@/contexts/WizardContext'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import oracleScalerFactoryAbi from '@/abis/oracle/OracleScalerFactory.json'
 import chainlinkV3FactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
@@ -9,6 +9,7 @@ import erc4626OracleFactoryAbi from '@/abis/oracle/ERC4626OracleHardcodeQuoteFac
 import erc4626OracleWithUnderlyingFactoryAbi from '@/abis/oracle/ERC4626OracleWithUnderlyingFactory.json'
 import customMethodOracleFactoryAbi from '@/abis/oracle/CustomMethodOracleFactory.json'
 import supraSValueOracleFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
+import flatPriceOracleFactoryAbi from '@/abis/oracle/FlatPriceOracleFactory.json'
 import { convertWizardTo18Decimals } from '@/utils/verification/normalization'
 import { getAbi } from '@/utils/abiArtifact'
 
@@ -21,6 +22,7 @@ const erc4626FactoryInterface = new ethers.Interface(getAbi(erc4626OracleFactory
 const erc4626WithUnderlyingFactoryInterface = new ethers.Interface(getAbi(erc4626OracleWithUnderlyingFactoryAbi))
 const customMethodFactoryInterface = new ethers.Interface(getAbi(customMethodOracleFactoryAbi))
 const supraSValueFactoryInterface = new ethers.Interface(getAbi(supraSValueOracleFactoryAbi))
+const flatPriceFactoryInterface = new ethers.Interface(getAbi(flatPriceOracleFactoryAbi))
 
 export interface SiloCoreDeployments {
   [contractName: string]: string
@@ -97,6 +99,7 @@ export interface OracleDeployments {
   erc4626OracleWithUnderlyingFactory?: string
   customMethodOracleFactory?: string
   supraSValueOracleFactory?: string
+  flatPriceOracleFactory?: string
 }
 
 /**
@@ -152,7 +155,8 @@ export function prepareDeployArgs(
     vault: VaultOracleConfig | null | undefined,
     vaultWithUnderlying: VaultWithUnderlyingOracleConfig | null | undefined,
     customMethod: CustomMethodOracleConfig | null | undefined,
-    supraSValue: SupraSValueOracleConfig | null | undefined
+    supraSValue: SupraSValueOracleConfig | null | undefined,
+    flatPrice: FlatPriceOracleConfig | null | undefined
   ) => {
     if (chainlink && oracleDeployments?.chainlinkV3OracleFactory) {
       const baseToken = ethers.getAddress(chainlink.baseToken === 'token0' ? wizardData.token0!.address : wizardData.token1!.address)
@@ -362,6 +366,31 @@ export function prepareDeployArgs(
         txInput
       }
     }
+    if (flatPrice && oracleDeployments?.flatPriceOracleFactory) {
+      const rawPrice = BigInt(flatPrice.priceRawWei)
+      if (rawPrice <= BigInt(0)) {
+        throw new Error('Flat Price oracle requires price greater than zero.')
+      }
+      const baseToken = flatPrice.baseTokenAddress?.trim()
+      const quoteToken = flatPrice.quoteTokenAddress?.trim()
+      if (!baseToken || !ethers.isAddress(baseToken) || baseToken === ethers.ZeroAddress) {
+        throw new Error('Flat Price oracle base token address is invalid or zero.')
+      }
+      if (!quoteToken || !ethers.isAddress(quoteToken) || quoteToken === ethers.ZeroAddress) {
+        throw new Error('Flat Price oracle quote token address is invalid or zero.')
+      }
+      const baseTokenNormalized = ethers.getAddress(baseToken)
+      const quoteTokenNormalized = ethers.getAddress(quoteToken)
+      if (baseTokenNormalized.toLowerCase() === quoteTokenNormalized.toLowerCase()) {
+        throw new Error('Flat Price oracle base token and quote token must be different.')
+      }
+      const txInput = flatPriceFactoryInterface.encodeFunctionData('create', [rawPrice, baseTokenNormalized, quoteTokenNormalized, ethers.ZeroHash])
+      return {
+        deployed: ethers.ZeroAddress,
+        factory: oracleDeployments.flatPriceOracleFactory,
+        txInput
+      }
+    }
     if (!scaler) return getOracleTxData(undefined)
     if (scaler.customCreate) {
       const txInput = scalerFactoryInterface.encodeFunctionData('createOracleScaler', [
@@ -427,7 +456,8 @@ export function prepareDeployArgs(
     wizardData.oracleConfiguration?.token0?.vaultOracle,
     wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle,
     wizardData.oracleConfiguration?.token0?.customMethodOracle,
-    wizardData.oracleConfiguration?.token0?.supraSValueOracle
+    wizardData.oracleConfiguration?.token0?.supraSValueOracle,
+    wizardData.oracleConfiguration?.token0?.flatPriceOracle
   )
   const solvency1Raw = getSolvencyOracleTxData(
     wizardData.oracleConfiguration?.token1?.scalerOracle,
@@ -436,7 +466,8 @@ export function prepareDeployArgs(
     wizardData.oracleConfiguration?.token1?.vaultOracle,
     wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle,
     wizardData.oracleConfiguration?.token1?.customMethodOracle,
-    wizardData.oracleConfiguration?.token1?.supraSValueOracle
+    wizardData.oracleConfiguration?.token1?.supraSValueOracle,
+    wizardData.oracleConfiguration?.token1?.flatPriceOracle
   )
 
   const _oracles = {

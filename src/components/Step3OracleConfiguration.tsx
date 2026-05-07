@@ -33,6 +33,7 @@ import {
 import supraSValueFactoryAbi from '@/abis/oracle/ISupraSValueOracleFactory.json'
 import supraOracleFeedStorageAbi from '@/abis/oracle/ISupraOracleFeedStorage.json'
 import chainlinkV3OracleFactoryAbi from '@/abis/oracle/IChainlinkV3Factory.json'
+import flatPriceOracleFactoryAbi from '@/abis/oracle/FlatPriceOracleFactory.json'
 import { getAbi } from '@/utils/abiArtifact'
 import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
 import Button from '@/components/Button'
@@ -43,6 +44,7 @@ const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).a
 const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).abi
 const ierc4526Abi = iERC4526Artifact as ethers.InterfaceAbi
 const ierc20Abi = (iERC20Artifact as { abi: ethers.InterfaceAbi }).abi
+const flatPriceFactoryInterfaceAbi = getAbi(flatPriceOracleFactoryAbi)
 
 const erc4626SymbolAssetAbi = [
   {
@@ -2507,6 +2509,266 @@ function SupraSValueOracleSection({
   )
 }
 
+/** Short Ethereum address for inline UI hints (oracle quote display). */
+function shortenQuoteAddressUi(addr: string): string {
+  const a = addr.trim()
+  return a.length >= 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : (a || '—')
+}
+
+function normalizeFlatPriceInput(value: string): string {
+  return value.trim().replace(',', '.')
+}
+
+function parseFlatPriceRawWei(value: string): string | null {
+  const normalized = normalizeFlatPriceInput(value)
+  if (!normalized || !/^\d+(\.\d+)?$/.test(normalized)) return null
+  try {
+    const parsed = ethers.parseUnits(normalized, 18)
+    const zero = BigInt(0)
+    const maxInt256 = BigInt('57896044618658097711785492504343953926634992332820282019728792003956564819967')
+    if (parsed <= zero || parsed > maxInt256) return null
+    return parsed.toString()
+  } catch {
+    return null
+  }
+}
+
+interface FlatPriceOracleSectionProps {
+  baseTokenSymbol: string
+  quoteTokenSymbol: string
+  baseTokenAddress?: string
+  quoteTokenAddress?: string
+  inputValue: string
+  setInputValue: (value: string) => void
+  factory: { address: string; version: string } | null
+  factoryMissing: string | null
+  implementationAddress: string | null
+  implementationVersion: string | null
+  implementationError: string | null
+  networkChainId?: string
+  onQuoteTokenRefresh?: () => void
+}
+
+function FlatPriceOracleSection({
+  baseTokenSymbol,
+  quoteTokenSymbol,
+  baseTokenAddress,
+  quoteTokenAddress,
+  inputValue,
+  setInputValue,
+  factory,
+  factoryMissing,
+  implementationAddress,
+  implementationVersion,
+  implementationError,
+  networkChainId,
+  onQuoteTokenRefresh
+}: FlatPriceOracleSectionProps) {
+  const rawWei = parseFlatPriceRawWei(inputValue)
+  const human18 = rawWei ? ethers.formatUnits(rawWei, 18).replace('.', ',') : null
+  const trimmedQuoteAddr = (quoteTokenAddress ?? '').trim()
+  const trimmedBaseAddr = (baseTokenAddress ?? '').trim()
+  // Hide the resolved quote when peer state has not been hydrated yet (empty)
+  // or when it collapses to base (peer uses base as quote). Refresh button rehydrates from saved.
+  const quoteResolutionEmpty =
+    !trimmedQuoteAddr ||
+    !ethers.isAddress(trimmedQuoteAddr) ||
+    (!!trimmedBaseAddr &&
+      ethers.isAddress(trimmedBaseAddr) &&
+      ethers.getAddress(trimmedQuoteAddr) === ethers.getAddress(trimmedBaseAddr))
+  const displayQuoteSymbol = quoteResolutionEmpty ? '' : quoteTokenSymbol
+  const [simulationState, setSimulationState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [simulationMessage, setSimulationMessage] = useState<string>('')
+  const [refreshState, setRefreshState] = useState<'idle' | 'spinning' | 'done'>('idle')
+
+  const handleQuoteRefreshClick = () => {
+    if (!onQuoteTokenRefresh) return
+    onQuoteTokenRefresh()
+    setRefreshState('spinning')
+    window.setTimeout(() => setRefreshState('done'), 500)
+    window.setTimeout(() => setRefreshState('idle'), 1400)
+  }
+
+  useEffect(() => {
+    setSimulationState('idle')
+    setSimulationMessage('')
+  }, [inputValue, rawWei, baseTokenAddress, quoteTokenAddress, factory?.address])
+
+  const simulateOracleCreation = async () => {
+    if (!factory?.address) {
+      setSimulationState('error')
+      setSimulationMessage('FlatPriceOracleFactory is not available.')
+      return
+    }
+    if (!rawWei) {
+      setSimulationState('error')
+      setSimulationMessage('Enter a valid price before simulation.')
+      return
+    }
+    if (!baseTokenAddress || !quoteTokenAddress || !ethers.isAddress(baseTokenAddress) || !ethers.isAddress(quoteTokenAddress)) {
+      setSimulationState('error')
+      setSimulationMessage('Base/quote token addresses are missing or invalid.')
+      return
+    }
+    if (!window.ethereum) {
+      setSimulationState('error')
+      setSimulationMessage('Wallet provider is not available.')
+      return
+    }
+
+    setSimulationState('loading')
+    setSimulationMessage('')
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const flatFactory = new ethers.Contract(
+        factory.address,
+        flatPriceFactoryInterfaceAbi as unknown as ethers.InterfaceAbi,
+        provider
+      )
+      await flatFactory.create.staticCall(
+        BigInt(rawWei),
+        ethers.getAddress(baseTokenAddress),
+        ethers.getAddress(quoteTokenAddress),
+        ethers.ZeroHash
+      )
+      setSimulationState('success')
+      setSimulationMessage('Oracle creation simulation passed.')
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Simulation failed. Check FlatPrice arguments and selected network.'
+      setSimulationState('error')
+      setSimulationMessage(msg)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {factoryMissing ? (
+        <div className="silo-alert silo-alert-error"><p className="text-sm">{factoryMissing}</p></div>
+      ) : !factory ? (
+        <p className="text-sm text-yellow-400">Loading FlatPriceOracleFactory for this chain…</p>
+      ) : (
+        <ContractInfo
+          contractName="FlatPriceOracleFactory"
+          address={factory.address}
+          version={implementationVersion ?? ''}
+          versionLabel="implementation version"
+          chainId={networkChainId}
+          isOracle={true}
+        />
+      )}
+      {implementationError ? (
+        <div className="silo-alert silo-alert-error">
+          <p className="text-sm font-medium">Failed to resolve oracle implementation</p>
+          <p className="text-sm mt-1">{implementationError}</p>
+        </div>
+      ) : !implementationAddress && factory ? (
+        <p className="text-sm text-yellow-400">Resolving oracle implementation…</p>
+      ) : null}
+      <div className="silo-panel p-4 space-y-2">
+        <label className="block text-sm font-medium text-gray-300 mb-1">
+          Price of {baseTokenSymbol} in {displayQuoteSymbol || '—'}
+        </label>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder={`Price of ${baseTokenSymbol} in ${displayQuoteSymbol || 'quote token'} (e.g. 1.123 or 1,123)`}
+          className={wizardMonoInputClass}
+        />
+        {inputValue.trim() !== '' && (
+          <ul className="space-y-1 text-sm text-gray-400">
+            <li>
+              • Raw price:{' '}
+              <span className="font-mono font-medium text-white">{human18 ?? 'Invalid price format'}</span>
+              {rawWei ? (
+                <span className="text-gray-500 text-xs font-normal"> ({rawWei})</span>
+              ) : null}
+            </li>
+            <li>• {baseTokenSymbol} / {displayQuoteSymbol || '—'} price with 18 decimals: <span className="font-mono font-medium text-white">{human18 ?? 'Invalid price format'}</span></li>
+            <li>• Base token: <span className="font-mono font-medium text-white">{baseTokenSymbol}</span></li>
+            <li className="flex flex-wrap items-center gap-2">
+              <span>
+                • Quote token:{' '}
+                {displayQuoteSymbol ? (
+                  <span className="font-mono font-medium text-white">{displayQuoteSymbol}</span>
+                ) : (
+                  <span className="text-gray-500">— click refresh to load from saved configuration</span>
+                )}
+              </span>
+              {onQuoteTokenRefresh ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleQuoteRefreshClick}
+                    title="Refresh quote token from the other oracle configuration"
+                    className={`inline-flex items-center justify-center rounded-md p-1 border transition-colors ${
+                      refreshState === 'done'
+                        ? 'border-[color-mix(in_srgb,var(--silo-accent)_55%,var(--silo-border))] bg-[var(--silo-surface)] text-[var(--silo-accent)]'
+                        : 'border-[var(--silo-border)] bg-[var(--silo-surface)] text-[var(--silo-text-soft)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))] hover:text-[var(--silo-text)]'
+                    }`}
+                    aria-label="Refresh quote token from the other oracle"
+                  >
+                    {refreshState === 'done' ? (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className={`w-3.5 h-3.5 ${refreshState === 'spinning' ? 'animate-spin' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  {refreshState === 'done' ? (
+                    <span className="text-xs text-[var(--silo-accent)]">Refreshed</span>
+                  ) : null}
+                </>
+              ) : null}
+            </li>
+          </ul>
+        )}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={simulateOracleCreation}
+            disabled={simulationState === 'loading' || simulationState === 'success'}
+            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              simulationState === 'success'
+                ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
+                : simulationState === 'loading'
+                ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
+                : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
+            }`}
+          >
+            {simulationState === 'success' && (
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
+            )}
+            {simulationState === 'loading'
+              ? 'Simulating oracle creation...'
+              : 'Simulate oracle creation'}
+          </button>
+          {simulationState === 'error' && simulationMessage && (
+            <p className="text-xs text-red-400 mt-2 break-words">{simulationMessage}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /**
  * Normalization so oracle output is 18 decimals.
  * Equation: base decimals + aggregator decimals ± normalization = 18.
@@ -2699,6 +2961,16 @@ export default function Step3OracleConfiguration() {
   const [customMethodFactoryMissing, setCustomMethodFactoryMissing] = useState<string | null>(null)
   const [supraSValueFactory, setSupraSValueFactory] = useState<{ address: string; version: string } | null>(null)
   const [supraSValueFactoryMissing, setSupraSValueFactoryMissing] = useState<string | null>(null)
+  const [flatPriceFactory, setFlatPriceFactory] = useState<{ address: string; version: string } | null>(null)
+  const [flatPriceFactoryMissing, setFlatPriceFactoryMissing] = useState<string | null>(null)
+  const [flatPriceImplementationAddress, setFlatPriceImplementationAddress] = useState<string | null>(null)
+  const [flatPriceImplementationVersion, setFlatPriceImplementationVersion] = useState<string | null>(null)
+  const [flatPriceImplementationError, setFlatPriceImplementationError] = useState<string | null>(null)
+  const [flatPrice0Input, setFlatPrice0Input] = useState('')
+  const [flatPrice1Input, setFlatPrice1Input] = useState('')
+  // Bumped by the Flat Price Refresh button to force per-oracle sync useEffects to re-copy
+  // wizardData.oracleConfiguration into live state, so the resolver picks up saved values.
+  const [peerOracleSyncNonce, setPeerOracleSyncNonce] = useState(0)
   const [supraSValueImplementationAddress, setSupraSValueImplementationAddress] = useState<string | null>(null)
   const [supraSValueImplementationVersion, setSupraSValueImplementationVersion] = useState<string | null>(null)
   const [supraSValueImplementationError, setSupraSValueImplementationError] = useState<string | null>(null)
@@ -2791,6 +3063,7 @@ export default function Step3OracleConfiguration() {
   const needsVaultWithUnderlyingFactory = selectedOracleTypes.includes('vaultWithUnderlying')
   const needsCustomMethodFactory = selectedOracleTypes.includes('customMethod')
   const needsSupraSValueFactory = selectedOracleTypes.includes('supraSValue')
+  const needsFlatPriceFactory = selectedOracleTypes.includes('flatPrice')
 
   // Load virtual quote tokens if available in addresses JSON.
   useEffect(() => {
@@ -3045,6 +3318,75 @@ export default function Step3OracleConfiguration() {
     fetchSupraFactory()
   }, [wizardData.networkInfo?.chainId, needsSupraSValueFactory])
 
+  // Fetch FlatPriceOracleFactory address for current chain
+  useEffect(() => {
+    const fetchFlatPriceFactory = async () => {
+      if (!wizardData.networkInfo?.chainId || !needsFlatPriceFactory) {
+        setFlatPriceFactory(null)
+        setFlatPriceFactoryMissing(null)
+        return
+      }
+      try {
+        const address = await fetchOracleFactoryAddress(wizardData.networkInfo.chainId, 'flatPrice')
+        setFlatPriceFactory(address ? { address, version: '' } : null)
+        setFlatPriceFactoryMissing(
+          address ? null : getOracleFactoryMissingMessage('flatPrice', wizardData.networkInfo.chainId)
+        )
+      } catch {
+        setFlatPriceFactory(null)
+        setFlatPriceFactoryMissing('Failed to load FlatPriceOracleFactory for this chain.')
+      }
+    }
+    fetchFlatPriceFactory()
+  }, [wizardData.networkInfo?.chainId, needsFlatPriceFactory])
+
+  // Resolve FlatPriceOracle implementation from factory (ORACLE_IMPLEMENTATION)
+  useEffect(() => {
+    const factoryAddr = flatPriceFactory?.address
+    if (!factoryAddr || !ethers.isAddress(factoryAddr)) {
+      setFlatPriceImplementationAddress(null)
+      setFlatPriceImplementationVersion(null)
+      setFlatPriceImplementationError(null)
+      return
+    }
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setFlatPriceImplementationAddress(null)
+      setFlatPriceImplementationError('Wallet provider is not available to resolve oracle implementation.')
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      try {
+        setFlatPriceImplementationError(null)
+        const eth = window.ethereum
+        if (!eth) {
+          setFlatPriceImplementationAddress(null)
+          setFlatPriceImplementationVersion(null)
+          setFlatPriceImplementationError('Wallet provider is not available to resolve oracle implementation.')
+          return
+        }
+        const provider = new ethers.BrowserProvider(eth)
+        const factory = new ethers.Contract(factoryAddr, flatPriceFactoryInterfaceAbi as unknown as ethers.InterfaceAbi, provider)
+        const impl = await factory.ORACLE_IMPLEMENTATION()
+        if (cancelled) return
+        if (impl && ethers.isAddress(String(impl))) {
+          setFlatPriceImplementationAddress(ethers.getAddress(String(impl)))
+        } else {
+          setFlatPriceImplementationAddress(null)
+          setFlatPriceImplementationVersion(null)
+          setFlatPriceImplementationError('Factory returned an invalid ORACLE_IMPLEMENTATION address.')
+        }
+      } catch (err) {
+        if (cancelled) return
+        setFlatPriceImplementationAddress(null)
+        setFlatPriceImplementationVersion(null)
+        setFlatPriceImplementationError(err instanceof Error ? err.message : 'Failed to resolve ORACLE_IMPLEMENTATION from factory.')
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [flatPriceFactory?.address])
+
   // Resolve SupraSValueOracle implementation from factory (ORACLE_IMPLEMENTATION)
   useEffect(() => {
     const factoryAddr = supraSValueFactory?.address
@@ -3176,8 +3518,10 @@ export default function Step3OracleConfiguration() {
       erc4626OracleWithUnderlyingFactory?.address,
       customMethodFactory?.address,
       supraSValueFactory?.address,
+      flatPriceFactory?.address,
       customMethodImplementationAddress,
-      supraSValueImplementationAddress
+      supraSValueImplementationAddress,
+      flatPriceImplementationAddress
     ].filter((value): value is string => !!value)
     if (addresses.length === 0) return
 
@@ -3216,6 +3560,9 @@ export default function Step3OracleConfiguration() {
         setSupraSValueFactory(prev =>
           prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
         )
+        setFlatPriceFactory(prev =>
+          prev ? { ...prev, version: getVersion(prev.address) || '—' } : null
+        )
         setCustomMethodImplementationVersion(
           customMethodImplementationAddress
             ? getVersion(customMethodImplementationAddress) || '—'
@@ -3224,6 +3571,11 @@ export default function Step3OracleConfiguration() {
         setSupraSValueImplementationVersion(
           supraSValueImplementationAddress
             ? getVersion(supraSValueImplementationAddress) || '—'
+            : null
+        )
+        setFlatPriceImplementationVersion(
+          flatPriceImplementationAddress
+            ? getVersion(flatPriceImplementationAddress) || '—'
             : null
         )
       } catch (err) {
@@ -3235,11 +3587,15 @@ export default function Step3OracleConfiguration() {
         setErc4626OracleWithUnderlyingFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setSupraSValueFactory(prev => (prev ? { ...prev, version: '—' } : null))
+        setFlatPriceFactory(prev => (prev ? { ...prev, version: '—' } : null))
         setCustomMethodImplementationVersion(
           customMethodImplementationAddress ? '—' : null
         )
         setSupraSValueImplementationVersion(
           supraSValueImplementationAddress ? '—' : null
+        )
+        setFlatPriceImplementationVersion(
+          flatPriceImplementationAddress ? '—' : null
         )
       }
     }
@@ -3253,8 +3609,10 @@ export default function Step3OracleConfiguration() {
     erc4626OracleWithUnderlyingFactory?.address,
     customMethodFactory?.address,
     supraSValueFactory?.address,
+    flatPriceFactory?.address,
     customMethodImplementationAddress,
     supraSValueImplementationAddress,
+    flatPriceImplementationAddress,
     siloLensAddress,
     wizardData.networkInfo?.chainId
   ])
@@ -3284,7 +3642,7 @@ export default function Step3OracleConfiguration() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle])
+  }, [wizardData.oracleConfiguration?.token0?.ptLinearOracle, wizardData.oracleConfiguration?.token1?.ptLinearOracle, peerOracleSyncNonce])
 
   // Sync Vault oracle state from wizard when returning to step
   useEffect(() => {
@@ -3317,7 +3675,8 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     wizardData.oracleConfiguration?.token0?.vaultOracle,
-    wizardData.oracleConfiguration?.token1?.vaultOracle
+    wizardData.oracleConfiguration?.token1?.vaultOracle,
+    peerOracleSyncNonce
   ])
 
   // Sync Vault With Underlying oracle state from wizard when returning to step
@@ -3363,7 +3722,8 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     wizardData.oracleConfiguration?.token0?.vaultWithUnderlyingOracle,
-    wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle
+    wizardData.oracleConfiguration?.token1?.vaultWithUnderlyingOracle,
+    peerOracleSyncNonce
   ])
 
   // Sync Custom Method oracle state from wizard when returning to step
@@ -3403,7 +3763,8 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     wizardData.oracleConfiguration?.token0?.customMethodOracle,
-    wizardData.oracleConfiguration?.token1?.customMethodOracle
+    wizardData.oracleConfiguration?.token1?.customMethodOracle,
+    peerOracleSyncNonce
   ])
 
   // Sync Supra s-value oracle state from wizard when returning to step
@@ -3435,7 +3796,21 @@ export default function Step3OracleConfiguration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     wizardData.oracleConfiguration?.token0?.supraSValueOracle,
-    wizardData.oracleConfiguration?.token1?.supraSValueOracle
+    wizardData.oracleConfiguration?.token1?.supraSValueOracle,
+    peerOracleSyncNonce
+  ])
+
+  // Sync Flat Price oracle state from wizard when returning to step
+  useEffect(() => {
+    const fp0 = wizardData.oracleConfiguration?.token0?.flatPriceOracle
+    if (fp0) setFlatPrice0Input(fp0.priceInput ?? '')
+    const fp1 = wizardData.oracleConfiguration?.token1?.flatPriceOracle
+    if (fp1) setFlatPrice1Input(fp1.priceInput ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    wizardData.oracleConfiguration?.token0?.flatPriceOracle,
+    wizardData.oracleConfiguration?.token1?.flatPriceOracle,
+    peerOracleSyncNonce
   ])
 
 
@@ -3712,7 +4087,7 @@ export default function Step3OracleConfiguration() {
     }
     // Intentionally narrow: sync only when saved chainlink config refs change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.oracleConfiguration?.token0?.chainlinkOracle, wizardData.oracleConfiguration?.token1?.chainlinkOracle])
+  }, [wizardData.oracleConfiguration?.token0?.chainlinkOracle, wizardData.oracleConfiguration?.token1?.chainlinkOracle, peerOracleSyncNonce])
 
   // Find and validate scaler oracles for each token
   useEffect(() => {
@@ -3977,6 +4352,115 @@ export default function Step3OracleConfiguration() {
       return changed ? updated : prev
     })
   }, [wizardData.oracleConfiguration, availableScalers])
+
+  /**
+   * Effective quote token for an oracle slot (addresses + symbols for UI/submit/guardrails).
+   * Reads strictly from live per-oracle state. Manual Refresh button rehydrates that live state
+   * from `wizardData.oracleConfiguration` so this resolver picks the saved value up automatically.
+   * When the slot is Flat Price Oracle, resolves to the *peer* slot's configured quote token.
+   */
+  const resolveEffectiveOracleQuote = (side: '0' | '1', flatDepth = 0): { address: string; symbol: string } => {
+    const missing = { address: '', symbol: '' }
+    const t0 = wizardData.token0
+    const t1 = wizardData.token1
+    if (!t0 || !t1) return missing
+
+    const t0a = t0.address.trim()
+    const t1a = t1.address.trim()
+
+    const type = side === '0' ? wizardData.oracleType0?.type : wizardData.oracleType1?.type
+    if (!type) return missing
+
+    if (type === 'flatPrice') {
+      if (flatDepth > 2) return side === '0' ? { address: t0a, symbol: t0.symbol } : { address: t1a, symbol: t1.symbol }
+      const peer: '0' | '1' = side === '0' ? '1' : '0'
+      return resolveEffectiveOracleQuote(peer, flatDepth + 1)
+    }
+
+    if (type === 'none' || type === 'scaler') {
+      return side === '0' ? { address: t0a, symbol: t0.symbol } : { address: t1a, symbol: t1.symbol }
+    }
+
+    if (type === 'chainlink') {
+      const c = side === '0' ? chainlink0 : chainlink1
+      const useOther = c.useOtherTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useOther ? t1a : (c.customQuoteTokenAddress?.trim() ?? '')
+        const sym = useOther ? t1.symbol : (c.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+        return { address: addr, symbol: sym }
+      }
+      const addr = useOther ? t0a : (c.customQuoteTokenAddress?.trim() ?? '')
+      const sym = useOther ? t0.symbol : (c.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+      return { address: addr, symbol: sym }
+    }
+
+    if (type === 'ptLinear') {
+      const pt = side === '0' ? ptLinear0 : ptLinear1
+      const useSecond = pt.useSecondTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useSecond ? t1a : (pt.hardcodedQuoteTokenAddress?.trim() ?? '')
+        const sym = useSecond ? t1.symbol : shortenQuoteAddressUi(addr)
+        return { address: addr, symbol: sym }
+      }
+      const addr = useSecond ? t0a : (pt.hardcodedQuoteTokenAddress?.trim() ?? '')
+      const sym = useSecond ? t0.symbol : shortenQuoteAddressUi(addr)
+      return { address: addr, symbol: sym }
+    }
+
+    if (type === 'vault') {
+      const v = side === '0' ? vault0 : vault1
+      const useOther = v.useOtherTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useOther ? t1a : (v.customQuoteTokenAddress?.trim() ?? '')
+        const sym = useOther ? t1.symbol : (v.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+        return { address: addr, symbol: sym }
+      }
+      const addr = useOther ? t0a : (v.customQuoteTokenAddress?.trim() ?? '')
+      const sym = useOther ? t0.symbol : (v.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+      return { address: addr, symbol: sym }
+    }
+
+    if (type === 'vaultWithUnderlying') {
+      const v = side === '0' ? vaultWithUnderlying0 : vaultWithUnderlying1
+      const useOther = v.useOtherTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useOther ? t1a : (v.customQuoteTokenAddress?.trim() ?? '')
+        const sym = useOther ? t1.symbol : (v.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+        return { address: addr, symbol: sym }
+      }
+      const addr = useOther ? t0a : (v.customQuoteTokenAddress?.trim() ?? '')
+      const sym = useOther ? t0.symbol : (v.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+      return { address: addr, symbol: sym }
+    }
+
+    if (type === 'customMethod') {
+      const cm = side === '0' ? customMethod0 : customMethod1
+      const useOther = cm.useOtherTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useOther ? t1a : (cm.customQuoteTokenAddress?.trim() ?? '')
+        const sym = useOther ? t1.symbol : (cm.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+        return { address: addr, symbol: sym }
+      }
+      const addr = useOther ? t0a : (cm.customQuoteTokenAddress?.trim() ?? '')
+      const sym = useOther ? t0.symbol : (cm.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+      return { address: addr, symbol: sym }
+    }
+
+    if (type === 'supraSValue') {
+      const s = side === '0' ? supraSValue0 : supraSValue1
+      const useOther = s.useOtherTokenAsQuote !== false
+      if (side === '0') {
+        const addr = useOther ? t1a : (s.customQuoteTokenAddress?.trim() ?? '')
+        const sym = useOther ? t1.symbol : (s.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+        return { address: addr, symbol: sym }
+      }
+      const addr = useOther ? t0a : (s.customQuoteTokenAddress?.trim() ?? '')
+      const sym = useOther ? t0.symbol : (s.customQuoteTokenMetadata?.symbol?.trim() || shortenQuoteAddressUi(addr))
+      return { address: addr, symbol: sym }
+    }
+
+    return missing
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -4287,44 +4771,37 @@ export default function Step3OracleConfiguration() {
         errors.push('Supra s-value Oracle (Token 1): sanity check failed. Verify Pair ID and quote token.')
       }
     }
-
-    // Effective quote token address: none/scaler = token itself; chainlink/vault/vaultWithUnderlying/ptLinear = stored quote address only.
-    // "Other token" is just a predefined option that fills the address field – we only read that field.
-    const getEffectiveQuoteAddress = (side: '0' | '1'): string => {
-      const type = side === '0' ? wizardData.oracleType0?.type : wizardData.oracleType1?.type
-      const token0Addr = wizardData.token0?.address?.trim() ?? ''
-      const token1Addr = wizardData.token1?.address?.trim() ?? ''
-      if (type === 'none' || type === 'scaler') {
-        return side === '0' ? token0Addr : token1Addr
+    if (wizardData.oracleType0?.type === 'flatPrice') {
+      if (flatPriceFactoryMissing || !flatPriceFactory) {
+        errors.push('Flat Price Oracle (Token 0): this oracle is not available on the selected chain (factory missing).')
       }
-      if (type === 'chainlink') {
-        const c = side === '0' ? chainlink0 : chainlink1
-        return (c.customQuoteTokenAddress?.trim() ?? '')
+      if (!parseFlatPriceRawWei(flatPrice0Input)) {
+        errors.push('Flat Price Oracle (Token 0): enter a valid positive decimal price (dot/comma supported, > 0, <= int256 max).')
       }
-      if (type === 'ptLinear') {
-        const pt = side === '0' ? ptLinear0 : ptLinear1
-        return (pt.hardcodedQuoteTokenAddress?.trim() ?? '')
+      const peerQ = resolveEffectiveOracleQuote('1')
+      if (!peerQ.address || !ethers.isAddress(peerQ.address)) {
+        errors.push(
+          'Flat Price Oracle (Token 0): quote token could not be resolved from Token 1 oracle. Configure Token 1 quote or press Refresh next to Quote token.'
+        )
       }
-      if (type === 'vault') {
-        const v = side === '0' ? vault0 : vault1
-        return (v.customQuoteTokenAddress?.trim() ?? '')
-      }
-      if (type === 'vaultWithUnderlying') {
-        const v = side === '0' ? vaultWithUnderlying0 : vaultWithUnderlying1
-        return (v.customQuoteTokenAddress?.trim() ?? '')
-      }
-      if (type === 'customMethod') {
-        const cm = side === '0' ? customMethod0 : customMethod1
-        return (cm.customQuoteTokenAddress?.trim() ?? '')
-      }
-      if (type === 'supraSValue') {
-        const s = side === '0' ? supraSValue0 : supraSValue1
-        return (s.customQuoteTokenAddress?.trim() ?? '')
-      }
-      return ''
     }
-    const quote0 = getEffectiveQuoteAddress('0').toLowerCase()
-    const quote1 = getEffectiveQuoteAddress('1').toLowerCase()
+    if (wizardData.oracleType1?.type === 'flatPrice') {
+      if (flatPriceFactoryMissing || !flatPriceFactory) {
+        errors.push('Flat Price Oracle (Token 1): this oracle is not available on the selected chain (factory missing).')
+      }
+      if (!parseFlatPriceRawWei(flatPrice1Input)) {
+        errors.push('Flat Price Oracle (Token 1): enter a valid positive decimal price (dot/comma supported, > 0, <= int256 max).')
+      }
+      const peerQ = resolveEffectiveOracleQuote('0')
+      if (!peerQ.address || !ethers.isAddress(peerQ.address)) {
+        errors.push(
+          'Flat Price Oracle (Token 1): quote token could not be resolved from Token 0 oracle. Configure Token 0 quote or press Refresh next to Quote token.'
+        )
+      }
+    }
+
+    const quote0 = resolveEffectiveOracleQuote('0').address.toLowerCase()
+    const quote1 = resolveEffectiveOracleQuote('1').address.toLowerCase()
     if (quote0 && quote1 && quote0 !== quote1) {
       errors.push('Quote tokens for both oracles must be the same. Token 0 and Token 1 oracle quote tokens have different addresses.')
     }
@@ -4441,6 +4918,25 @@ export default function Step3OracleConfiguration() {
                     : supraSValue0.customQuoteTokenMetadata,
                 pairId: (supraSValue0.pairId ?? '').trim()
               }
+            : undefined,
+          flatPriceOracle: wizardData.oracleType0!.type === 'flatPrice'
+            ? (() => {
+                const qPeer = resolveEffectiveOracleQuote('1').address.trim()
+                const qa = ethers.isAddress(qPeer) ? ethers.getAddress(qPeer) : qPeer
+                const t0a = ethers.getAddress(wizardData.token0!.address)
+                const t1a = ethers.getAddress(wizardData.token1!.address)
+                let quoteTok: 'token0' | 'token1' = 'token1'
+                if (qa === t1a) quoteTok = 'token1'
+                else if (qa === t0a) quoteTok = 'token0'
+                return {
+                  priceInput: normalizeFlatPriceInput(flatPrice0Input),
+                  priceRawWei: parseFlatPriceRawWei(flatPrice0Input) || '0',
+                  baseToken: 'token0',
+                  quoteToken: quoteTok,
+                  baseTokenAddress: wizardData.token0?.address,
+                  quoteTokenAddress: qa,
+                }
+              })()
             : undefined
         },
         token1: {
@@ -4528,6 +5024,25 @@ export default function Step3OracleConfiguration() {
                     : supraSValue1.customQuoteTokenMetadata,
                 pairId: (supraSValue1.pairId ?? '').trim()
               }
+            : undefined,
+          flatPriceOracle: wizardData.oracleType1!.type === 'flatPrice'
+            ? (() => {
+                const qPeer = resolveEffectiveOracleQuote('0').address.trim()
+                const qa = ethers.isAddress(qPeer) ? ethers.getAddress(qPeer) : qPeer
+                const t0a = ethers.getAddress(wizardData.token0!.address)
+                const t1a = ethers.getAddress(wizardData.token1!.address)
+                let quoteTok: 'token0' | 'token1' = 'token0'
+                if (qa === t0a) quoteTok = 'token0'
+                else if (qa === t1a) quoteTok = 'token1'
+                return {
+                  priceInput: normalizeFlatPriceInput(flatPrice1Input),
+                  priceRawWei: parseFlatPriceRawWei(flatPrice1Input) || '0',
+                  baseToken: 'token1',
+                  quoteToken: quoteTok,
+                  baseTokenAddress: wizardData.token1?.address,
+                  quoteTokenAddress: qa,
+                }
+              })()
             : undefined
         }
       }
@@ -4582,6 +5097,20 @@ export default function Step3OracleConfiguration() {
     )
   }
 
+  void peerOracleSyncNonce
+  const flatPriceOracle0PeerQuote =
+    wizardData.oracleType0.type === 'flatPrice' ? resolveEffectiveOracleQuote('1') : null
+  const flatPriceOracle1PeerQuote =
+    wizardData.oracleType1.type === 'flatPrice' ? resolveEffectiveOracleQuote('0') : null
+  const flatPrice0QuoteAddressDisplay =
+    flatPriceOracle0PeerQuote?.address && ethers.isAddress(flatPriceOracle0PeerQuote.address.trim())
+      ? ethers.getAddress(flatPriceOracle0PeerQuote.address.trim())
+      : (flatPriceOracle0PeerQuote?.address?.trim() ?? '')
+  const flatPrice1QuoteAddressDisplay =
+    flatPriceOracle1PeerQuote?.address && ethers.isAddress(flatPriceOracle1PeerQuote.address.trim())
+      ? ethers.getAddress(flatPriceOracle1PeerQuote.address.trim())
+      : (flatPriceOracle1PeerQuote?.address?.trim() ?? '')
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-8">
@@ -4611,6 +5140,8 @@ export default function Step3OracleConfiguration() {
               ? 'Custom Method Oracle'
               : wizardData.oracleType0.type === 'supraSValue'
               ? 'Supra s-value Oracle'
+              : wizardData.oracleType0.type === 'flatPrice'
+              ? 'Flat Price Oracle'
               : 'Chainlink')}{' '}
             for {wizardData.token0.symbol} ({wizardData.token0.name})
           </h3>
@@ -4630,6 +5161,8 @@ export default function Step3OracleConfiguration() {
               ? 'Custom Method Oracle'
               : wizardData.oracleType0.type === 'supraSValue'
               ? 'Supra s-value Oracle'
+              : wizardData.oracleType0.type === 'flatPrice'
+              ? 'Flat Price Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType0.type === 'none' ? (
@@ -4849,6 +5382,22 @@ export default function Step3OracleConfiguration() {
               implementationVersion={supraSValueImplementationVersion}
               implementationError={supraSValueImplementationError}
             />
+          ) : wizardData.oracleType0.type === 'flatPrice' ? (
+            <FlatPriceOracleSection
+              baseTokenSymbol={wizardData.token0.symbol}
+              quoteTokenSymbol={(flatPriceOracle0PeerQuote?.symbol ?? '').trim()}
+              baseTokenAddress={wizardData.token0.address}
+              quoteTokenAddress={flatPrice0QuoteAddressDisplay}
+              inputValue={flatPrice0Input}
+              setInputValue={setFlatPrice0Input}
+              factory={flatPriceFactory}
+              factoryMissing={flatPriceFactoryMissing}
+              implementationAddress={flatPriceImplementationAddress}
+              implementationVersion={flatPriceImplementationVersion}
+              implementationError={flatPriceImplementationError}
+              networkChainId={wizardData.networkInfo?.chainId}
+              onQuoteTokenRefresh={() => setPeerOracleSyncNonce((n) => n + 1)}
+            />
           ) : (
             <div>
               {loadingOracles ? (
@@ -4977,6 +5526,8 @@ export default function Step3OracleConfiguration() {
               ? 'Custom Method Oracle'
               : wizardData.oracleType1.type === 'supraSValue'
               ? 'Supra s-value Oracle'
+              : wizardData.oracleType1.type === 'flatPrice'
+              ? 'Flat Price Oracle'
               : 'Chainlink')}{' '}
             for {wizardData.token1.symbol} ({wizardData.token1.name})
           </h3>
@@ -4996,6 +5547,8 @@ export default function Step3OracleConfiguration() {
               ? 'Custom Method Oracle'
               : wizardData.oracleType1.type === 'supraSValue'
               ? 'Supra s-value Oracle'
+              : wizardData.oracleType1.type === 'flatPrice'
+              ? 'Flat Price Oracle'
               : 'Chainlink'}
           </p>
           {wizardData.oracleType1.type === 'none' ? (
@@ -5214,6 +5767,22 @@ export default function Step3OracleConfiguration() {
               implementationAddress={supraSValueImplementationAddress}
               implementationVersion={supraSValueImplementationVersion}
               implementationError={supraSValueImplementationError}
+            />
+          ) : wizardData.oracleType1.type === 'flatPrice' ? (
+            <FlatPriceOracleSection
+              baseTokenSymbol={wizardData.token1.symbol}
+              quoteTokenSymbol={(flatPriceOracle1PeerQuote?.symbol ?? '').trim()}
+              baseTokenAddress={wizardData.token1.address}
+              quoteTokenAddress={flatPrice1QuoteAddressDisplay}
+              inputValue={flatPrice1Input}
+              setInputValue={setFlatPrice1Input}
+              factory={flatPriceFactory}
+              factoryMissing={flatPriceFactoryMissing}
+              implementationAddress={flatPriceImplementationAddress}
+              implementationVersion={flatPriceImplementationVersion}
+              implementationError={flatPriceImplementationError}
+              networkChainId={wizardData.networkInfo?.chainId}
+              onQuoteTokenRefresh={() => setPeerOracleSyncNonce((n) => n + 1)}
             />
           ) : (
             <div>

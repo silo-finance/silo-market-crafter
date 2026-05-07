@@ -274,6 +274,10 @@ export default function Step10Deployment() {
           const address = await fetchOracleFactoryAddress(chainId, 'supraSValue')
           if (address) result.supraSValueOracleFactory = address
         }
+        if (selectedTypes.has('flatPrice')) {
+          const address = await fetchOracleFactoryAddress(chainId, 'flatPrice')
+          if (address) result.flatPriceOracleFactory = address
+        }
       } catch (err) {
         console.warn('Failed to fetch selected oracle factory deployments:', err)
       }
