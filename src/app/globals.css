@@ -482,6 +482,10 @@ body {
   color: #ffffff !important;
 }
 
+.new-feature-badge {
+  color: #ffffff !important;
+}
+
 .light-market-theme [class*="text-lime-300"] {
   color: var(--silo-text-faint) !important;
 }

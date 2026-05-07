@@ -11,6 +11,7 @@ import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
 import { VersionStatus } from '@/components/VersionStatus'
+import NewFeatureBadge from '@/components/NewFeatureBadge'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
@@ -816,6 +817,7 @@ export default function Step10Deployment() {
               ) : (
                 <>
                   <span>{hasSimulatedOnce ? 'Simulated' : 'Simulate'}</span>
+                  <NewFeatureBadge compact className="ml-1" />
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m0 0v8m0-8L8 15" />
                   </svg>

@@ -5110,7 +5110,6 @@ export default function Step3OracleConfiguration() {
     flatPriceOracle1PeerQuote?.address && ethers.isAddress(flatPriceOracle1PeerQuote.address.trim())
       ? ethers.getAddress(flatPriceOracle1PeerQuote.address.trim())
       : (flatPriceOracle1PeerQuote?.address?.trim() ?? '')
-
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-8">

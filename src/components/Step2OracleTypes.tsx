@@ -9,6 +9,7 @@ import {
   OracleFactoryType,
 } from '@/utils/oracleFactoryAvailability'
 import Button from '@/components/Button'
+import NewFeatureBadge from '@/components/NewFeatureBadge'
 
 export default function Step2OracleTypes() {
   const router = useRouter()
@@ -183,6 +184,12 @@ export default function Step2OracleTypes() {
     if (selectedType === 'customMethod') return getOracleFactoryMissingMessage('customMethod', wizardData.networkInfo.chainId)
     if (selectedType === 'supraSValue') return getOracleFactoryMissingMessage('supraSValue', wizardData.networkInfo.chainId)
     return null
+  }
+
+  const isNewOracleType = (
+    type: 'none' | 'scaler' | 'chainlink' | 'ptLinear' | 'vault' | 'vaultWithUnderlying' | 'customMethod' | 'supraSValue' | 'flatPrice'
+  ): boolean => {
+    return type === 'vaultWithUnderlying' || type === 'flatPrice'
   }
 
   // Track token addresses to detect changes and reset selections
@@ -422,6 +429,7 @@ export default function Step2OracleTypes() {
                         ? 'Vault Oracle With Underlying'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
+                    {isNewOracleType(oracleType.type) && <NewFeatureBadge />}
                     {oracleType.enabled ? (
                       <span className="status-muted-success text-sm">✓ Available</span>
                     ) : (
@@ -450,9 +458,6 @@ export default function Step2OracleTypes() {
                   )}
                   {oracleType.type === 'vaultWithUnderlying' && oracleType.enabled && (
                     <>
-                      <p className="text-sm text-gray-400 mt-1">
-                        ERC4626 Vault Oracle With Underlying: prices vault.asset() through an additional ISiloOracle so vault asset can differ from quote token.
-                      </p>
                       <p className="text-sm text-amber-400/90 mt-1">
                         Note: vault-based pricing may be susceptible to price manipulation.
                       </p>
@@ -533,6 +538,7 @@ export default function Step2OracleTypes() {
                         ? 'Vault Oracle With Underlying'
                         : 'Vault Oracle (Custom Quote)'}
                     </span>
+                    {isNewOracleType(oracleType.type) && <NewFeatureBadge />}
                     {oracleType.enabled ? (
                       <span className="status-muted-success text-sm">✓ Available</span>
                     ) : (
@@ -561,9 +567,6 @@ export default function Step2OracleTypes() {
                   )}
                   {oracleType.type === 'vaultWithUnderlying' && oracleType.enabled && (
                     <>
-                      <p className="text-sm text-gray-400 mt-1">
-                        ERC4626 Vault Oracle With Underlying: prices vault.asset() through an additional ISiloOracle so vault asset can differ from quote token.
-                      </p>
                       <p className="text-sm text-amber-400/90 mt-1">
                         Note: vault-based pricing may be susceptible to price manipulation.
                       </p>
