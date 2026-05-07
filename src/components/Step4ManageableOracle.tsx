@@ -14,6 +14,7 @@ import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMultic
 import { prepareDeployArgs, type OracleDeployments } from '@/utils/deployArgs'
 import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
+import NewFeatureBadge from '@/components/NewFeatureBadge'
 
 const MANAGEABLE_ORACLE_FACTORY_NAME = 'ManageableOracleFactory'
 
@@ -877,6 +878,7 @@ export default function Step4ManageableOracle() {
                         <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
                       )}
                       {simulate0State === 'loading' ? 'Simulating…' : 'Simulate'}
+                      <NewFeatureBadge compact className="ml-1" />
                     </button>
                   </div>
                   {simulate0State === 'error' && (
@@ -910,6 +912,7 @@ export default function Step4ManageableOracle() {
                         <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
                       )}
                       {simulate1State === 'loading' ? 'Simulating…' : 'Simulate'}
+                      <NewFeatureBadge compact className="ml-1" />
                     </button>
                   </div>
                   {simulate1State === 'error' && (
