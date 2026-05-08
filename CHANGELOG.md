@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.35.1 - 2026-05-08
+### Fixed
+- fix silo classification
+
 ## 0.35.0 - 2026-05-07
 ### Added
 - add FlatPriceOracle support

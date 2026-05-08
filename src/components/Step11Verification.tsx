@@ -809,27 +809,28 @@ export default function Step11Verification() {
         chainId: network.chainId.toString()
       })
       
+      const lt0NonZero = marketConfig.silo0.lt != null && String(marketConfig.silo0.lt) !== '0'
+      const lt1NonZero = marketConfig.silo1.lt != null && String(marketConfig.silo1.lt) !== '0'
+      let borrowableSilo: 0 | 1 | null = null
+      if (lt0NonZero && !lt1NonZero) borrowableSilo = 1
+      else if (lt1NonZero && !lt0NonZero) borrowableSilo = 0
+      const onlyOneBorrowable = borrowableSilo !== null
+      const borrowableTokenSymbol = (borrowableSilo === 0
+        ? marketConfig.silo0.tokenSymbol
+        : borrowableSilo === 1
+          ? marketConfig.silo1.tokenSymbol
+          : null) ?? null
+
       // Defaulting hook (SiloHookV2 / SiloHookV3) and gauge verification
       let newHookGaugeInfo: typeof hookGaugeInfo = null
       const hookVersion = marketConfig.silo0.hookReceiverVersion || marketConfig.silo1.hookReceiverVersion || ''
       const hookName = hookVersion.split(' ')[0] || ''
       if (hookName === 'SiloHookV2' || hookName === 'SiloHookV3') {
-        const lt0NonZero = marketConfig.silo0.lt != null && String(marketConfig.silo0.lt) !== '0'
-        const lt1NonZero = marketConfig.silo1.lt != null && String(marketConfig.silo1.lt) !== '0'
-        let borrowableSilo: 0 | 1 | null = null
-        if (lt0NonZero && !lt1NonZero) borrowableSilo = 1
-        else if (lt1NonZero && !lt0NonZero) borrowableSilo = 0
-        const onlyOneBorrowable = borrowableSilo !== null
-
         newHookGaugeInfo = {
           hasDefaultingHook: true,
           onlyOneBorrowable,
           borrowableSilo,
-          borrowableTokenSymbol: (borrowableSilo === 0
-            ? marketConfig.silo0.tokenSymbol
-            : borrowableSilo === 1
-              ? marketConfig.silo1.tokenSymbol
-              : null) ?? null,
+          borrowableTokenSymbol,
           gaugeAddress: null,
           gaugeVersion: null,
           ltMarginForDefaultingRaw: null
@@ -899,11 +900,7 @@ export default function Step11Verification() {
                   hasDefaultingHook: true,
                   onlyOneBorrowable,
                   borrowableSilo,
-                  borrowableTokenSymbol: (borrowableSilo === 0
-                    ? marketConfig.silo0.tokenSymbol
-                    : borrowableSilo === 1
-                      ? marketConfig.silo1.tokenSymbol
-                      : null) ?? null,
+                  borrowableTokenSymbol,
                   gaugeAddress: newHookGaugeInfo.gaugeAddress,
                   gaugeVersion: newHookGaugeInfo.gaugeVersion,
                   ltMarginForDefaultingRaw: String(margin)
@@ -920,11 +917,7 @@ export default function Step11Verification() {
                       hasDefaultingHook: true,
                       onlyOneBorrowable,
                       borrowableSilo,
-                      borrowableTokenSymbol: (borrowableSilo === 0
-                        ? marketConfig.silo0.tokenSymbol
-                        : borrowableSilo === 1
-                          ? marketConfig.silo1.tokenSymbol
-                          : null) ?? null,
+                      borrowableTokenSymbol,
                       gaugeAddress: normalizedGauge,
                       gaugeVersion: null,
                       ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
@@ -1013,11 +1006,7 @@ export default function Step11Verification() {
                       hasDefaultingHook: true,
                       onlyOneBorrowable,
                       borrowableSilo,
-                      borrowableTokenSymbol: (borrowableSilo === 0
-                        ? marketConfig.silo0.tokenSymbol
-                        : borrowableSilo === 1
-                          ? marketConfig.silo1.tokenSymbol
-                          : null) ?? null,
+                      borrowableTokenSymbol,
                       gaugeAddress: ethers.ZeroAddress,
                       gaugeVersion: null,
                       ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
@@ -1033,9 +1022,9 @@ export default function Step11Verification() {
       } else {
         newHookGaugeInfo = {
           hasDefaultingHook: false,
-          onlyOneBorrowable: null,
-          borrowableSilo: null,
-          borrowableTokenSymbol: null,
+          onlyOneBorrowable,
+          borrowableSilo,
+          borrowableTokenSymbol,
           gaugeAddress: null,
           gaugeVersion: null,
           ltMarginForDefaultingRaw: null
