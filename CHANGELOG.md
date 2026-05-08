@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.37.0 - 2026-05-18
+### Added
+- liquidation whitelist
+
+### Fixed
+- fix silo classification
+
 ## 0.36.0 - 2026-05-11
 ### Added
 - add market-to-market compare mode on verification
