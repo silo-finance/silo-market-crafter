@@ -25,6 +25,7 @@ import { isCustomStaticFlatRateLabel } from '@/utils/kinkConfigName'
 import Button from '@/components/Button'
 import { wizardSansInputClass } from '@/constants/formStyles'
 import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
+import { type MarketCompareMap } from '@/utils/marketCompareMap'
 
 
 function renderErc4626VaultQuoteCheckContent(check: Erc4626VaultQuoteCheck): React.ReactNode {
@@ -418,6 +419,7 @@ interface MarketConfigTreeProps {
   wizardCustomMethodSignatures?: { silo0?: string | null; silo1?: string | null }
   /** Called when the component wants to refresh on-chain data (e.g. after setting method signature). */
   onRequestRefresh?: () => void
+  marketCompareMap?: MarketCompareMap
 }
 
 interface TokenMeta {
@@ -467,6 +469,10 @@ interface TreeNodeProps {
   sectionTokenLabel?: string
   /** Optional chain id for address display components */
   chainId?: string
+  compareKey?: string
+  bulletComparePrefix?: string
+  ownerCompareKey?: string
+  marketCompareMap?: MarketCompareMap
 }
 
 function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_STATUS[keyof typeof VERIFICATION_STATUS] }) {
@@ -514,7 +520,25 @@ function VerificationStatusIconSmall({ status }: { status: typeof VERIFICATION_S
   )
 }
 
-function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, addressInJsonVerification }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; oracleOwnerVerification?: OracleOwnerVerification; addressInJsonVerification?: Map<string, boolean> }) {
+function MarketCompareBadge({ compare }: { compare: { match: boolean; otherDisplay: string } }) {
+  if (compare.match) {
+    return (
+      <span className="inline-flex items-center gap-1 ml-1 text-gray-900 font-semibold text-xs" title="Compared values are equal in both markets">
+        MATCH
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 ml-1 text-amber-700 font-semibold">
+      <span className="text-sm font-semibold">
+        Other market: <span className="font-medium">{compare.otherDisplay}</span>
+      </span>
+    </span>
+  )
+}
+
+function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, addressInJsonVerification, compare }: { item: OwnerBulletItem; explorerUrl: string; hookOwnerVerification?: HookOwnerVerification; irmOwnerVerification?: IRMOwnerVerification; oracleOwnerVerification?: OracleOwnerVerification; addressInJsonVerification?: Map<string, boolean>; compare?: { match: boolean; otherDisplay: string } }) {
   const { address, isContract, name } = item
   if (!address || address === ethers.ZeroAddress) return null
   
@@ -598,6 +622,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
         {name != null && name !== '' && (
           <span className="text-gray-400 text-sm">({name})</span>
         )}
+        {compare && <MarketCompareBadge compare={compare} />}
       </span>
       {/* Verification details as sub-items */}
       <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
@@ -635,7 +660,7 @@ function OwnerBulletContent({ item, explorerUrl, hookOwnerVerification, irmOwner
   )
 }
 
-function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification, sectionTokenLabel, chainId }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
+function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, ownerBullets, children, explorerUrl, isPercentage, valueMuted, hookOwnerVerification, irmOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification, addressVersions, showAddressVersion = true, priceLowWarning, priceHighWarning, priceDecimalsWarning, baseDiscountVerification, callBeforeQuoteVerification, wizardDaoFee, wizardDeployerFee, isRoot, oracleOwnerVerification, sectionTokenLabel, chainId, compareKey, bulletComparePrefix, ownerCompareKey, marketCompareMap }: TreeNodeProps & { wizardDaoFee?: bigint | null; wizardDeployerFee?: bigint | null }) {
   const hasAddress = address && address !== ethers.ZeroAddress
   const hasValue = value !== undefined && value !== null && !hasAddress
   const hasTokenMeta = tokenMeta && (tokenMeta.symbol != null || tokenMeta.decimals != null)
@@ -646,12 +671,14 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       ? suffixText
       : (normalizedAddress ? addressVersions?.get(normalizedAddress) : undefined)
   const hasSuffix = versionText != null && versionText !== ''
+  const compareEntry = compareKey && marketCompareMap ? marketCompareMap.get(compareKey) : undefined
 
   const normalizedRootLabel = typeof label === 'string' ? label.trim().toLowerCase() : ''
   const isSilo0Root = isRoot && normalizedRootLabel.startsWith('silo 0')
   const isSilo1Root = isRoot && normalizedRootLabel.startsWith('silo 1')
   const isSiloRoot = isSilo0Root || isSilo1Root
   const isSiloConfigRoot = isRoot && normalizedRootLabel === 'silo config'
+  const compareIsVersionPlacement = hasAddress && hasSuffix && !isSiloConfigRoot
   const sectionMain = isSiloConfigRoot
     ? 'config'
     : isSiloRoot
@@ -704,7 +731,8 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 ({[tokenMeta.symbol, tokenMeta.decimals != null ? `${tokenMeta.decimals} decimals` : ''].filter(Boolean).join(', ')})
               </span>
             )}
-            {hasSuffix && !isSiloConfigRoot && <VersionStatus version={versionText} />}
+            {hasSuffix && !isSiloConfigRoot && <VersionStatus version={versionText} compare={compareEntry} />}
+            {compareEntry && !compareIsVersionPlacement && <MarketCompareBadge compare={compareEntry} />}
           </>
         )}
         {/* Token verification details as sub-items */}
@@ -784,6 +812,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                   : String(value)}
           </span>
         )}
+        {hasValue && compareEntry && <MarketCompareBadge compare={compareEntry} />}
         {address === ethers.ZeroAddress && (
           <span className="text-gray-500 text-sm italic">Zero Address</span>
         )}
@@ -867,19 +896,34 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
       {bulletItems && bulletItems.length > 0 && (
         <ul className="tree-bullet-list list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
           {bulletItems.map((item, i) => {
+            const compare = bulletComparePrefix && marketCompareMap
+              ? marketCompareMap.get(`${bulletComparePrefix}.${item.key}`)
+              : undefined
             const isPriceLine = item.key === ORACLE_BULLET_KEYS.PRICE
             const isBaseDiscountBullet = baseDiscountVerification && item.key === ORACLE_BULLET_KEYS.BASE_DISCOUNT_PER_YEAR
+            const hasInlineVersionCompare =
+              item.key === 'oracle.manageable.underlying' || item.key === 'irm.configName'
             const hasPriceVerified = isPriceLine && !priceLowWarning && !priceHighWarning && !priceDecimalsWarning
             const isStandaloneList =
               React.isValidElement(item.text) &&
               typeof item.text.type === 'string' &&
               item.text.type.toLowerCase() === 'ul'
             if (isStandaloneList) {
-              return <React.Fragment key={i}>{item.text}</React.Fragment>
+              return (
+                <React.Fragment key={i}>
+                  {item.text}
+                  {compare && !hasInlineVersionCompare && (
+                    <li className="list-none ml-2">
+                      <MarketCompareBadge compare={compare} />
+                    </li>
+                  )}
+                </React.Fragment>
+              )
             }
             return (
               <li key={i}>
                 {item.text}
+                {compare && !hasInlineVersionCompare && <MarketCompareBadge compare={compare} />}
                 {/* Price verification details as sub-items */}
                 {isPriceLine && (priceLowWarning || priceHighWarning || priceDecimalsWarning || hasPriceVerified) && (
                   <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
@@ -957,6 +1001,7 @@ function TreeNode({ label, value, address, tokenMeta, suffixText, bulletItems, o
                 irmOwnerVerification={irmOwnerVerification}
                 oracleOwnerVerification={oracleOwnerVerification}
                 addressInJsonVerification={addressInJsonVerification}
+                compare={ownerCompareKey && marketCompareMap ? marketCompareMap.get(ownerCompareKey) : undefined}
               />
             </li>
           ))}
@@ -991,6 +1036,7 @@ interface SiloSectionProps {
   wizardCustomMethodSignature?: string | null
   onOpenSetCustomMethodSignature?: (args: { oracleAddress: string; suggestedSignature: string | null; onChainSignature: string | null }) => void
   chainId?: string
+  marketCompareMap?: MarketCompareMap
 }
 
 function SiloSection({
@@ -1016,7 +1062,8 @@ function SiloSection({
   manageableOracleTimelockSeconds,
   wizardCustomMethodSignature,
   onOpenSetCustomMethodSignature,
-  chainId
+  chainId,
+  marketCompareMap
 }: SiloSectionProps) {
   const numeric = numericVerification ?? null
   const siloKey = side === 0 ? 'silo0' : 'silo1'
@@ -1047,7 +1094,17 @@ function SiloSection({
     : siloConfig.solvencyOracle.quotePrice
 
   return (
-    <TreeNode label={label} isRoot address={siloConfig.silo} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel={assetSymbol} chainId={chainId}>
+    <TreeNode
+      label={label}
+      isRoot
+      address={siloConfig.silo}
+      explorerUrl={explorerUrl}
+      addressVersions={addressVersions}
+      sectionTokenLabel={assetSymbol}
+      chainId={chainId}
+      compareKey={`${siloKey}.version`}
+      marketCompareMap={marketCompareMap}
+    >
       <TreeNode
         label="Token"
         address={siloConfig.token}
@@ -1057,6 +1114,7 @@ function SiloSection({
         addressInJsonVerification={addressInJsonVerification}
         addressVersions={addressVersions}
         showAddressVersion={false}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode label="Share Tokens" explorerUrl={explorerUrl}>
         <TreeNode
@@ -1069,6 +1127,9 @@ function SiloSection({
           )}
           explorerUrl={explorerUrl}
           addressVersions={addressVersions}
+          compareKey={`${siloKey}.share.protected.version`}
+          bulletComparePrefix={`${siloKey}.share.protected`}
+          marketCompareMap={marketCompareMap}
         />
         <TreeNode
           label="Collateral Share Token"
@@ -1080,6 +1141,9 @@ function SiloSection({
           )}
           explorerUrl={explorerUrl}
           addressVersions={addressVersions}
+          compareKey={`${siloKey}.share.collateral.version`}
+          bulletComparePrefix={`${siloKey}.share.collateral`}
+          marketCompareMap={marketCompareMap}
         />
         <TreeNode
           label="Debt Share Token"
@@ -1091,6 +1155,9 @@ function SiloSection({
           )}
           explorerUrl={explorerUrl}
           addressVersions={addressVersions}
+          compareKey={`${siloKey}.share.debt.version`}
+          bulletComparePrefix={`${siloKey}.share.debt`}
+          marketCompareMap={marketCompareMap}
         />
       </TreeNode>
       <TreeNode
@@ -1142,13 +1209,13 @@ function SiloSection({
           )
           if (customMethodDetails && !underlying) {
             base.push({
-              key: `oracle.customMethod.details.${siloKey}.solvency`,
+              key: 'oracle.customMethod.details',
               text: customMethodDetails
             })
           }
           if (supraPairId && !underlying) {
             base.push({
-              key: `oracle.supra.details.${siloKey}.solvency`,
+              key: 'oracle.supra.details',
               text: (
                 <span className="inline-flex flex-wrap items-center gap-1.5">
                   <span>Pair ID: <span className="font-mono text-sm text-gray-300">{supraPairId}</span></span>
@@ -1199,7 +1266,7 @@ function SiloSection({
           }
           if (underlying) {
             base.push({
-              key: `oracle.manageable.underlying.${siloKey}.solvency`,
+              key: 'oracle.manageable.underlying',
               text: (
                 <>
                   <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -1217,7 +1284,10 @@ function SiloSection({
                       title="Copy address"
                       iconClassName="w-3.5 h-3.5 inline align-middle"
                     />
-                    <VersionStatus version={underlying.version} />
+                    <VersionStatus
+                      version={underlying.version}
+                      compare={marketCompareMap?.get(`${siloKey}.solvencyOracle.oracle.manageable.underlying`)}
+                    />
                   </span>
                     {hasPTLinearUnderlying && ptOracleBaseDiscount && (
                     <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
@@ -1289,7 +1359,7 @@ function SiloSection({
             isErc4626OracleHardcodeQuoteByVersion(siloConfig.solvencyOracle.version)
           ) {
             base.push({
-              key: `oracle.erc4626.vaultQuote.${siloKey}.solvency`,
+              key: 'oracle.erc4626.vaultQuote',
               text: renderErc4626OracleBulletBlock(erc4626SolvencyChk, explorerUrl)
             })
           }
@@ -1300,7 +1370,7 @@ function SiloSection({
               (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
           ) {
             base.push({
-              key: `oracle.erc4626WithUnderlying.inner.${siloKey}.solvency`,
+              key: 'oracle.erc4626WithUnderlying.inner',
               text: renderVaultWithUnderlyingOracleBlock(
                 siloConfig.solvencyOracle.vaultUnderlyingOracle,
                 explorerUrl,
@@ -1313,7 +1383,7 @@ function SiloSection({
             siloConfig.solvencyOracle.timelockSeconds ?? manageableOracleTimelockSeconds
           if (isManageableOracleByVersion(solvencyVersion) && timelockSecondsSolvency != null && timelockSecondsSolvency > 0) {
             base.push({
-              key: `oracle.manageable.timelock.${siloKey}.solvency`,
+              key: 'oracle.manageable.timelock',
               text: formatTimelockBulletText(timelockSecondsSolvency)
             })
           }
@@ -1337,11 +1407,14 @@ function SiloSection({
             : undefined
         }
         oracleOwnerVerification={oracleOwnerVerification ?? undefined}
+        compareKey={`${siloKey}.solvencyOracle.version`}
+        bulletComparePrefix={`${siloKey}.solvencyOracle`}
+        marketCompareMap={marketCompareMap}
       />
       {!siloConfig.maxLtvOracle.address || siloConfig.maxLtvOracle.address === ethers.ZeroAddress ? (
-        <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} />
+        <TreeNode label="Max LTV Oracle" address={ethers.ZeroAddress} explorerUrl={explorerUrl} addressVersions={addressVersions} marketCompareMap={marketCompareMap} />
       ) : siloConfig.maxLtvOracle.address.toLowerCase() === siloConfig.solvencyOracle.address.toLowerCase() ? (
-        <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted />
+        <TreeNode label="Max LTV Oracle" value="Same as Solvency Oracle" explorerUrl={explorerUrl} valueMuted marketCompareMap={marketCompareMap} />
       ) : (
         <TreeNode
           label="Max LTV Oracle"
@@ -1390,13 +1463,13 @@ function SiloSection({
             const supraPairId = getSupraPairId(maxLtvConfig)
             if (customMethodDetails && !underlying) {
               base.push({
-                key: `oracle.customMethod.details.${siloKey}.maxLtv`,
+                key: 'oracle.customMethod.details',
                 text: customMethodDetails
               })
             }
             if (supraPairId && !underlying) {
               base.push({
-                key: `oracle.supra.details.${siloKey}.maxLtv`,
+                key: 'oracle.supra.details',
                 text: (
                   <span className="inline-flex flex-wrap items-center gap-1.5">
                     <span>Pair ID: <span className="font-mono text-sm text-gray-300">{supraPairId}</span></span>
@@ -1429,7 +1502,7 @@ function SiloSection({
             }
             if (underlying) {
               base.push({
-                key: `oracle.manageable.underlying.${siloKey}.maxLtv`,
+                key: 'oracle.manageable.underlying',
                 text: (
                   <>
                     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -1447,7 +1520,10 @@ function SiloSection({
                         title="Copy address"
                         iconClassName="w-3.5 h-3.5 inline align-middle"
                       />
-                      <VersionStatus version={underlying.version} />
+                      <VersionStatus
+                        version={underlying.version}
+                        compare={marketCompareMap?.get(`${siloKey}.maxLtvOracle.oracle.manageable.underlying`)}
+                      />
                     </span>
                     {hasPTLinearUnderlying && maxLtvConfig?.baseDiscountPerYear != null && (
                       <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm">
@@ -1495,7 +1571,7 @@ function SiloSection({
               isErc4626OracleHardcodeQuoteByVersion(siloConfig.maxLtvOracle.version)
             ) {
               base.push({
-                key: `oracle.erc4626.vaultQuote.${siloKey}.maxLtv`,
+                key: 'oracle.erc4626.vaultQuote',
                 text: renderErc4626OracleBulletBlock(erc4626MaxLtvChk, explorerUrl)
               })
             }
@@ -1506,7 +1582,7 @@ function SiloSection({
                 (underlying && isErc4626OracleWithUnderlyingByVersion(underlying.version)))
             ) {
               base.push({
-                key: `oracle.erc4626WithUnderlying.inner.${siloKey}.maxLtv`,
+                key: 'oracle.erc4626WithUnderlying.inner',
                 text: renderVaultWithUnderlyingOracleBlock(
                   siloConfig.maxLtvOracle.vaultUnderlyingOracle,
                   explorerUrl,
@@ -1519,7 +1595,7 @@ function SiloSection({
               siloConfig.maxLtvOracle.timelockSeconds ?? manageableOracleTimelockSeconds
             if (isManageableOracleByVersion(maxLtvVersion) && timelockSecondsMaxLtv != null && timelockSecondsMaxLtv > 0) {
               base.push({
-                key: `oracle.manageable.timelock.${siloKey}.maxLtv`,
+                key: 'oracle.manageable.timelock',
                 text: formatTimelockBulletText(timelockSecondsMaxLtv)
               })
             }
@@ -1530,6 +1606,9 @@ function SiloSection({
           priceDecimalsWarning={isPriceDecimalsInvalid(siloConfig.maxLtvOracle.quotePrice)}
           explorerUrl={explorerUrl}
           addressVersions={addressVersions}
+          compareKey={`${siloKey}.maxLtvOracle.version`}
+          bulletComparePrefix={`${siloKey}.maxLtvOracle`}
+          marketCompareMap={marketCompareMap}
         />
       )}
       <TreeNode
@@ -1546,7 +1625,7 @@ function SiloSection({
           if (timelockRaw != null) {
             const seconds = Number(timelockRaw)
             if (!Number.isNaN(seconds) && seconds > 0) {
-              bullets.push({ key: `irm.timelock.${siloKey}`, text: formatTimelockBulletText(seconds) })
+              bullets.push({ key: 'irm.timelock', text: formatTimelockBulletText(seconds) })
             }
           }
 
@@ -1557,7 +1636,7 @@ function SiloSection({
               const secondsPerYear = BigInt(365 * 86400)
               const yearlyCapRaw = (BigInt(capStr) * secondsPerYear).toString()
               bullets.push({
-                key: `irm.cap.${siloKey}`,
+                key: 'irm.cap',
                 text: (() => {
                   const valueBigInt = BigInt(yearlyCapRaw)
                   const scale = BigInt(10 ** 16) // 1e16 as in formatPercentage
@@ -1576,7 +1655,7 @@ function SiloSection({
 
           if (irm.owner) {
             bullets.push({
-              key: `irm.owner.${siloKey}`,
+              key: 'irm.owner',
               text: (
                 <OwnerBulletContent
                   item={{
@@ -1595,14 +1674,16 @@ function SiloSection({
           // 2. IRM config with nested Pending and History (same indent level)
           const name = irmConfigName ?? null
           const hasPendingOrHistory = pendingIrmInfo != null || irmConfigHistory != null
+          const irmConfigCompare = marketCompareMap?.get(`${siloKey}.irm.configName`)
           bullets.push({
-            key: `irm.configName.${siloKey}`,
+            key: 'irm.configName',
             text: (
               <>
                 {name ? (
                   <span className="inline-flex items-center gap-1.5">
                     <span>IRM config:</span>
                     <IrmConfigNameWithLink configName={name} variant="emphasized" />
+                    {irmConfigCompare && <MarketCompareBadge compare={irmConfigCompare} />}
                     {isCustomStaticFlatRateLabel(name) && (
                       <VerificationStatusIconSmall status={VERIFICATION_STATUS.WARNING} />
                     )}
@@ -1610,6 +1691,7 @@ function SiloSection({
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
                     <span>IRM config: not able to match</span>
+                    {irmConfigCompare && <MarketCompareBadge compare={irmConfigCompare} />}
                     <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
                   </span>
                 )}
@@ -1673,6 +1755,9 @@ function SiloSection({
         irmOwnerVerification={irmOwnerVerification}
         addressInJsonVerification={addressInJsonVerification}
         addressVersions={addressVersions}
+        compareKey={`${siloKey}.irm.version`}
+        bulletComparePrefix={siloKey}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Max LTV"
@@ -1682,6 +1767,8 @@ function SiloSection({
         numericValueVerification={numeric ? { wizardValue: numeric.maxLtv } : undefined}
         wizardDaoFee={wizardDaoFee ?? null}
         wizardDeployerFee={wizardDeployerFee ?? null}
+        compareKey={`${siloKey}.maxLtv`}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Liquidation Threshold (LT)"
@@ -1691,6 +1778,8 @@ function SiloSection({
         numericValueVerification={numeric ? { wizardValue: numeric.lt } : undefined}
         wizardDaoFee={wizardDaoFee ?? null}
         wizardDeployerFee={wizardDeployerFee ?? null}
+        compareKey={`${siloKey}.lt`}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Liquidation Target LTV"
@@ -1700,6 +1789,8 @@ function SiloSection({
         numericValueVerification={numeric ? { wizardValue: numeric.liquidationTargetLtv } : undefined}
         wizardDaoFee={wizardDaoFee ?? null}
         wizardDeployerFee={wizardDeployerFee ?? null}
+        compareKey={`${siloKey}.liquidationTargetLtv`}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Liquidation Fee"
@@ -1709,6 +1800,8 @@ function SiloSection({
         numericValueVerification={numeric ? { wizardValue: numeric.liquidationFee, checkHighValue: true } : undefined}
         wizardDaoFee={wizardDaoFee ?? null}
         wizardDeployerFee={wizardDeployerFee ?? null}
+        compareKey={`${siloKey}.liquidationFee`}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Flashloan Fee"
@@ -1718,12 +1811,16 @@ function SiloSection({
         numericValueVerification={numeric ? { wizardValue: numeric.flashloanFee, checkHighValue: true } : undefined}
         wizardDaoFee={wizardDaoFee ?? null}
         wizardDeployerFee={wizardDeployerFee ?? null}
+        compareKey={`${siloKey}.flashloanFee`}
+        marketCompareMap={marketCompareMap}
       />
       <TreeNode
         label="Call Before Quote"
         value={siloConfig.callBeforeQuote}
         explorerUrl={explorerUrl}
         callBeforeQuoteVerification={callBeforeQuoteVerification ?? null}
+        compareKey={`${siloKey}.callBeforeQuote`}
+        marketCompareMap={marketCompareMap}
       />
     </TreeNode>
   )
@@ -1947,7 +2044,7 @@ function formatTimelockBulletText(seconds: number): React.ReactNode {
   )
 }
 
-export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, pendingIrmInfo, irmConfigHistory, hookGaugeInfo, wizardCustomMethodSignatures, onRequestRefresh }: MarketConfigTreeProps) {
+export default function MarketConfigTree({ config, explorerUrl, chainId, currentSiloFactoryAddress, wizardDaoFee, wizardDeployerFee, siloVerification, hookOwnerVerification, irmOwnerVerification, oracleOwnerVerification, tokenVerification, numericValueVerification, addressInJsonVerification = new Map(), addressVersions = new Map(), ptOracleBaseDiscountVerification, callBeforeQuoteVerification, manageableOracleTimelockSeconds, irmConfigNames, pendingIrmInfo, irmConfigHistory, hookGaugeInfo, wizardCustomMethodSignatures, onRequestRefresh, marketCompareMap }: MarketConfigTreeProps) {
   const asset0Symbol = config.silo0.tokenSymbol || 'ASSET0'
   const asset1Symbol = config.silo1.tokenSymbol || 'ASSET1'
   const marketId = config.siloId != null ? config.siloId.toString() : 'N/A'
@@ -2210,10 +2307,10 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
       </h3>
       
       <ul className="tree tree-root-bullet">
-            <TreeNode label="Silo Config" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config" chainId={chainId}>
+            <TreeNode label="Silo Config" isRoot address={config.siloConfig} explorerUrl={explorerUrl} addressVersions={addressVersions} sectionTokenLabel="config" chainId={chainId} marketCompareMap={marketCompareMap}>
           <TreeNode label="Immutable variables" explorerUrl={explorerUrl}>
             {config.siloId !== null && (
-              <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} />
+                  <TreeNode label="SILO_ID" value={config.siloId} explorerUrl={explorerUrl} compareKey="config.siloId" marketCompareMap={marketCompareMap} />
             )}
             <TreeNode label="Silos" explorerUrl={explorerUrl}>
               <TreeNode 
@@ -2221,6 +2318,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                 address={config.silo0.silo} 
                 explorerUrl={explorerUrl}
                 addressVersions={addressVersions}
+                compareKey="config.silos.silo0.version"
+                    marketCompareMap={marketCompareMap}
                 bulletItems={[
                   {
                     key: 'factory',
@@ -2248,6 +2347,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                 address={config.silo1.silo} 
                 explorerUrl={explorerUrl}
                 addressVersions={addressVersions}
+                compareKey="config.silos.silo1.version"
+                    marketCompareMap={marketCompareMap}
                 bulletItems={[
                   {
                     key: 'factory',
@@ -2278,6 +2379,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             explorerUrl={explorerUrl} 
             isPercentage 
             wizardDaoFee={wizardDaoFee ?? null}
+            compareKey="config.daoFee"
+            marketCompareMap={marketCompareMap}
           />
           <TreeNode 
             label="Deployer Fee" 
@@ -2285,6 +2388,8 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             explorerUrl={explorerUrl} 
             isPercentage 
             wizardDeployerFee={wizardDeployerFee ?? null}
+            compareKey="config.deployerFee"
+            marketCompareMap={marketCompareMap}
           />
           <TreeNode
             label="Hook Receiver"
@@ -2295,6 +2400,9 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
             hookOwnerVerification={hookOwnerVerification}
             addressInJsonVerification={addressInJsonVerification}
             addressVersions={addressVersions}
+            compareKey="config.hookReceiver.version"
+            bulletComparePrefix="config"
+            marketCompareMap={marketCompareMap}
             bulletItems={
               hookGaugeInfo && hookGaugeInfo.hasDefaultingHook
                 ? (() => {
@@ -2499,6 +2607,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo0 ?? null}
           onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
           chainId={chainId}
+          marketCompareMap={marketCompareMap}
         />
         <li className="tree-separator" aria-hidden="true" />
 
@@ -2526,6 +2635,7 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
           wizardCustomMethodSignature={wizardCustomMethodSignatures?.silo1 ?? null}
           onOpenSetCustomMethodSignature={handleOpenSetCustomMethodSignature}
           chainId={chainId}
+          marketCompareMap={marketCompareMap}
         />
       </ul>
     </div>

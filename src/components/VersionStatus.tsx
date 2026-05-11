@@ -3,7 +3,29 @@
 import React, { useEffect, useState } from 'react'
 import { ReleaseVersionCheckResult, verifyReleaseVersion } from '@/utils/verification/releaseVersionVerification'
 
-export function VersionStatus({ version }: { version?: string | null }) {
+type CompareIconEntry = { match: boolean; otherDisplay: string }
+
+function VersionCompareInlineIcon({ compare }: { compare: CompareIconEntry }) {
+  if (compare.match) {
+    return (
+      <span className="inline-flex align-middle text-gray-900 font-semibold text-xs" title="Compared market has the same version" aria-label="Version match">
+        MATCH
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="inline-flex align-middle text-amber-700 font-semibold text-xs"
+      title={`Different version in other market: ${compare.otherDisplay}`}
+      aria-label="Version differs in other market"
+    >
+      DIFF
+    </span>
+  )
+}
+
+export function VersionStatus({ version, compare }: { version?: string | null; compare?: CompareIconEntry }) {
   const trimmed = version?.trim()
   const [result, setResult] = useState<ReleaseVersionCheckResult | null>(null)
 
@@ -35,7 +57,14 @@ export function VersionStatus({ version }: { version?: string | null }) {
     return (
       <span className="text-version-muted text-sm ml-1">
         {' '}
-        ({trimmed ?? '—'})
+        ({trimmed ?? '—'}
+        {compare && (
+          <>
+            {' '}
+            <VersionCompareInlineIcon compare={compare} />
+          </>
+        )}
+        )
       </span>
     )
   }
@@ -47,19 +76,36 @@ export function VersionStatus({ version }: { version?: string | null }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-version-muted text-sm ml-1">
       {sourceUrl ? (
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
+        <span>
           {' '}
-          ({trimmed})
-        </a>
+          (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            {trimmed}
+          </a>
+          {compare && (
+            <>
+              {' '}
+              <VersionCompareInlineIcon compare={compare} />
+            </>
+          )}
+          )
+        </span>
       ) : (
         <span>
           {' '}
-          ({trimmed})
+          ({trimmed}
+          {compare && (
+            <>
+              {' '}
+              <VersionCompareInlineIcon compare={compare} />
+            </>
+          )}
+          )
         </span>
       )}
 
