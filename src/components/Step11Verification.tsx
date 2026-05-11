@@ -5,15 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
 import { parseDeployTxReceipt } from '@/utils/parseDeployTxEvents'
-import { fetchMarketConfig, MarketConfig, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
-import { resolveAddressToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
+import { fetchMarketConfig, MarketConfig, formatAddress, formatQuotePriceAs18Decimals } from '@/utils/fetchMarketConfig'
+import { resolveAddressToSiloConfig, resolveSiloIdToSiloConfig } from '@/utils/resolveAddressToSiloConfig'
 import MarketConfigTree from '@/components/MarketConfigTree'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { verifySiloAddresses } from '@/utils/verification/siloAddressVerification'
-import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { detectSiloConfigNetwork } from '@/utils/verification/siloConfigNetworkDetection'
@@ -21,13 +20,9 @@ import { displayNumberToBigint } from '@/utils/verification/normalization'
 import { getChainName, getExplorerBaseUrl, getNetworkDisplayName, isChainSupported } from '@/utils/networks'
 import { resolveAddressToName } from '@/utils/symbolToAddress'
 import { buildSiloDeploymentKey } from '@/utils/siloDeploymentsJson'
-import { verifyAddress } from '@/utils/verification/addressVerification'
-import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import { extractHexAddressLike } from '@/utils/addressFromInput'
-import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
-import { resolveKinkConfigDisplayName, type KinkConfigItem } from '@/utils/kinkConfigName'
-import dynamicKinkModelAbi from '@/abis/silo/DynamicKinkModel.json'
-import dynamicKinkModelConfigAbi from '@/abis/silo/IDynamicKinkModelConfig.json'
+import { fetchHookGaugeInfo, fetchIrmDisplayAux, type HookGaugeInfo } from '@/utils/fetchVerificationAux'
+import { buildMarketCompareMap } from '@/utils/marketCompareMap'
 import Image from 'next/image'
 import prWorkflowImage from '@/data/pr.png'
 import Button from '@/components/Button'
@@ -130,23 +125,7 @@ export default function Step11Verification() {
   // Address in JSON verification - always performed regardless of wizard data
   const [addressInJsonVerification, setAddressInJsonVerification] = useState<Map<string, boolean>>(new Map())
   const [addressVersions, setAddressVersions] = useState<Map<string, string>>(new Map())
-  const [hookGaugeInfo, setHookGaugeInfo] = useState<{
-    hasDefaultingHook: boolean
-    onlyOneBorrowable: boolean | null
-    borrowableSilo: 0 | 1 | null
-    borrowableTokenSymbol: string | null
-    gaugeAddress: string | null
-    gaugeVersion: string | null
-    ltMarginForDefaultingRaw: string | null
-    gaugeVerification?: {
-      owner: string | null
-      ownerName: string | null
-      ownerInJson: boolean | null
-      ownerMatchesHookOwner: boolean | null
-      ownerMatchesWizard: boolean | null
-      notifierEqualsHook: boolean | null
-    } | null
-  } | null>(null)
+  const [hookGaugeInfo, setHookGaugeInfo] = useState<HookGaugeInfo>(null)
   const [irmConfigNames, setIrmConfigNames] = useState<{ silo0: string | null; silo1: string | null }>({
     silo0: null,
     silo1: null
@@ -156,6 +135,23 @@ export default function Step11Verification() {
     silo1: { name: string | null; activateAt: number | null } | null
   }>({ silo0: null, silo1: null })
   const [irmConfigHistory, setIrmConfigHistory] = useState<{
+    silo0: string[] | null
+    silo1: string[] | null
+  }>({ silo0: null, silo1: null })
+  const [compareInput, setCompareInput] = useState('')
+  const [compareLoading, setCompareLoading] = useState(false)
+  const [compareError, setCompareError] = useState<string | null>(null)
+  const [compareConfig, setCompareConfig] = useState<MarketConfig | null>(null)
+  const [compareHookGaugeInfo, setCompareHookGaugeInfo] = useState<HookGaugeInfo>(null)
+  const [compareIrmConfigNames, setCompareIrmConfigNames] = useState<{ silo0: string | null; silo1: string | null }>({
+    silo0: null,
+    silo1: null
+  })
+  const [comparePendingIrmInfo, setComparePendingIrmInfo] = useState<{
+    silo0: { name: string | null; activateAt: number | null } | null
+    silo1: { name: string | null; activateAt: number | null } | null
+  }>({ silo0: null, silo1: null })
+  const [compareIrmConfigHistory, setCompareIrmConfigHistory] = useState<{
     silo0: string[] | null
     silo1: string[] | null
   }>({ silo0: null, silo1: null })
@@ -532,31 +528,36 @@ export default function Step11Verification() {
           addresses.add(ethers.getAddress(value).toLowerCase())
         }
 
-        addAddress(config.siloConfig)
-        addAddress(config.silo0.silo)
-        addAddress(config.silo1.silo)
-        addAddress(config.silo0.token)
-        addAddress(config.silo1.token)
-        addAddress(config.silo0.protectedShareToken)
-        addAddress(config.silo0.collateralShareToken)
-        addAddress(config.silo0.debtShareToken)
-        addAddress(config.silo1.protectedShareToken)
-        addAddress(config.silo1.collateralShareToken)
-        addAddress(config.silo1.debtShareToken)
-        addAddress(config.silo0.hookReceiver)
-        addAddress(config.silo1.hookReceiver)
-        addAddress(config.silo0.solvencyOracle.address)
-        addAddress(config.silo0.maxLtvOracle.address)
-        addAddress(config.silo1.solvencyOracle.address)
-        addAddress(config.silo1.maxLtvOracle.address)
-        addAddress(config.silo0.interestRateModel.address)
-        addAddress(config.silo1.interestRateModel.address)
-        addAddress(config.silo0.factory)
-        addAddress(config.silo1.factory)
-        addAddress(config.silo0.hookReceiverOwner)
-        addAddress(config.silo1.hookReceiverOwner)
-        addAddress(config.silo0.interestRateModel.owner)
-        addAddress(config.silo1.interestRateModel.owner)
+        const collectConfigAddresses = (cfg: MarketConfig) => {
+          addAddress(cfg.siloConfig)
+          addAddress(cfg.silo0.silo)
+          addAddress(cfg.silo1.silo)
+          addAddress(cfg.silo0.token)
+          addAddress(cfg.silo1.token)
+          addAddress(cfg.silo0.protectedShareToken)
+          addAddress(cfg.silo0.collateralShareToken)
+          addAddress(cfg.silo0.debtShareToken)
+          addAddress(cfg.silo1.protectedShareToken)
+          addAddress(cfg.silo1.collateralShareToken)
+          addAddress(cfg.silo1.debtShareToken)
+          addAddress(cfg.silo0.hookReceiver)
+          addAddress(cfg.silo1.hookReceiver)
+          addAddress(cfg.silo0.solvencyOracle.address)
+          addAddress(cfg.silo0.maxLtvOracle.address)
+          addAddress(cfg.silo1.solvencyOracle.address)
+          addAddress(cfg.silo1.maxLtvOracle.address)
+          addAddress(cfg.silo0.interestRateModel.address)
+          addAddress(cfg.silo1.interestRateModel.address)
+          addAddress(cfg.silo0.factory)
+          addAddress(cfg.silo1.factory)
+          addAddress(cfg.silo0.hookReceiverOwner)
+          addAddress(cfg.silo1.hookReceiverOwner)
+          addAddress(cfg.silo0.interestRateModel.owner)
+          addAddress(cfg.silo1.interestRateModel.owner)
+        }
+
+        collectConfigAddresses(config)
+        if (compareConfig) collectConfigAddresses(compareConfig)
 
         const versionsByAddress = await fetchSiloLensVersionsWithCache({
           provider,
@@ -577,7 +578,7 @@ export default function Step11Verification() {
     }
 
     fetchTreeAddressVersions()
-  }, [config, siloLensAddress, chainId])
+  }, [config, compareConfig, siloLensAddress, chainId])
 
   // If factory version was fetched through the general addressVersions flow, sync it to the top SiloFactory card.
   useEffect(() => {
@@ -602,10 +603,11 @@ export default function Step11Verification() {
     value: string,
     isTxHash: boolean,
     isKnownSilo = false,
-    forcedChainId: number | null = null
+    forcedChainId: number | null = null,
+    isSiloIdInput = false
   ) => {
     if (!value.trim()) {
-      setError('Please enter a Silo Config address, Silo address, or transaction hash')
+      setError('Please enter a Silo Config address, Silo address, SILO_ID, or transaction hash')
       return
     }
 
@@ -618,6 +620,14 @@ export default function Step11Verification() {
     setError(null)
     setWrongAddressVersion(null)
     setConfig(null)
+    setCompareError(null)
+    setCompareInput('')
+    setCompareConfig(null)
+    setCompareLoading(false)
+    setCompareHookGaugeInfo(null)
+    setCompareIrmConfigNames({ silo0: null, silo1: null })
+    setComparePendingIrmInfo({ silo0: null, silo1: null })
+    setCompareIrmConfigHistory({ silo0: null, silo1: null })
     setShowForm(false)
     setIsOpenPrSectionVisible(false)
     setPendingIrmInfo({ silo0: null, silo1: null })
@@ -695,6 +705,15 @@ export default function Step11Verification() {
           setImplementationFromEvent(parsed.implementation)
         }
       } else {
+        if (isSiloIdInput) {
+          const siloId = BigInt(value.trim())
+          siloConfigAddress = await resolveSiloIdToSiloConfig(
+            provider,
+            network.chainId.toString(),
+            siloId
+          )
+          setTxHash(null)
+        } else {
         // Validate address format
         if (!ethers.isAddress(value.trim())) {
           throw new Error('Invalid address format')
@@ -785,6 +804,7 @@ export default function Step11Verification() {
         })
         resolvedFromSilo = siloConfigAddress.toLowerCase() !== inputAddress.toLowerCase()
         setTxHash(null)
+        }
       }
 
       // Only compare with wizard when we're verifying the wizard's deployment (same tx hash)
@@ -809,238 +829,13 @@ export default function Step11Verification() {
         chainId: network.chainId.toString()
       })
       
-      // Defaulting hook (SiloHookV2 / SiloHookV3) and gauge verification
-      let newHookGaugeInfo: typeof hookGaugeInfo = null
-      const hookVersion = marketConfig.silo0.hookReceiverVersion || marketConfig.silo1.hookReceiverVersion || ''
-      const hookName = hookVersion.split(' ')[0] || ''
-      if (hookName === 'SiloHookV2' || hookName === 'SiloHookV3') {
-        const lt0NonZero = marketConfig.silo0.lt != null && String(marketConfig.silo0.lt) !== '0'
-        const lt1NonZero = marketConfig.silo1.lt != null && String(marketConfig.silo1.lt) !== '0'
-        let borrowableSilo: 0 | 1 | null = null
-        if (lt0NonZero && !lt1NonZero) borrowableSilo = 1
-        else if (lt1NonZero && !lt0NonZero) borrowableSilo = 0
-        const onlyOneBorrowable = borrowableSilo !== null
-
-        newHookGaugeInfo = {
-          hasDefaultingHook: true,
-          onlyOneBorrowable,
-          borrowableSilo,
-          borrowableTokenSymbol: (borrowableSilo === 0
-            ? marketConfig.silo0.tokenSymbol
-            : borrowableSilo === 1
-              ? marketConfig.silo1.tokenSymbol
-              : null) ?? null,
-          gaugeAddress: null,
-          gaugeVersion: null,
-          ltMarginForDefaultingRaw: null
-        }
-
-        // If we have a defaulting hook, try to read LT_MARGIN_FOR_DEFAULTING and (when applicable) configured gauge
-        if (typeof window !== 'undefined' && window.ethereum) {
-          try {
-            const ethereum = window.ethereum
-            const providerForHook = new ethers.BrowserProvider(ethereum)
-            const hookAddress = marketConfig.silo0.hookReceiver || marketConfig.silo1.hookReceiver
-            if (hookAddress && ethers.isAddress(hookAddress)) {
-              const hookAbi = Array.isArray(siloHookV2Abi)
-                ? (siloHookV2Abi as ethers.InterfaceAbi)
-                : (siloHookV2Abi as unknown as { abi: ethers.InterfaceAbi }).abi
-              void hookAbi // ABI retained for reference/typing; reads below go through multicall
-
-              const siloAddressForGauge = onlyOneBorrowable
-                ? (borrowableSilo === 0 ? marketConfig.silo0.silo : marketConfig.silo1.silo)
-                : null
-
-              const hookMulticallAbi = [
-                {
-                  type: 'function' as const,
-                  name: 'LT_MARGIN_FOR_DEFAULTING',
-                  inputs: [],
-                  outputs: [{ type: 'uint256' }],
-                  stateMutability: 'view' as const
-                },
-                {
-                  type: 'function' as const,
-                  name: 'configuredGauges',
-                  inputs: [{ type: 'address' }],
-                  outputs: [{ type: 'address' }],
-                  stateMutability: 'view' as const
-                }
-              ] as const
-
-              const hookCalls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = [
-                buildReadMulticallCall<unknown>({
-                  target: hookAddress as `0x${string}`,
-                  abi: hookMulticallAbi,
-                  functionName: 'LT_MARGIN_FOR_DEFAULTING',
-                  allowFailure: true
-                })
-              ]
-              if (siloAddressForGauge && ethers.isAddress(siloAddressForGauge)) {
-                hookCalls.push(
-                  buildReadMulticallCall<unknown>({
-                    target: hookAddress as `0x${string}`,
-                    abi: hookMulticallAbi,
-                    functionName: 'configuredGauges',
-                    args: [siloAddressForGauge],
-                    allowFailure: true
-                  })
-                )
-              }
-
-              const hookResults = await executeReadMulticall<unknown>(providerForHook, hookCalls, {
-                debugLabel: 'hookMarginAndGauge'
-              })
-              const margin = hookResults[0]
-              const gaugeAddrRaw = hookCalls.length > 1 ? hookResults[1] : null
-
-              if (margin != null) {
-                newHookGaugeInfo = {
-                  hasDefaultingHook: true,
-                  onlyOneBorrowable,
-                  borrowableSilo,
-                  borrowableTokenSymbol: (borrowableSilo === 0
-                    ? marketConfig.silo0.tokenSymbol
-                    : borrowableSilo === 1
-                      ? marketConfig.silo1.tokenSymbol
-                      : null) ?? null,
-                  gaugeAddress: newHookGaugeInfo.gaugeAddress,
-                  gaugeVersion: newHookGaugeInfo.gaugeVersion,
-                  ltMarginForDefaultingRaw: String(margin)
-                }
-              }
-
-              if (onlyOneBorrowable) {
-                const siloAddress = siloAddressForGauge
-                if (siloAddress && ethers.isAddress(siloAddress)) {
-                  const gaugeAddr = gaugeAddrRaw != null ? String(gaugeAddrRaw) : ''
-                  if (gaugeAddr && gaugeAddr !== ethers.ZeroAddress) {
-                    const normalizedGauge = ethers.getAddress(gaugeAddr)
-                    newHookGaugeInfo = {
-                      hasDefaultingHook: true,
-                      onlyOneBorrowable,
-                      borrowableSilo,
-                      borrowableTokenSymbol: (borrowableSilo === 0
-                        ? marketConfig.silo0.tokenSymbol
-                        : borrowableSilo === 1
-                          ? marketConfig.silo1.tokenSymbol
-                          : null) ?? null,
-                      gaugeAddress: normalizedGauge,
-                      gaugeVersion: null,
-                      ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
-                    }
-                    // Try to resolve version via SiloLens when available
-                    const chainIdForGauge = network.chainId.toString()
-                    if (siloLensAddress && chainIdForGauge) {
-                      try {
-                        const versionsByAddress = await fetchSiloLensVersionsWithCache({
-                          provider: providerForHook,
-                          lensAddress: siloLensAddress,
-                          chainId: chainIdForGauge,
-                          addresses: [normalizedGauge]
-                        })
-                        const version = versionsByAddress.get(normalizedGauge.toLowerCase()) ?? null
-                        newHookGaugeInfo = {
-                          ...newHookGaugeInfo,
-                          gaugeVersion: version
-                        }
-                      } catch (verErr) {
-                        console.warn('Failed to fetch gauge version from SiloLens:', verErr)
-                      }
-                    }
-                    // Fetch gauge owner and notifier for verification (contract exposes NOTIFIER() not notifier())
-                    try {
-                      const gaugeAbi = [
-                        {
-                          type: 'function' as const,
-                          name: 'owner',
-                          inputs: [],
-                          outputs: [{ type: 'address' }],
-                          stateMutability: 'view' as const
-                        },
-                        {
-                          type: 'function' as const,
-                          name: 'NOTIFIER',
-                          inputs: [],
-                          outputs: [{ type: 'address' }],
-                          stateMutability: 'view' as const
-                        }
-                      ] as const
-                      const [gaugeOwner, gaugeNotifier] = await executeReadMulticall<string>(
-                        providerForHook,
-                        [
-                          buildReadMulticallCall<string>({
-                            target: normalizedGauge as `0x${string}`,
-                            abi: gaugeAbi,
-                            functionName: 'owner',
-                            allowFailure: true,
-                            decodeResult: (v) => String(v)
-                          }),
-                          buildReadMulticallCall<string>({
-                            target: normalizedGauge as `0x${string}`,
-                            abi: gaugeAbi,
-                            functionName: 'NOTIFIER',
-                            allowFailure: true,
-                            decodeResult: (v) => String(v)
-                          })
-                        ],
-                        { debugLabel: 'gaugeOwnerNotifier' }
-                      )
-                      const hookOwnerOnChain = marketConfig.silo0.hookReceiverOwner ?? marketConfig.silo1.hookReceiverOwner ?? null
-                      const hookOwnerWizard = isFromWizard ? (wizardData.hookOwnerAddress ?? null) : null
-                      newHookGaugeInfo = {
-                        ...newHookGaugeInfo,
-                        gaugeVerification: {
-                          owner: gaugeOwner && gaugeOwner !== ethers.ZeroAddress ? String(gaugeOwner) : null,
-                          ownerName: null,
-                          ownerInJson: null,
-                          ownerMatchesHookOwner: hookOwnerOnChain && gaugeOwner
-                            ? verifyAddress(String(gaugeOwner), hookOwnerOnChain)
-                            : null,
-                          ownerMatchesWizard: hookOwnerWizard != null && gaugeOwner
-                            ? verifyAddress(String(gaugeOwner), hookOwnerWizard)
-                            : null,
-                          notifierEqualsHook: gaugeNotifier != null && hookAddress
-                            ? ethers.getAddress(String(gaugeNotifier)).toLowerCase() === ethers.getAddress(hookAddress).toLowerCase()
-                            : null
-                        }
-                      }
-                    } catch (gaugeVerErr) {
-                      console.warn('Failed to fetch gauge owner/notifier:', gaugeVerErr)
-                    }
-                  } else {
-                    newHookGaugeInfo = {
-                      hasDefaultingHook: true,
-                      onlyOneBorrowable,
-                      borrowableSilo,
-                      borrowableTokenSymbol: (borrowableSilo === 0
-                        ? marketConfig.silo0.tokenSymbol
-                        : borrowableSilo === 1
-                          ? marketConfig.silo1.tokenSymbol
-                          : null) ?? null,
-                      gaugeAddress: ethers.ZeroAddress,
-                      gaugeVersion: null,
-                      ltMarginForDefaultingRaw: newHookGaugeInfo.ltMarginForDefaultingRaw
-                    }
-                  }
-                }
-              }
-            }
-          } catch (gErr) {
-            console.warn('Failed to verify configured gauge on hook:', gErr)
-          }
-        }
-      } else {
-        newHookGaugeInfo = {
-          hasDefaultingHook: false,
-          onlyOneBorrowable: null,
-          borrowableSilo: null,
-          borrowableTokenSymbol: null,
-          gaugeAddress: null,
-          gaugeVersion: null,
-          ltMarginForDefaultingRaw: null
-        }
-      }
+      let newHookGaugeInfo = await fetchHookGaugeInfo({
+        provider,
+        marketConfig,
+        chainId: network.chainId.toString(),
+        siloLensAddress,
+        hookOwnerWizard: isFromWizard ? (wizardData.hookOwnerAddress ?? null) : null
+      })
 
       // Get chain ID - use wizard data if available, otherwise get from provider
       const chainIdForVerification = network.chainId.toString()
@@ -1207,253 +1002,12 @@ export default function Step11Verification() {
         setNumericValueVerification({ silo0: null, silo1: null })
       }
 
-      // Resolve Dynamic Kink IRM configuration names by comparing on-chain config with JSON configs/immutables
-      // Also fetch pending IRM config (if any) for each silo
       try {
-        const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
-        const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
-
-        type KinkImmutableItem = { name: string; timelock: unknown; rcompCap: unknown }
-
-        const [cfgRes, immRes] = await Promise.all([
-          fetch(KINK_CONFIGS_URL),
-          fetch(KINK_IMMUTABLE_URL)
-        ])
-        if (cfgRes.ok && immRes.ok) {
-          const cfgJson: KinkConfigItem[] = parseJsonPreservingBigInt(await cfgRes.text())
-          // Immutable data is currently not needed here; keep parse for validation side‑effects only.
-          parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
-
-          const name0 = resolveKinkConfigDisplayName(marketConfig.silo0.interestRateModel, cfgJson)
-          const name1 = resolveKinkConfigDisplayName(marketConfig.silo1.interestRateModel, cfgJson)
-          setIrmConfigNames({ silo0: name0, silo1: name1 })
-
-          // Fetch pending IRM config for both silos (DynamicKinkModel only) using layered multicalls.
-          type PendingResult = { name: string | null; activateAt: number | null }
-
-          type PendingInput = {
-            irmAddress: string
-            version: string | undefined
-          }
-
-          const pendingInputs: PendingInput[] = [
-            {
-              irmAddress: marketConfig.silo0.interestRateModel.address,
-              version: marketConfig.silo0.interestRateModel.version
-            },
-            {
-              irmAddress: marketConfig.silo1.interestRateModel.address,
-              version: marketConfig.silo1.interestRateModel.version
-            }
-          ]
-
-          const dkmIrmAbi = [
-            {
-              type: 'function' as const,
-              name: 'pendingIrmConfig',
-              inputs: [],
-              outputs: [{ type: 'address' }],
-              stateMutability: 'view' as const
-            },
-            {
-              type: 'function' as const,
-              name: 'activateConfigAt',
-              inputs: [],
-              outputs: [{ type: 'uint256' }],
-              stateMutability: 'view' as const
-            }
-          ] as const
-
-          // Layer 1: for every eligible silo, batch pendingIrmConfig + activateConfigAt in one multicall.
-          type PendingSlot =
-            | { kind: 'skip' }
-            | { kind: 'fetch'; irmAddress: string; pendingIdx: number; activateIdx: number }
-
-          const pendingL1Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
-          const slots: PendingSlot[] = pendingInputs.map((input) => {
-            if (!input.irmAddress || input.irmAddress === ethers.ZeroAddress || !input.version) {
-              return { kind: 'skip' }
-            }
-            const [contractName] = input.version.split(' ')
-            if (contractName !== 'DynamicKinkModel') return { kind: 'skip' }
-            const pendingIdx = pendingL1Calls.length
-            pendingL1Calls.push(
-              buildReadMulticallCall<unknown>({
-                target: input.irmAddress as `0x${string}`,
-                abi: dkmIrmAbi,
-                functionName: 'pendingIrmConfig',
-                allowFailure: true
-              })
-            )
-            const activateIdx = pendingL1Calls.length
-            pendingL1Calls.push(
-              buildReadMulticallCall<unknown>({
-                target: input.irmAddress as `0x${string}`,
-                abi: dkmIrmAbi,
-                functionName: 'activateConfigAt',
-                allowFailure: true
-              })
-            )
-            return { kind: 'fetch', irmAddress: input.irmAddress, pendingIdx, activateIdx }
-          })
-
-          const pendingL1Results = pendingL1Calls.length > 0
-            ? await executeReadMulticall<unknown>(provider, pendingL1Calls, { debugLabel: 'irmPendingL1' })
-            : []
-
-          // Layer 2: for each discovered non-zero pending config address, batch getConfig() calls.
-          const dkmConfigAbi = (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi as ethers.InterfaceAbi
-          type L2Slot = { kind: 'skip'; activateAt: number | null } | {
-            kind: 'fetch'
-            activateAt: number | null
-            getConfigIdx: number
-          }
-          const pendingL2Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
-          const l2Slots: L2Slot[] = slots.map((slot) => {
-            if (slot.kind === 'skip') return { kind: 'skip', activateAt: null }
-            const pendingRaw = pendingL1Results[slot.pendingIdx]
-            const activateRaw = pendingL1Results[slot.activateIdx]
-            const pendingAddr = pendingRaw != null ? String(pendingRaw) : ''
-            if (!pendingAddr || pendingAddr === ethers.ZeroAddress) {
-              return { kind: 'skip', activateAt: null }
-            }
-            const activateAt = activateRaw != null
-              ? Number(BigInt(String(activateRaw)))
-              : null
-            const getConfigIdx = pendingL2Calls.length
-            pendingL2Calls.push(
-              buildReadMulticallCall<unknown>({
-                target: pendingAddr as `0x${string}`,
-                abi: dkmConfigAbi,
-                functionName: 'getConfig',
-                allowFailure: true
-              })
-            )
-            return { kind: 'fetch', activateAt, getConfigIdx }
-          })
-
-          const pendingL2Results = pendingL2Calls.length > 0
-            ? await executeReadMulticall<unknown>(provider, pendingL2Calls, { debugLabel: 'irmPendingL2' })
-            : []
-
-          const pendingResults: PendingResult[] = l2Slots.map((slot) => {
-            if (slot.kind === 'skip') return { name: null, activateAt: slot.activateAt }
-            const raw = pendingL2Results[slot.getConfigIdx]
-            if (raw == null) return { name: null, activateAt: slot.activateAt }
-            try {
-              const tuple = raw as unknown as unknown[]
-              const config = tuple[0] as Record<string, { toString: () => string }>
-              const configObj: Record<string, unknown> = {
-                ulow: config.ulow.toString(),
-                u1: config.u1.toString(),
-                u2: config.u2.toString(),
-                ucrit: config.ucrit.toString(),
-                rmin: config.rmin.toString(),
-                kmin: config.kmin.toString(),
-                kmax: config.kmax.toString(),
-                alpha: config.alpha.toString(),
-                cminus: config.cminus.toString(),
-                cplus: config.cplus.toString(),
-                c1: config.c1.toString(),
-                c2: config.c2.toString(),
-                dmax: config.dmax.toString()
-              }
-              const pendingName = resolveKinkConfigDisplayName(
-                { type: 'DynamicKinkModel', config: configObj },
-                cfgJson
-              )
-              return { name: pendingName, activateAt: slot.activateAt }
-            } catch {
-              return { name: null, activateAt: slot.activateAt }
-            }
-          })
-
-          const pending0 = pendingResults[0] ?? { name: null, activateAt: null }
-          const pending1 = pendingResults[1] ?? { name: null, activateAt: null }
-          if (isMountedRef.current) {
-            setPendingIrmInfo({ silo0: pending0, silo1: pending1 })
-          }
-
-          const fetchHistoryForSilo = async (
-            irmAddress: string,
-            version: string | undefined,
-            currentConfigAddress: string | undefined
-          ): Promise<string[]> => {
-            if (!irmAddress || irmAddress === ethers.ZeroAddress || !version || !currentConfigAddress || currentConfigAddress === ethers.ZeroAddress) {
-              return []
-            }
-            const [contractName] = version.split(' ')
-            if (contractName !== 'DynamicKinkModel') return []
-
-            try {
-              const irmContract = new ethers.Contract(
-                irmAddress,
-                dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
-                provider
-              )
-              // Start with current config address (already fetched with market config)
-              let currentAddr: string = ethers.getAddress(currentConfigAddress)
-              const names: string[] = []
-              while (currentAddr && currentAddr !== ethers.ZeroAddress) {
-                // configsHistory(current) returns (k: int96, irmConfig: address) per ABI - outputs[0]=k, outputs[1]=irmConfig
-                const result = await irmContract.configsHistory(currentAddr)
-                const prevAddr = result[1] ?? result.irmConfig
-                const prevAddrStr = prevAddr != null ? String(prevAddr) : ''
-                if (!prevAddrStr || prevAddrStr === ethers.ZeroAddress) break
-
-                const configContract = new ethers.Contract(
-                  prevAddrStr,
-                  (dynamicKinkModelConfigAbi as { abi: ethers.InterfaceAbi }).abi,
-                  provider
-                )
-                const [config] = await configContract.getConfig()
-                const configObj: Record<string, unknown> = {
-                  ulow: config.ulow.toString(),
-                  u1: config.u1.toString(),
-                  u2: config.u2.toString(),
-                  ucrit: config.ucrit.toString(),
-                  rmin: config.rmin.toString(),
-                  kmin: config.kmin.toString(),
-                  kmax: config.kmax.toString(),
-                  alpha: config.alpha.toString(),
-                  cminus: config.cminus.toString(),
-                  cplus: config.cplus.toString(),
-                  c1: config.c1.toString(),
-                  c2: config.c2.toString(),
-                  dmax: config.dmax.toString()
-                }
-                const name = resolveKinkConfigDisplayName(
-                  { type: 'DynamicKinkModel', config: configObj },
-                  cfgJson
-                )
-                names.push(name ?? 'not able to match')
-                currentAddr = prevAddrStr
-              }
-              return names
-            } catch {
-              return []
-            }
-          }
-
-          const [history0, history1] = await Promise.all([
-            fetchHistoryForSilo(
-              marketConfig.silo0.interestRateModel.address,
-              marketConfig.silo0.interestRateModel.version,
-              marketConfig.silo0.interestRateModel.irmConfigAddress
-            ),
-            fetchHistoryForSilo(
-              marketConfig.silo1.interestRateModel.address,
-              marketConfig.silo1.interestRateModel.version,
-              marketConfig.silo1.interestRateModel.irmConfigAddress
-            )
-          ])
-          if (isMountedRef.current) {
-            setIrmConfigHistory({ silo0: history0, silo1: history1 })
-          }
-        } else {
-          setIrmConfigNames({ silo0: null, silo1: null })
-          setPendingIrmInfo({ silo0: null, silo1: null })
-          setIrmConfigHistory({ silo0: null, silo1: null })
+        const irmAux = await fetchIrmDisplayAux(provider, marketConfig)
+        if (isMountedRef.current) {
+          setIrmConfigNames(irmAux.irmConfigNames)
+          setPendingIrmInfo(irmAux.pendingIrmInfo)
+          setIrmConfigHistory(irmAux.irmConfigHistory)
         }
       } catch {
         setIrmConfigNames({ silo0: null, silo1: null })
@@ -1620,14 +1174,15 @@ export default function Step11Verification() {
     // or if it's a valid address (42 chars starting with 0x)
     const isTxHash = trimmed.length === 66 && trimmed.startsWith('0x') && /^0x[a-fA-F0-9]{64}$/.test(trimmed)
     const isAddress = ethers.isAddress(trimmed)
+    const isSiloId = /^[0-9]+$/.test(trimmed)
     
-    if (!isTxHash && !isAddress) {
-      setError('Invalid input. Please provide a valid Silo Config address, Silo address, or transaction hash.')
+    if (!isTxHash && !isAddress && !isSiloId) {
+      setError('Invalid input. Please provide a valid Silo Config address, Silo address, SILO_ID, or transaction hash.')
       return
     }
     
     // Manual input verification should not be forced by URL chain parameter.
-    handleVerify(trimmed, isTxHash, false, null)
+    handleVerify(trimmed, isTxHash, false, null, isSiloId)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1661,6 +1216,16 @@ export default function Step11Verification() {
   }, [effectiveChainId, detectedChainId, wizardData.networkInfo?.chainId, chainParamRaw, searchParams, updateVerificationUrl])
 
   const goToDeployment = () => router.push('/wizard?step=12')
+  const clearCompareState = useCallback(() => {
+    setCompareError(null)
+    setCompareInput('')
+    setCompareConfig(null)
+    setCompareHookGaugeInfo(null)
+    setCompareIrmConfigNames({ silo0: null, silo1: null })
+    setComparePendingIrmInfo({ silo0: null, silo1: null })
+    setCompareIrmConfigHistory({ silo0: null, silo1: null })
+  }, [])
+
   const handleVerifyAnotherMarket = () => {
     setShowForm(true)
     setError(null)
@@ -1668,9 +1233,90 @@ export default function Step11Verification() {
     setTxHash(null)
     setConfig(null)
     setInput('')
+    clearCompareState()
     setVerificationFromWizard(false)
     updateVerificationUrl({})
   }
+
+  const handleCompareSubmit = useCallback(async () => {
+    const trimmed = compareInput.trim()
+    if (!trimmed) {
+      setCompareError('Please enter a Silo Config address, Silo address, SILO_ID, or transaction hash')
+      return
+    }
+    if (!window.ethereum) {
+      setCompareError('Wallet not available. Please connect MetaMask.')
+      return
+    }
+
+    setCompareLoading(true)
+    setCompareError(null)
+    try {
+      const isTxHash = trimmed.length === 66 && trimmed.startsWith('0x') && /^0x[a-fA-F0-9]{64}$/.test(trimmed)
+      const isSiloId = /^[0-9]+$/.test(trimmed)
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      let siloConfigAddress = ''
+      if (isTxHash) {
+        const receipt = await provider.getTransactionReceipt(trimmed)
+        if (!receipt) {
+          throw new Error('Transaction not found on the current network.')
+        }
+        if (receipt.status !== 1) {
+          throw new Error('Transaction failed or not yet confirmed.')
+        }
+        const parsed = parseDeployTxReceipt(receipt)
+        if (!parsed.siloConfig) {
+          throw new Error('Silo Config address not found in transaction events.')
+        }
+        siloConfigAddress = parsed.siloConfig
+      } else if (isSiloId) {
+        const network = await provider.getNetwork()
+        siloConfigAddress = await resolveSiloIdToSiloConfig(
+          provider,
+          network.chainId.toString(),
+          trimmed
+        )
+      } else {
+        if (!ethers.isAddress(trimmed)) {
+          throw new Error('Invalid input. Please provide a valid Silo Config address, Silo address, SILO_ID, or transaction hash.')
+        }
+        const inputAddress = ethers.getAddress(trimmed)
+        const code = await provider.getCode(inputAddress)
+        if (!code || code === '0x' || code === '0x0') {
+          throw new Error('Address not found on current network.')
+        }
+        siloConfigAddress = await resolveAddressToSiloConfig(provider, inputAddress, {
+          knownSilo: false
+        })
+      }
+
+      const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
+      const network = await provider.getNetwork()
+      const hookInfo = await fetchHookGaugeInfo({
+        provider,
+        marketConfig,
+        chainId: network.chainId.toString(),
+        siloLensAddress,
+        hookOwnerWizard: null
+      })
+      const irmAux = await fetchIrmDisplayAux(provider, marketConfig)
+      if (!isMountedRef.current) return
+
+      setCompareConfig(marketConfig)
+      setCompareHookGaugeInfo(hookInfo)
+      setCompareIrmConfigNames(irmAux.irmConfigNames)
+      setComparePendingIrmInfo(irmAux.pendingIrmInfo)
+      setCompareIrmConfigHistory(irmAux.irmConfigHistory)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setCompareError(message)
+      setCompareConfig(null)
+    } finally {
+      if (isMountedRef.current) {
+        setCompareLoading(false)
+      }
+    }
+  }, [compareInput, siloLensAddress])
 
   const siloDeploymentsLine =
     config && chainId && config.siloId != null
@@ -1680,6 +1326,37 @@ export default function Step11Verification() {
           config.siloId
         )}": "${config.siloConfig.startsWith('0x') ? config.siloConfig : `0x${config.siloConfig}`}"`
       : ''
+
+  const marketCompareMap = React.useMemo(() => {
+    if (!config || !compareConfig) return undefined
+    return buildMarketCompareMap({
+      currentConfig: config,
+      otherConfig: compareConfig,
+      addressVersions,
+      manageableOracleTimelockSeconds: wizardData.manageableOracleTimelock,
+      currentHookGaugeInfo: hookGaugeInfo,
+      otherHookGaugeInfo: compareHookGaugeInfo,
+      currentIrmConfigNames: irmConfigNames,
+      otherIrmConfigNames: compareIrmConfigNames,
+      currentPendingIrmInfo: pendingIrmInfo,
+      otherPendingIrmInfo: comparePendingIrmInfo,
+      currentIrmConfigHistory: irmConfigHistory,
+      otherIrmConfigHistory: compareIrmConfigHistory
+    })
+  }, [
+    compareConfig,
+    compareHookGaugeInfo,
+    compareIrmConfigHistory,
+    compareIrmConfigNames,
+    comparePendingIrmInfo,
+    config,
+    addressVersions,
+    hookGaugeInfo,
+    irmConfigHistory,
+    irmConfigNames,
+    pendingIrmInfo,
+    wizardData.manageableOracleTimelock
+  ])
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -1758,7 +1435,7 @@ export default function Step11Verification() {
         <form onSubmit={handleSubmit} className="mb-6">
           <div className="silo-panel p-6">
             <label htmlFor="input" className="block text-sm font-medium silo-text-main mb-2">
-              Silo Config, Silo Address, or Transaction Hash
+              Silo Config, Silo Address, SILO_ID, or Transaction Hash
             </label>
             <div className="flex gap-2 items-center">
               <input
@@ -1766,7 +1443,7 @@ export default function Step11Verification() {
                 type="text"
                 value={input}
                 onChange={handleInputChange}
-                placeholder="0x... (Silo Config, Silo address, or tx hash)"
+                placeholder="0x... / 123 (Silo Config, Silo address, SILO_ID, or tx hash)"
                 className={`flex-1 min-w-0 ${wizardMonoInputClass}`}
               />
               <Button
@@ -1780,7 +1457,7 @@ export default function Step11Verification() {
               </Button>
             </div>
             <p className="text-xs silo-text-soft mt-2">
-              Paste a Silo Config address, Silo address, or transaction hash
+              Paste a Silo Config address, Silo address, SILO_ID, or transaction hash
             </p>
           </div>
         </form>
@@ -2066,6 +1743,63 @@ export default function Step11Verification() {
         </div>
       )}
 
+      {config && !loading && (
+        <div className="silo-panel p-4 mb-6">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <p className="text-sm text-gray-300 font-medium">Compare to another market</p>
+              {compareConfig && (
+                <span className="text-xs text-gray-500">
+                  Comparison active for {formatAddress(compareConfig.siloConfig)}
+                </span>
+              )}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (compareLoading || !compareInput.trim()) return
+                void handleCompareSubmit()
+              }}
+              className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center"
+            >
+              <input
+                type="text"
+                value={compareInput}
+                onChange={(e) => {
+                  setCompareInput(extractHexAddressLike(e.target.value))
+                  setCompareError(null)
+                }}
+                placeholder="0x... / 123 (Silo Config, Silo address, SILO_ID, or tx hash)"
+                className={`flex-1 min-w-0 ${wizardMonoInputClass}`}
+              />
+              <Button
+                type="submit"
+                variant="secondary"
+                size="md"
+                disabled={compareLoading || !compareInput.trim()}
+              >
+                {compareLoading ? 'Comparing...' : 'Compare to'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="md"
+                onClick={clearCompareState}
+                disabled={compareLoading && !compareConfig}
+              >
+                Clear
+              </Button>
+            </form>
+            {compareError && (
+              <p className="text-sm text-red-400">{compareError}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              Enter a transaction hash, Silo Config address, Silo address, or SILO_ID. Comparison reads values only and does not run wizard validation.
+            </p>
+          </div>
+        </div>
+      )}
+
       {config && !loading && (() => {
         const ptOracleBaseDiscountVerification = {
           silo0: (config.silo0.solvencyOracle.type === 'PT-Linear' || config.silo0.solvencyOracle.type === 'PTLinear') && config.silo0.solvencyOracle.config && typeof (config.silo0.solvencyOracle.config as Record<string, unknown>).baseDiscountPerYear !== 'undefined'
@@ -2124,6 +1858,7 @@ export default function Step11Verification() {
               pendingIrmInfo={pendingIrmInfo}
               irmConfigHistory={irmConfigHistory}
               hookGaugeInfo={hookGaugeInfo}
+              marketCompareMap={marketCompareMap}
             />
           </>
         )

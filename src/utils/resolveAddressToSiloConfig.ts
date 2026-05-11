@@ -1,5 +1,7 @@
 import { ethers } from 'ethers'
 import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
+import { getChainName } from '@/utils/networks'
+import siloFactoryAbiArtifact from '@/abis/silo/ISiloFactory.json'
 
 const SILO_CONFIG_ABI = [
   {
@@ -10,6 +12,41 @@ const SILO_CONFIG_ABI = [
     stateMutability: 'view'
   }
 ] as const
+
+const siloFactoryAbi = (
+  Array.isArray(siloFactoryAbiArtifact)
+    ? siloFactoryAbiArtifact
+    : (siloFactoryAbiArtifact as unknown as { abi: ethers.InterfaceAbi }).abi
+) as ethers.InterfaceAbi
+
+const siloFactoryAddressCache = new Map<string, string | null>()
+
+async function fetchSiloFactoryAddress(chainId: string | number): Promise<string | null> {
+  const normalizedChainId = String(chainId)
+  if (siloFactoryAddressCache.has(normalizedChainId)) {
+    return siloFactoryAddressCache.get(normalizedChainId) ?? null
+  }
+
+  const chainName = getChainName(normalizedChainId)
+  const response = await fetch(
+    `https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deployments/${chainName}/SiloFactory.sol.json`
+  )
+  if (!response.ok) {
+    siloFactoryAddressCache.set(normalizedChainId, null)
+    return null
+  }
+
+  const data = await response.json()
+  const address = data.address || ''
+  if (!address || !ethers.isAddress(address)) {
+    siloFactoryAddressCache.set(normalizedChainId, null)
+    return null
+  }
+
+  const normalized = ethers.getAddress(address)
+  siloFactoryAddressCache.set(normalizedChainId, normalized)
+  return normalized
+}
 
 /**
  * Resolves an address to SiloConfig address.
@@ -43,6 +80,36 @@ export async function resolveAddressToSiloConfig(
   }
 
   return normalized
+}
+
+export async function resolveSiloIdToSiloConfig(
+  provider: ethers.Provider,
+  chainId: string | number,
+  siloId: string | number | bigint
+): Promise<string> {
+  const idValue = typeof siloId === 'bigint' ? siloId : BigInt(String(siloId).trim())
+  if (idValue <= BigInt(0)) {
+    throw new Error('SILO_ID must be greater than 0.')
+  }
+
+  const factoryAddress = await fetchSiloFactoryAddress(chainId)
+  if (!factoryAddress) {
+    throw new Error('Silo Factory deployment not found on current chain.')
+  }
+
+  const factoryContract = new ethers.Contract(factoryAddress, siloFactoryAbi, provider)
+  const siloConfigAddress = await factoryContract.idToSiloConfig(idValue)
+  const normalizedSiloConfig = ethers.getAddress(String(siloConfigAddress))
+  if (!normalizedSiloConfig || normalizedSiloConfig === ethers.ZeroAddress) {
+    throw new Error(`Silo ID ${idValue.toString()} not found on current chain.`)
+  }
+
+  const code = await provider.getCode(normalizedSiloConfig)
+  if (!code || code === '0x' || code === '0x0') {
+    throw new Error(`Silo ID ${idValue.toString()} resolved to non-contract address on current chain.`)
+  }
+
+  return normalizedSiloConfig
 }
 
 /**
