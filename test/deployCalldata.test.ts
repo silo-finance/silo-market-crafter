@@ -29,7 +29,34 @@ describe('deploy calldata from step-9 JSON', () => {
     if (!expectedCalldata.startsWith('0x')) throw new Error('Fixture tx must start with 0x')
 
     const iface = new ethers.Interface(deployerAbi)
-    const decoded = iface.decodeFunctionData('deploy', expectedCalldata as `0x${string}`)
+    const deployFragment = iface.getFunction('deploy')
+    if (!deployFragment) throw new Error('deploy function not found in ISiloDeployer ABI')
+
+    // Backward compatibility for old fixture calldata (before MarketOptions was added).
+    // If fixture has legacy 5-arg deploy selector, re-encode it to the current 6-arg
+    // signature by appending empty permissionedLiquidators.
+    let expectedCalldataNormalized = expectedCalldata
+    try {
+      iface.decodeFunctionData('deploy', expectedCalldata as `0x${string}`)
+    } catch {
+      const legacyDeploySig = `function deploy(${deployFragment.inputs
+        .slice(0, 5)
+        .map((input) => input.format('full'))
+        .join(',')})`
+      const legacyDeployAbi: ethers.InterfaceAbi = [legacyDeploySig]
+      const legacyIface = new ethers.Interface(legacyDeployAbi)
+      const legacyDecoded = legacyIface.decodeFunctionData('deploy', expectedCalldata as `0x${string}`)
+      expectedCalldataNormalized = iface.encodeFunctionData('deploy', [
+        legacyDecoded[0],
+        legacyDecoded[1],
+        legacyDecoded[2],
+        legacyDecoded[3],
+        legacyDecoded[4],
+        { permissionedLiquidators: [] }
+      ])
+    }
+
+    const decoded = iface.decodeFunctionData('deploy', expectedCalldataNormalized as `0x${string}`)
     const args = decoded
 
     const _oracles = args[0] as {
@@ -78,7 +105,7 @@ describe('deploy calldata from step-9 JSON', () => {
     const deployerAddress = ethers.ZeroAddress
     const generatedCalldata = generateDeployCalldata(deployerAddress, deployArgs)
 
-    expect(generatedCalldata).toBe(expectedCalldata)
+    expect(generatedCalldata).toBe(expectedCalldataNormalized)
   })
 })
 
