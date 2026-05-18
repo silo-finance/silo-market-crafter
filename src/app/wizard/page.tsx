@@ -12,6 +12,7 @@ import Step6OracleIrmOwner from '@/components/Step6OracleIrmOwner'
 import Step7BorrowSetup from '@/components/Step5BorrowSetup'
 import Step8Fees from '@/components/Step6Fees'
 import Step9Hook from '@/components/Step7Hook'
+import Step10LiquidationWhitelist from '@/components/Step9LiquidationWhitelist'
 import Step10HookOwner from '@/components/Step8HookOwner'
 import Step11JSONConfig from '@/components/Step8JSONConfig'
 import Step12Deployment from '@/components/Step10Deployment'
@@ -24,13 +25,13 @@ function WizardPageContent() {
   const router = useRouter()
   const { wizardData, updateStep } = useWizard()
 
-  // Get current step from URL (step=verification is the verification step; we never use step=13 in URL).
+  // Get current step from URL (step=verification is the verification step; we never use step=14 in URL).
   const urlStep = searchParams.get('step')
-  const currentStep = urlStep === 'verification' ? 13 : (urlStep ? parseInt(urlStep, 10) : 0)
+  const currentStep = urlStep === 'verification' ? 14 : (urlStep ? parseInt(urlStep, 10) : 0)
 
-  // Redirect step=13 to step=verification so URL never shows step 13
+  // Redirect step=14 to step=verification so URL never shows step 14
   useEffect(() => {
-    if (urlStep === '13') {
+    if (urlStep === '14') {
       const params = new URLSearchParams(searchParams.toString())
       params.set('step', 'verification')
       router.replace(`/wizard?${params.toString()}`, { scroll: false })
@@ -40,7 +41,7 @@ function WizardPageContent() {
   // When tx=, address=, or silo= present but not on verification step, redirect to verification
   useEffect(() => {
     const hasVerificationParams = searchParams.get('tx') || searchParams.get('address') || searchParams.get('contract') || searchParams.get('silo')
-    if (hasVerificationParams && currentStep !== 13) {
+    if (hasVerificationParams && currentStep !== 14) {
       const params = new URLSearchParams(searchParams.toString())
       params.set('step', 'verification')
       router.replace(`/wizard?${params.toString()}`, { scroll: false })
@@ -56,7 +57,7 @@ function WizardPageContent() {
 
   // Update wizard state when URL changes
   useEffect(() => {
-    if (currentStep >= 0 && currentStep <= 13 && !Number.isNaN(currentStep) && currentStep !== wizardData.currentStep) {
+    if (currentStep >= 0 && currentStep <= 14 && !Number.isNaN(currentStep) && currentStep !== wizardData.currentStep) {
       updateStep(currentStep)
     }
   }, [currentStep, wizardData.currentStep, updateStep])
@@ -87,12 +88,14 @@ function WizardPageContent() {
       case 9:
         return <Step9Hook />
       case 10:
-        return <Step10HookOwner />
+        return <Step10LiquidationWhitelist />
       case 11:
-        return <Step11JSONConfig />
+        return <Step10HookOwner />
       case 12:
-        return <Step12Deployment />
+        return <Step11JSONConfig />
       case 13:
+        return <Step12Deployment />
+      case 14:
         return <Step13Verification />
       default:
         return <LandingPage />

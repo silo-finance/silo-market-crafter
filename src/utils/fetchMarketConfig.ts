@@ -10,6 +10,7 @@ import chainlinkOracleConfigAbi from '@/abis/oracle/IChainlinkOracleConfig.json'
 import supraSValueOracleAbi from '@/abis/oracle/ISupraSValueOracle.json'
 import aggregatorV3Artifact from '@/abis/oracle/AggregatorV3Interface.json'
 import oracleAggregatorAbi from '@/abis/oracle/Aggregator.json'
+import siloHookV2Abi from '@/abis/silo/ISiloHookV2.json'
 import erc4626OracleWithUnderlyingArtifact from '@/abis/oracle/ERC4626OracleWithUnderlying.json'
 import ierc4626VaultArtifact from '@/abis/IERC4526.json'
 import { ADDRESSES_JSON_BASE, getChainNameForAddresses } from '@/utils/symbolToAddress'
@@ -39,6 +40,22 @@ export interface MarketConfig {
   siloId: bigint | null
   silo0: SiloConfig
   silo1: SiloConfig
+  liquidationWhitelist: LiquidationWhitelistInfo
+}
+
+export interface LiquidationWhitelistInfo {
+  hookReceiver: string
+  allowedRole: string | null
+  hasWhitelist: boolean | null
+  whitelistedAddresses: string[]
+  members: LiquidationWhitelistMemberInfo[]
+  readError?: string
+}
+
+export interface LiquidationWhitelistMemberInfo {
+  address: string
+  isContract: boolean | null
+  version?: string
 }
 
 export interface TokenMeta {
@@ -158,6 +175,7 @@ const aggregatorV3Abi = (aggregatorV3Artifact as { abi: ethers.InterfaceAbi }).a
 const erc4626OracleWithUnderlyingAbi = erc4626OracleWithUnderlyingArtifact as unknown as ethers.InterfaceAbi
 const ierc4626VaultAbi = ierc4626VaultArtifact as ethers.InterfaceAbi
 const dynamicKinkModelInterfaceAbi = dynamicKinkModelAbi as unknown as ethers.InterfaceAbi
+const siloHookV2InterfaceAbi = siloHookV2Abi as unknown as ethers.InterfaceAbi
 
 const siloFactoryReadAbi = [
   {
@@ -304,6 +322,27 @@ function normalizeAddressSafe(value: unknown): string | null {
   const str = typeof value === 'string' ? value : String(value)
   if (!ethers.isAddress(str)) return null
   return ethers.getAddress(str)
+}
+
+function normalizeAddressArraySafe(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const normalized: string[] = []
+  for (const item of value) {
+    const address = normalizeAddressSafe(item)
+    if (!address || address === ethers.ZeroAddress) continue
+    const key = address.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    normalized.push(address)
+  }
+  return normalized
+}
+
+function normalizeBytes32Safe(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  if (!/^0x[a-fA-F0-9]{64}$/.test(value)) return null
+  return value.toLowerCase()
 }
 
 // ---------------------------------------------------------------------------
@@ -1063,11 +1102,124 @@ export async function fetchMarketConfig(
   // Layer 13: Owner meta (isContract via getCode + JSON name).
   await resolveOwnerMeta(provider, chainId, config0, config1)
 
+  // Layer 14: Hook liquidation whitelist (ALLOWED_ROLE + role members).
+  const liquidationWhitelist: LiquidationWhitelistInfo = {
+    hookReceiver: config0.hookReceiver,
+    allowedRole: null,
+    hasWhitelist: null,
+    whitelistedAddresses: [],
+    members: []
+  }
+  if (isNonZeroAddress(config0.hookReceiver)) {
+    try {
+      const [allowedRoleRaw] = await executeReadMulticall<unknown>(provider, [
+        buildReadMulticallCall({
+          target: config0.hookReceiver,
+          abi: siloHookV2InterfaceAbi,
+          functionName: 'ALLOWED_ROLE',
+          allowFailure: true
+        })
+      ])
+      const allowedRole = normalizeBytes32Safe(allowedRoleRaw)
+      liquidationWhitelist.allowedRole = allowedRole
+      liquidationWhitelist.hasWhitelist = allowedRole != null ? allowedRole !== ethers.ZeroHash : null
+
+      if (allowedRole && allowedRole !== ethers.ZeroHash) {
+        const [membersRaw] = await executeReadMulticall<unknown>(provider, [
+          buildReadMulticallCall({
+            target: config0.hookReceiver,
+            abi: siloHookV2InterfaceAbi,
+            functionName: 'getRoleMembers',
+            args: [allowedRole],
+            allowFailure: true
+          })
+        ])
+        let members = normalizeAddressArraySafe(membersRaw)
+
+        if (members.length === 0 && membersRaw == null) {
+          const [countRaw] = await executeReadMulticall<unknown>(provider, [
+            buildReadMulticallCall({
+              target: config0.hookReceiver,
+              abi: siloHookV2InterfaceAbi,
+              functionName: 'getRoleMemberCount',
+              args: [allowedRole],
+              allowFailure: true
+            })
+          ])
+          const count = Number(countRaw)
+          if (Number.isFinite(count) && count > 0) {
+            const memberCalls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+            for (let i = 0; i < count; i++) {
+              memberCalls.push(
+                buildReadMulticallCall({
+                  target: config0.hookReceiver,
+                  abi: siloHookV2InterfaceAbi,
+                  functionName: 'getRoleMember',
+                  args: [allowedRole, i],
+                  allowFailure: true
+                })
+              )
+            }
+            const memberResults = await executeReadMulticall<unknown>(provider, memberCalls)
+            members = normalizeAddressArraySafe(memberResults)
+          }
+        }
+
+        liquidationWhitelist.whitelistedAddresses = members
+        liquidationWhitelist.members = members.map((address) => ({
+          address,
+          isContract: null
+        }))
+
+        if (members.length > 0) {
+          const memberMeta = await Promise.all(
+            members.map(async (address) => {
+              try {
+                const code = await provider.getCode(address)
+                return {
+                  address,
+                  isContract: code !== '0x' && code !== '0x0'
+                }
+              } catch {
+                return {
+                  address,
+                  isContract: null
+                }
+              }
+            })
+          )
+          liquidationWhitelist.members = memberMeta
+
+          if (siloLensAddress) {
+            try {
+              const memberVersions = await fetchSiloLensVersionsWithCache({
+                provider,
+                lensAddress: siloLensAddress,
+                chainId,
+                addresses: members
+              })
+              liquidationWhitelist.members = memberMeta.map((member) => ({
+                ...member,
+                version: memberVersions.get(member.address.toLowerCase()) ?? undefined
+              }))
+            } catch {
+              // ignore version read errors for whitelist members
+            }
+          }
+        }
+      }
+    } catch (error) {
+      liquidationWhitelist.readError =
+        error instanceof Error ? error.message : 'Failed to read hook liquidation whitelist.'
+    }
+  }
+
   return {
     siloConfig: siloConfigAddress,
     siloId,
     silo0: config0,
-    silo1: config1
+    silo1: config1,
+    liquidationWhitelist
   }
 }
 

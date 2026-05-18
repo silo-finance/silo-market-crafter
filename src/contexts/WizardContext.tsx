@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react'
+import { ethers } from 'ethers'
 import { bigintToDisplayNumber, displayNumberToBigint } from '@/utils/verification/normalization'
 import { getNetworkDisplayName } from '@/utils/networks'
 import { clearVersionCache } from '@/utils/versionCache'
@@ -18,6 +19,28 @@ declare global {
 /** Map chainId (decimal string) to display name; used when syncing from wallet (e.g. chainChanged). */
 function getNetworkNameForChainId(chainIdDecimal: string): string {
   return getNetworkDisplayName(chainIdDecimal)
+}
+
+function normalizePermissionedAddress(address: string): string | null {
+  const trimmed = address.trim()
+  if (!trimmed || !ethers.isAddress(trimmed)) return null
+  const normalized = ethers.getAddress(trimmed)
+  if (normalized === ethers.ZeroAddress) return null
+  return normalized
+}
+
+function dedupePermissionedAddresses(addresses: string[]): string[] {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+  for (const item of addresses) {
+    const address = normalizePermissionedAddress(item)
+    if (!address) continue
+    const key = address.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    normalized.push(address)
+  }
+  return normalized
 }
 
 export interface TokenData {
@@ -259,6 +282,8 @@ export interface WizardData {
   borrowConfiguration: BorrowConfiguration | null
   feesConfiguration: FeesConfiguration | null
   selectedHook: HookType | null
+  liquidationWhitelistEnabled: boolean
+  permissionedLiquidators: string[]
   hookOwnerAddress: string | null
   lastDeployTxHash: string | null
   /** Hash of deploy calldata for the last successful deploy; used to allow re-deploy when config changes. */
@@ -269,7 +294,7 @@ export interface WizardData {
   manageableOracleTimelock: number | undefined
   /** Owner address for ManageableOracle (when manageableOracle is true). Separate from hook owner. */
   manageableOracleOwnerAddress: string | null
-  /** On step 12: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
+  /** On step 14: true when verifying the wizard deployment (show summary sidebar), false/undefined when standalone verification (hide sidebar). */
   verificationFromWizard?: boolean
 }
 
@@ -295,6 +320,10 @@ interface WizardContextType {
   updateBorrowConfiguration: (config: BorrowConfiguration) => void
   updateFeesConfiguration: (config: FeesConfiguration) => void
   updateSelectedHook: (hook: HookType) => void
+  updateLiquidationWhitelistEnabled: (enabled: boolean) => void
+  setPermissionedLiquidators: (addresses: string[]) => void
+  addPermissionedLiquidator: (address: string) => void
+  removePermissionedLiquidator: (address: string) => void
   updateHookOwnerAddress: (address: string | null) => void
   generateJSONConfig: () => string
   parseJSONConfig: (jsonString: string) => Promise<boolean>
@@ -333,6 +362,8 @@ const initialWizardData: WizardData = {
   borrowConfiguration: null,
   feesConfiguration: null,
   selectedHook: null,
+  liquidationWhitelistEnabled: true,
+  permissionedLiquidators: [],
   hookOwnerAddress: null,
   lastDeployTxHash: null,
   lastDeployArgsHash: null,
@@ -371,7 +402,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           verificationFromWizard: false,
           manageableOracle: parsedData.manageableOracle ?? true,
           manageableOracleTimelock: parsedData.manageableOracleTimelock ?? 172800,
-          manageableOracleOwnerAddress: parsedData.manageableOracleOwnerAddress ?? null
+          manageableOracleOwnerAddress: parsedData.manageableOracleOwnerAddress ?? null,
+          liquidationWhitelistEnabled: parsedData.liquidationWhitelistEnabled ?? true,
+          permissionedLiquidators: Array.isArray(parsedData.permissionedLiquidators)
+            ? dedupePermissionedAddresses(parsedData.permissionedLiquidators)
+            : []
         })
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
@@ -473,6 +508,30 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setWizardData(prev => ({ ...prev, selectedHook: hook }))
   }
 
+  const updateLiquidationWhitelistEnabled = (enabled: boolean) => {
+    setWizardData(prev => ({ ...prev, liquidationWhitelistEnabled: enabled }))
+  }
+
+  const setPermissionedLiquidators = (addresses: string[]) => {
+    setWizardData(prev => ({ ...prev, permissionedLiquidators: dedupePermissionedAddresses(addresses) }))
+  }
+
+  const addPermissionedLiquidator = (address: string) => {
+    setWizardData(prev => ({
+      ...prev,
+      permissionedLiquidators: dedupePermissionedAddresses([...prev.permissionedLiquidators, address])
+    }))
+  }
+
+  const removePermissionedLiquidator = (address: string) => {
+    const normalized = normalizePermissionedAddress(address)
+    if (!normalized) return
+    setWizardData(prev => ({
+      ...prev,
+      permissionedLiquidators: prev.permissionedLiquidators.filter(item => item.toLowerCase() !== normalized.toLowerCase())
+    }))
+  }
+
   const updateHookOwnerAddress = useCallback((address: string | null) => {
     setWizardData(prev => ({ ...prev, hookOwnerAddress: address }))
   }, [])
@@ -498,6 +557,13 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       deployer: "",
       hookReceiver: "CLONE_IMPLEMENTATION",
       hookReceiverImplementation: hookImplementation,
+      liquidationWhitelistEnabled: wizardData.liquidationWhitelistEnabled ?? true,
+      marketOptions: {
+        permissionedLiquidators:
+          wizardData.liquidationWhitelistEnabled === false
+            ? []
+            : (wizardData.permissionedLiquidators ?? [])
+      },
       // Step 9 JSON export only: display as integer (4 digits, no decimal) - value * 100 (e.g. 4.02% → 402)
       daoFee: wizardData.feesConfiguration?.daoFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.daoFee) * 100) : 0,
       deployerFee: wizardData.feesConfiguration?.deployerFee ? Math.trunc(bigintToDisplayNumber(wizardData.feesConfiguration.deployerFee) * 100) : 0,
@@ -1118,6 +1184,19 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       // Extract hook type from "SiloHookV1.sol" format
       const hookMatch = hookImplementation.match(/^(SiloHookV[123])\.sol$/)
       const selectedHook: HookType = hookMatch ? (hookMatch[1] as HookType) : 'SiloHookV1'
+      const parsedPermissionedFromMarketOptions = Array.isArray(config.marketOptions?.permissionedLiquidators)
+        ? config.marketOptions.permissionedLiquidators
+        : []
+      const parsedPermissionedFallback = Array.isArray(config.permissionedLiquidators)
+        ? config.permissionedLiquidators
+        : []
+      const permissionedLiquidators = dedupePermissionedAddresses(
+        [...parsedPermissionedFromMarketOptions, ...parsedPermissionedFallback].map(item => String(item ?? ''))
+      )
+      const liquidationWhitelistEnabled =
+        typeof config.liquidationWhitelistEnabled === 'boolean'
+          ? config.liquidationWhitelistEnabled
+          : permissionedLiquidators.length > 0
       
       // Set all data in a single update to avoid race conditions
       const newWizardData = {
@@ -1130,7 +1209,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         selectedIRM1: irm1,
         borrowConfiguration: borrowConfig,
         feesConfiguration: feesConfig,
-        selectedHook: selectedHook
+        selectedHook: selectedHook,
+        liquidationWhitelistEnabled,
+        permissionedLiquidators
       }
       
       setWizardData(newWizardData)
@@ -1184,6 +1265,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         updateBorrowConfiguration,
         updateFeesConfiguration,
         updateSelectedHook,
+        updateLiquidationWhitelistEnabled,
+        setPermissionedLiquidators,
+        addPermissionedLiquidator,
+        removePermissionedLiquidator,
         updateHookOwnerAddress,
         updateManageableOracle,
         updateManageableOracleTimelock,
