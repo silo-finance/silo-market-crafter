@@ -1215,7 +1215,7 @@ export default function Step11Verification() {
     }
   }, [effectiveChainId, detectedChainId, wizardData.networkInfo?.chainId, chainParamRaw, searchParams, updateVerificationUrl])
 
-  const goToDeployment = () => router.push('/wizard?step=12')
+  const goToDeployment = () => router.push('/wizard?step=13')
   const clearCompareState = useCallback(() => {
     setCompareError(null)
     setCompareInput('')

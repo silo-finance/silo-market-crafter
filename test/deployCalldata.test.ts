@@ -13,9 +13,9 @@ import { prepareDeployArgs, generateDeployCalldata } from '@/utils/deployArgs'
 import type { WizardData } from '@/contexts/WizardContext'
 import type { SiloCoreDeployments, OracleDeployments } from '@/utils/deployArgs'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
+import { getAbi } from '@/utils/abiArtifact'
 
-type FoundryArtifact = { abi: ethers.InterfaceAbi }
-const deployerAbi = (deployerArtifact as FoundryArtifact).abi
+const deployerAbi = getAbi(deployerArtifact)
 
 const FIXTURES_DIR = path.join(__dirname, 'fixtures')
 const JSON_FIXTURE_WZETH = path.join(FIXTURES_DIR, 'Silo_wzETH_WETH.json')
@@ -28,7 +28,7 @@ describe('deploy calldata from step-9 JSON', () => {
     const expectedCalldata = txContent.split('\n')[0].trim()
     if (!expectedCalldata.startsWith('0x')) throw new Error('Fixture tx must start with 0x')
 
-    const iface = new ethers.Interface(deployerAbi as ethers.InterfaceAbi)
+    const iface = new ethers.Interface(deployerAbi)
     const decoded = iface.decodeFunctionData('deploy', expectedCalldata as `0x${string}`)
     const args = decoded
 

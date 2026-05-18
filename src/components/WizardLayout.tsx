@@ -70,8 +70,8 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
     }
   }
 
-  const isStep13Standalone = wizardData.currentStep === 13 && !wizardData.verificationFromWizard
-  const isVerificationStep = wizardData.currentStep === 13
+  const isStep13Standalone = wizardData.currentStep === 14 && !wizardData.verificationFromWizard
+  const isVerificationStep = wizardData.currentStep === 14
 
   if (wizardData.currentStep === 0) {
     // Landing page - no sidebar
@@ -150,10 +150,11 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   { step: 7, title: 'Borrow Setup' },
                   { step: 8, title: 'Fees' },
                   { step: 9, title: 'Hook' },
-                  { step: 10, title: 'Hook Owner' },
-                  { step: 11, title: 'JSON Config' },
-                  { step: 12, title: 'Deployment' },
-                  { step: 13, id: 'verification', title: 'Verification' }
+                  { step: 10, title: 'Whitelist' },
+                  { step: 11, title: 'Hook Owner' },
+                  { step: 12, title: 'JSON Config' },
+                  { step: 13, title: 'Deployment' },
+                  { step: 14, id: 'verification', title: 'Verification' }
                 ].map((item) => {
                   const itemId = 'id' in item ? item.id : String(item.step)
                   const isCompleted = wizardData.currentStep > item.step
@@ -896,6 +897,36 @@ export default function WizardLayout({ children }: WizardLayoutProps) {
                   </div>
                 </div>
               )}
+
+              {/* Owners: Hook Owner + IRM Owner (Kink only) */}
+              <div>
+                <h3 className="text-sm font-medium silo-text-soft mb-3">Liquidation Whitelist</h3>
+                <div className="silo-panel p-3">
+                  <div className="text-xs silo-text-soft mb-2">
+                    Mode:{' '}
+                    <span className="silo-text-main">
+                      {wizardData.liquidationWhitelistEnabled === false ? 'Public liquidation' : 'Permissioned liquidation'}
+                    </span>
+                  </div>
+                  {wizardData.liquidationWhitelistEnabled !== false && (
+                    <div className="space-y-1">
+                      {wizardData.permissionedLiquidators.length > 0 ? (
+                        wizardData.permissionedLiquidators.map((address) => (
+                          <AddressDisplayShort
+                            key={address}
+                            address={address}
+                            chainId={wizardData.networkInfo?.chainId ? parseInt(wizardData.networkInfo.chainId, 10) : 1}
+                            className="text-xs"
+                            showVersion={false}
+                          />
+                        ))
+                      ) : (
+                        <div className="text-xs silo-text-faint">—</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Owners: Hook Owner + IRM Owner (Kink only) */}
               <div>

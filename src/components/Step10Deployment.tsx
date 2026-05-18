@@ -16,11 +16,10 @@ import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { fetchOracleFactoryAddress } from '@/utils/oracleFactoryAvailability'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import customErrorsSelectors from '@/data/customErrorsSelectors.json'
+import { getAbi } from '@/utils/abiArtifact'
 
-/** Foundry artifact: ABI under "abi" key – use as-is, never modify */
-type FoundryArtifact = { abi: ethers.InterfaceAbi }
-const deployerAbi = (deployerArtifact as FoundryArtifact).abi
-const deployerInterface = new ethers.Interface(deployerAbi as ethers.InterfaceAbi)
+const deployerAbi = getAbi(deployerArtifact)
+const deployerInterface = new ethers.Interface(deployerAbi)
 
 /**
  * Format contract/RPC errors for display. Uses ethers v6 isError, CallExceptionError.revert/data,
@@ -409,7 +408,7 @@ export default function Step10Deployment() {
 
       // Validate hook owner address is set
       if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
-        validationWarnings.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+        validationWarnings.push('Hook owner address is not set. Please complete Step 11 (Hook Owner Selection) first.')
       }
 
       // Validate Oracle & IRM owner when manageable Oracle or Kink IRM is used
@@ -446,7 +445,7 @@ export default function Step10Deployment() {
     const validationErrors: string[] = []
 
     if (!wizardData.hookOwnerAddress || !ethers.isAddress(wizardData.hookOwnerAddress)) {
-      validationErrors.push('Hook owner address is not set. Please complete Step 8 (Hook Owner Selection) first.')
+      validationErrors.push('Hook owner address is not set. Please complete Step 11 (Hook Owner Selection) first.')
     }
 
     const needsOracleIrmOwner = wizardData.manageableOracle || true
@@ -476,6 +475,25 @@ export default function Step10Deployment() {
 
     if (!args._clonableHookReceiver.initializationData || args._clonableHookReceiver.initializationData === '0x') {
       validationErrors.push('Hook initialization data is empty. Please ensure hook owner is properly set.')
+    }
+
+    if (wizardData.liquidationWhitelistEnabled !== false) {
+      if (!Array.isArray(args._marketOptions.permissionedLiquidators) || args._marketOptions.permissionedLiquidators.length === 0) {
+        validationErrors.push('Liquidation whitelist is enabled but no permissioned liquidators are set.')
+      }
+      const seen = new Set<string>()
+      for (const address of args._marketOptions.permissionedLiquidators) {
+        if (!ethers.isAddress(address) || address === ethers.ZeroAddress) {
+          validationErrors.push('Permissioned liquidator list contains invalid address values.')
+          break
+        }
+        const key = address.toLowerCase()
+        if (seen.has(key)) {
+          validationErrors.push('Permissioned liquidator list contains duplicate addresses.')
+          break
+        }
+        seen.add(key)
+      }
     }
 
     return validationErrors
@@ -521,7 +539,8 @@ export default function Step10Deployment() {
         deployArgs._irmConfigData0.encoded,
         deployArgs._irmConfigData1.encoded,
         deployArgs._clonableHookReceiver,
-        deployArgs._siloInitData
+        deployArgs._siloInitData,
+        deployArgs._marketOptions
       )
 
       const predictedSiloConfigAddress = ethers.getAddress(String(simulatedSiloConfig))
@@ -634,7 +653,8 @@ export default function Step10Deployment() {
           txIrmConfigData0,
           txIrmConfigData1,
           txClonableHookReceiver,
-          txSiloInitData
+          txSiloInitData,
+          deployArgs._marketOptions
         )
       } catch (estimateErr: unknown) {
         const msg = formatContractError(estimateErr, deployerInterface)
@@ -656,7 +676,8 @@ export default function Step10Deployment() {
         txIrmConfigData0,
         txIrmConfigData1,
         txClonableHookReceiver,
-        txSiloInitData
+        txSiloInitData,
+        deployArgs._marketOptions
       )
 
       setTxHash(tx.hash)
@@ -664,7 +685,7 @@ export default function Step10Deployment() {
       // Wait for transaction confirmation
       await tx.wait()
 
-      markStepCompleted(12)
+      markStepCompleted(13)
       const argsHash =
         deployArgs && deployerAddress
           ? ethers.keccak256(generateDeployCalldata(deployerAddress, deployArgs) as `0x${string}`)
@@ -690,7 +711,7 @@ export default function Step10Deployment() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=11')
+    router.push('/wizard?step=12')
   }
 
   const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
@@ -707,7 +728,7 @@ export default function Step10Deployment() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 12: Market Deployment
+          Step 13: Market Deployment
         </h1>
         <p className="text-gray-300 text-lg">
           Review deployment arguments and deploy your market
@@ -954,7 +975,7 @@ export default function Step10Deployment() {
       <div className="silo-panel p-6 mb-6">
         <h3 className="text-lg font-semibold silo-text-main mb-4">Deploy Arguments</h3>
         <p className="text-sm silo-text-soft mb-4">
-          Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData)</span>
+          Arguments for <span className="font-mono">deploy(Oracles calldata _oracles, bytes calldata _irmConfigData0, bytes calldata _irmConfigData1, ClonableHookReceiver calldata _clonableHookReceiver, ISiloConfig.InitData memory _siloInitData, MarketOptions calldata _marketOptions)</span>
         </p>
         {deployArgs ? (
           <div className="silo-panel rounded-lg p-4 overflow-x-auto">

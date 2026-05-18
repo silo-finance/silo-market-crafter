@@ -89,6 +89,9 @@ export interface DeployArgs {
     flashloanFee1: bigint
     callBeforeQuote1: boolean
   }
+  _marketOptions: {
+    permissionedLiquidators: string[]
+  }
 }
 
 export interface OracleDeployments {
@@ -586,6 +589,23 @@ export function prepareDeployArgs(
     callBeforeQuote1: false
   }
 
+  const permissionedLiquidatorsRaw =
+    wizardData.liquidationWhitelistEnabled === false
+      ? []
+      : (wizardData.permissionedLiquidators ?? [])
+  const seenPermissioned = new Set<string>()
+  const permissionedLiquidators: string[] = []
+  for (const candidate of permissionedLiquidatorsRaw) {
+    if (!ethers.isAddress(candidate)) continue
+    const normalized = ethers.getAddress(candidate)
+    if (normalized === ethers.ZeroAddress) continue
+    const key = normalized.toLowerCase()
+    if (seenPermissioned.has(key)) continue
+    seenPermissioned.add(key)
+    permissionedLiquidators.push(normalized)
+  }
+  const _marketOptions = { permissionedLiquidators }
+
   return {
     _oracles,
     _irmConfigData0: {
@@ -597,7 +617,8 @@ export function prepareDeployArgs(
       encoded: irmConfigData1Encoded
     },
     _clonableHookReceiver,
-    _siloInitData
+    _siloInitData,
+    _marketOptions
   }
 }
 
@@ -616,6 +637,7 @@ export function generateDeployCalldata(
     deployArgs._irmConfigData0.encoded,
     deployArgs._irmConfigData1.encoded,
     deployArgs._clonableHookReceiver,
-    deployArgs._siloInitData
+    deployArgs._siloInitData,
+    deployArgs._marketOptions
   ])
 }

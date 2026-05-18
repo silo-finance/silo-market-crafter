@@ -7,6 +7,7 @@ import type {
   FeesConfiguration, 
   HookType 
 } from '@/contexts/WizardContext'
+import { ethers } from 'ethers'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
 
 const initialWizardData: WizardData = {
@@ -24,6 +25,8 @@ const initialWizardData: WizardData = {
   borrowConfiguration: null,
   feesConfiguration: null,
   selectedHook: null,
+  liquidationWhitelistEnabled: true,
+  permissionedLiquidators: [],
   hookOwnerAddress: null,
   manageableOracle: true,
   manageableOracleTimelock: undefined,
@@ -281,6 +284,24 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
   // Extract hook type from "SiloHookV1.sol" format
   const hookMatch = hookImplementation.match(/^(SiloHookV[123])\.sol$/)
   const selectedHook: HookType = hookMatch ? (hookMatch[1] as HookType) : 'SiloHookV1'
+  const permissionedLiquidatorsRaw = Array.isArray(config.marketOptions?.permissionedLiquidators)
+    ? config.marketOptions.permissionedLiquidators
+    : (Array.isArray(config.permissionedLiquidators) ? config.permissionedLiquidators : [])
+  const seenPermissioned = new Set<string>()
+  const permissionedLiquidators: string[] = []
+  for (const candidate of permissionedLiquidatorsRaw) {
+    const value = String(candidate ?? '').trim()
+    if (!ethers.isAddress(value)) continue
+    const normalized = ethers.getAddress(value)
+    if (normalized === ethers.ZeroAddress) continue
+    const key = normalized.toLowerCase()
+    if (seenPermissioned.has(key)) continue
+    seenPermissioned.add(key)
+    permissionedLiquidators.push(normalized)
+  }
+  const liquidationWhitelistEnabled = typeof config.liquidationWhitelistEnabled === 'boolean'
+    ? config.liquidationWhitelistEnabled
+    : permissionedLiquidators.length > 0
   
   return {
     ...initialWizardData,
@@ -292,6 +313,8 @@ export function parseJSONConfigToWizardData(jsonString: string): WizardData {
     selectedIRM1: irm1,
     borrowConfiguration: borrowConfig,
     feesConfiguration: feesConfig,
-    selectedHook: selectedHook
+    selectedHook: selectedHook,
+    liquidationWhitelistEnabled,
+    permissionedLiquidators
   }
 }

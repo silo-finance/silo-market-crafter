@@ -37,6 +37,7 @@ const CONTRACT_SOURCE_PATHS: Record<string, string> = {
 
   // Manageable oracle wrapper
   ManageableOracle: 'silo-oracles/contracts/manageable/ManageableOracle.sol',
+  FlatPriceOracle: 'silo-oracles/contracts/flat-price/FlatPriceOracle.sol',
   SiloIncentivesController: 'silo-core/contracts/incentives/SiloIncentivesController.sol',
   SiloDeployer: 'silo-core/contracts/SiloDeployer.sol',
   PTLinearOracle: 'silo-oracles/contracts/pendle/linear/PTLinearOracle.sol'

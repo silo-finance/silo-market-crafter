@@ -1,13 +1,13 @@
 import { ethers } from 'ethers'
 import deployerArtifact from '@/abis/silo/ISiloDeployer.json'
 import factoryArtifact from '@/abis/silo/ISiloFactory.json'
+import { getAbi } from '@/utils/abiArtifact'
 
-type FoundryArtifact = { abi: ethers.InterfaceAbi }
-const deployerAbi = (deployerArtifact as FoundryArtifact).abi
-const factoryAbi = (factoryArtifact as FoundryArtifact).abi
+const deployerAbi = getAbi(deployerArtifact)
+const factoryAbi = getAbi(factoryArtifact)
 
-const deployerInterface = new ethers.Interface(deployerAbi as ethers.InterfaceAbi)
-const factoryInterface = new ethers.Interface(factoryAbi as ethers.InterfaceAbi)
+const deployerInterface = new ethers.Interface(deployerAbi)
+const factoryInterface = new ethers.Interface(factoryAbi)
 
 export interface DeployTxParsed {
   siloConfig: string | null

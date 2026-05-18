@@ -2580,6 +2580,107 @@ export default function MarketConfigTree({ config, explorerUrl, chainId, current
                 : undefined
             }
           />
+          <TreeNode
+            label="Liquidation Whitelist"
+            explorerUrl={explorerUrl}
+            bulletItems={(() => {
+              const info = config.liquidationWhitelist
+              const bullets: OracleBulletItem[] = []
+
+              bullets.push({
+                key: 'liquidation.whitelist.status',
+                text: (
+                  <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <span>Whitelist supported:</span>
+                    <VerificationStatusIconSmall
+                      status={
+                        info.hasWhitelist == null
+                          ? VERIFICATION_STATUS.NOT_AVAILABLE
+                          : info.hasWhitelist
+                            ? VERIFICATION_STATUS.PASSED
+                            : VERIFICATION_STATUS.WARNING
+                      }
+                    />
+                  </span>
+                )
+              })
+
+              if (info.readError) {
+                bullets.push({
+                  key: 'liquidation.whitelist.readError',
+                  text: (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-yellow-400">
+                      <span>Whitelist read note:</span>
+                      <span>{info.readError}</span>
+                    </span>
+                  )
+                })
+              }
+
+              if (info.hasWhitelist) {
+                if (info.members.length === 0) {
+                  bullets.push({
+                    key: 'liquidation.whitelist.empty',
+                    text: 'No addresses assigned to ALLOWED_ROLE.'
+                  })
+                } else {
+                  bullets.push({
+                    key: 'liquidation.whitelist.members',
+                    text: (
+                      <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-1">
+                        <li>
+                          <span>Whitelist members:</span>
+                          <ul className="list-disc list-inside ml-6 mt-1 text-gray-400 text-sm space-y-1">
+                            {info.members.map((member) => (
+                              <li key={member.address.toLowerCase()}>
+                                <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                  <a
+                                    href={`${explorerUrl}/address/${member.address}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mct-link font-mono text-sm"
+                                  >
+                                    {formatAddress(member.address)}
+                                  </a>
+                                  <CopyButton
+                                    value={member.address}
+                                    title="Copy address"
+                                    iconClassName="w-3.5 h-3.5 inline align-middle"
+                                  />
+                                  <span className="text-xs text-gray-500">
+                                    {member.isContract == null
+                                      ? 'type: unknown'
+                                      : member.isContract
+                                        ? 'type: Contract'
+                                        : 'type: EOA'}
+                                  </span>
+                                  {member.version &&
+                                    member.version !== '' &&
+                                    member.isContract !== false &&
+                                    member.version.toLowerCase() !== 'not a contract' && (
+                                    <span className="text-xs text-gray-500">({member.version})</span>
+                                  )}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      </ul>
+                    )
+                  })
+                }
+              }
+
+              if (info.allowedRole != null && info.allowedRole === ethers.ZeroHash) {
+                bullets.push({
+                  key: 'liquidation.whitelist.zeroRoleHint',
+                  text: 'ALLOWED_ROLE is zero hash (0x00...00), whitelist not enabled by role.'
+                })
+              }
+
+              return bullets
+            })()}
+          />
         </TreeNode>
         <li className="tree-separator" aria-hidden="true" />
 

@@ -31,8 +31,8 @@ export default function Step8HookOwner() {
     setLoading(true)
 
     try {
-      markStepCompleted(10)
-      router.push('/wizard?step=11')
+      markStepCompleted(11)
+      router.push('/wizard?step=12')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -41,14 +41,14 @@ export default function Step8HookOwner() {
   }
 
   const goToPreviousStep = () => {
-    router.push('/wizard?step=9')
+    router.push('/wizard?step=10')
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4">
-          Step 10: Hook Owner Selection
+          Step 11: Hook Owner Selection
         </h1>
         <p className="text-gray-300 text-lg">
           Enter the address of the hook owner. This applies to all hook types. The same owner will be used for Gauge (Silo Incentive Controllers).
@@ -81,7 +81,7 @@ export default function Step8HookOwner() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Hook</span>
+            <span>Whitelist</span>
           </Button>
           <Button type="submit" variant="primary" size="lg" disabled={loading || !hasValidOwner}>
             {loading ? (
