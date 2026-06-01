@@ -94,6 +94,15 @@ export interface DeployArgs {
   }
 }
 
+export interface DeployCallArgs {
+  oracles: DeployArgs['_oracles']
+  irmConfigData0: string
+  irmConfigData1: string
+  clonableHookReceiver: DeployArgs['_clonableHookReceiver']
+  siloInitData: DeployArgs['_siloInitData']
+  marketOptions: DeployArgs['_marketOptions']
+}
+
 export interface OracleDeployments {
   chainlinkV3OracleFactory?: string
   ptLinearOracleFactory?: string
@@ -639,5 +648,48 @@ export function generateDeployCalldata(
     deployArgs._clonableHookReceiver,
     deployArgs._siloInitData,
     deployArgs._marketOptions
+  ])
+}
+
+/**
+ * Build the final deploy() payload once and reuse it for simulation + tx send.
+ * This prevents argument drift between staticCall and deploy.
+ */
+export function buildDeployCallArgs(
+  deployArgs: DeployArgs,
+  hookOwnerAddress?: string
+): DeployCallArgs {
+  let initializationData = deployArgs._clonableHookReceiver.initializationData
+
+  if ((!initializationData || initializationData === '0x') && hookOwnerAddress && ethers.isAddress(hookOwnerAddress)) {
+    const normalizedAddress = ethers.getAddress(hookOwnerAddress)
+    initializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [normalizedAddress])
+  }
+
+  return {
+    oracles: deployArgs._oracles,
+    irmConfigData0: deployArgs._irmConfigData0.encoded,
+    irmConfigData1: deployArgs._irmConfigData1.encoded,
+    clonableHookReceiver: {
+      implementation: deployArgs._clonableHookReceiver.implementation,
+      initializationData
+    },
+    siloInitData: deployArgs._siloInitData,
+    marketOptions: deployArgs._marketOptions
+  }
+}
+
+export function generateDeployCalldataFromCallArgs(
+  deployCallArgs: DeployCallArgs
+): string {
+  const iface = new ethers.Interface(deployerAbi)
+
+  return iface.encodeFunctionData('deploy', [
+    deployCallArgs.oracles,
+    deployCallArgs.irmConfigData0,
+    deployCallArgs.irmConfigData1,
+    deployCallArgs.clonableHookReceiver,
+    deployCallArgs.siloInitData,
+    deployCallArgs.marketOptions
   ])
 }

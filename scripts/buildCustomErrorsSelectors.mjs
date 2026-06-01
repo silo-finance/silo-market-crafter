@@ -1,16 +1,12 @@
 /**
- * Build custom errors list and selector map from Silo contracts (.sol).
- *
- * Scans:
- *   - SILO_CONTRACTS_V2/silo-core/contracts
- *   - SILO_CONTRACTS_V2/silo-oracles/contracts
+ * Build custom errors list and selector map from canonical IErrors.sol.
  *
  * Usage:
  *   node scripts/buildCustomErrorsSelectors.mjs
- *   SILO_CONTRACTS_V2=/path/to/silo-contracts-v2 node scripts/buildCustomErrorsSelectors.mjs
+ *   SILO_IERRORS_URL=https://.../IErrors.sol node scripts/buildCustomErrorsSelectors.mjs
  *
  * Output:
- *   - src/data/customErrorsList.json   – full list (signature, sourceFile)
+ *   - src/data/customErrorsList.json      – signatures with source URL
  *   - src/data/customErrorsSelectors.json – selectorHex → signature, list with selectorDecimal
  */
 
@@ -22,11 +18,9 @@ import { ethers } from 'ethers'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 
-const SILO_CONTRACTS_V2 = process.env.SILO_CONTRACTS_V2 || path.join(ROOT, '..', 'silo-contracts-v2')
-const SCAN_DIRS = [
-  path.join(SILO_CONTRACTS_V2, 'silo-core', 'contracts'),
-  path.join(SILO_CONTRACTS_V2, 'silo-oracles', 'contracts')
-]
+const IERRORS_URL =
+  process.env.SILO_IERRORS_URL ||
+  'https://raw.githubusercontent.com/silo-finance/silo-contracts-v3/refs/heads/develop/common/utils/interfaces/IErrors.sol'
 
 const DATA_DIR = path.join(ROOT, 'src', 'data')
 const OUT_LIST = path.join(DATA_DIR, 'customErrorsList.json')
@@ -48,19 +42,7 @@ function canonicalParams(paramsRaw) {
     .join(', ')
 }
 
-function* walkSolFiles(dir) {
-  if (!fs.existsSync(dir)) return
-  const entries = fs.readdirSync(dir, { withFileTypes: true })
-  for (const e of entries) {
-    const full = path.join(dir, e.name)
-    if (e.isDirectory()) yield* walkSolFiles(full)
-    else if (e.isFile() && e.name.endsWith('.sol')) yield full
-  }
-}
-
-function extractErrorsFromFile(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8')
-  const relativePath = path.relative(ROOT, filePath)
+function extractErrorsFromContent(content, sourceFile) {
   const entries = []
   let m
   ERROR_RE.lastIndex = 0
@@ -69,7 +51,7 @@ function extractErrorsFromFile(filePath) {
     const paramsRaw = m[2]
     const paramsCanonical = canonicalParams(paramsRaw)
     const signature = paramsCanonical ? `${name}(${paramsCanonical})` : `${name}()`
-    entries.push({ signature, sourceFile: relativePath })
+    entries.push({ signature, sourceFile })
   }
   return entries
 }
@@ -81,23 +63,23 @@ function computeSelector(signature) {
   return { selectorHex, selectorDecimal }
 }
 
-function main() {
-  const bySignature = new Map()
+async function fetchCanonicalIErrors() {
+  const response = await fetch(IERRORS_URL)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch IErrors.sol (${response.status} ${response.statusText}) from ${IERRORS_URL}`)
+  }
+  return response.text()
+}
 
-  for (const dir of SCAN_DIRS) {
-    if (!fs.existsSync(dir)) {
-      console.warn('Skip (not found):', dir)
-      continue
+async function main() {
+  const bySignature = new Map()
+  const iErrorsSol = await fetchCanonicalIErrors()
+  for (const entry of extractErrorsFromContent(iErrorsSol, IERRORS_URL)) {
+    if (!bySignature.has(entry.signature)) {
+      bySignature.set(entry.signature, { signature: entry.signature, sourceFiles: [] })
     }
-    for (const file of walkSolFiles(dir)) {
-      for (const entry of extractErrorsFromFile(file)) {
-        if (!bySignature.has(entry.signature)) {
-          bySignature.set(entry.signature, { signature: entry.signature, sourceFiles: [] })
-        }
-        const rec = bySignature.get(entry.signature)
-        if (!rec.sourceFiles.includes(entry.sourceFile)) rec.sourceFiles.push(entry.sourceFile)
-      }
-    }
+    const rec = bySignature.get(entry.signature)
+    if (!rec.sourceFiles.includes(entry.sourceFile)) rec.sourceFiles.push(entry.sourceFile)
   }
 
   const list = []
@@ -146,8 +128,12 @@ function main() {
   )
 
   console.log('Custom errors:', list.length)
+  console.log('Source:', IERRORS_URL)
   console.log('Written:', OUT_LIST)
   console.log('Written:', OUT_SELECTORS)
 }
 
-main()
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exit(1)
+})

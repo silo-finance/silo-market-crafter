@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.37.1 - 2026-06-01
+### Fixed
+- lock a single deployment payload after simulation and reuse the exact same arguments for estimateGas and transaction execution.
+
 ## 0.37.0 - 2026-05-18
 ### Added
 - liquidation whitelist

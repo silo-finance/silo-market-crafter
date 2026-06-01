@@ -5,7 +5,15 @@ import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useWizard } from '@/contexts/WizardContext'
-import { prepareDeployArgs, generateDeployCalldata, type DeployArgs, type SiloCoreDeployments, type OracleDeployments } from '@/utils/deployArgs'
+import {
+  prepareDeployArgs,
+  buildDeployCallArgs,
+  generateDeployCalldataFromCallArgs,
+  type DeployArgs,
+  type DeployCallArgs,
+  type SiloCoreDeployments,
+  type OracleDeployments
+} from '@/utils/deployArgs'
 import { getChainName, getExplorerBaseUrl, getExplorerAddressUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
@@ -86,19 +94,22 @@ export default function Step10Deployment() {
   const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
+  const [preparedDeployCallArgs, setPreparedDeployCallArgs] = useState<DeployCallArgs | null>(null)
+  const [simulatedArgsHash, setSimulatedArgsHash] = useState<string>('')
   const [simulatedSiloConfigAddress, setSimulatedSiloConfigAddress] = useState<string>('')
-  const [hasSimulatedOnce, setHasSimulatedOnce] = useState(false)
+  const [hasSuccessfulSimulation, setHasSuccessfulSimulation] = useState(false)
 
   // Hash of current deploy arguments; used to allow re-deploy when config changes after a previous deploy
   const currentArgsHash = useMemo(() => {
     if (!deployArgs || !deployerAddress) return null
     try {
-      const calldata = generateDeployCalldata(deployerAddress, deployArgs)
+      const callArgs = buildDeployCallArgs(deployArgs, wizardData.hookOwnerAddress ?? undefined)
+      const calldata = generateDeployCalldataFromCallArgs(callArgs)
       return ethers.keccak256(calldata as `0x${string}`)
     } catch {
       return null
     }
-  }, [deployArgs, deployerAddress])
+  }, [deployArgs, deployerAddress, wizardData.hookOwnerAddress])
 
   const configUnchangedAfterDeploy =
     !!txHash &&
@@ -120,6 +131,9 @@ export default function Step10Deployment() {
 
   useEffect(() => {
     setSimulatedSiloConfigAddress('')
+    setPreparedDeployCallArgs(null)
+    setSimulatedArgsHash('')
+    setHasSuccessfulSimulation(false)
   }, [currentArgsHash])
 
   // Fetch SiloDeployer address and SiloCore deployments
@@ -500,10 +514,6 @@ export default function Step10Deployment() {
   }
 
   const handleSimulate = async () => {
-    if (hasSimulatedOnce) {
-      return
-    }
-
     if (!window.ethereum) {
       setError('Wallet is not available. Connect your wallet to run simulation.')
       return
@@ -529,28 +539,37 @@ export default function Step10Deployment() {
     setError('')
     setTxErrorDebug(null)
     setSimulatedSiloConfigAddress('')
+    setPreparedDeployCallArgs(null)
+    setSimulatedArgsHash('')
+    setHasSuccessfulSimulation(false)
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const deployerContract = new ethers.Contract(deployerAddress, deployerAbi, provider)
+      const deployCallArgs = buildDeployCallArgs(deployArgs, wizardData.hookOwnerAddress ?? undefined)
+      const calldata = generateDeployCalldataFromCallArgs(deployCallArgs)
+      const argsHash = ethers.keccak256(calldata as `0x${string}`)
 
       const simulatedSiloConfig = await deployerContract.deploy.staticCall(
-        deployArgs._oracles,
-        deployArgs._irmConfigData0.encoded,
-        deployArgs._irmConfigData1.encoded,
-        deployArgs._clonableHookReceiver,
-        deployArgs._siloInitData,
-        deployArgs._marketOptions
+        deployCallArgs.oracles,
+        deployCallArgs.irmConfigData0,
+        deployCallArgs.irmConfigData1,
+        deployCallArgs.clonableHookReceiver,
+        deployCallArgs.siloInitData,
+        deployCallArgs.marketOptions
       )
 
       const predictedSiloConfigAddress = ethers.getAddress(String(simulatedSiloConfig))
       setSimulatedSiloConfigAddress(predictedSiloConfigAddress)
+      setPreparedDeployCallArgs(deployCallArgs)
+      setSimulatedArgsHash(argsHash)
+      setHasSuccessfulSimulation(true)
     } catch (err: unknown) {
       const errorMessage = formatContractError(err, deployerInterface)
       setError(`Simulation failed: ${errorMessage}`)
+      setHasSuccessfulSimulation(false)
     } finally {
       setSimulating(false)
-      setHasSimulatedOnce(true)
     }
   }
 
@@ -567,6 +586,20 @@ export default function Step10Deployment() {
 
     if (!deployArgs) {
       setError('Deployment arguments not ready')
+      return
+    }
+
+    if (!hasSuccessfulSimulation || !preparedDeployCallArgs || !simulatedArgsHash) {
+      setError('Run simulation first to lock deployment payload.')
+      return
+    }
+
+    if (!currentArgsHash || simulatedArgsHash !== currentArgsHash) {
+      setError('Deployment arguments changed after simulation. Run simulation again before executing.')
+      setPreparedDeployCallArgs(null)
+      setSimulatedArgsHash('')
+      setHasSuccessfulSimulation(false)
+      setSimulatedSiloConfigAddress('')
       return
     }
 
@@ -589,59 +622,33 @@ export default function Step10Deployment() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
-      
-      // Ensure initialization data is properly encoded
-      let hookReceiverInitializationData = deployArgs._clonableHookReceiver.initializationData
-      if (!hookReceiverInitializationData || hookReceiverInitializationData === '0x') {
-        // Re-encode if needed
-        if (wizardData.hookOwnerAddress && ethers.isAddress(wizardData.hookOwnerAddress)) {
-          const normalizedAddress = ethers.getAddress(wizardData.hookOwnerAddress)
-          hookReceiverInitializationData = ethers.AbiCoder.defaultAbiCoder().encode(['address'], [normalizedAddress])
-        } else {
-          throw new Error('Hook owner address is not set or invalid')
-        }
-      }
-      
-      // Use clonableHookReceiver from deployArgs - exact structure matching contract
-      const clonableHookReceiver = {
-        implementation: deployArgs._clonableHookReceiver.implementation,
-        initializationData: hookReceiverInitializationData
-      }
-      
+
       // Validate all addresses are valid before sending
-      if (!ethers.isAddress(clonableHookReceiver.implementation) || clonableHookReceiver.implementation === ethers.ZeroAddress) {
+      if (!ethers.isAddress(preparedDeployCallArgs.clonableHookReceiver.implementation) || preparedDeployCallArgs.clonableHookReceiver.implementation === ethers.ZeroAddress) {
         throw new Error('Hook implementation address is invalid')
       }
-      
-      if (!ethers.isAddress(deployArgs._siloInitData.token0) || deployArgs._siloInitData.token0 === ethers.ZeroAddress) {
+
+      if (!ethers.isAddress(preparedDeployCallArgs.siloInitData.token0) || preparedDeployCallArgs.siloInitData.token0 === ethers.ZeroAddress) {
         throw new Error('Token0 address is invalid')
       }
-      
-      if (!ethers.isAddress(deployArgs._siloInitData.token1) || deployArgs._siloInitData.token1 === ethers.ZeroAddress) {
+
+      if (!ethers.isAddress(preparedDeployCallArgs.siloInitData.token1) || preparedDeployCallArgs.siloInitData.token1 === ethers.ZeroAddress) {
         throw new Error('Token1 address is invalid')
       }
-      
-      if (!ethers.isAddress(deployArgs._siloInitData.interestRateModel0) || deployArgs._siloInitData.interestRateModel0 === ethers.ZeroAddress) {
+
+      if (!ethers.isAddress(preparedDeployCallArgs.siloInitData.interestRateModel0) || preparedDeployCallArgs.siloInitData.interestRateModel0 === ethers.ZeroAddress) {
         throw new Error('Interest Rate Model 0 address is invalid')
       }
-      
-      if (!ethers.isAddress(deployArgs._siloInitData.interestRateModel1) || deployArgs._siloInitData.interestRateModel1 === ethers.ZeroAddress) {
+
+      if (!ethers.isAddress(preparedDeployCallArgs.siloInitData.interestRateModel1) || preparedDeployCallArgs.siloInitData.interestRateModel1 === ethers.ZeroAddress) {
         throw new Error('Interest Rate Model 1 address is invalid')
       }
 
       const deployerContract = new ethers.Contract(deployerAddress, deployerAbi, signer)
 
-      // Prepare exact transaction arguments - ensure no extra fields
-      // These must match exactly what's shown in JSON
-      const txOracles = deployArgs._oracles
-      const txIrmConfigData0 = deployArgs._irmConfigData0.encoded
-      const txIrmConfigData1 = deployArgs._irmConfigData1.encoded
-      const txClonableHookReceiver = clonableHookReceiver
-      const txSiloInitData = deployArgs._siloInitData
-
       // Precompute full calldata for debugging purposes
       try {
-        debugCalldata = generateDeployCalldata(deployerAddress, deployArgs)
+        debugCalldata = generateDeployCalldataFromCallArgs(preparedDeployCallArgs)
       } catch (encodeErr) {
         console.warn('Failed to generate debug calldata for deploy():', encodeErr)
       }
@@ -649,12 +656,12 @@ export default function Step10Deployment() {
       // Validate with estimateGas first so we get a clear revert reason without sending tx
       try {
         await deployerContract.deploy.estimateGas(
-          txOracles,
-          txIrmConfigData0,
-          txIrmConfigData1,
-          txClonableHookReceiver,
-          txSiloInitData,
-          deployArgs._marketOptions
+          preparedDeployCallArgs.oracles,
+          preparedDeployCallArgs.irmConfigData0,
+          preparedDeployCallArgs.irmConfigData1,
+          preparedDeployCallArgs.clonableHookReceiver,
+          preparedDeployCallArgs.siloInitData,
+          preparedDeployCallArgs.marketOptions
         )
       } catch (estimateErr: unknown) {
         const msg = formatContractError(estimateErr, deployerInterface)
@@ -672,12 +679,12 @@ export default function Step10Deployment() {
 
       // Execute deploy transaction - use exact arguments matching contract interface
       const tx = await deployerContract.deploy(
-        txOracles,
-        txIrmConfigData0,
-        txIrmConfigData1,
-        txClonableHookReceiver,
-        txSiloInitData,
-        deployArgs._marketOptions
+        preparedDeployCallArgs.oracles,
+        preparedDeployCallArgs.irmConfigData0,
+        preparedDeployCallArgs.irmConfigData1,
+        preparedDeployCallArgs.clonableHookReceiver,
+        preparedDeployCallArgs.siloInitData,
+        preparedDeployCallArgs.marketOptions
       )
 
       setTxHash(tx.hash)
@@ -686,10 +693,7 @@ export default function Step10Deployment() {
       await tx.wait()
 
       markStepCompleted(13)
-      const argsHash =
-        deployArgs && deployerAddress
-          ? ethers.keccak256(generateDeployCalldata(deployerAddress, deployArgs) as `0x${string}`)
-          : null
+      const argsHash = currentArgsHash
       setLastDeployTxHash(tx.hash, argsHash)
       setError('')
       setTxErrorDebug(null)
@@ -810,7 +814,6 @@ export default function Step10Deployment() {
               onClick={handleSimulate}
               disabled={
                 simulating ||
-                hasSimulatedOnce ||
                 deploying ||
                 !deployerAddress ||
                 !deployArgs ||
@@ -837,7 +840,7 @@ export default function Step10Deployment() {
                 </>
               ) : (
                 <>
-                  <span>{hasSimulatedOnce ? 'Simulated' : 'Simulate'}</span>
+                  <span>{hasSuccessfulSimulation ? 'Simulated' : 'Simulate'}</span>
                   <NewFeatureBadge compact className="ml-1" />
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m0 0v8m0-8L8 15" />
@@ -852,6 +855,10 @@ export default function Step10Deployment() {
                 simulating ||
                 !deployerAddress ||
                 !deployArgs ||
+                !hasSuccessfulSimulation ||
+                !preparedDeployCallArgs ||
+                !simulatedArgsHash ||
+                simulatedArgsHash !== currentArgsHash ||
                 !wizardData.hookOwnerAddress ||
                 !ethers.isAddress(wizardData.hookOwnerAddress) ||
                 ((wizardData.manageableOracle || true) && (!wizardData.manageableOracleOwnerAddress || !ethers.isAddress(wizardData.manageableOracleOwnerAddress))) ||

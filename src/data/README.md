@@ -1,32 +1,31 @@
 # Custom errors (Silo contracts)
 
-Lista custom errors wyekstrahowanych z repozytorium **silo-contracts-v2** (silo-core + silo-oracles) oraz ich selektory w HEX i dziesiętnie.
+Custom error signatures are generated from canonical `IErrors.sol` and stored with selector mappings for UI decoding.
 
-## Pliki
+## Files
 
-- **customErrorsList.json** – pełna lista: sygnatura + pliki źródłowe (`.sol`).
-- **customErrorsSelectors.json** – mapowanie selector → sygnatura oraz lista z `selectorHex` i `selectorDecimal` (do porównań w UI).
+- **customErrorsList.json**: full list of signatures with source URL.
+- **customErrorsSelectors.json**: `selectorHex -> signature` mapping plus selector list (`selectorHex`, `selectorDecimal`).
 
-## Generowanie
+## Generation
 
-Skrypt skanuje katalogi z kontraktami i zapisuje listę + selektory:
+Generate (or refresh) mappings:
 
 ```bash
 npm run build:errors
 ```
 
-Domyślne ścieżki (względem repozytorium `silo-market-crafter`):
+Default source:
 
-- `../silo-contracts-v2/silo-core/contracts`
-- `../silo-contracts-v2/silo-oracles/contracts`
+- `https://raw.githubusercontent.com/silo-finance/silo-contracts-v3/refs/heads/develop/common/utils/interfaces/IErrors.sol`
 
-Inna lokalizacja `silo-contracts-v2`:
+Override source URL:
 
 ```bash
-SILO_CONTRACTS_V2=/ścieżka/do/silo-contracts-v2 node scripts/buildCustomErrorsSelectors.mjs
+SILO_IERRORS_URL=https://example.com/IErrors.sol node scripts/buildCustomErrorsSelectors.mjs
 ```
 
-## Użycie w UI
+## UI usage
 
-W UI porównujemy HEX selectora z revert data z mapą `customErrorsSelectors.bySelector`.  
-Jeśli `bySelector[selectorHex]` istnieje, można wyświetlić nazwę błędu (sygnaturę) zamiast samego hexa.
+When revert data contains a selector, compare it against `customErrorsSelectors.bySelector`.
+If `bySelector[selectorHex]` exists, show that signature instead of raw hex.
