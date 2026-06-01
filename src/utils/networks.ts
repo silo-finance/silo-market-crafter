@@ -64,7 +64,7 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     chainId: 43114,
     displayName: 'Avalanche C-Chain',
     chainName: 'avalanche',
-    explorerBaseUrl: 'https://snowtrace.io',
+    explorerBaseUrl: 'https://snowscan.xyz',
     nativeTokenSymbol: 'AVAX',
     iconPath: '/network-icons/avalanche.svg',
   },

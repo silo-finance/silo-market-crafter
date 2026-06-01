@@ -38,6 +38,7 @@ import { getAbi } from '@/utils/abiArtifact'
 import { wizardMonoInputClass, wizardSansInputClass } from '@/constants/formStyles'
 import Button from '@/components/Button'
 import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
+import customErrorsSelectors from '@/data/customErrorsSelectors.json'
 
 /** Foundry artifact: ABI under "abi" key – use as-is, never modify */
 const oracleScalerAbi = (oracleScalerArtifact as { abi: ethers.InterfaceAbi }).abi
@@ -159,6 +160,46 @@ const iSiloOracleMulticallAbi = [
 
 /** ABI helpers for the Chainlink V3 adapter deploy fallback. */
 const chainlinkV3FactoryInterfaceAbi = getAbi(chainlinkV3OracleFactoryAbi)
+const chainlinkV3FactoryInterface = new ethers.Interface(chainlinkV3FactoryInterfaceAbi)
+const flatPriceFactoryInterface = new ethers.Interface(flatPriceFactoryInterfaceAbi)
+
+function formatSimulationError(err: unknown, contractInterface?: ethers.Interface): string {
+  if (ethers.isError(err, 'ACTION_REJECTED')) {
+    return 'Action rejected in wallet.'
+  }
+  if (ethers.isError(err, 'CALL_EXCEPTION')) {
+    const ex = err as ethers.CallExceptionError
+    if (ex.revert) {
+      const argsStr =
+        ex.revert.args && ex.revert.args.length > 0
+          ? ` (${ex.revert.args.map((arg) => (typeof arg === 'bigint' ? arg.toString() : String(arg))).join(', ')})`
+          : ''
+      return `${ex.revert.signature}${argsStr}`
+    }
+    if (ex.data && typeof ex.data === 'string' && ex.data.startsWith('0x') && ex.data.length >= 10) {
+      if (contractInterface) {
+        try {
+          const parsed = contractInterface.parseError(ex.data)
+          if (parsed) {
+            return parsed.signature
+          }
+        } catch {
+          // parseError can throw on malformed revert data.
+        }
+      }
+      const selectorHex = ex.data.slice(0, 10)
+      const knownSignature = (customErrorsSelectors as { bySelector: Record<string, string> }).bySelector[selectorHex]
+      if (knownSignature) {
+        return knownSignature
+      }
+      return `Unknown revert (selector ${selectorHex})`
+    }
+    if (ex.reason) return ex.reason
+    if (ex.shortMessage) return ex.shortMessage
+  }
+  if (err instanceof Error) return err.message
+  return String(err)
+}
 
 
 interface OracleDeployments {
@@ -1207,28 +1248,27 @@ function VaultWithUnderlyingOracleSection({
         const predicted = await factory.create.staticCall(tuple, ethers.ZeroHash)
         predictedAddr = ethers.getAddress(String(predicted))
       } catch (err) {
-        console.warn('Adapter staticCall prediction failed (will rely on event log):', err)
+        console.warn('Adapter staticCall prediction failed (will rely on event log):', formatSimulationError(err, chainlinkV3FactoryInterface))
       }
       // estimateGas preflight per repo policy (senior-coding-actions skill).
       try {
         await factory.create.estimateGas(tuple, ethers.ZeroHash)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
+        const msg = formatSimulationError(err, chainlinkV3FactoryInterface)
         throw new Error(`Adapter deploy preflight (estimateGas) failed: ${msg}`)
       }
       const tx = await factory.create(tuple, ethers.ZeroHash)
       const receipt = await tx.wait()
       let deployedAddr = predictedAddr
       try {
-        const iface = new ethers.Interface(chainlinkV3FactoryInterfaceAbi)
-        const evTopic = iface.getEvent('NewOracle')?.topicHash
+        const evTopic = chainlinkV3FactoryInterface.getEvent('NewOracle')?.topicHash
         const log = receipt?.logs?.find(
           (l: { topics: ReadonlyArray<string>; address: string }) =>
             l.address.toLowerCase() === chainlinkV3OracleFactory.address.toLowerCase() &&
             l.topics?.[0] === evTopic
         )
         if (log) {
-          const parsed = iface.parseLog(log)
+          const parsed = chainlinkV3FactoryInterface.parseLog(log)
           if (parsed?.args?.[0]) deployedAddr = ethers.getAddress(String(parsed.args[0]))
         }
       } catch (err) {
@@ -1252,7 +1292,7 @@ function VaultWithUnderlyingOracleSection({
       // Re-run ISiloOracle probe against the deployed adapter.
       await probeUnderlyingOracle(deployedAddr)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
+      const msg = formatSimulationError(err, chainlinkV3FactoryInterface)
       setDeployError(msg)
     } finally {
       setDeploying(false)
@@ -2634,12 +2674,9 @@ function FlatPriceOracleSection({
       setSimulationState('success')
       setSimulationMessage('Oracle creation simulation passed.')
     } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Simulation failed. Check FlatPrice arguments and selected network.'
+      const msg = formatSimulationError(err, flatPriceFactoryInterface)
       setSimulationState('error')
-      setSimulationMessage(msg)
+      setSimulationMessage(msg || 'Simulation failed. Check FlatPrice arguments and selected network.')
     }
   }
 

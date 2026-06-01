@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWizard, type OracleType, type WizardData } from '@/contexts/WizardContext'
 import { getChainName, getExplorerAddressUrl } from '@/utils/networks'
@@ -89,6 +89,22 @@ function pow10BigInt(n: number): bigint {
 const MANAGEABLE_ORACLE_UNDERLYING_ABI = [
   'function baseToken() view returns (address)',
   'function quote(uint256 baseAmount, address baseToken) view returns (uint256)',
+] as const
+const UNDERLYING_ORACLE_TOKEN_METHODS_ABI = [
+  {
+    type: 'function' as const,
+    name: 'baseToken',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+    stateMutability: 'view' as const
+  },
+  {
+    type: 'function' as const,
+    name: 'quoteToken',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+    stateMutability: 'view' as const
+  }
 ] as const
 
 const ERC20_DECIMALS_ABI = ['function decimals() view returns (uint8)'] as const
@@ -327,6 +343,8 @@ export default function Step4ManageableOracle() {
   const [simulate1State, setSimulate1State] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [simulate0Error, setSimulate0Error] = useState<string>('')
   const [simulate1Error, setSimulate1Error] = useState<string>('')
+  const [underlyingMethodErrors, setUnderlyingMethodErrors] = useState<string[]>([])
+  const [underlyingMethodsCheckLoading, setUnderlyingMethodsCheckLoading] = useState(false)
 
   const SECONDS_PER_DAY = 86400
 
@@ -558,31 +576,7 @@ export default function Step4ManageableOracle() {
       )
     : []
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const errors: string[] = []
-    if (manageableEnabled) {
-      if (timelockDayOptions.length === 0) errors.push('Timelock options not loaded yet – please wait')
-      else if (selectedTimelockDays === undefined) errors.push('Please select a timelock duration (days)')
-    }
-    if (errors.length > 0) {
-      setValidationErrors(errors)
-      return
-    }
-    setValidationErrors([])
-    updateManageableOracle(manageableEnabled)
-    if (manageableEnabled && selectedTimelockDays !== undefined) {
-      updateManageableOracleTimelock(selectedTimelockDays * SECONDS_PER_DAY)
-    }
-    markStepCompleted(4)
-    router.push('/wizard?step=5')
-  }
-
-  const goToPreviousStep = () => {
-    router.push('/wizard?step=3')
-  }
-
-  const resolveSelectedOracleDeployments = async (): Promise<OracleDeployments> => {
+  const resolveSelectedOracleDeployments = useCallback(async (): Promise<OracleDeployments> => {
     const chainId = wizardData.networkInfo?.chainId
     if (!chainId) return {}
     const result: OracleDeployments = {}
@@ -622,6 +616,166 @@ export default function Step4ManageableOracle() {
       result.manageableOracleFactory = manageableFactory.address
     }
     return result
+  }, [
+    wizardData.networkInfo?.chainId,
+    wizardData.oracleConfiguration?.token0?.type,
+    wizardData.oracleConfiguration?.token1?.type,
+    manageableFactory?.address
+  ])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const checkUnderlyingOracleMethods = async () => {
+      if (!manageableEnabled) {
+        setUnderlyingMethodErrors([])
+        setUnderlyingMethodsCheckLoading(false)
+        return
+      }
+      if (!window.ethereum) {
+        // Keep previous behavior: no hard-block when provider is not injected yet.
+        setUnderlyingMethodErrors([])
+        setUnderlyingMethodsCheckLoading(false)
+        return
+      }
+      if (!wizardData.token0 || !wizardData.token1) {
+        setUnderlyingMethodErrors([])
+        setUnderlyingMethodsCheckLoading(false)
+        return
+      }
+
+      setUnderlyingMethodsCheckLoading(true)
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const oracleDeployments = await resolveSelectedOracleDeployments()
+        const checksWizardData = {
+          ...wizardData,
+          manageableOracle: false
+        }
+        const deployArgs = prepareDeployArgs(checksWizardData, {}, oracleDeployments)
+        const candidates = [
+          {
+            tokenLabel: wizardData.token0.symbol || 'token 0',
+            oracleAddress: deployArgs._oracles.solvencyOracle0.deployed
+          },
+          {
+            tokenLabel: wizardData.token1.symbol || 'token 1',
+            oracleAddress: deployArgs._oracles.solvencyOracle1.deployed
+          }
+        ]
+        const errors: string[] = []
+
+        for (const candidate of candidates) {
+          if (!candidate.oracleAddress || candidate.oracleAddress === ethers.ZeroAddress || !ethers.isAddress(candidate.oracleAddress)) {
+            continue
+          }
+
+          const [baseTokenResult, quoteTokenResult] = await executeReadMulticall<string>(
+            provider,
+            [
+              buildReadMulticallCall<string>({
+                target: candidate.oracleAddress as `0x${string}`,
+                abi: UNDERLYING_ORACLE_TOKEN_METHODS_ABI,
+                functionName: 'baseToken',
+                allowFailure: true,
+                decodeResult: (decoded) => String(decoded)
+              }),
+              buildReadMulticallCall<string>({
+                target: candidate.oracleAddress as `0x${string}`,
+                abi: UNDERLYING_ORACLE_TOKEN_METHODS_ABI,
+                functionName: 'quoteToken',
+                allowFailure: true,
+                decodeResult: (decoded) => String(decoded)
+              })
+            ],
+            { debugLabel: `manageableUnderlyingMethods-${candidate.tokenLabel}` }
+          )
+
+          const baseTokenMissing =
+            baseTokenResult === null ||
+            !ethers.isAddress(baseTokenResult) ||
+            ethers.getAddress(baseTokenResult) === ethers.ZeroAddress
+          if (baseTokenMissing) {
+            errors.push(
+              `Underlying oracle is missing Base Token (baseToken()) for ${candidate.tokenLabel}.`
+            )
+          }
+
+          const quoteTokenMissing =
+            quoteTokenResult === null ||
+            !ethers.isAddress(quoteTokenResult) ||
+            ethers.getAddress(quoteTokenResult) === ethers.ZeroAddress
+          if (quoteTokenMissing) {
+            errors.push(
+              `Underlying oracle is missing Quote Token (quoteToken()) for ${candidate.tokenLabel}.`
+            )
+          }
+        }
+
+        if (!cancelled) {
+          setUnderlyingMethodErrors(errors)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const details = err instanceof Error ? err.message : String(err)
+          setUnderlyingMethodErrors([
+            `Underlying oracle method check failed: ${details}`
+          ])
+        }
+      } finally {
+        if (!cancelled) {
+          setUnderlyingMethodsCheckLoading(false)
+        }
+      }
+    }
+
+    checkUnderlyingOracleMethods()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    manageableEnabled,
+    resolveSelectedOracleDeployments,
+    wizardData,
+    wizardData.token0,
+    wizardData.token1,
+    wizardData.oracleConfiguration,
+    wizardData.oracleType0,
+    wizardData.oracleType1,
+    wizardData.manageableOracleOwnerAddress,
+    wizardData.networkInfo?.chainId,
+    manageableFactory?.address
+  ])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: string[] = []
+    if (manageableEnabled) {
+      if (timelockDayOptions.length === 0) errors.push('Timelock options not loaded yet – please wait')
+      else if (selectedTimelockDays === undefined) errors.push('Please select a timelock duration (days)')
+      if (underlyingMethodsCheckLoading) {
+        errors.push('Underlying oracle method checks are still running – please wait')
+      }
+      if (underlyingMethodErrors.length > 0) {
+        errors.push(...underlyingMethodErrors)
+      }
+    }
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+    setValidationErrors([])
+    updateManageableOracle(manageableEnabled)
+    if (manageableEnabled && selectedTimelockDays !== undefined) {
+      updateManageableOracleTimelock(selectedTimelockDays * SECONDS_PER_DAY)
+    }
+    markStepCompleted(4)
+    router.push('/wizard?step=5')
+  }
+
+  const goToPreviousStep = () => {
+    router.push('/wizard?step=3')
   }
 
   const simulateManageableOracle = async (tokenSide: 0 | 1) => {
@@ -853,75 +1007,88 @@ export default function Step4ManageableOracle() {
                   Until Oracle/IRM Owner is set in Step 6, simulations use your connected wallet address as the
                   manageable oracle owner so the ManageableOracleFactory call matches a real deployment payload.
                 </p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="silo-panel p-4 flex flex-col gap-3 h-full">
-                  <p className="text-sm silo-text-main leading-relaxed">
-                    Simulation for Manageable Oracle with{' '}
-                    <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType0)}</span>
-                    {' '}and for{' '}
-                    <span className="font-medium">{wizardData.token0?.symbol ?? 'token 0'}</span>
-                  </p>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => void simulateManageableOracle(0)}
-                      disabled={simulate0State === 'loading' || simulate0State === 'success'}
-                      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        simulate0State === 'success'
-                          ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
-                          : simulate0State === 'loading'
-                          ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
-                          : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
-                      }`}
-                    >
-                      {simulate0State === 'success' && (
-                        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
-                      )}
-                      {simulate0State === 'loading' ? 'Simulating…' : 'Simulate'}
-                      <NewFeatureBadge compact className="ml-1" />
-                    </button>
-                  </div>
-                  {simulate0State === 'error' && (
-                    <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
-                      {simulate0Error}
-                    </pre>
-                  )}
-                </div>
+                {(wizardData.oracleType0?.type !== 'none' || wizardData.oracleType1?.type !== 'none') && (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {wizardData.oracleType0?.type !== 'none' && (
+                      <div className="silo-panel p-4 flex flex-col gap-3 h-full">
+                        <p className="text-sm silo-text-main leading-relaxed">
+                          Simulation for Manageable Oracle with{' '}
+                          <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType0)}</span>
+                          {' '}and for{' '}
+                          <span className="font-medium">{wizardData.token0?.symbol ?? 'token 0'}</span>
+                        </p>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => void simulateManageableOracle(0)}
+                            disabled={simulate0State === 'loading' || simulate0State === 'success'}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                              simulate0State === 'success'
+                                ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
+                                : simulate0State === 'loading'
+                                ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
+                                : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
+                            }`}
+                          >
+                            {simulate0State === 'success' && (
+                              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
+                            )}
+                            {simulate0State === 'loading' ? 'Simulating…' : 'Simulate'}
+                            <NewFeatureBadge compact className="ml-1" />
+                          </button>
+                        </div>
+                        {simulate0State === 'error' && (
+                          <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
+                            {simulate0Error}
+                          </pre>
+                        )}
+                      </div>
+                    )}
 
-                <div className="silo-panel p-4 flex flex-col gap-3 h-full">
-                  <p className="text-sm silo-text-main leading-relaxed">
-                    Simulation for Manageable Oracle with{' '}
-                    <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType1)}</span>
-                    {' '}and for{' '}
-                    <span className="font-medium">{wizardData.token1?.symbol ?? 'token 1'}</span>
-                  </p>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => void simulateManageableOracle(1)}
-                      disabled={simulate1State === 'loading' || simulate1State === 'success'}
-                      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        simulate1State === 'success'
-                          ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
-                          : simulate1State === 'loading'
-                          ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
-                          : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
-                      }`}
-                    >
-                      {simulate1State === 'success' && (
-                        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
-                      )}
-                      {simulate1State === 'loading' ? 'Simulating…' : 'Simulate'}
-                      <NewFeatureBadge compact className="ml-1" />
-                    </button>
+                    {wizardData.oracleType1?.type !== 'none' && (
+                      <div className="silo-panel p-4 flex flex-col gap-3 h-full">
+                        <p className="text-sm silo-text-main leading-relaxed">
+                          Simulation for Manageable Oracle with{' '}
+                          <span className="font-medium">{getOracleTypeDisplayName(wizardData.oracleType1)}</span>
+                          {' '}and for{' '}
+                          <span className="font-medium">{wizardData.token1?.symbol ?? 'token 1'}</span>
+                        </p>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => void simulateManageableOracle(1)}
+                            disabled={simulate1State === 'loading' || simulate1State === 'success'}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                              simulate1State === 'success'
+                                ? 'silo-panel-soft border border-[color-mix(in_srgb,var(--silo-accent)_28%,var(--silo-border))] status-muted-success cursor-not-allowed'
+                                : simulate1State === 'loading'
+                                ? 'bg-[var(--silo-surface-2)] text-[var(--silo-text-soft)] border border-[var(--silo-border)] cursor-wait'
+                                : 'bg-[var(--silo-accent)] text-[#141a3c] hover:opacity-90 border border-transparent'
+                            }`}
+                          >
+                            {simulate1State === 'success' && (
+                              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--silo-accent)] text-[10px] text-[#141a3c]">✓</span>
+                            )}
+                            {simulate1State === 'loading' ? 'Simulating…' : 'Simulate'}
+                            <NewFeatureBadge compact className="ml-1" />
+                          </button>
+                        </div>
+                        {simulate1State === 'error' && (
+                          <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
+                            {simulate1Error}
+                          </pre>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {simulate1State === 'error' && (
-                    <pre className="text-xs text-red-400 whitespace-pre-wrap break-words font-sans silo-panel-soft border border-[var(--silo-border)] rounded-md p-2 mt-1">
-                      {simulate1Error}
-                    </pre>
-                  )}
-                </div>
-              </div>
+                )}
+                {wizardData.oracleType0?.type === 'none' && wizardData.oracleType1?.type === 'none' && (
+                  <div className="silo-panel p-4">
+                    <p className="text-sm silo-text-soft">
+                      Simulation is hidden because no oracle is selected for either asset.
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -932,6 +1099,25 @@ export default function Step4ManageableOracle() {
             <p className="text-red-400 font-medium mb-2">Please fix the following:</p>
             <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
               {validationErrors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {manageableEnabled && underlyingMethodsCheckLoading && (
+          <div className="silo-panel p-4">
+            <p className="text-sm silo-text-soft">
+              Checking underlying oracle methods (`baseToken()` and `quoteToken()`)...
+            </p>
+          </div>
+        )}
+
+        {manageableEnabled && underlyingMethodErrors.length > 0 && (
+          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+            <p className="text-red-400 font-medium mb-2">Underlying oracle validation failed:</p>
+            <ul className="list-disc list-inside text-red-400 text-sm space-y-1">
+              {underlyingMethodErrors.map((err, i) => (
                 <li key={i}>{err}</li>
               ))}
             </ul>
@@ -953,7 +1139,12 @@ export default function Step4ManageableOracle() {
             </svg>
             <span>Oracle Config</span>
           </Button>
-          <Button type="submit" variant="primary" size="lg">
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            disabled={manageableEnabled && (underlyingMethodsCheckLoading || underlyingMethodErrors.length > 0)}
+          >
             <span>IRM Selection</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
