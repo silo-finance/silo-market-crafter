@@ -8,6 +8,7 @@ import { fetchMarketConfig } from '@/utils/fetchMarketConfig'
 import { resolveAddressesToSiloConfigs } from '@/utils/resolveAddressToSiloConfig'
 import { KinkConfigItem, detectCustomStaticKinkConfig, findKinkConfigName } from '@/utils/kinkConfigName'
 import { parseJsonPreservingBigInt } from '@/utils/parseJsonPreservingBigInt'
+import { buildReadMulticallCall, executeReadMulticall } from '@/utils/readMulticall'
 import {
   extractIrmUpdateCandidates,
   IrmUpdateCandidate,
@@ -54,6 +55,16 @@ interface VerificationResult {
   parsedSafe: ParsedSafeUrl
   rows: VerificationRow[]
 }
+
+const OWNABLE_OWNER_ABI = [
+  {
+    type: 'function' as const,
+    name: 'owner',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+    stateMutability: 'view' as const
+  }
+] as const
 
 function StatusBadge({ status }: { status: RowStatus }) {
   if (status === 'pass') {
@@ -337,6 +348,62 @@ export default function IrmUpdateVerificationPage() {
           matchedConfigName,
           customStaticRate,
           status
+        }
+      })
+
+      rows.forEach((row, index) => {
+        if (!row.matchedIrmAddress) {
+          throw new Error(
+            `Transaction #${index + 1}: target ${row.candidate.tx.to} is not recognized as market IRM for ${row.marketLabel}.`
+          )
+        }
+        if (row.candidate.tx.to.toLowerCase() !== row.matchedIrmAddress.toLowerCase()) {
+          throw new Error(
+            `Transaction #${index + 1}: target ${row.candidate.tx.to} does not match expected IRM ${row.matchedIrmAddress} for ${row.marketLabel}.`
+          )
+        }
+      })
+
+      const uniqueTargets = Array.from(
+        new Set(rows.map((row) => ethers.getAddress(row.candidate.tx.to).toLowerCase()))
+      ).map((address) => ethers.getAddress(address))
+
+      const ownerReads = await executeReadMulticall<string>(
+        provider,
+        uniqueTargets.map((target) =>
+          buildReadMulticallCall<string>({
+            target: target as `0x${string}`,
+            abi: OWNABLE_OWNER_ABI,
+            functionName: 'owner',
+            allowFailure: true,
+            decodeResult: (decoded) => String(decoded)
+          })
+        ),
+        { debugLabel: 'irmTargetOwners' }
+      )
+
+      const ownerByTarget = new Map<string, string>()
+      uniqueTargets.forEach((target, i) => {
+        const owner = ownerReads[i]
+        if (!owner || !ethers.isAddress(owner)) {
+          throw new Error(
+            `Failed to read owner() for IRM target ${target}.`
+          )
+        }
+        ownerByTarget.set(target.toLowerCase(), ethers.getAddress(owner))
+      })
+
+      const safeMultisig = ethers.getAddress(parsedSafe.safeAddress)
+      rows.forEach((row, index) => {
+        const target = ethers.getAddress(row.candidate.tx.to)
+        const owner = ownerByTarget.get(target.toLowerCase())
+        if (!owner) {
+          throw new Error(`Missing owner() result for IRM target ${target}.`)
+        }
+        if (owner.toLowerCase() !== safeMultisig.toLowerCase()) {
+          throw new Error(
+            `Transaction #${index + 1}: Safe multisig ${safeMultisig} is not owner of IRM target ${target} (owner on-chain: ${owner}).`
+          )
         }
       })
 
