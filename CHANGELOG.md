@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.39.0 - 2026-06-03
+### Updated
+- add info about how to add additional IRM config
+- do not display immutable selector if we only have one
+
 ## 0.38.0 - 2026-06-01
 ### Added
 - IRM owner validation

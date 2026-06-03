@@ -27,8 +27,12 @@ interface KinkImmutableItem {
   rcompCap: number
 }
 
-const KINK_CONFIGS_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
-const KINK_IMMUTABLE_URL = 'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
+const KINK_CONFIGS_URL =
+  'https://raw.githubusercontent.com/silo-finance/silo-contracts-v3/develop/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
+const KINK_CONFIGS_BLOB_URL =
+  'https://github.com/silo-finance/silo-contracts-v3/blob/develop/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
+const KINK_IMMUTABLE_URL =
+  'https://raw.githubusercontent.com/silo-finance/silo-contracts-v3/develop/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
 const KINK_FACTORY_NAME = 'DynamicKinkModelFactory.sol'
 
 export default function Step4IRMSelection() {
@@ -209,6 +213,15 @@ export default function Step4IRMSelection() {
     )
   }, [kinkConfigSearch, kinkImmutableSearch, kinkConfigs, kinkImmutables])
 
+  const singleImmutable = kinkImmutables.length === 1 ? kinkImmutables[0] : null
+
+  // When only one immutable exists, apply it by default so config selection completes the setup immediately.
+  useEffect(() => {
+    if (!singleImmutable) return
+    setKinkToken0Immutable(singleImmutable)
+    setKinkToken1Immutable(singleImmutable)
+  }, [singleImmutable])
+
   const buildKinkIRMConfig = (config: KinkConfigItem | null, immutable: KinkImmutableItem | null): IRMConfig | null => {
     if (!config || !immutable) return null
     const name = `${config.name}:${immutable.name}`
@@ -222,8 +235,8 @@ export default function Step4IRMSelection() {
 
   // Sync Kink selection to context when selections change
   useEffect(() => {
-    const irm0 = buildKinkIRMConfig(kinkToken0Config, kinkToken0Immutable)
-    const irm1 = buildKinkIRMConfig(kinkToken1Config, kinkToken1Immutable)
+    const irm0 = buildKinkIRMConfig(kinkToken0Config, kinkToken0Immutable ?? singleImmutable)
+    const irm1 = buildKinkIRMConfig(kinkToken1Config, kinkToken1Immutable ?? singleImmutable)
     const existing0 = wizardData.selectedIRM0?.name ?? ''
     const existing1 = wizardData.selectedIRM1?.name ?? ''
     if (irm0) updateSelectedIRM0(irm0)
@@ -231,7 +244,7 @@ export default function Step4IRMSelection() {
     if (irm1) updateSelectedIRM1(irm1)
     else if (!existing1.includes(':')) updateSelectedIRM1({ name: '', config: {} })
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when kink selection state changes
-  }, [kinkToken0Config, kinkToken0Immutable, kinkToken1Config, kinkToken1Immutable])
+  }, [kinkToken0Config, kinkToken0Immutable, kinkToken1Config, kinkToken1Immutable, singleImmutable])
 
   useEffect(() => {
     setLoading(!(kinkConfigs.length > 0 && kinkImmutables.length > 0))
@@ -240,8 +253,10 @@ export default function Step4IRMSelection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const errors: string[] = []
-    if (!kinkToken0Config || !kinkToken0Immutable) errors.push('Please select Config and Immutable for Token 0')
-    if (!kinkToken1Config || !kinkToken1Immutable) errors.push('Please select Config and Immutable for Token 1')
+    const token0Immutable = kinkToken0Immutable ?? singleImmutable
+    const token1Immutable = kinkToken1Immutable ?? singleImmutable
+    if (!kinkToken0Config || !token0Immutable) errors.push('Please select Config for Token 0')
+    if (!kinkToken1Config || !token1Immutable) errors.push('Please select Config for Token 1')
     if (errors.length > 0) {
       setError(errors.join('\n'))
       return
@@ -297,9 +312,42 @@ export default function Step4IRMSelection() {
               ) : null}
             </div>
 
-            {/* Two search boxes for Kink */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Search: config always; immutable only when more than one option */}
+            <div className={`grid grid-cols-1 gap-4 mb-6 ${singleImmutable ? '' : 'md:grid-cols-2'}`}>
               <div className="silo-panel p-4">
+                <div className="flex items-start gap-2 mb-4 text-sm text-gray-300">
+                  <div
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-0 bg-[var(--silo-accent)]"
+                    aria-hidden
+                  >
+                    <svg
+                      className="h-3 w-3 origin-center scale-[2]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        stroke="#fff"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M12 16v-4M12 8h.01"
+                      />
+                    </svg>
+                  </div>
+                  <p>
+                    If a config is missing from the list, add it with a pull request to{' '}
+                    <a
+                      href={KINK_CONFIGS_BLOB_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--silo-accent)] underline hover:no-underline"
+                    >
+                      DKinkIRMConfigs.json
+                    </a>
+                    .
+                  </p>
+                </div>
                 <label htmlFor="kink-config-search" className="block text-sm font-medium text-gray-300 mb-2">
                   Search Dynamic IRM configs (name / params)
                 </label>
@@ -313,20 +361,22 @@ export default function Step4IRMSelection() {
                 />
                 <p className="text-xs text-gray-400 mt-1">{filteredKinkConfigs.length} config(s)</p>
               </div>
-              <div className="silo-panel p-4">
-                <label htmlFor="kink-immutable-search" className="block text-sm font-medium text-gray-300 mb-2">
-                  Search Dynamic IRM immutables (timelock / rcompCap)
-                </label>
-                <input
-                  type="text"
-                  id="kink-immutable-search"
-                  value={kinkImmutableSearch}
-                  onChange={e => setKinkImmutableSearch(e.target.value)}
-                  placeholder="e.g. T1day_C200"
-                  className={wizardSansInputClass}
-                />
-                <p className="text-xs text-gray-400 mt-1">{filteredKinkImmutables.length} immutable(s)</p>
-              </div>
+              {!singleImmutable && (
+                <div className="silo-panel p-4">
+                  <label htmlFor="kink-immutable-search" className="block text-sm font-medium text-gray-300 mb-2">
+                    Search Dynamic IRM immutables (timelock / rcompCap)
+                  </label>
+                  <input
+                    type="text"
+                    id="kink-immutable-search"
+                    value={kinkImmutableSearch}
+                    onChange={e => setKinkImmutableSearch(e.target.value)}
+                    placeholder="e.g. T1day_C200"
+                    className={wizardSansInputClass}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{filteredKinkImmutables.length} immutable(s)</p>
+                </div>
+              )}
             </div>
 
             {/* Token 0 & Token 1: each with Config + Immutable selector in separate boxes */}
@@ -362,35 +412,37 @@ export default function Step4IRMSelection() {
                   </div>
                 </div>
 
-                <div className="silo-panel p-4">
-                  <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {filteredKinkImmutables.length === 0 ? (
-                      <div className="border border-gray-700 rounded-lg p-4 text-center text-gray-400 text-sm">
-                        {loading ? 'Loading immutables…' : 'No immutables match the search.'}
-                      </div>
-                    ) : (
-                      filteredKinkImmutables.map((imm) => (
-                        <div
-                          key={`t0-imm-${imm.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
-                            kinkToken0Immutable?.name === imm.name
-                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
-                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
-                          }`}
-                          onClick={() => setKinkToken0Immutable(imm)}
-                        >
-                          <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
+                {!singleImmutable && (
+                  <div className="silo-panel p-4">
+                    <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {filteredKinkImmutables.length === 0 ? (
+                        <div className="border border-gray-700 rounded-lg p-4 text-center text-gray-400 text-sm">
+                          {loading ? 'Loading immutables…' : 'No immutables match the search.'}
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        filteredKinkImmutables.map((imm) => (
+                          <div
+                            key={`t0-imm-${imm.name}`}
+                            className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                              kinkToken0Immutable?.name === imm.name
+                                ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                                : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
+                            }`}
+                            onClick={() => setKinkToken0Immutable(imm)}
+                          >
+                            <span className="font-medium text-white">{imm.name}</span>
+                            <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {kinkToken0Config && kinkToken0Immutable && (
+                {kinkToken0Config && (kinkToken0Immutable ?? singleImmutable) && (
                   <p className="text-xs status-muted-success">
-                    Combined: {kinkToken0Config.name}:{kinkToken0Immutable.name}
+                    Combined: {kinkToken0Config.name}:{(kinkToken0Immutable ?? singleImmutable)!.name}
                   </p>
                 )}
               </div>
@@ -426,35 +478,37 @@ export default function Step4IRMSelection() {
                   </div>
                 </div>
 
-                <div className="silo-panel p-4">
-                  <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {filteredKinkImmutables.length === 0 ? (
-                      <div className="border border-gray-700 rounded-lg p-4 text-center text-gray-400 text-sm">
-                        {loading ? 'Loading immutables…' : 'No immutables match the search.'}
-                      </div>
-                    ) : (
-                      filteredKinkImmutables.map((imm) => (
-                        <div
-                          key={`t1-imm-${imm.name}`}
-                          className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
-                            kinkToken1Immutable?.name === imm.name
-                              ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
-                              : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
-                          }`}
-                          onClick={() => setKinkToken1Immutable(imm)}
-                        >
-                          <span className="font-medium text-white">{imm.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
+                {!singleImmutable && (
+                  <div className="silo-panel p-4">
+                    <h4 className="text-base font-medium text-white mb-3">Immutable</h4>
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {filteredKinkImmutables.length === 0 ? (
+                        <div className="border border-gray-700 rounded-lg p-4 text-center text-gray-400 text-sm">
+                          {loading ? 'Loading immutables…' : 'No immutables match the search.'}
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        filteredKinkImmutables.map((imm) => (
+                          <div
+                            key={`t1-imm-${imm.name}`}
+                            className={`border rounded-lg p-2 cursor-pointer text-sm transition-colors ${
+                              kinkToken1Immutable?.name === imm.name
+                                ? 'border-[var(--silo-accent)] bg-[color-mix(in_srgb,var(--silo-accent-soft)_52%,var(--silo-surface))] text-[var(--silo-text)]'
+                                : 'border-[var(--silo-border)] bg-[var(--silo-surface)] hover:border-[color-mix(in_srgb,var(--silo-accent)_45%,var(--silo-border))]'
+                            }`}
+                            onClick={() => setKinkToken1Immutable(imm)}
+                          >
+                            <span className="font-medium text-white">{imm.name}</span>
+                            <span className="text-gray-400 text-xs ml-2">timelock: {imm.timelock}, rcompCap: {formatToE18(imm.rcompCap)}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {kinkToken1Config && kinkToken1Immutable && (
+                {kinkToken1Config && (kinkToken1Immutable ?? singleImmutable) && (
                   <p className="text-xs status-muted-success">
-                    Combined: {kinkToken1Config.name}:{kinkToken1Immutable.name}
+                    Combined: {kinkToken1Config.name}:{(kinkToken1Immutable ?? singleImmutable)!.name}
                   </p>
                 )}
               </div>
