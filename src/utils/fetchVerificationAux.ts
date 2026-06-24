@@ -42,10 +42,6 @@ export type IrmDisplayAux = {
 
 const KINK_CONFIGS_URL =
   'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMConfigs.json'
-const KINK_IMMUTABLE_URL =
-  'https://raw.githubusercontent.com/silo-finance/silo-contracts-v2/master/silo-core/deploy/input/irmConfigs/kink/DKinkIRMImmutable.json'
-
-type KinkImmutableItem = { name: string; timelock: unknown; rcompCap: unknown }
 
 let kinkConfigCache: KinkConfigItem[] | null = null
 let kinkConfigPromise: Promise<KinkConfigItem[] | null> | null = null
@@ -54,13 +50,9 @@ async function getKinkConfigCache(): Promise<KinkConfigItem[] | null> {
   if (kinkConfigCache) return kinkConfigCache
   if (kinkConfigPromise) return kinkConfigPromise
   kinkConfigPromise = (async () => {
-    const [cfgRes, immRes] = await Promise.all([
-      fetch(KINK_CONFIGS_URL),
-      fetch(KINK_IMMUTABLE_URL)
-    ])
-    if (!cfgRes.ok || !immRes.ok) return null
+    const cfgRes = await fetch(KINK_CONFIGS_URL)
+    if (!cfgRes.ok) return null
     const cfgJson: KinkConfigItem[] = parseJsonPreservingBigInt(await cfgRes.text())
-    parseJsonPreservingBigInt(await immRes.text()) as KinkImmutableItem[]
     kinkConfigCache = cfgJson
     return cfgJson
   })().finally(() => {
@@ -270,57 +262,72 @@ function toKinkConfigObject(configRaw: unknown): Record<string, unknown> | null 
 }
 
 export async function fetchIrmDisplayAux(provider: ethers.Provider, marketConfig: MarketConfig): Promise<IrmDisplayAux> {
-  const empty: IrmDisplayAux = {
-    irmConfigNames: { silo0: null, silo1: null },
-    pendingIrmInfo: { silo0: null, silo1: null },
-    irmConfigHistory: { silo0: null, silo1: null }
+  const isDynamicKink = (version: string | undefined): boolean => {
+    if (!version) return false
+    return version.split(' ')[0] === 'DynamicKinkModel'
   }
+  const silo0IsKink = isDynamicKink(marketConfig.silo0.interestRateModel.version)
+  const silo1IsKink = isDynamicKink(marketConfig.silo1.interestRateModel.version)
 
+  // Config catalog is best-effort: a failed/rejected fetch must not blank out pending/history.
+  // When unavailable, names resolve to null ("not able to match") but on-chain data still loads.
+  let cfgJson: KinkConfigItem[] | null = null
   try {
-    const cfgJson = await getKinkConfigCache()
-    if (!cfgJson) return empty
+    cfgJson = await getKinkConfigCache()
+  } catch {
+    cfgJson = null
+  }
+  const resolveName = (irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined): string | null =>
+    cfgJson ? resolveKinkConfigDisplayName(irm, cfgJson) : null
 
-    const name0 = resolveKinkConfigDisplayName(marketConfig.silo0.interestRateModel, cfgJson)
-    const name1 = resolveKinkConfigDisplayName(marketConfig.silo1.interestRateModel, cfgJson)
+  const name0 = silo0IsKink ? resolveName(marketConfig.silo0.interestRateModel) : null
+  const name1 = silo1IsKink ? resolveName(marketConfig.silo1.interestRateModel) : null
 
-    type PendingInput = {
-      irmAddress: string
-      version: string | undefined
-    }
+  type PendingResult = { name: string | null; activateAt: number | null }
+
+  // Pending config detection mirrors the `actions` repo (readDynamicKinkIrmState): use the
+  // contract's own `pendingConfigExists()` flag plus `getModelStateAndConfig(true)` to read the
+  // pending config directly, rather than relying on `pendingIrmConfig()` returning an address.
+  // Fetched independently so any failure degrades to "no pending config" for kink silos rather
+  // than hiding the whole IRM section.
+  const fetchPending = async (): Promise<(PendingResult | null)[]> => {
+    type PendingInput = { irmAddress: string; isKink: boolean }
     type PendingSlot =
       | { kind: 'skip' }
-      | { kind: 'fetch'; pendingIdx: number; activateIdx: number }
+      | { kind: 'fetch'; existsIdx: number; configIdx: number; activateIdx: number }
 
     const pendingInputs: PendingInput[] = [
-      {
-        irmAddress: marketConfig.silo0.interestRateModel.address,
-        version: marketConfig.silo0.interestRateModel.version
-      },
-      {
-        irmAddress: marketConfig.silo1.interestRateModel.address,
-        version: marketConfig.silo1.interestRateModel.version
-      }
+      { irmAddress: marketConfig.silo0.interestRateModel.address, isKink: silo0IsKink },
+      { irmAddress: marketConfig.silo1.interestRateModel.address, isKink: silo1IsKink }
     ]
 
-    const pendingL1Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
+    const calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
     const slots: PendingSlot[] = pendingInputs.map((input) => {
-      if (!input.irmAddress || input.irmAddress === ethers.ZeroAddress || !input.version) {
+      if (!input.isKink || !input.irmAddress || input.irmAddress === ethers.ZeroAddress) {
         return { kind: 'skip' }
       }
-      const [contractName] = input.version.split(' ')
-      if (contractName !== 'DynamicKinkModel') return { kind: 'skip' }
 
-      const pendingIdx = pendingL1Calls.length
-      pendingL1Calls.push(
+      const existsIdx = calls.length
+      calls.push(
         buildReadMulticallCall<unknown>({
           target: input.irmAddress as `0x${string}`,
           abi: dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
-          functionName: 'pendingIrmConfig',
+          functionName: 'pendingConfigExists',
           allowFailure: true
         })
       )
-      const activateIdx = pendingL1Calls.length
-      pendingL1Calls.push(
+      const configIdx = calls.length
+      calls.push(
+        buildReadMulticallCall<unknown>({
+          target: input.irmAddress as `0x${string}`,
+          abi: dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
+          functionName: 'getModelStateAndConfig',
+          args: [true],
+          allowFailure: true
+        })
+      )
+      const activateIdx = calls.length
+      calls.push(
         buildReadMulticallCall<unknown>({
           target: input.irmAddress as `0x${string}`,
           abi: dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
@@ -328,127 +335,100 @@ export async function fetchIrmDisplayAux(provider: ethers.Provider, marketConfig
           allowFailure: true
         })
       )
-      return { kind: 'fetch', pendingIdx, activateIdx }
+      return { kind: 'fetch', existsIdx, configIdx, activateIdx }
     })
 
-    const pendingL1Results = pendingL1Calls.length > 0
-      ? await executeReadMulticall<unknown>(provider, pendingL1Calls, { debugLabel: 'irmPendingL1' })
+    const results = calls.length > 0
+      ? await executeReadMulticall<unknown>(provider, calls, { debugLabel: 'irmPending' })
       : []
 
-    type L2Slot = { kind: 'skip'; activateAt: number | null } | {
-      kind: 'fetch'
-      activateAt: number | null
-      getConfigIdx: number
+    return slots.map((slot) => {
+      if (slot.kind === 'skip') return null
+      const pendingExists = results[slot.existsIdx] === true
+      if (!pendingExists) return { name: null, activateAt: null }
+
+      // getModelStateAndConfig returns (state, config, immutable); config is index 1.
+      const bundle = results[slot.configIdx] as unknown[] | null | undefined
+      const configObj = toKinkConfigObject(bundle?.[1])
+      const name = configObj ? resolveName({ type: 'DynamicKinkModel', config: configObj }) : null
+
+      const activateRaw = results[slot.activateIdx]
+      const activateAt = activateRaw != null ? Number(BigInt(String(activateRaw))) : null
+      return { name, activateAt }
+    })
+  }
+
+  const fetchHistoryForSilo = async (
+    irmAddress: string,
+    version: string | undefined,
+    currentConfigAddress: string | undefined
+  ): Promise<string[]> => {
+    if (!irmAddress || irmAddress === ethers.ZeroAddress || !isDynamicKink(version) || !currentConfigAddress || currentConfigAddress === ethers.ZeroAddress) {
+      return []
     }
 
-    const pendingL2Calls: ReturnType<typeof buildReadMulticallCall<unknown>>[] = []
-    const l2Slots: L2Slot[] = slots.map((slot) => {
-      if (slot.kind === 'skip') return { kind: 'skip', activateAt: null }
-      const pendingRaw = pendingL1Results[slot.pendingIdx]
-      const activateRaw = pendingL1Results[slot.activateIdx]
-      const pendingAddr = pendingRaw != null ? String(pendingRaw) : ''
-      if (!pendingAddr || pendingAddr === ethers.ZeroAddress) {
-        return { kind: 'skip', activateAt: null }
-      }
-      const activateAt = activateRaw != null
-        ? Number(BigInt(String(activateRaw)))
-        : null
-      const getConfigIdx = pendingL2Calls.length
-      pendingL2Calls.push(
-        buildReadMulticallCall<unknown>({
-          target: pendingAddr as `0x${string}`,
-          abi: dynamicKinkModelConfigAbi as unknown as ethers.InterfaceAbi,
-          functionName: 'getConfig',
-          allowFailure: true
-        })
+    try {
+      const irmContract = new ethers.Contract(
+        irmAddress,
+        dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
+        provider
       )
-      return { kind: 'fetch', activateAt, getConfigIdx }
-    })
+      let currentAddr: string = ethers.getAddress(currentConfigAddress)
+      const names: string[] = []
+      while (currentAddr && currentAddr !== ethers.ZeroAddress) {
+        const result = await irmContract.configsHistory(currentAddr)
+        const prevAddr = result[1] ?? result.irmConfig
+        const prevAddrStr = prevAddr != null ? String(prevAddr) : ''
+        if (!prevAddrStr || prevAddrStr === ethers.ZeroAddress) break
 
-    const pendingL2Results = pendingL2Calls.length > 0
-      ? await executeReadMulticall<unknown>(provider, pendingL2Calls, { debugLabel: 'irmPendingL2' })
-      : []
-
-    const pendingResults = l2Slots.map((slot) => {
-      if (slot.kind === 'skip') return { name: null, activateAt: slot.activateAt }
-      const configTuple = pendingL2Results[slot.getConfigIdx] as unknown[] | null | undefined
-      const configObj = toKinkConfigObject(configTuple?.[0])
-      if (!configObj) return { name: null, activateAt: slot.activateAt }
-      const pendingName = resolveKinkConfigDisplayName(
-        { type: 'DynamicKinkModel', config: configObj },
-        cfgJson
-      )
-      return { name: pendingName, activateAt: slot.activateAt }
-    })
-
-    const fetchHistoryForSilo = async (
-      irmAddress: string,
-      version: string | undefined,
-      currentConfigAddress: string | undefined
-    ): Promise<string[]> => {
-      if (!irmAddress || irmAddress === ethers.ZeroAddress || !version || !currentConfigAddress || currentConfigAddress === ethers.ZeroAddress) {
-        return []
-      }
-      const [contractName] = version.split(' ')
-      if (contractName !== 'DynamicKinkModel') return []
-
-      try {
-        const irmContract = new ethers.Contract(
-          irmAddress,
-          dynamicKinkModelAbi as unknown as ethers.InterfaceAbi,
+        const configContract = new ethers.Contract(
+          prevAddrStr,
+          dynamicKinkModelConfigAbi as unknown as ethers.InterfaceAbi,
           provider
         )
-        let currentAddr: string = ethers.getAddress(currentConfigAddress)
-        const names: string[] = []
-        while (currentAddr && currentAddr !== ethers.ZeroAddress) {
-          const result = await irmContract.configsHistory(currentAddr)
-          const prevAddr = result[1] ?? result.irmConfig
-          const prevAddrStr = prevAddr != null ? String(prevAddr) : ''
-          if (!prevAddrStr || prevAddrStr === ethers.ZeroAddress) break
-
-          const configContract = new ethers.Contract(
-            prevAddrStr,
-            dynamicKinkModelConfigAbi as unknown as ethers.InterfaceAbi,
-            provider
-          )
-          const [config] = await configContract.getConfig()
-          const configObj = toKinkConfigObject(config)
-          if (!configObj) break
-          const historyName = resolveKinkConfigDisplayName(
-            { type: 'DynamicKinkModel', config: configObj },
-            cfgJson
-          )
-          names.push(historyName ?? 'not able to match')
-          currentAddr = prevAddrStr
-        }
-        return names
-      } catch {
-        return []
+        const [config] = await configContract.getConfig()
+        const configObj = toKinkConfigObject(config)
+        if (!configObj) break
+        const historyName = resolveName({ type: 'DynamicKinkModel', config: configObj })
+        names.push(historyName ?? 'not able to match')
+        currentAddr = prevAddrStr
       }
+      return names
+    } catch {
+      return []
     }
+  }
 
-    const [history0, history1] = await Promise.all([
-      fetchHistoryForSilo(
-        marketConfig.silo0.interestRateModel.address,
-        marketConfig.silo0.interestRateModel.version,
-        marketConfig.silo0.interestRateModel.irmConfigAddress
-      ),
-      fetchHistoryForSilo(
-        marketConfig.silo1.interestRateModel.address,
-        marketConfig.silo1.interestRateModel.version,
-        marketConfig.silo1.interestRateModel.irmConfigAddress
-      )
-    ])
+  const [pendingSettled, history0Settled, history1Settled] = await Promise.allSettled([
+    fetchPending(),
+    fetchHistoryForSilo(
+      marketConfig.silo0.interestRateModel.address,
+      marketConfig.silo0.interestRateModel.version,
+      marketConfig.silo0.interestRateModel.irmConfigAddress
+    ),
+    fetchHistoryForSilo(
+      marketConfig.silo1.interestRateModel.address,
+      marketConfig.silo1.interestRateModel.version,
+      marketConfig.silo1.interestRateModel.irmConfigAddress
+    )
+  ])
 
-    return {
-      irmConfigNames: { silo0: name0, silo1: name1 },
-      pendingIrmInfo: {
-        silo0: pendingResults[0] ?? { name: null, activateAt: null },
-        silo1: pendingResults[1] ?? { name: null, activateAt: null }
-      },
-      irmConfigHistory: { silo0: history0, silo1: history1 }
+  const pendingResults = pendingSettled.status === 'fulfilled' ? pendingSettled.value : []
+  const history0 = history0Settled.status === 'fulfilled' ? history0Settled.value : []
+  const history1 = history1Settled.status === 'fulfilled' ? history1Settled.value : []
+
+  // For kink silos, always surface a (possibly empty) pending/history value so the UI renders
+  // the section; for non-kink IRMs leave null so the section is omitted entirely.
+  const emptyPending: PendingResult = { name: null, activateAt: null }
+  return {
+    irmConfigNames: { silo0: name0, silo1: name1 },
+    pendingIrmInfo: {
+      silo0: silo0IsKink ? (pendingResults[0] ?? emptyPending) : null,
+      silo1: silo1IsKink ? (pendingResults[1] ?? emptyPending) : null
+    },
+    irmConfigHistory: {
+      silo0: silo0IsKink ? history0 : null,
+      silo1: silo1IsKink ? history1 : null
     }
-  } catch {
-    return empty
   }
 }

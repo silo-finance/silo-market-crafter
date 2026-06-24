@@ -4,6 +4,41 @@
  */
 export type KinkConfigItem = { name: string; config: Record<string, unknown> }
 
+/**
+ * Ordered list of the kink "config" parameters (matches the shape in
+ * `DKinkIRMConfigs.json`). Immutable args (`timelock`, `rcompCap`) are excluded
+ * because they are not part of the named config catalog.
+ */
+export const KINK_CONFIG_KEYS = [
+  'ulow',
+  'u1',
+  'u2',
+  'ucrit',
+  'rmin',
+  'kmin',
+  'kmax',
+  'alpha',
+  'cminus',
+  'cplus',
+  'c1',
+  'c2',
+  'dmax',
+] as const
+
+/**
+ * Formats the on-chain kink config parameters as a compact single-line JSON
+ * string (e.g. `{"ulow":"650000000000000000","u1":"0",...}`). Only the 13 config
+ * keys are included; values are stringified to preserve large integers.
+ */
+export function formatKinkConfigOneLine(config: Record<string, unknown> | undefined | null): string {
+  if (!config) return '{}'
+  const ordered: Record<string, string> = {}
+  for (const key of KINK_CONFIG_KEYS) {
+    if (config[key] != null) ordered[key] = String(config[key])
+  }
+  return JSON.stringify(ordered)
+}
+
 export function findKinkConfigName(
   irm: { type?: string; config?: Record<string, unknown> | undefined } | undefined,
   cfgJson: KinkConfigItem[]
