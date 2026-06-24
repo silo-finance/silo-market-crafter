@@ -21,7 +21,7 @@ import { isPriceUnexpectedlyLow, isPriceUnexpectedlyHigh, isPriceDecimalsInvalid
 import { VERIFICATION_STATUS } from '@/utils/verification/buildVerificationChecks'
 import { VersionStatus } from '@/components/VersionStatus'
 import IrmConfigNameWithLink from '@/components/IrmConfigNameWithLink'
-import { isCustomStaticFlatRateLabel } from '@/utils/kinkConfigName'
+import { isCustomStaticFlatRateLabel, formatKinkConfigOneLine } from '@/utils/kinkConfigName'
 import Button from '@/components/Button'
 import { wizardSansInputClass } from '@/constants/formStyles'
 import { getNetworkDisplayName, getNetworkIconPath } from '@/utils/networks'
@@ -1671,11 +1671,21 @@ function SiloSection({
             })
           }
 
-          // 2. IRM config with nested Pending and History (same indent level)
+          // 2. IRM config with nested Pending and History (DynamicKinkModel only)
+          const irmVersion = siloConfig.interestRateModel.version
+          const isDynamicKink =
+            typeof irmVersion === 'string' && irmVersion.split(' ')[0] === 'DynamicKinkModel'
           const name = irmConfigName ?? null
           const hasPendingOrHistory = pendingIrmInfo != null || irmConfigHistory != null
           const irmConfigCompare = marketCompareMap?.get(`${siloKey}.irm.configName`)
-          bullets.push({
+          // When the config cannot be matched to a named entry, show the raw on-chain
+          // parameters as a single-line JSON so they remain inspectable here.
+          const configJsonOneLine = (() => {
+            if (name) return null
+            const oneLine = formatKinkConfigOneLine(irmCfg)
+            return oneLine !== '{}' ? oneLine : null
+          })()
+          if (isDynamicKink) bullets.push({
             key: 'irm.configName',
             text: (
               <>
@@ -1695,28 +1705,38 @@ function SiloSection({
                     <VerificationStatusIconSmall status={VERIFICATION_STATUS.FAILED} />
                   </span>
                 )}
-                {hasPendingOrHistory && (
+                {(configJsonOneLine || hasPendingOrHistory) && (
                   <ul className="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
+                    {configJsonOneLine && (
+                      <li>
+                        <span>config:</span>
+                        <span className="font-mono text-xs break-all ml-1">{configJsonOneLine}</span>
+                      </li>
+                    )}
                     {pendingIrmInfo != null && (
                       <li>
-                        {pendingIrmInfo.activateAt == null ? (
+                        {pendingIrmInfo.activateAt == null && pendingIrmInfo.name == null ? (
                           <span>Pending IRM config: no pending config</span>
                         ) : (
                           (() => {
                             const activateAt = pendingIrmInfo.activateAt
-                            const utcDate = new Date(activateAt * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC')
-                            const nowSec = Math.floor(Date.now() / 1000)
-                            const diffSec = activateAt - nowSec
-                            const hours = Math.floor(diffSec / 3600)
-                            const minutes = Math.floor((diffSec % 3600) / 60)
-                            const countdown =
-                              diffSec <= 0 ? 'already active' : `in ${hours} hours and ${minutes} minutes`
                             const pendingName = pendingIrmInfo.name ?? 'not able to match'
+                            let activeSuffix: string | null = null
+                            if (activateAt != null) {
+                              const utcDate = new Date(activateAt * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC')
+                              const nowSec = Math.floor(Date.now() / 1000)
+                              const diffSec = activateAt - nowSec
+                              const hours = Math.floor(diffSec / 3600)
+                              const minutes = Math.floor((diffSec % 3600) / 60)
+                              const countdown =
+                                diffSec <= 0 ? 'already active' : `in ${hours} hours and ${minutes} minutes`
+                              activeSuffix = `– active at ${utcDate} (${countdown})`
+                            }
                             return (
                               <span className="inline-flex items-center gap-1.5 flex-wrap">
                                 <span>Pending IRM config:</span>
                                 <IrmConfigNameWithLink configName={pendingName} variant="normal" />
-                                <span>– active at {utcDate} ({countdown})</span>
+                                {activeSuffix && <span>{activeSuffix}</span>}
                               </span>
                             )
                           })()
