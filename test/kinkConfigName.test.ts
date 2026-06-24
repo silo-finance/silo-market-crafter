@@ -1,6 +1,7 @@
 import {
   detectCustomStaticKinkConfig,
   findKinkConfigName,
+  formatKinkConfigOneLine,
   isCustomStaticFlatRateLabel,
   KinkConfigItem,
   resolveKinkConfigDisplayName,
@@ -186,5 +187,70 @@ describe('isCustomStaticFlatRateLabel', () => {
     expect(isCustomStaticFlatRateLabel('')).toBe(false)
     expect(isCustomStaticFlatRateLabel(null)).toBe(false)
     expect(isCustomStaticFlatRateLabel(undefined)).toBe(false)
+  })
+})
+
+describe('formatKinkConfigOneLine', () => {
+  it('serializes the 13 config keys as a single-line JSON string', () => {
+    const cfg = staticConfig('634195840')
+    expect(formatKinkConfigOneLine(cfg)).toBe(
+      '{"ulow":"0","u1":"0","u2":"1000000000000000000","ucrit":"1000000000000000000","rmin":"634195840","kmin":"0","kmax":"0","alpha":"0","cminus":"0","cplus":"0","c1":"0","c2":"0","dmax":"0"}'
+    )
+  })
+
+  it('keeps keys in the canonical order regardless of input order', () => {
+    const cfg: Record<string, unknown> = {
+      dmax: '0',
+      rmin: '634195840',
+      ulow: '0',
+      u1: '0',
+      u2: '1000000000000000000',
+      ucrit: '1000000000000000000',
+      kmin: '0',
+      kmax: '0',
+      alpha: '0',
+      cminus: '0',
+      cplus: '0',
+      c1: '0',
+      c2: '0',
+    }
+    expect(formatKinkConfigOneLine(cfg)).toBe(formatKinkConfigOneLine(staticConfig('634195840')))
+  })
+
+  it('excludes immutable args and unknown keys', () => {
+    const cfg = { ...staticConfig('634195840'), timelock: '86400', rcompCap: '123', extra: 'x' }
+    const result = formatKinkConfigOneLine(cfg)
+    expect(result).not.toContain('timelock')
+    expect(result).not.toContain('rcompCap')
+    expect(result).not.toContain('extra')
+  })
+
+  it('stringifies bigint and number values', () => {
+    const cfg: Record<string, unknown> = {
+      ulow: 0,
+      u1: 0,
+      u2: BigInt('1000000000000000000'),
+      ucrit: BigInt('1000000000000000000'),
+      rmin: 634195840,
+      kmin: 0,
+      kmax: 0,
+      alpha: 0,
+      cminus: 0,
+      cplus: 0,
+      c1: 0,
+      c2: 0,
+      dmax: 0,
+    }
+    expect(formatKinkConfigOneLine(cfg)).toContain('"u2":"1000000000000000000"')
+    expect(formatKinkConfigOneLine(cfg)).toContain('"rmin":"634195840"')
+  })
+
+  it('returns "{}" for null or undefined config', () => {
+    expect(formatKinkConfigOneLine(null)).toBe('{}')
+    expect(formatKinkConfigOneLine(undefined)).toBe('{}')
+  })
+
+  it('omits keys that are missing from the config', () => {
+    expect(formatKinkConfigOneLine({ ulow: '0', rmin: '634195840' })).toBe('{"ulow":"0","rmin":"634195840"}')
   })
 })
