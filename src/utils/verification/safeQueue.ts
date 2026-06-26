@@ -62,6 +62,10 @@ const SAFE_NETWORK_CONFIG_BY_PREFIX: Record<string, SafeNetworkConfig> = {
     txServiceBaseUrl: 'https://api.safe.global/tx-service/okb',
     chainId: 196
   },
+  xdc: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/xdc',
+    chainId: 50
+  },
   injective: {
     txServiceBaseUrl: 'https://prod.injective.keypersafe.xyz',
     chainId: 1776
