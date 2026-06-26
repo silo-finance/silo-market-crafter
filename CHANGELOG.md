@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-06-26
+### Fixed
+- add XDC network Safe transaction-service prefix so IRM Update accepts XDC Safe queue URLs
+
 ## [0.39.1] - 2026-06-24
 ### Fixed
 - keep IRM pending config and history visible when the current config cannot be matched, and show the raw on-chain config as single-line JSON

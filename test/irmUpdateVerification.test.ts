@@ -57,6 +57,9 @@ describe('Safe queue parser', () => {
 
     expect(getSafeTxServiceBaseUrl('xlayer')).toBe('https://api.safe.global/tx-service/okb')
     expect(getSafeChainId('xlayer')).toBe(196)
+
+    expect(getSafeTxServiceBaseUrl('xdc')).toBe('https://api.safe.global/tx-service/xdc')
+    expect(getSafeChainId('xdc')).toBe(50)
   })
 
   it('supports common aliases for selected networks', () => {
