@@ -17,6 +17,12 @@ export { isPriceDecimalsInvalid } from './priceDecimalsVerification'
 export { isBaseDiscountPercentOutOfRange } from './baseDiscountRangeVerification'
 export { verifySiloAddress } from './siloAddressVerification'
 export { verifySiloImplementation } from './siloImplementationVerification'
+export {
+  fetchSiloImplementationFromNewSilo,
+  fetchFactoryDeployFromBlock,
+  implementationFromDeployReceipt,
+  matchNewSiloLogs
+} from './fetchSiloImplementationFromNewSilo'
 export { verifyAddress } from './addressVerification'
 export { verifyAddressInJson } from './addressInJsonVerification'
 export { verifyNumericValue } from './numericValueVerification'

@@ -5,7 +5,7 @@
  * the expected implementation address from the repository.
  * 
  * @param implementationFromEvent - Implementation address extracted from NewSilo event (on-chain)
- *                                   Source: parsed.implementation from parseDeployTxReceipt(receipt)
+ *                                   Source: parseDeployTxReceipt(receipt) or fetchSiloImplementationFromNewSilo
  * @param implementationFromRepo - Implementation address from repository JSON file
  *                                 Source: silo-core/deploy/silo/_siloImplementations.json[chainName]
  * @returns true if addresses match, false otherwise
