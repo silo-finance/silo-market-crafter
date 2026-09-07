@@ -19,6 +19,7 @@ Each verification function is in its own file:
 - `addressVerification.ts` - **Base function** for verifying addresses match wizard configuration (used for Hook Owner, IRM Owner, Token addresses, etc.)
 - `siloAddressVerification.ts` - Verifies silo addresses exist in Silo Factory
 - `siloImplementationVerification.ts` - Verifies implementation address matches repository
+- `fetchSiloImplementationFromNewSilo.ts` - Reads Silo implementation from the factory `NewSilo` event (deploy receipt or factory log query)
 - `addressInJsonVerification.ts` - Verifies addresses exist in repository JSON (always performed, independent of wizard data)
 - `highValueVerification.ts` - **Global function** for checking if values are unexpectedly high (> 5%)
 
@@ -118,9 +119,19 @@ Verifies that a silo address exists in the Silo Factory contract by calling `Sil
 Verifies that the implementation address used for deployment matches the expected implementation address from the repository.
 
 - `implementationFromEvent`: Implementation address extracted from NewSilo event (on-chain)
-  - Source: `parsed.implementation` from `parseDeployTxReceipt(receipt)`
+  - Source: `parsed.implementation` from `parseDeployTxReceipt(receipt)`, or factory `NewSilo` logs via `fetchSiloImplementationFromNewSilo`
 - `implementationFromRepo`: Implementation address from repository JSON file
   - Source: `silo-core/deploy/silo/_siloImplementations.json[chainName]`
+
+This check is always performed. It uses the implementation actually emitted by `SiloFactory.createSilo`, not wizard/Lizard data.
+
+### `fetchSiloImplementationFromNewSilo(...)`
+
+Reads the Silo implementation used at market creation from the factory `NewSilo` event.
+
+- Prefer a deploy transaction receipt when the user provided a tx hash
+- Otherwise query `NewSilo` on the on-chain factory (`silo.factory()`), filtered by `token0` + `token1`, and match `siloConfig` (or silo0/silo1)
+- Returns `{ implementation, transactionHash }` or `null` when the event cannot be found
 
 ### `verifyAddressInJson(address: string, chainId: string): Promise<boolean>`
 
