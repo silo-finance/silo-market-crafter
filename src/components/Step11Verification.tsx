@@ -14,6 +14,10 @@ import { VersionStatus } from '@/components/VersionStatus'
 import { fetchSiloLensVersionsWithCache } from '@/utils/siloLensVersions'
 import { verifySiloAddresses } from '@/utils/verification/siloAddressVerification'
 import { verifySiloImplementation } from '@/utils/verification/siloImplementationVerification'
+import {
+  fetchFactoryDeployFromBlock,
+  fetchSiloImplementationFromNewSilo
+} from '@/utils/verification/fetchSiloImplementationFromNewSilo'
 import { verifyAddressInJson } from '@/utils/verification/addressInJsonVerification'
 import { detectSiloConfigNetwork } from '@/utils/verification/siloConfigNetworkDetection'
 import { displayNumberToBigint } from '@/utils/verification/normalization'
@@ -82,6 +86,7 @@ export default function Step11Verification() {
   const [implementationFromEvent, setImplementationFromEvent] = useState<string | null>(null)
   const [implementationFromRepo, setImplementationFromRepo] = useState<{ address: string; version: string; description?: string } | null>(null)
   const [implementationVerified, setImplementationVerified] = useState<boolean | null>(null)
+  const [implementationLookupFailed, setImplementationLookupFailed] = useState(false)
   const [hookOwnerVerification, setHookOwnerVerification] = useState<{ onChainOwner: string | null; wizardOwner: string | null; isInAddressesJson: boolean | null }>({
     onChainOwner: null,
     wizardOwner: null,
@@ -315,15 +320,11 @@ export default function Step11Verification() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chainId, config])
 
-  // Fetch Silo Implementation addresses from repository (_siloImplementations.json)
-  // Only run verification if we have wizard data (verificationFromWizard is true)
+  // Compare NewSilo implementation (from the deploy tx / factory event) to the official repo list.
   useEffect(() => {
-    if (!wizardData.verificationFromWizard || !chainId || !implementationFromEvent) {
-      // Reset implementation verification state if we don't have wizard data
-      if (!wizardData.verificationFromWizard) {
-        setImplementationFromRepo(null)
-        setImplementationVerified(null)
-      }
+    if (!chainId || !implementationFromEvent) {
+      setImplementationFromRepo(null)
+      setImplementationVerified(null)
       return
     }
 
@@ -370,19 +371,28 @@ export default function Step11Verification() {
             })
             setImplementationVerified(verified)
           }
+        } else {
+          setImplementationFromRepo({
+            address: implementationFromEvent,
+            version: '',
+            description: undefined
+          })
+          setImplementationVerified(false)
         }
       } catch (err) {
         console.warn('Failed to fetch Silo Implementation:', err)
-        // Only set error state if we have wizard data
-        if (wizardData.verificationFromWizard) {
-          setImplementationVerified(false)
-        }
+        setImplementationFromRepo({
+          address: implementationFromEvent,
+          version: '',
+          description: undefined
+        })
+        setImplementationVerified(false)
       }
     }
 
     fetchImplementation()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardData.verificationFromWizard, chainId, implementationFromEvent])
+  }, [chainId, implementationFromEvent])
 
   // Fetch Silo Factory + verified implementation versions via one bulk Silo Lens getVersions call.
   useEffect(() => {
@@ -390,10 +400,7 @@ export default function Step11Verification() {
     if (typeof window === 'undefined' || !window.ethereum) return
 
     const factoryAddress = siloFactory?.address
-    const implementationAddress =
-      wizardData.verificationFromWizard && implementationFromRepo?.address
-        ? implementationFromRepo.address
-        : undefined
+    const implementationAddress = implementationFromRepo?.address || implementationFromEvent || undefined
 
     const addresses = [factoryAddress, implementationAddress].filter(
       (value): value is string => !!value
@@ -456,7 +463,7 @@ export default function Step11Verification() {
     fetchVersions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    wizardData.verificationFromWizard,
+    implementationFromEvent,
     implementationFromRepo?.address,
     siloFactory?.address,
     siloLensAddress,
@@ -632,6 +639,10 @@ export default function Step11Verification() {
     setIsOpenPrSectionVisible(false)
     setPendingIrmInfo({ silo0: null, silo1: null })
     setIrmConfigHistory({ silo0: null, silo1: null })
+    setImplementationFromEvent(null)
+    setImplementationFromRepo(null)
+    setImplementationVerified(null)
+    setImplementationLookupFailed(false)
 
     let chainIdForCatch: string | undefined
     let failedAddressForCatch: string | undefined
@@ -680,6 +691,8 @@ export default function Step11Verification() {
       }
       let siloConfigAddress: string
       let resolvedFromSilo = false
+      let deployReceipt: ethers.TransactionReceipt | null = null
+      let implementationMatch: { implementation: string; transactionHash: string | null } | null = null
 
       if (isTxHash) {
         // Check that the transaction exists on the current network first
@@ -699,10 +712,13 @@ export default function Step11Verification() {
           throw new Error('Silo Config address not found in transaction events.')
         }
         siloConfigAddress = parsed.siloConfig
+        deployReceipt = receipt
         setTxHash(value.trim())
-        // Extract implementation address from NewSilo event
         if (parsed.implementation) {
-          setImplementationFromEvent(parsed.implementation)
+          implementationMatch = {
+            implementation: parsed.implementation,
+            transactionHash: value.trim()
+          }
         }
       } else {
         if (isSiloIdInput) {
@@ -818,6 +834,39 @@ export default function Step11Verification() {
       const marketConfig = await fetchMarketConfig(provider, siloConfigAddress)
       if (!isMountedRef.current) return
       setConfig(marketConfig)
+
+      if (!implementationMatch) {
+        const factoryAddress = marketConfig.silo0.factory
+        if (factoryAddress && ethers.isAddress(factoryAddress)) {
+          const chainName = getChainName(network.chainId.toString())
+          const fromBlock = await fetchFactoryDeployFromBlock({
+            chainName,
+            factoryAddress
+          })
+          implementationMatch = await fetchSiloImplementationFromNewSilo({
+            provider,
+            receipt: deployReceipt,
+            factoryAddress,
+            token0: marketConfig.silo0.token,
+            token1: marketConfig.silo1.token,
+            siloConfig: marketConfig.siloConfig,
+            silo0: marketConfig.silo0.silo,
+            silo1: marketConfig.silo1.silo,
+            fromBlock
+          })
+        }
+      }
+
+      if (implementationMatch?.implementation) {
+        setImplementationFromEvent(implementationMatch.implementation)
+        if (!isTxHash && implementationMatch.transactionHash) {
+          setTxHash(implementationMatch.transactionHash)
+        }
+        setImplementationLookupFailed(false)
+      } else {
+        setImplementationFromEvent(null)
+        setImplementationLookupFailed(true)
+      }
       setInput(isTxHash ? value.trim() : value.trim())
       // Keep standalone verification URL shareable and reproducible. Never update URL after user left (e.g. Reset).
       if (!isMountedRef.current) return
@@ -1235,6 +1284,10 @@ export default function Step11Verification() {
     setInput('')
     clearCompareState()
     setVerificationFromWizard(false)
+    setImplementationFromEvent(null)
+    setImplementationFromRepo(null)
+    setImplementationVerified(null)
+    setImplementationLookupFailed(false)
     updateVerificationUrl({})
   }
 
@@ -1492,16 +1545,24 @@ export default function Step11Verification() {
         </div>
       )}
 
-      {wizardData.verificationFromWizard && implementationFromRepo && implementationFromEvent && (
+      {config && implementationLookupFailed && !implementationFromEvent && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+          <p className="text-red-400">
+            Silo implementation address could not be read from the NewSilo factory event.
+          </p>
+        </div>
+      )}
+
+      {config && implementationFromEvent && (
         <div className="mb-6">
           <ContractInfo
             contractName="SILO implementation used for market deployment"
-            address={implementationFromRepo.address}
-            version={implementationFromRepo.version || '…'}
+            address={implementationFromRepo?.address ?? implementationFromEvent}
+            version={implementationFromRepo?.version || '…'}
             chainId={chainId}
             isOracle={false}
             isImplementation={true}
-            renderVersion={<VersionStatus version={implementationFromRepo.version || null} />}
+            renderVersion={<VersionStatus version={implementationFromRepo?.version || null} />}
             verificationIcon={implementationVerified === true ? (
               <div className="relative group inline-block">
                 <div className="flex items-center justify-center">
@@ -1510,7 +1571,7 @@ export default function Step11Verification() {
                   </svg>
                 </div>
                 <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  Implementation address verified: matches event from deployment transaction and exists in repository
+                  Implementation address verified: matches NewSilo event from the deployment transaction and exists in repository
                 </div>
               </div>
             ) : implementationVerified === false ? (

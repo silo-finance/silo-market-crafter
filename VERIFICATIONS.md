@@ -14,7 +14,7 @@ Legend:
   - Factory consistency: we check that factory address stored in each silo matches the official current SiloFactory.
 
 - SILO implementation check
-  - Implementation address validation: we read implementation from deployment transaction and check that it matches an official implementation from repository list. *
+  - Implementation address validation: we read implementation from the factory `NewSilo` event (deploy transaction receipt, or factory logs when only a silo/config/id is provided) and check that it matches an official implementation from the repository list.
 
 - Fees
   - DAO Fee
