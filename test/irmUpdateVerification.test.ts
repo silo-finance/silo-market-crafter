@@ -81,6 +81,18 @@ describe('Safe queue parser', () => {
     expect(getSafeChainIdHex(parsed.chainPrefix)).toBe('0x6f0')
   })
 
+  it('parses pharos Safe URL and resolves network config', () => {
+    const parsed = parseSafeQueueUrl(
+      'https://app.safe.global/transactions/queue?safe=pharos:0xE8e8041cB5E3158A0829A19E014CA1cf91098554'
+    )
+
+    expect(parsed.chainPrefix).toBe('pharos')
+    expect(parsed.safeAddress).toBe('0xE8e8041cB5E3158A0829A19E014CA1cf91098554')
+    expect(getSafeTxServiceBaseUrl(parsed.chainPrefix)).toBe('https://api.safe.global/tx-service/pharos')
+    expect(getSafeChainId(parsed.chainPrefix)).toBe(1672)
+    expect(getSafeChainIdHex(parsed.chainPrefix)).toBe('0x688')
+  })
+
   it('supports inj alias for Injective network config', () => {
     expect(getSafeTxServiceBaseUrl('inj')).toBe('https://prod.injective.keypersafe.xyz')
     expect(getSafeChainId('inj')).toBe(1776)

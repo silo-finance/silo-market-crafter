@@ -89,6 +89,10 @@ const SAFE_NETWORK_CONFIG_BY_PREFIX: Record<string, SafeNetworkConfig> = {
   okx: {
     txServiceBaseUrl: 'https://api.safe.global/tx-service/okb',
     chainId: 196
+  },
+  pharos: {
+    txServiceBaseUrl: 'https://api.safe.global/tx-service/pharos',
+    chainId: 1672
   }
 }
 
