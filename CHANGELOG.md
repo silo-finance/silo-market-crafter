@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-09-22
+### Added
+- add support for Pacific Mainnet (Pharos, chain ID 1672)
+
 ## [0.40.1] - 2026-09-07
 ### Updated
 - verify Silo implementation from the on-chain NewSilo event for every verification path, not only wizard deployments

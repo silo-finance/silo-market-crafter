@@ -112,6 +112,16 @@ export const NETWORK_CONFIGS: NetworkConfig[] = [
     rpcUrls: ['https://rpc.mantle.xyz'],
     iconPath: '/network-icons/mantle.ico',
   },
+  {
+    chainId: 1672,
+    displayName: 'Pacific Mainnet',
+    chainName: 'pharos',
+    explorerBaseUrl: 'https://www.pharosscan.xyz',
+    nativeTokenSymbol: 'PROS',
+    nativeTokenName: 'PROS',
+    rpcUrls: ['https://rpc.pharos.xyz'],
+    iconPath: '/network-icons/pharos.png',
+  },
 ]
 
 /**
