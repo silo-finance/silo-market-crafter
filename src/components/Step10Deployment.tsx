@@ -14,7 +14,7 @@ import {
   type SiloCoreDeployments,
   type OracleDeployments
 } from '@/utils/deployArgs'
-import { getChainName, getExplorerBaseUrl, getExplorerAddressUrl } from '@/utils/networks'
+import { getChainName, getExplorerAddressUrl, getExplorerTxUrl } from '@/utils/networks'
 import CopyButton from '@/components/CopyButton'
 import ContractInfo from '@/components/ContractInfo'
 import AddressDisplayLong from '@/components/AddressDisplayLong'
@@ -93,6 +93,7 @@ export default function Step10Deployment() {
   const [txErrorDebug, setTxErrorDebug] = useState<{ to: string; data: string } | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [txHash, setTxHash] = useState<string>('')
+  const [submittedChainId, setSubmittedChainId] = useState<string>('')
   const [deployArgs, setDeployArgs] = useState<DeployArgs | null>(null)
   const [preparedDeployCallArgs, setPreparedDeployCallArgs] = useState<DeployCallArgs | null>(null)
   const [simulatedArgsHash, setSimulatedArgsHash] = useState<string>('')
@@ -615,6 +616,7 @@ export default function Step10Deployment() {
     setError('')
     setTxErrorDebug(null)
     setTxHash('')
+    setSubmittedChainId('')
 
     // For debugging deployment issues (eg. FailedToCreateAnOracle)
     let debugCalldata: string | null = null
@@ -622,6 +624,7 @@ export default function Step10Deployment() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
+      const deploymentChainId = (await provider.getNetwork()).chainId.toString()
 
       // Validate all addresses are valid before sending
       if (!ethers.isAddress(preparedDeployCallArgs.clonableHookReceiver.implementation) || preparedDeployCallArgs.clonableHookReceiver.implementation === ethers.ZeroAddress) {
@@ -687,6 +690,7 @@ export default function Step10Deployment() {
         preparedDeployCallArgs.marketOptions
       )
 
+      setSubmittedChainId(deploymentChainId)
       setTxHash(tx.hash)
 
       // Wait for transaction confirmation
@@ -709,6 +713,7 @@ export default function Step10Deployment() {
       const errorMessage = formatContractError(err, deployerInterface)
       setError(errorMessage)
       setTxHash('')
+      setSubmittedChainId('')
     } finally {
       setDeploying(false)
     }
@@ -718,13 +723,8 @@ export default function Step10Deployment() {
     router.push('/wizard?step=12')
   }
 
-  const getBlockExplorerUrl = (hash: string, isAddress: boolean = false) => {
-    if (!wizardData.networkInfo?.chainId) return '#'
-    const chainId = wizardData.networkInfo.chainId
-    const baseUrl = getExplorerBaseUrl(chainId)
-    const path = isAddress ? 'address' : 'tx'
-    return `${baseUrl}/${path}/${hash}`
-  }
+  const explorerChainId = submittedChainId || wizardData.networkInfo?.chainId || ''
+  const explorerTxUrl = txHash && explorerChainId ? getExplorerTxUrl(explorerChainId, txHash) : ''
 
   // Don't block rendering - show arguments even while loading
 
@@ -950,14 +950,20 @@ export default function Step10Deployment() {
             ✓ Transaction submitted successfully!
           </div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <a
-              href={getBlockExplorerUrl(txHash)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[var(--silo-accent)] hover:opacity-90 text-sm underline"
-            >
-              View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
-            </a>
+            {explorerTxUrl ? (
+              <a
+                href={explorerTxUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--silo-accent)] hover:opacity-90 text-sm underline"
+              >
+                View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+              </a>
+            ) : (
+              <span className="text-sm silo-text-soft">
+                View on block explorer: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+              </span>
+            )}
             <CopyButton value={txHash} iconClassName="w-3.5 h-3.5" title="Copy transaction hash" className="ml-0" />
           </div>
           <Button

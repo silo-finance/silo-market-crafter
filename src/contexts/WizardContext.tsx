@@ -396,9 +396,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (saved) {
       try {
         const parsedData = JSON.parse(saved, bigintReviver) as WizardData
-        setWizardData({
+        setWizardData(prev => ({
           ...parsedData,
-          networkInfo: null,
+          networkInfo: prev.networkInfo,
           verificationFromWizard: false,
           manageableOracle: parsedData.manageableOracle ?? true,
           manageableOracleTimelock: parsedData.manageableOracleTimelock ?? 172800,
@@ -407,7 +407,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
           permissionedLiquidators: Array.isArray(parsedData.permissionedLiquidators)
             ? dedupePermissionedAddresses(parsedData.permissionedLiquidators)
             : []
-        })
+        }))
       } catch (err) {
         console.warn('Failed to parse saved wizard data:', err)
       }

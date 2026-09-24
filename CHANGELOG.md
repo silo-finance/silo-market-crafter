@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.1] - 2026-09-24
+### Fixed
+- point the deployment success explorer link at the chain that submitted the transaction, instead of reloading the wizard when network state is missing
+
 ## [0.41.0] - 2026-09-22
 ### Added
 - add support for Pacific Mainnet (Pharos, chain ID 1672)
