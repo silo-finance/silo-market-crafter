@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.2] - 2026-09-30
+### Fixed
+- shrink NewSilo factory log queries to 1,000 blocks so Pacific Mainnet verification can read the Silo implementation
+
 ## [0.41.1] - 2026-09-24
 ### Fixed
 - point the deployment success explorer link at the chain that submitted the transaction, instead of reloading the wizard when network state is missing
