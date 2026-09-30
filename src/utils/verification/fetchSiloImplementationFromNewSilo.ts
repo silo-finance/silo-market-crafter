@@ -10,8 +10,8 @@ if (!newSiloEvent) {
 }
 const NEW_SILO_TOPIC = newSiloEvent.topicHash
 
-/** Wallet RPCs typically cap eth_getLogs range; shrink on failure. */
-const LOG_CHUNK_SIZES = [50_000, 10_000, 2_000] as const
+/** Wallet RPCs cap eth_getLogs range; shrink on failure. Pharos allows at most 1,000 blocks. */
+const LOG_CHUNK_SIZES = [50_000, 10_000, 2_000, 1_000] as const
 /** When factory deploy block is unknown, do not scan the entire chain. */
 const MAX_LOOKBACK_BLOCKS = 6_000_000
 

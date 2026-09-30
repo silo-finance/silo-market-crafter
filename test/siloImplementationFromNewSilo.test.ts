@@ -221,6 +221,50 @@ describe('fetchSiloImplementationFromNewSilo', () => {
 
     expect(match).toEqual({ implementation: IMPL_B, transactionHash: TX_B })
   })
+
+  it('shrinks the log scan to 1,000 blocks when wider ranges are rejected', async () => {
+    const ranges: number[] = []
+    const provider = mockProvider({
+      blockNumber: 5_000,
+      getLogsImpl: async (filter) => {
+        const fromBlock = Number(filter.fromBlock ?? 0)
+        const toBlock = Number(filter.toBlock ?? 0)
+        const span = toBlock - fromBlock + 1
+        ranges.push(span)
+        if (span > 1_000) {
+          throw new Error('The block range is too large')
+        }
+        if (fromBlock <= 4_500 && toBlock >= 4_500) {
+          return [
+            encodeNewSiloLog({
+              implementation: IMPL_A,
+              token0: TOKEN0,
+              token1: TOKEN1,
+              silo0: SILO0,
+              silo1: SILO1,
+              siloConfig: SILO_CONFIG_A,
+              transactionHash: TX_A
+            })
+          ]
+        }
+        return []
+      }
+    })
+
+    const match = await fetchSiloImplementationFromNewSilo({
+      provider,
+      factoryAddress: FACTORY,
+      token0: TOKEN0,
+      token1: TOKEN1,
+      siloConfig: SILO_CONFIG_A,
+      silo0: SILO0,
+      silo1: SILO1
+    })
+
+    expect(match).toEqual({ implementation: IMPL_A, transactionHash: TX_A })
+    expect(ranges.some((span) => span > 1_000)).toBe(true)
+    expect(ranges.at(-1)).toBeLessThanOrEqual(1_000)
+  })
 })
 
 describe('verifySiloImplementation', () => {
